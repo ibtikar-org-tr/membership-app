@@ -32,3 +32,10 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# google
+GOOGLE_API.json
+
+# temp
+*.md
+.*ignore
