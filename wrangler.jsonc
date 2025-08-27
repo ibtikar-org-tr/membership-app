@@ -2,5 +2,20 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "membership-app",
   "compatibility_date": "2025-08-03",
-  "main": "./src/backendMain.tsx"
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./src/backendMain.tsx",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "membership-app-db",
+      "database_id": "your-d1-database-id-here" // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    }
+  ],
+  "triggers": { // Cron Triggers 
+    "crons": ["*/5 * * * *"]
+  },
+  "observability": { // Enable Workers Logs
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
 }
