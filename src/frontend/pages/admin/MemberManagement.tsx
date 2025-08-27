@@ -10,21 +10,21 @@ interface MemberManagementProps {
 }
 
 interface MemberInfo {
-  membership_number: string;
-  ar_name: string;
-  latin_name: string;
-  whatsapp: string;
-  email: string;
-  sex: string;
-  birth_date: string;
-  country: string;
-  city: string;
-  district: string;
-  university: string;
-  major: string;
-  graduation_year: string;
-  blood_type: string;
-  phone: string;
+  membership_number?: string;
+  ar_name?: string;
+  latin_name?: string;
+  whatsapp?: string;
+  email?: string;
+  sex?: string;
+  birth_date?: string;
+  country?: string;
+  city?: string;
+  district?: string;
+  university?: string;
+  major?: string;
+  graduation_year?: string;
+  blood_type?: string;
+  phone?: string;
 }
 
 export function MemberManagement({ setSuccess, setError }: MemberManagementProps) {
@@ -56,9 +56,9 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
   };
 
   const filteredMembers = members.filter(member =>
-    member.latin_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.membership_number.toLowerCase().includes(searchTerm.toLowerCase())
+    (member.latin_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (member.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (member.membership_number?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const handleEditMember = (member: MemberInfo) => {
@@ -66,7 +66,10 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
   };
 
   const handleUpdateMember = async () => {
-    if (!editingMember) return;
+    if (!editingMember || !editingMember.membership_number) {
+      setError('Member information is incomplete');
+      return;
+    }
 
     setIsUpdating(true);
     setError('');
@@ -97,7 +100,12 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
     }
   };
 
-  const handleDeleteMember = async (membershipNumber: string) => {
+  const handleDeleteMember = async (membershipNumber?: string) => {
+    if (!membershipNumber) {
+      setError('Member ID not found');
+      return;
+    }
+    
     if (!confirm(`Are you sure you want to delete member ${membershipNumber}? This action cannot be undone.`)) {
       return;
     }
@@ -162,52 +170,52 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
                 <div className="space-y-4">
                   <Input
                     label="Membership Number"
-                    value={editingMember.membership_number}
+                    value={editingMember.membership_number || ''}
                     onChange={() => {}} // Read-only
                     disabled={true}
                   />
                   
                   <Input
                     label="Arabic Name"
-                    value={editingMember.ar_name}
+                    value={editingMember.ar_name || ''}
                     onChange={(value) => setEditingMember({...editingMember, ar_name: value})}
                   />
                   
                   <Input
                     label="Latin Name"
-                    value={editingMember.latin_name}
+                    value={editingMember.latin_name || ''}
                     onChange={(value) => setEditingMember({...editingMember, latin_name: value})}
                   />
                   
                   <Input
                     label="Email"
                     type="email"
-                    value={editingMember.email}
+                    value={editingMember.email || ''}
                     onChange={(value) => setEditingMember({...editingMember, email: value})}
                   />
                   
                   <Input
                     label="Phone"
-                    value={editingMember.phone}
+                    value={editingMember.phone || ''}
                     onChange={(value) => setEditingMember({...editingMember, phone: value})}
                   />
                   
                   <Input
                     label="WhatsApp"
-                    value={editingMember.whatsapp}
+                    value={editingMember.whatsapp || ''}
                     onChange={(value) => setEditingMember({...editingMember, whatsapp: value})}
                   />
                   
                   <Input
                     label="Sex"
-                    value={editingMember.sex}
+                    value={editingMember.sex || ''}
                     onChange={(value) => setEditingMember({...editingMember, sex: value})}
                   />
                   
                   <Input
                     label="Birth Date"
                     type="date"
-                    value={editingMember.birth_date}
+                    value={editingMember.birth_date || ''}
                     onChange={(value) => setEditingMember({...editingMember, birth_date: value})}
                   />
                 </div>
@@ -215,43 +223,43 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
                 <div className="space-y-4">
                   <Input
                     label="Country"
-                    value={editingMember.country}
+                    value={editingMember.country || ''}
                     onChange={(value) => setEditingMember({...editingMember, country: value})}
                   />
                   
                   <Input
                     label="City"
-                    value={editingMember.city}
+                    value={editingMember.city || ''}
                     onChange={(value) => setEditingMember({...editingMember, city: value})}
                   />
                   
                   <Input
                     label="District"
-                    value={editingMember.district}
+                    value={editingMember.district || ''}
                     onChange={(value) => setEditingMember({...editingMember, district: value})}
                   />
                   
                   <Input
                     label="University"
-                    value={editingMember.university}
+                    value={editingMember.university || ''}
                     onChange={(value) => setEditingMember({...editingMember, university: value})}
                   />
                   
                   <Input
                     label="Major"
-                    value={editingMember.major}
+                    value={editingMember.major || ''}
                     onChange={(value) => setEditingMember({...editingMember, major: value})}
                   />
                   
                   <Input
                     label="Graduation Year"
-                    value={editingMember.graduation_year}
+                    value={editingMember.graduation_year || ''}
                     onChange={(value) => setEditingMember({...editingMember, graduation_year: value})}
                   />
                   
                   <Input
                     label="Blood Type"
-                    value={editingMember.blood_type}
+                    value={editingMember.blood_type || ''}
                     onChange={(value) => setEditingMember({...editingMember, blood_type: value})}
                   />
                 </div>
@@ -307,28 +315,30 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredMembers.map((member) => (
-                  <tr key={member.membership_number}>
+                {filteredMembers.map((member, index) => (
+                  <tr key={member.membership_number || `member-${index}`}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {member.latin_name}
+                          {member.latin_name || 'N/A'}
                         </div>
                         <div className="text-sm text-gray-500">
-                          #{member.membership_number}
+                          #{member.membership_number || 'N/A'}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.email}</div>
-                      <div className="text-sm text-gray-500">{member.phone}</div>
+                      <div className="text-sm text-gray-900">{member.email || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{member.phone || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.city}, {member.country}</div>
+                      <div className="text-sm text-gray-900">
+                        {member.city || 'N/A'}, {member.country || 'N/A'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.university}</div>
-                      <div className="text-sm text-gray-500">{member.major}</div>
+                      <div className="text-sm text-gray-900">{member.university || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{member.major || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
