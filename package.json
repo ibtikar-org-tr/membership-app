@@ -6,6 +6,8 @@
     "build": "vite build",
     "preview": "$npm_execpath run build && vite preview",
     "deploy": "$npm_execpath run build && wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply membership-app-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply membership-app-db --remote",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
