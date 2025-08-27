@@ -153,6 +153,10 @@ authRouter.post('/reset-password', async (c) => {
   try {
     const { token, new_password } = await c.req.json<ResetPasswordRequest>();
     
+    if (!token || !new_password) {
+      return c.json({ success: false, error: 'Token and new password are required' }, 400);
+    }
+    
     const db = new Database(c.env.DB);
     
     // Create Google API service
@@ -162,10 +166,18 @@ authRouter.post('/reset-password', async (c) => {
     const authService = new AuthService(db, googleService, c.env.JWT_SECRET);
     
     // Verify token
+    console.log('Verifying token for password reset...');
     const payload = await authService.verifyPasswordResetToken(token);
     if (!payload) {
+      console.log('Token verification failed');
+      await db.createLog({
+        user: 'unknown',
+        action: 'password_reset_failed',
+        status: 'invalid_token'
+      });
       return c.json({ success: false, error: 'Invalid or expired token' }, 400);
     }
+    console.log('Token verified successfully for user:', payload.membership_number);
 
     // Check if reset request exists and is pending
     const resetRequest = await db.getPasswordResetRequestByToken(token);
@@ -196,6 +208,35 @@ authRouter.post('/reset-password', async (c) => {
   } catch (error) {
     console.error('Reset password error:', error);
     return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// Test JWT endpoint for debugging
+authRouter.post('/test-jwt', async (c) => {
+  try {
+    const db = new Database(c.env.DB);
+    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleService = new GoogleAPIService(googleCredentials);
+    const authService = new AuthService(db, googleService, c.env.JWT_SECRET);
+    
+    // Create a test token
+    const testToken = await authService.generatePasswordResetToken('TEST123', 'test@example.com');
+    
+    // Immediately verify it
+    const verified = await authService.verifyPasswordResetToken(testToken);
+    
+    return c.json({
+      success: true,
+      testToken,
+      verified,
+      currentTime: Math.floor(Date.now() / 1000)
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
   }
 });
 
