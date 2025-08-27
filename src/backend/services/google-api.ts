@@ -35,7 +35,7 @@ export class GoogleAPIService {
 
     const payload = {
       iss: this.credentials.client_email,
-      scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/forms.responses.readonly',
+      scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send',
       aud: 'https://oauth2.googleapis.com/token',
       exp,
       iat: now,
@@ -230,20 +230,5 @@ export class GoogleAPIService {
     });
   }
 
-  // Google Forms API
-  async getFormResponses(formId: string): Promise<any[]> {
-    const token = await this.getAccessToken();
-    
-    const response = await fetch(
-      `https://forms.googleapis.com/v1/forms/${formId}/responses`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
 
-    const data = await response.json();
-    return data.responses || [];
-  }
 }

@@ -34,12 +34,12 @@ export class CronJobService {
     try {
       console.log('Starting cron job: Processing new registrations');
       
-      // Get Google Form and Sheet configurations
-      const formConfig = await this.db.getGoogleForm();
-      const sheetConfig = await this.db.getGoogleSheet();
+      // Get Google Form Sheet and Member Sheet configurations
+      const formSheetConfig = await this.db.getGoogleForm(); // Now represents form sheet config
+      const memberSheetConfig = await this.db.getGoogleSheet(); // Member sheet config
       
-      if (!formConfig || !sheetConfig) {
-        console.log('Missing Google Form or Sheet configuration');
+      if (!formSheetConfig || !memberSheetConfig) {
+        console.log('Missing Google Form Sheet or Member Sheet configuration');
         await this.db.createLog({
           user: 'system',
           action: 'cron_process_registrations',
@@ -48,32 +48,32 @@ export class CronJobService {
         return;
       }
 
-      // Get form responses
-      const responses = await this.googleService.getFormResponses(formConfig.google_form_id);
+      // Get form sheet data (responses from Google Form)
+      const formSheetData = await this.googleService.getSheetData(formSheetConfig.google_form_id, 'A:Z');
       
-      if (responses.length === 0) {
-        console.log('No new form responses found');
+      if (formSheetData.length <= 1) {
+        console.log('No form responses found in sheet');
         return;
       }
 
-      // Get existing members from sheet to avoid duplicates
-      const existingMembersData = await this.googleService.getSheetData(sheetConfig.google_sheet_id, 'A:Z');
-      const existingEmails = new Set<string>();
+      // Get existing members from member sheet to avoid duplicates
+      const memberSheetData = await this.googleService.getSheetData(memberSheetConfig.google_sheet_id, 'A:Z');
+      const processedEmails = new Set<string>();
       
-      if (existingMembersData.length > 1) {
-        const headers = existingMembersData[0];
-        const rows = existingMembersData.slice(1);
+      if (memberSheetData.length > 1) {
+        const memberHeaders = memberSheetData[0];
+        const memberRows = memberSheetData.slice(1);
         
-        const emailColumnHeader = Object.keys(sheetConfig.corresponding_values).find(
-          key => sheetConfig.corresponding_values[key] === 'email'
+        const emailColumnHeader = Object.keys(memberSheetConfig.corresponding_values).find(
+          key => memberSheetConfig.corresponding_values[key] === 'email'
         );
         
         if (emailColumnHeader) {
-          const emailColumnIndex = headers.indexOf(emailColumnHeader);
+          const emailColumnIndex = memberHeaders.indexOf(emailColumnHeader);
           if (emailColumnIndex !== -1) {
-            rows.forEach(row => {
+            memberRows.forEach(row => {
               if (row[emailColumnIndex]) {
-                existingEmails.add(row[emailColumnIndex]);
+                processedEmails.add(row[emailColumnIndex]);
               }
             });
           }
@@ -81,20 +81,22 @@ export class CronJobService {
       }
 
       let processedCount = 0;
+      const formHeaders = formSheetData[0];
+      const formRows = formSheetData.slice(1);
       
-      for (const response of responses) {
+      for (const formRow of formRows) {
         try {
-          // Extract member information from form response
-          const memberInfo = this.extractMemberInfoFromResponse(response, formConfig.corresponding_values);
+          // Extract member information from form sheet row
+          const memberInfo = this.extractMemberInfoFromSheetRow(formRow, formHeaders, formSheetConfig.corresponding_values);
           
           if (!memberInfo || !memberInfo.email) {
-            console.log('Invalid member info extracted from response');
+            console.log('Invalid member info extracted from sheet row');
             continue;
           }
 
           // Check if member already exists
-          if (existingEmails.has(memberInfo.email)) {
-            console.log(`Member with email ${memberInfo.email} already exists, skipping`);
+          if (processedEmails.has(memberInfo.email)) {
+            console.log(`Member with email ${memberInfo.email} already processed, skipping`);
             continue;
           }
 
@@ -110,19 +112,23 @@ export class CronJobService {
           // Check if user already exists in Moodle
           const existingMoodleUser = await this.moodleService.getUserByEmail(memberInfo.email);
           if (existingMoodleUser) {
-            console.log(`Moodle user with email ${memberInfo.email} already exists, skipping`);
-            continue;
+            console.log(`Moodle user with email ${memberInfo.email} already exists, updating password`);
+            // Update password in Moodle instead of creating new user
+            await this.moodleService.updateUserPassword(existingMoodleUser.id, temporaryPassword);
+          } else {
+            // Create user in Moodle
+            const moodleUserId = await this.moodleService.createUser(memberInfo);
+            console.log(`Created Moodle user with ID: ${moodleUserId}`);
           }
 
-          // Create user in Moodle
-          const moodleUserId = await this.moodleService.createUser(memberInfo);
-          console.log(`Created Moodle user with ID: ${moodleUserId}`);
-
-          // Add member to Google Sheet
-          await this.addMemberToSheet(memberInfo, sheetConfig);
+          // Add member to Member Sheet
+          await this.addMemberToMemberSheet(memberInfo, memberSheetConfig);
 
           // Send welcome email
           await this.emailService.sendWelcomeEmail(memberInfo, temporaryPassword);
+
+          // Mark as processed to avoid future duplicates
+          processedEmails.add(memberInfo.email);
 
           // Log successful processing
           await this.db.createLog({
@@ -162,22 +168,17 @@ export class CronJobService {
     }
   }
 
-  private extractMemberInfoFromResponse(response: any, mapping: Record<string, string>): MemberInfo | null {
+  private extractMemberInfoFromSheetRow(row: any[], headers: string[], mapping: Record<string, string>): MemberInfo | null {
     try {
       const memberInfo: Partial<MemberInfo> = {};
       
-      // Extract data based on form field mapping
-      if (response.answers) {
-        Object.entries(response.answers).forEach(([questionId, answer]: [string, any]) => {
-          const memberField = mapping[questionId];
-          if (memberField && answer && answer.textAnswers && answer.textAnswers.answers) {
-            const value = answer.textAnswers.answers[0]?.value;
-            if (value) {
-              (memberInfo as any)[memberField] = value;
-            }
-          }
-        });
-      }
+      // Extract data based on sheet column mapping
+      headers.forEach((header, index) => {
+        const memberField = mapping[header];
+        if (memberField && row[index]) {
+          (memberInfo as any)[memberField] = row[index];
+        }
+      });
 
       // Validate required fields
       if (!memberInfo.email || !memberInfo.latin_name) {
@@ -186,35 +187,35 @@ export class CronJobService {
 
       return memberInfo as MemberInfo;
     } catch (error) {
-      console.error('Error extracting member info:', error);
+      console.error('Error extracting member info from sheet row:', error);
       return null;
     }
   }
 
-  private async addMemberToSheet(memberInfo: MemberInfo, sheetConfig: any): Promise<void> {
-    // Get current sheet data
-    const data = await this.googleService.getSheetData(sheetConfig.google_sheet_id, 'A:Z');
+  private async addMemberToMemberSheet(memberInfo: MemberInfo, memberSheetConfig: any): Promise<void> {
+    // Get current member sheet data
+    const data = await this.googleService.getSheetData(memberSheetConfig.google_sheet_id, 'A:Z');
     
     if (data.length === 0) {
-      // If sheet is empty, create headers
-      const headers = Object.keys(sheetConfig.corresponding_values);
+      // If member sheet is empty, create headers
+      const headers = Object.keys(memberSheetConfig.corresponding_values);
       const memberRow = headers.map(header => {
-        const memberField = sheetConfig.corresponding_values[header];
+        const memberField = memberSheetConfig.corresponding_values[header];
         return (memberInfo as any)[memberField] || '';
       });
       
       const newData = [headers, memberRow];
-      await this.googleService.updateSheetData(sheetConfig.google_sheet_id, 'A:Z', newData);
+      await this.googleService.updateSheetData(memberSheetConfig.google_sheet_id, 'A:Z', newData);
     } else {
-      // Add new row to existing data
+      // Add new row to existing member sheet data
       const headers = data[0];
       const memberRow = headers.map(header => {
-        const memberField = sheetConfig.corresponding_values[header];
+        const memberField = memberSheetConfig.corresponding_values[header];
         return (memberInfo as any)[memberField] || '';
       });
       
       const newData = [...data, memberRow];
-      await this.googleService.updateSheetData(sheetConfig.google_sheet_id, 'A:Z', newData);
+      await this.googleService.updateSheetData(memberSheetConfig.google_sheet_id, 'A:Z', newData);
     }
   }
 

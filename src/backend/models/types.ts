@@ -11,18 +11,18 @@ export interface PasswordResetRequest {
 
 export interface GoogleForm {
   id: string;
-  google_form_id: string;
+  google_form_id: string; // Now stores the Google Sheet ID that contains form responses
   created_at: string;
   updated_at: string;
-  corresponding_values: Record<string, string>; // Dict<string, string>
+  corresponding_values: Record<string, string>; // Maps form sheet columns to member fields
 }
 
 export interface GoogleSheet {
   id: string;
-  google_sheet_id: string;
+  google_sheet_id: string; // Member database sheet where processed members are stored
   created_at: string;
   updated_at: string;
-  corresponding_values: Record<string, string>; // Dict<string, string>
+  corresponding_values: Record<string, string>; // Maps member sheet columns to member fields
 }
 
 export interface Log {
