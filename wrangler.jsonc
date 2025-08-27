@@ -8,14 +8,26 @@
     {
       "binding": "DB",
       "database_name": "membership-app-db",
-      "database_id": "your-d1-database-id-here" // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      "database_id": "your-d1-database-id-here" // Replace with your actual D1 database ID
     }
   ],
-  "triggers": { // Cron Triggers 
+  "triggers": { // Cron Triggers - runs every 5 minutes
     "crons": ["*/5 * * * *"]
   },
   "observability": { // Enable Workers Logs
     "enabled": true,
     "head_sampling_rate": 1
+  },
+  "vars": {
+    // Environment variables will be set via `wrangler secret put` command
+    // ADMIN_PASSWORD
+    // GOOGLE_API_KEY  
+    // MOODLE_API_URL
+    // MOODLE_API_TOKEN
+    // SMTP_HOST
+    // SMTP_PORT
+    // SMTP_USER
+    // SMTP_PASS
+    // JWT_SECRET
   }
 }

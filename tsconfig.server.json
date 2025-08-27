@@ -6,12 +6,14 @@
     "strict": true,
     "skipLibCheck": true,
     "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable"
+      "ESNext"
     ],
-    "types": ["vite/client"],
     "jsx": "react-jsx",
-    "jsxImportSource": "react"
-  }
+    "jsxImportSource": "hono/jsx"
+  },
+  "include": [
+    "src/backendMain.tsx",
+    "src/frontendMain.tsx",
+    "src/backend/**/*"
+  ]
 }
