@@ -26,7 +26,7 @@ export function Admin({ onNavigate }: AdminProps) {
 
   return (
     <Layout title="Admin Panel">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-full mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Administration Dashboard</h2>

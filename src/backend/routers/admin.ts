@@ -327,6 +327,16 @@ try {
   
   const columns = data[0].filter(col => col && col.trim() !== ''); // Filter out empty columns
   
+  // Add column letters (A, B, C, etc.) to the response
+  const columnsWithLetters = columns.map((columnName, index) => {
+    const columnLetter = String.fromCharCode(65 + index); // A=65, B=66, etc.
+    return {
+      letter: columnLetter,
+      name: columnName,
+      index: index
+    };
+  });
+  
   await db.createLog({
     user: 'admin',
     action: 'lookup_sheet_columns',
@@ -335,7 +345,7 @@ try {
   
   return c.json({ 
     success: true, 
-    columns,
+    columns: columnsWithLetters,
     message: `Found ${columns.length} columns in the sheet`
   });
 } catch (error) {

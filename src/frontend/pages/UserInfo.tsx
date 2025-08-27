@@ -131,7 +131,7 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
 
   return (
     <Layout title="Member Information">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Welcome, {memberInfo.latin_name}</h2>

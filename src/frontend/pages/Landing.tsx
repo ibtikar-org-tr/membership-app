@@ -10,7 +10,7 @@ interface LandingProps {
 export function Landing({ onNavigate }: LandingProps) {
   return (
     <Layout title="Membership App">
-      <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+      <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         <Card title="Member Login">
           <div className="text-center">
             <p className="text-gray-600 mb-4">
