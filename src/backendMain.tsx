@@ -13,13 +13,17 @@ app.route('/api/auth', authRouter)
 app.route('/api/admin', adminRouter)
 app.route('/api/member', memberRouter)
 
-// Frontend Routes
-app.get('/', renderer)
+// Frontend Routes - serve React app for all frontend routes
+const frontendRoutes = ['/', '/login', '/forgot-password', '/reset-password', '/user-info', '/admin'];
+
+frontendRoutes.forEach(route => {
+  app.get(route, renderer);
+});
 
 // Catch-all route for client-side routing
 app.get('*', (c) => {
   const path = c.req.path
-  // Only handle non-API routes
+  // Only handle non-API routes - serve React app
   if (!path.startsWith('/api/')) {
     return renderer(c, () => {})
   }

@@ -3,6 +3,7 @@ import { Layout } from '../components/Layout';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { clearAuthState } from '../utils/auth';
 
 interface MemberInfo {
   membership_number: string;
@@ -142,7 +143,10 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
               {editMode ? 'Cancel' : 'Edit Information'}
             </Button>
             <Button
-              onClick={() => onNavigate('landing')}
+              onClick={() => {
+                clearAuthState();
+                onNavigate('landing');
+              }}
               variant="secondary"
             >
               Logout

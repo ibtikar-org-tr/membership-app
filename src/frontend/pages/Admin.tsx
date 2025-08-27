@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { AdminConfig } from './admin/AdminConfig';
 import { MemberManagement } from './admin/MemberManagement';
 import { ApplicationLogs } from './admin/ApplicationLogs';
+import { clearAuthState } from '../utils/auth';
 
 interface AdminProps {
   onNavigate: (page: string) => void;
@@ -30,7 +31,10 @@ export function Admin({ onNavigate }: AdminProps) {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Administration Dashboard</h2>
           <Button
-            onClick={() => onNavigate('landing')}
+            onClick={() => {
+              clearAuthState();
+              onNavigate('landing');
+            }}
             variant="secondary"
           >
             Logout

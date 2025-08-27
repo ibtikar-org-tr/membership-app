@@ -3,6 +3,7 @@ import { Layout } from '../components/Layout';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { saveAuthState } from '../utils/auth';
 
 interface LoginProps {
   onNavigate: (page: string, data?: any) => void;
@@ -34,6 +35,13 @@ export function Login({ onNavigate }: LoginProps) {
       const data = await response.json();
 
       if (data.success) {
+        // Save authentication state
+        saveAuthState({
+          isLoggedIn: true,
+          userType: data.userType,
+          memberInfo: data.memberInfo
+        });
+
         if (data.userType === 'admin') {
           onNavigate('admin');
         } else {
