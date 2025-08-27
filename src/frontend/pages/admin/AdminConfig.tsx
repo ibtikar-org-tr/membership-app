@@ -191,7 +191,7 @@ export function AdminConfig({ setSuccess, setError }: AdminConfigProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sheetId: formSheetConfig.google_form_sheet_id
+          google_sheet_id: formSheetConfig.google_form_sheet_id
         }),
       });
 
