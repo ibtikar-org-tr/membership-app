@@ -1,5 +1,5 @@
 import { MemberInfo } from '../models/types';
-
+import { WorkerMailer } from 'worker-mailer';
 export interface EmailConfig {
   host: string;
   port: number;
@@ -11,23 +11,29 @@ export class EmailService {
   constructor(private config: EmailConfig) {}
 
   async sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
-    // Using worker-mailer to send emails
-    const { sendMail } = await import('worker-mailer');
-    
+    // Send email using worker-mailer
     try {
-      await sendMail({
+      const mailer = await WorkerMailer.connect({
+        host: this.config.host,
+        port: this.config.port,
+        secure: false, // You may want to add 'secure' to EmailConfig if needed
+        startTls: true, // or false depending on your config
+        credentials: {
+          username: this.config.user,
+          password: this.config.pass,
+        },
+        authType: 'plain',
+      });
+
+      await mailer.send({
+        from: this.config.user,
         to,
         subject,
         text,
         html: html || text,
-        from: this.config.user,
-        smtp: {
-          host: this.config.host,
-          port: this.config.port,
-          username: this.config.user,
-          password: this.config.pass,
-        },
       });
+
+      await mailer.close();
     } catch (error) {
       console.error('Failed to send email:', error);
       throw new Error('Failed to send email');
