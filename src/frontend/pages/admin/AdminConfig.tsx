@@ -33,7 +33,7 @@ export function AdminConfig({ setSuccess, setError }: AdminConfigProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const [isLookingUpSheet, setIsLookingUpSheet] = useState(false);
-  const [sheetColumns, setSheetColumns] = useState<string[]>([]);
+  const [sheetColumns, setSheetColumns] = useState<Array<{letter: string, name: string, index: number}>>([]);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showDebug, setShowDebug] = useState(false);
 
@@ -148,14 +148,19 @@ export function AdminConfig({ setSuccess, setError }: AdminConfigProps) {
 
       if (data.success) {
         setSheetColumns(data.columns);
-        // Auto-populate the mapping with discovered columns
-        const autoMapping: Record<string, string> = {};
-        data.columns.forEach((column: string) => {
-          autoMapping[column] = '';
+        
+        // Preserve existing mappings and only add new columns
+        const existingMappings = { ...sheetConfig.corresponding_values };
+        const newMapping: Record<string, string> = {};
+        
+        data.columns.forEach((column: {letter: string, name: string, index: number}) => {
+          // Use existing mapping if it exists, otherwise empty string
+          newMapping[column.name] = existingMappings[column.name] || '';
         });
+        
         setSheetConfig({
           ...sheetConfig,
-          corresponding_values: autoMapping
+          corresponding_values: newMapping
         });
         setSuccess(`Found ${data.columns.length} columns in the sheet`);
       } else {
@@ -387,30 +392,38 @@ export function AdminConfig({ setSuccess, setError }: AdminConfigProps) {
                   <div>Member Field</div>
                   <div>Action</div>
                 </div>
-                {Object.entries(sheetConfig.corresponding_values).map(([sheetColumn, memberField], index) => (
-                  <div key={index} className="grid grid-cols-3 gap-2 items-center">
-                    <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm">
-                      {sheetColumn}
+                {sheetColumns.map((column, index) => {
+                  const memberField = sheetConfig.corresponding_values[column.name] || '';
+                  return (
+                    <div key={column.name} className="grid grid-cols-3 gap-2 items-center">
+                      <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-blue-600 bg-blue-100 px-1 rounded text-xs">
+                            {column.letter}
+                          </span>
+                          <span className="text-gray-800">{column.name}</span>
+                        </div>
+                      </div>
+                      <select
+                        value={memberField}
+                        onChange={(e) => updateSheetMapping(column.name, column.name, e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      >
+                        <option value="">Select Member Field</option>
+                        {memberFields.map(field => (
+                          <option key={field} value={field}>{field}</option>
+                        ))}
+                      </select>
+                      <Button
+                        onClick={() => removeSheetMapping(column.name)}
+                        variant="danger"
+                        size="sm"
+                      >
+                        Remove
+                      </Button>
                     </div>
-                    <select
-                      value={memberField}
-                      onChange={(e) => updateSheetMapping(sheetColumn, sheetColumn, e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    >
-                      <option value="">Select Member Field</option>
-                      {memberFields.map(field => (
-                        <option key={field} value={field}>{field}</option>
-                      ))}
-                    </select>
-                    <Button
-                      onClick={() => removeSheetMapping(sheetColumn)}
-                      variant="danger"
-                      size="sm"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               // Manual mapping interface (fallback)
@@ -483,7 +496,18 @@ export function AdminConfig({ setSuccess, setError }: AdminConfigProps) {
                 <div className="bg-gray-50 p-3 rounded">
                   <p><strong>Sheet ID:</strong> {debugInfo.sheetId}</p>
                   <p><strong>Total Rows:</strong> {debugInfo.totalRows}</p>
-                  <p><strong>Headers Found:</strong> {debugInfo.headers?.join(', ')}</p>
+                  <p><strong>Headers Found:</strong></p>
+                  <div className="text-xs mt-1">
+                    {debugInfo.headers?.map((header: string, index: number) => {
+                      const letter = String.fromCharCode(65 + index);
+                      return (
+                        <span key={index} className="inline-block mr-3 mb-1">
+                          <span className="font-mono text-blue-600 bg-blue-100 px-1 rounded mr-1">{letter}</span>
+                          <span>{header}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
