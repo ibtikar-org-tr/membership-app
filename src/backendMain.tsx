@@ -9,4 +9,7 @@ app.get('/', (c) => {
   return c.render(<h1>Hello!</h1>)
 })
 
-export default app
+export default {
+  fetch: app.fetch,
+  // scheduled: handleCronJob
+};
