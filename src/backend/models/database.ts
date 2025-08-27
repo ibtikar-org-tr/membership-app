@@ -1,4 +1,4 @@
-import { PasswordResetRequest, GoogleForm, GoogleSheet, Log } from './types';
+import { PasswordResetRequest, GoogleFormSheet, GoogleSheet, Log } from './types';
 
 export class Database {
   constructor(private db: D1Database) {}
@@ -50,11 +50,11 @@ export class Database {
   }
 
   // Google Form operations
-  async createOrUpdateGoogleForm(formData: Omit<GoogleForm, 'id' | 'created_at' | 'updated_at'>): Promise<GoogleForm> {
+  async createOrUpdateGoogleFormSheet(formData: Omit<GoogleFormSheet, 'id' | 'created_at' | 'updated_at'>): Promise<GoogleFormSheet> {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     
-    const form: GoogleForm = {
+    const formSheet: GoogleFormSheet = {
       ...formData,
       id,
       created_at: now,
@@ -62,29 +62,32 @@ export class Database {
     };
 
     await this.db.prepare(`
-      INSERT OR REPLACE INTO google_form (id, google_form_id, created_at, updated_at, corresponding_values)
+      INSERT OR REPLACE INTO google_form_sheet (id, google_form_sheet_id, created_at, updated_at, corresponding_values)
       VALUES (?1, ?2, ?3, ?4, ?5)
     `).bind(
-      form.id,
-      form.google_form_id,
-      form.created_at,
-      form.updated_at,
-      JSON.stringify(form.corresponding_values)
+      formSheet.id,
+      formSheet.google_form_sheet_id,
+      formSheet.created_at,
+      formSheet.updated_at,
+      JSON.stringify(formSheet.corresponding_values)
     ).run();
 
-    return form;
+    return formSheet;
   }
 
-  async getGoogleForm(): Promise<GoogleForm | null> {
+  async getGoogleFormSheet(): Promise<GoogleFormSheet | null> {
     const result = await this.db.prepare(`
-      SELECT * FROM google_form ORDER BY created_at DESC LIMIT 1
+      SELECT * FROM google_form_sheet ORDER BY created_at DESC LIMIT 1
     `).first();
     
     if (result) {
       return {
-        ...result,
+        id: result.id,
+        google_form_sheet_id: result.google_form_sheet_id, // Map database column to TypeScript property
+        created_at: result.created_at,
+        updated_at: result.updated_at,
         corresponding_values: JSON.parse(result.corresponding_values as string)
-      } as GoogleForm;
+      } as GoogleFormSheet;
     }
     
     return null;

@@ -9,9 +9,9 @@ export interface PasswordResetRequest {
   token: string;
 }
 
-export interface GoogleForm {
+export interface GoogleFormSheet {
   id: string;
-  google_form_id: string; // Now stores the Google Sheet ID that contains form responses
+  google_form_sheet_id: string; // Now stores the Google Sheet ID that contains form responses
   created_at: string;
   updated_at: string;
   corresponding_values: Record<string, string>; // Maps form sheet columns to member fields

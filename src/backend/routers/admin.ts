@@ -18,13 +18,13 @@ adminRouter.get('/config', async (c) => {
   try {
     const db = new Database(c.env.DB);
     
-    const googleForm = await db.getGoogleForm();
+    const googleFormSheet = await db.getGoogleFormSheet();
     const googleSheet = await db.getGoogleSheet();
     
     return c.json({
       success: true,
       config: {
-        googleForm,
+        googleForm: googleFormSheet,
         googleSheet
       }
     });
@@ -34,21 +34,21 @@ adminRouter.get('/config', async (c) => {
   }
 });
 
-adminRouter.post('/config/google-form', async (c) => {
+adminRouter.post('/config/google-form-sheet', async (c) => {
   try {
-    const formData = await c.req.json<{ google_form_id: string; corresponding_values: Record<string, string> }>();
+    const formData = await c.req.json<{ google_form_sheet_id: string; corresponding_values: Record<string, string> }>();
     
     const db = new Database(c.env.DB);
     
-    const googleForm = await db.createOrUpdateGoogleForm(formData);
+    const googleFormSheet = await db.createOrUpdateGoogleFormSheet(formData);
     
     await db.createLog({
       user: 'admin',
-      action: 'update_google_form_config',
+      action: 'update_google_form_sheet_config',
       status: 'success'
     });
     
-    return c.json({ success: true, googleForm });
+    return c.json({ success: true, googleFormSheet });
   } catch (error) {
     console.error('Update Google Form config error:', error);
     return c.json({ success: false, error: 'Internal server error' }, 500);

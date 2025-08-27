@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS password_reset_request (
     token TEXT NOT NULL
 );
 
--- Create google_form table
-CREATE TABLE IF NOT EXISTS google_form (
+-- Create google_form_sheet table
+CREATE TABLE IF NOT EXISTS google_form_sheet (
     id TEXT PRIMARY KEY,
-    google_form_id TEXT NOT NULL UNIQUE,
+    google_form_sheet_id TEXT NOT NULL UNIQUE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     corresponding_values TEXT NOT NULL -- JSON string for Dict<string, string>

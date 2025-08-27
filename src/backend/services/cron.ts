@@ -35,7 +35,7 @@ export class CronJobService {
       console.log('Starting cron job: Processing new registrations');
       
       // Get Google Form Sheet and Member Sheet configurations
-      const formSheetConfig = await this.db.getGoogleForm(); // Now represents form sheet config
+      const formSheetConfig = await this.db.getGoogleFormSheet(); // Now represents form sheet config
       const memberSheetConfig = await this.db.getGoogleSheet(); // Member sheet config
       
       if (!formSheetConfig || !memberSheetConfig) {
@@ -49,7 +49,7 @@ export class CronJobService {
       }
 
       // Get form sheet data (responses from Google Form)
-      const formSheetData = await this.googleService.getSheetData(formSheetConfig.google_form_id, 'A:Z');
+      const formSheetData = await this.googleService.getSheetData(formSheetConfig.google_form_sheet_id, 'A:Z');
       
       if (formSheetData.length <= 1) {
         console.log('No form responses found in sheet');
