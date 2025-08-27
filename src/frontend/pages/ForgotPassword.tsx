@@ -149,14 +149,14 @@ export function ForgotPassword({ onNavigate }: ForgotPasswordProps) {
                   {isLoading ? 'Sending Request...' : 'Send Reset Link'}
                 </Button>
 
-                <Button
+                {/* <Button
                   type="button"
                   variant="secondary"
                   onClick={() => onNavigate('login')}
                   className="w-full"
                 >
                   Back to Login
-                </Button>
+                </Button> */}
 
                 <Button
                   type="button"

@@ -87,11 +87,11 @@ export function Login({ onNavigate }: LoginProps) {
               </div>
             )}
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 items-center">
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full"
+                className="w-full hover:cursor-pointer"
               >
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
@@ -100,19 +100,18 @@ export function Login({ onNavigate }: LoginProps) {
                 type="button"
                 variant="secondary"
                 onClick={() => onNavigate('forgot')}
-                className="w-full"
+                className="w-1/2 hover:cursor-pointer"
               >
                 Forgot Password?
               </Button>
 
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => onNavigate('landing')}
-                className="w-full"
+              <button
+              type="button"
+              onClick={() => onNavigate('landing')}
+              className="w-full hover:cursor-pointer text-gray-600 hover:text-gray-800 bg-transparent border-none"
               >
-                Back to Home
-              </Button>
+              Back to Home
+              </button>
             </div>
           </form>
         </Card>
