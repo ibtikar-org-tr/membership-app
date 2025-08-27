@@ -295,10 +295,123 @@ adminRouter.get('/logs', async (c) => {
     
     const logs = await db.getLogs(limit, offset);
     
-    return c.json({ success: true, logs });
+      return c.json({ success: true, logs });
+} catch (error) {
+  console.error('Get logs error:', error);
+  return c.json({ success: false, error: 'Internal server error' }, 500);
+}
+});
+
+// Lookup Sheet Columns
+adminRouter.post('/lookup-sheet-columns', async (c) => {
+try {
+  const { google_sheet_id } = await c.req.json<{ google_sheet_id: string }>();
+  
+  if (!google_sheet_id) {
+    return c.json({ success: false, error: 'Google Sheet ID is required' }, 400);
+  }
+
+  const db = new Database(c.env.DB);
+
+  // Create Google API service
+  const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+  const googleService = new GoogleAPIService(googleCredentials);
+  
+  // Get the first row (headers) from the sheet
+  const range = '1:1'; // First row only
+  const data = await googleService.getSheetData(google_sheet_id, range);
+  
+  if (data.length === 0 || !data[0]) {
+    return c.json({ success: false, error: 'No data found in sheet or sheet is empty' }, 404);
+  }
+  
+  const columns = data[0].filter(col => col && col.trim() !== ''); // Filter out empty columns
+  
+  await db.createLog({
+    user: 'admin',
+    action: 'lookup_sheet_columns',
+    status: 'success'
+  });
+  
+  return c.json({ 
+    success: true, 
+    columns,
+    message: `Found ${columns.length} columns in the sheet`
+  });
+} catch (error) {
+  console.error('Lookup sheet columns error:', error);
+  
+  const db = new Database(c.env.DB);
+  await db.createLog({
+    user: 'admin',
+    action: 'lookup_sheet_columns',
+    status: 'failed'
+  });
+  
+  return c.json({ success: false, error: 'Failed to lookup sheet columns. Please check the Sheet ID and permissions.' }, 500);
+}
+});
+
+// Debug Members - Test current mappings
+adminRouter.get('/debug-members', async (c) => {
+  try {
+    const db = new Database(c.env.DB);
+    
+    // Get Google Sheet configuration
+    const sheetConfig = await db.getGoogleSheet();
+    if (!sheetConfig) {
+      return c.json({ success: false, error: 'Google Sheet configuration not found' }, 400);
+    }
+
+    // Create Google API service
+    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleService = new GoogleAPIService(googleCredentials);
+    
+    // Get raw data from Google Sheets
+    const range = 'A:Z'; // Get all data
+    const rawData = await googleService.getSheetData(sheetConfig.google_sheet_id, range);
+    
+    if (rawData.length === 0) {
+      return c.json({ success: true, debug: { rawData: [], headers: [], mappings: sheetConfig.corresponding_values, members: [] } });
+    }
+    
+    const headers = rawData[0];
+    const rows = rawData.slice(1);
+    
+    // Process members with current mapping
+    const members = rows.map((row, index) => {
+      const member: any = { _rowIndex: index + 2 }; // +2 because headers are row 1, data starts at row 2
+      headers.forEach((header, headerIndex) => {
+        const memberField = sheetConfig.corresponding_values[header];
+        if (memberField && row[headerIndex]) {
+          member[memberField] = row[headerIndex];
+        }
+        // Also include raw data for debugging
+        member[`_raw_${header}`] = row[headerIndex];
+      });
+      return member;
+    });
+    
+    await db.createLog({
+      user: 'admin',
+      action: 'debug_members',
+      status: 'success'
+    });
+    
+    return c.json({ 
+      success: true, 
+      debug: {
+        sheetId: sheetConfig.google_sheet_id,
+        headers,
+        mappings: sheetConfig.corresponding_values,
+        totalRows: rows.length,
+        sampleRawData: rawData.slice(0, 3), // First 3 rows for debugging
+        processedMembers: members.slice(0, 5) // First 5 processed members
+      }
+    });
   } catch (error) {
-    console.error('Get logs error:', error);
-    return c.json({ success: false, error: 'Internal server error' }, 500);
+    console.error('Debug members error:', error);
+    return c.json({ success: false, error: 'Internal server error', details: error.message }, 500);
   }
 });
 

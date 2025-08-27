@@ -32,6 +32,10 @@ export function AdminConfig({ setSuccess, setError }: AdminConfigProps) {
   
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
+  const [isLookingUpSheet, setIsLookingUpSheet] = useState(false);
+  const [sheetColumns, setSheetColumns] = useState<string[]>([]);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
   // Predefined member fields for mapping
   const memberFields = [
@@ -117,6 +121,68 @@ export function AdminConfig({ setSuccess, setError }: AdminConfigProps) {
       setError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const lookupSheetColumns = async () => {
+    if (!sheetConfig.google_sheet_id) {
+      setError('Please enter a Google Sheet ID first');
+      return;
+    }
+
+    setIsLookingUpSheet(true);
+    setError('');
+
+    try {
+      const response = await fetch(`/api/admin/lookup-sheet-columns`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          google_sheet_id: sheetConfig.google_sheet_id
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSheetColumns(data.columns);
+        // Auto-populate the mapping with discovered columns
+        const autoMapping: Record<string, string> = {};
+        data.columns.forEach((column: string) => {
+          autoMapping[column] = '';
+        });
+        setSheetConfig({
+          ...sheetConfig,
+          corresponding_values: autoMapping
+        });
+        setSuccess(`Found ${data.columns.length} columns in the sheet`);
+      } else {
+        setError(data.error || 'Failed to lookup sheet columns');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLookingUpSheet(false);
+    }
+  };
+
+  const debugCurrentMappings = async () => {
+    try {
+      setError('');
+      const response = await fetch('/api/admin/debug-members');
+      const data = await response.json();
+
+      if (data.success) {
+        setDebugInfo(data.debug);
+        setShowDebug(true);
+        setSuccess('Debug information loaded successfully');
+      } else {
+        setError(data.error || 'Failed to load debug information');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
     }
   };
 
@@ -265,68 +331,195 @@ export function AdminConfig({ setSuccess, setError }: AdminConfigProps) {
       {/* Google Sheet Configuration */}
       <Card title="Google Sheet Configuration">
         <div className="space-y-4">
-          <Input
-            label="Google Sheet ID"
-            value={sheetConfig.google_sheet_id}
-            onChange={(value) => setSheetConfig({...sheetConfig, google_sheet_id: value})}
-            placeholder="Enter Google Sheet ID"
-          />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                label="Google Sheet ID"
+                value={sheetConfig.google_sheet_id}
+                onChange={(value) => setSheetConfig({...sheetConfig, google_sheet_id: value})}
+                placeholder="Enter Google Sheet ID"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={lookupSheetColumns}
+                disabled={isLookingUpSheet || !sheetConfig.google_sheet_id}
+                variant="secondary"
+                size="md"
+              >
+                {isLookingUpSheet ? 'Looking up...' : 'Lookup Columns'}
+              </Button>
+            </div>
+          </div>
+
+          {sheetColumns.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-900 mb-2">
+                Found {sheetColumns.length} columns in your sheet
+              </h4>
+              <p className="text-xs text-blue-700">
+                Map each sheet column to the corresponding member field below.
+              </p>
+            </div>
+          )}
 
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-sm font-medium text-gray-700">
                 Sheet Column Mappings
               </label>
-              <Button
-                onClick={addSheetMapping}
-                size="sm"
-                variant="secondary"
-              >
-                Add Mapping
-              </Button>
+              {sheetColumns.length === 0 && (
+                <Button
+                  onClick={addSheetMapping}
+                  size="sm"
+                  variant="secondary"
+                >
+                  Add Manual Mapping
+                </Button>
+              )}
             </div>
             
-            <div className="space-y-2">
-              {Object.entries(sheetConfig.corresponding_values).map(([sheetColumn, memberField], index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Sheet Column Header"
-                    value={sheetColumn}
-                    onChange={(e) => updateSheetMapping(sheetColumn, e.target.value, memberField)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                  <select
-                    value={memberField}
-                    onChange={(e) => updateSheetMapping(sheetColumn, sheetColumn, e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="">Select Member Field</option>
-                    {memberFields.map(field => (
-                      <option key={field} value={field}>{field}</option>
-                    ))}
-                  </select>
-                  <Button
-                    onClick={() => removeSheetMapping(sheetColumn)}
-                    variant="danger"
-                    size="sm"
-                  >
-                    Remove
-                  </Button>
+            {sheetColumns.length > 0 ? (
+              // Display discovered columns with mapping dropdowns
+              <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-2 text-xs font-medium text-gray-500 mb-2">
+                  <div>Sheet Column</div>
+                  <div>Member Field</div>
+                  <div>Action</div>
                 </div>
-              ))}
-            </div>
+                {Object.entries(sheetConfig.corresponding_values).map(([sheetColumn, memberField], index) => (
+                  <div key={index} className="grid grid-cols-3 gap-2 items-center">
+                    <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm">
+                      {sheetColumn}
+                    </div>
+                    <select
+                      value={memberField}
+                      onChange={(e) => updateSheetMapping(sheetColumn, sheetColumn, e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value="">Select Member Field</option>
+                      {memberFields.map(field => (
+                        <option key={field} value={field}>{field}</option>
+                      ))}
+                    </select>
+                    <Button
+                      onClick={() => removeSheetMapping(sheetColumn)}
+                      variant="danger"
+                      size="sm"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Manual mapping interface (fallback)
+              <div className="space-y-2">
+                {Object.entries(sheetConfig.corresponding_values).map(([sheetColumn, memberField], index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Sheet Column Header"
+                      value={sheetColumn}
+                      onChange={(e) => updateSheetMapping(sheetColumn, e.target.value, memberField)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                    />
+                    <select
+                      value={memberField}
+                      onChange={(e) => updateSheetMapping(sheetColumn, sheetColumn, e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="">Select Member Field</option>
+                      {memberFields.map(field => (
+                        <option key={field} value={field}>{field}</option>
+                      ))}
+                    </select>
+                    <Button
+                      onClick={() => removeSheetMapping(sheetColumn)}
+                      variant="danger"
+                      size="sm"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <Button
-            onClick={updateSheetConfig}
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? 'Updating...' : 'Update Sheet Configuration'}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={updateSheetConfig}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              {isLoading ? 'Updating...' : 'Update Sheet Configuration'}
+            </Button>
+            <Button
+              onClick={debugCurrentMappings}
+              variant="secondary"
+              disabled={!sheetConfig.google_sheet_id}
+            >
+              Debug Mappings
+            </Button>
+          </div>
         </div>
       </Card>
+
+      {/* Debug Information */}
+      {showDebug && debugInfo && (
+        <Card title="Debug Information">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="font-medium">Current Mapping Debug</h4>
+              <Button onClick={() => setShowDebug(false)} variant="secondary" size="sm">
+                Close Debug
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
+              <div>
+                <h5 className="font-medium mb-2">Sheet Information</h5>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p><strong>Sheet ID:</strong> {debugInfo.sheetId}</p>
+                  <p><strong>Total Rows:</strong> {debugInfo.totalRows}</p>
+                  <p><strong>Headers Found:</strong> {debugInfo.headers?.join(', ')}</p>
+                </div>
+              </div>
+
+              <div>
+                <h5 className="font-medium mb-2">Current Mappings</h5>
+                <div className="bg-gray-50 p-3 rounded max-h-40 overflow-y-auto">
+                  {Object.entries(debugInfo.mappings || {}).map(([sheet, member]) => (
+                    <div key={sheet} className="flex justify-between py-1">
+                      <span className="text-blue-600">{sheet}</span>
+                      <span className="text-green-600">{member || '(unmapped)'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h5 className="font-medium mb-2">Sample Raw Data</h5>
+              <div className="bg-gray-50 p-3 rounded overflow-x-auto">
+                <pre className="text-xs">
+                  {JSON.stringify(debugInfo.sampleRawData, null, 2)}
+                </pre>
+              </div>
+            </div>
+
+            <div>
+              <h5 className="font-medium mb-2">Sample Processed Members</h5>
+              <div className="bg-gray-50 p-3 rounded overflow-x-auto">
+                <pre className="text-xs">
+                  {JSON.stringify(debugInfo.processedMembers, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
