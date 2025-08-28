@@ -20,7 +20,9 @@ memberRouter.get('/:membershipNumber', async (c) => {
     }
 
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     // Find member in Google Sheets
@@ -65,7 +67,9 @@ memberRouter.put('/:membershipNumber', async (c) => {
     }
 
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     // Update member in Google Sheets
@@ -173,7 +177,9 @@ memberRouter.post('/:membershipNumber/change-password', async (c) => {
     }
 
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     // Find and verify current member

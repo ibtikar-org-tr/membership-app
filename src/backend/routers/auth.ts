@@ -15,7 +15,9 @@ authRouter.post('/login', async (c) => {
     const db = new Database(c.env.DB);
     
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     const authService = new AuthService(db, googleService, c.env.JWT_SECRET);
@@ -75,7 +77,9 @@ authRouter.post('/forgot-password', async (c) => {
     const db = new Database(c.env.DB);
     
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     const authService = new AuthService(db, googleService, c.env.JWT_SECRET);
@@ -160,7 +164,9 @@ authRouter.post('/reset-password', async (c) => {
     const db = new Database(c.env.DB);
     
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     const authService = new AuthService(db, googleService, c.env.JWT_SECRET);
@@ -215,7 +221,9 @@ authRouter.post('/reset-password', async (c) => {
 authRouter.post('/test-jwt', async (c) => {
   try {
     const db = new Database(c.env.DB);
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     const authService = new AuthService(db, googleService, c.env.JWT_SECRET);
     

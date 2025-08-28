@@ -24,7 +24,9 @@ export class CronJobService {
     
     let googleCredentials;
     try {
-      googleCredentials = JSON.parse(env.GOOGLE_API_KEY);
+      googleCredentials = typeof env.GOOGLE_API_KEY === 'string' 
+        ? JSON.parse(env.GOOGLE_API_KEY) 
+        : env.GOOGLE_API_KEY;
     } catch (error) {
       throw new Error('GOOGLE_API_KEY must be valid JSON: ' + error.message);
     }

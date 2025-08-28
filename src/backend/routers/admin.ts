@@ -88,7 +88,9 @@ adminRouter.get('/members', async (c) => {
     }
 
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     // Get all members from Google Sheets
@@ -134,7 +136,9 @@ adminRouter.put('/members/:membershipNumber', async (c) => {
     }
 
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     // Update member in Google Sheets
@@ -227,7 +231,9 @@ adminRouter.delete('/members/:membershipNumber', async (c) => {
     }
 
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     // Remove member from Google Sheets
@@ -314,9 +320,11 @@ try {
   const db = new Database(c.env.DB);
 
   // Create Google API service
-  const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+  const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+    ? JSON.parse(c.env.GOOGLE_API_KEY) 
+    : c.env.GOOGLE_API_KEY;
   const googleService = new GoogleAPIService(googleCredentials);
-  
+
   // Get the first row (headers) from the sheet
   const range = '1:1'; // First row only
   const data = await googleService.getSheetData(google_sheet_id, range);
@@ -374,7 +382,9 @@ adminRouter.get('/debug-members', async (c) => {
     }
 
     // Create Google API service
-    const googleCredentials = JSON.parse(c.env.GOOGLE_API_KEY);
+    const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string' 
+      ? JSON.parse(c.env.GOOGLE_API_KEY) 
+      : c.env.GOOGLE_API_KEY;
     const googleService = new GoogleAPIService(googleCredentials);
     
     // Get raw data from Google Sheets
