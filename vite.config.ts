@@ -13,5 +13,8 @@ export default defineConfig({
     tailwindcss(),
     ssrPlugin(),
     react()
-  ]
+  ],
+  build: {
+    manifest: true
+  }
 })
