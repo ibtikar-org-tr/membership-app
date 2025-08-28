@@ -36,6 +36,9 @@ lerna-debug.log*
 # google
 GOOGLE_API.json
 
+# cloudflare
+wrangler.local.*
+
 # temp
 *.md
 .*ignore
