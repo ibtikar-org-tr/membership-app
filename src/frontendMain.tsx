@@ -1,4 +1,4 @@
-export const renderer = (c: any, next?: any) => {
+export const renderer = (c: any) => {
   return c.html(`
     <!DOCTYPE html>
     <html>
