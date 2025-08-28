@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS google_form_sheet (
     google_form_sheet_id TEXT NOT NULL UNIQUE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    corresponding_values TEXT NOT NULL -- JSON string for Dict<string, string>
+    corresponding_values TEXT NOT NULL, -- JSON string for Dict<string, string>
+    auto_note_column TEXT -- Column letter for tracking processed responses (e.g., 'Z')
 );
 
 -- Create google_sheet table

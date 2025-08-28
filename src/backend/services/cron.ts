@@ -114,7 +114,23 @@ export class CronJobService {
       const formHeaders = formSheetData[0];
       const formRows = formSheetData.slice(1);
       
-      for (const formRow of formRows) {
+      // Get the auto-note column index if configured
+      let autoNoteColumnIndex = -1;
+      if (formSheetConfig.auto_note_column) {
+        autoNoteColumnIndex = formSheetConfig.auto_note_column.charCodeAt(0) - 65; // Convert A=0, B=1, etc.
+      }
+      
+      for (let rowIndex = 0; rowIndex < formRows.length; rowIndex++) {
+        const formRow = formRows[rowIndex];
+        const actualRowNumber = rowIndex + 2; // +2 because we skip header (row 1) and arrays are 0-indexed
+        
+        // Check if this row has already been processed (if auto-note column is configured)
+        if (autoNoteColumnIndex >= 0) {
+          const currentStatus = formRow[autoNoteColumnIndex] || '';
+          if (currentStatus.toLowerCase() === 'processed' || currentStatus.toLowerCase() === 'duplicate') {
+            continue; // Skip already processed rows
+          }
+        }
         try {
           // Extract member information from form sheet row
           const memberInfo = this.extractMemberInfoFromSheetRow(formRow, formHeaders, formSheetConfig.corresponding_values);
@@ -146,6 +162,11 @@ export class CronJobService {
             try {
               await this.emailService.sendDuplicateNotificationEmail(memberInfo, duplicateInfo, matchType);
               
+              // Mark this row as duplicate in the auto-note column (if configured)
+              if (autoNoteColumnIndex >= 0) {
+                await this.markRowAsProcessed(formSheetConfig.google_form_sheet_id, actualRowNumber, autoNoteColumnIndex, 'duplicate');
+              }
+              
               // Log duplicate status
               await this.db.createLog({
                 user: duplicateInfo.membership_number || 'unknown',
@@ -153,9 +174,9 @@ export class CronJobService {
                 status: 'duplicate'
               });
               
-              console.log(`Sent duplicate notification to: ${memberInfo.email}`);
+              console.log(`Sent duplicate notification to: ${memberInfo.email} and marked as duplicate`);
             } catch (error) {
-              console.error(`Error sending duplicate notification:`, error);
+              console.error(`Error handling duplicate notification:`, error);
             }
             
             continue;
@@ -192,6 +213,11 @@ export class CronJobService {
             existingMembers.set(memberInfo.phone, memberInfo);
           }
 
+          // Mark this row as processed in the auto-note column (if configured)
+          if (autoNoteColumnIndex >= 0) {
+            await this.markRowAsProcessed(formSheetConfig.google_form_sheet_id, actualRowNumber, autoNoteColumnIndex, 'processed');
+          }
+
           // Log successful processing
           await this.db.createLog({
             user: memberInfo.membership_number,
@@ -200,7 +226,7 @@ export class CronJobService {
           });
 
           processedCount++;
-          console.log(`Processed new registration for: ${memberInfo.email}`);
+          console.log(`Processed new registration for: ${memberInfo.email} and marked as processed`);
           
         } catch (error) {
           console.error(`Error processing registration:`, error);
@@ -227,6 +253,19 @@ export class CronJobService {
         action: 'cron_process_registrations',
         status: 'failed'
       });
+    }
+  }
+
+  private async markRowAsProcessed(sheetId: string, rowNumber: number, columnIndex: number, status: string): Promise<void> {
+    try {
+      const columnLetter = String.fromCharCode(65 + columnIndex); // Convert 0=A, 1=B, etc.
+      const range = `${columnLetter}${rowNumber}`;
+      
+      await this.googleService.updateSheetData(sheetId, range, [[status]]);
+      console.log(`Marked row ${rowNumber} as ${status} in column ${columnLetter}`);
+    } catch (error) {
+      console.error(`Failed to mark row ${rowNumber} as ${status}:`, error);
+      throw error;
     }
   }
 

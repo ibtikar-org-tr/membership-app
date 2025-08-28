@@ -62,14 +62,15 @@ export class Database {
     };
 
     await this.db.prepare(`
-      INSERT OR REPLACE INTO google_form_sheet (id, google_form_sheet_id, created_at, updated_at, corresponding_values)
-      VALUES (?1, ?2, ?3, ?4, ?5)
+      INSERT OR REPLACE INTO google_form_sheet (id, google_form_sheet_id, created_at, updated_at, corresponding_values, auto_note_column)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6)
     `).bind(
       formSheet.id,
       formSheet.google_form_sheet_id,
       formSheet.created_at,
       formSheet.updated_at,
-      JSON.stringify(formSheet.corresponding_values)
+      JSON.stringify(formSheet.corresponding_values),
+      formSheet.auto_note_column || null
     ).run();
 
     return formSheet;
@@ -86,7 +87,8 @@ export class Database {
         google_form_sheet_id: result.google_form_sheet_id, // Map database column to TypeScript property
         created_at: result.created_at,
         updated_at: result.updated_at,
-        corresponding_values: JSON.parse(result.corresponding_values as string)
+        corresponding_values: JSON.parse(result.corresponding_values as string),
+        auto_note_column: result.auto_note_column as string || undefined
       } as GoogleFormSheet;
     }
     

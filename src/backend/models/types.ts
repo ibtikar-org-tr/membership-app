@@ -15,6 +15,7 @@ export interface GoogleFormSheet {
   created_at: string;
   updated_at: string;
   corresponding_values: Record<string, string>; // Maps form sheet columns to member fields
+  auto_note_column?: string; // Column letter (e.g., 'Z') for tracking processed responses
 }
 
 export interface GoogleSheet {
