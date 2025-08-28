@@ -190,4 +190,82 @@ Membership App Team
 
     await this.sendEmail(memberInfo.email, subject, text, html);
   }
+
+  async sendDuplicateNotificationEmail(newMemberInfo: MemberInfo, existingMemberInfo: MemberInfo): Promise<void> {
+    const subject = 'Registration Attempt - Account Already Exists';
+    
+    const text = `
+Dear ${newMemberInfo.latin_name || 'Member'},
+
+We received a new registration attempt with your information, but we found that you already have an account with us.
+
+Your existing account details:
+- Membership Number: ${existingMemberInfo.membership_number}
+- Email: ${existingMemberInfo.email}
+- Phone: ${existingMemberInfo.phone}
+- Registration Date: ${existingMemberInfo.created_at ? new Date(existingMemberInfo.created_at).toLocaleDateString() : 'N/A'}
+
+If you forgot your password, you can reset it using the "Forgot Password" feature on our login page.
+
+If you believe this is an error or if you need assistance, please contact us.
+
+Best regards,
+Membership App Team
+    `.trim();
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 5px; margin-bottom: 20px; }
+        .content { padding: 20px 0; }
+        .account-details { background-color: #e9f4ff; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; }
+        .warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Registration Attempt - Account Already Exists</h2>
+        </div>
+        <div class="content">
+            <p>Dear ${newMemberInfo.latin_name || 'Member'},</p>
+            
+            <div class="warning">
+                <strong>⚠️ Registration Attempt Detected</strong><br>
+                We received a new registration attempt with your information, but we found that you already have an account with us.
+            </div>
+            
+            <div class="account-details">
+                <h3>Your Existing Account Details:</h3>
+                <ul>
+                    <li><strong>Membership Number:</strong> ${existingMemberInfo.membership_number}</li>
+                    <li><strong>Email:</strong> ${existingMemberInfo.email}</li>
+                    <li><strong>Phone:</strong> ${existingMemberInfo.phone || 'N/A'}</li>
+                    <li><strong>Registration Date:</strong> ${existingMemberInfo.created_at ? new Date(existingMemberInfo.created_at).toLocaleDateString() : 'N/A'}</li>
+                </ul>
+            </div>
+            
+            <p><strong>Need to access your account?</strong></p>
+            <ul>
+                <li>If you forgot your password, you can reset it using the "Forgot Password" feature on our login page.</li>
+                <li>Your username is your email address or membership number.</li>
+            </ul>
+            
+            <p>If you believe this is an error or if you need assistance, please contact us.</p>
+        </div>
+        <div class="footer">
+            <p>Best regards,<br>Membership App Team</p>
+        </div>
+    </div>
+</body>
+</html>
+    `.trim();
+
+    await this.sendEmail(newMemberInfo.email, subject, text, html);
+  }
 }

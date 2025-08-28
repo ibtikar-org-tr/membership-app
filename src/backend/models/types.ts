@@ -86,4 +86,5 @@ export interface CloudflareBindings {
   SMTP_USER: string;
   SMTP_PASS: string;
   JWT_SECRET: string;
+  MEMBERSHIP_NUMBER_PREFIX: string;
 }

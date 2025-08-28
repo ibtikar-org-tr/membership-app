@@ -11,8 +11,10 @@ export class CronJobService {
   private moodleService: MoodleAPIService;
   private emailService: EmailService;
   private authService: AuthService;
+  private env: CloudflareBindings;
 
   constructor(env: CloudflareBindings) {
+    this.env = env;
     this.db = new Database(env.DB);
     
     const googleCredentials = JSON.parse(env.GOOGLE_API_KEY);
@@ -56,28 +58,34 @@ export class CronJobService {
         return;
       }
 
-      // Get existing members from member sheet to avoid duplicates
+      // Get existing members from member sheet to check for duplicates
       const memberSheetData = await this.googleService.getSheetData(memberSheetConfig.google_sheet_id, 'A:Z');
-      const processedEmails = new Set<string>();
+      const existingMembers = new Map<string, MemberInfo>(); // key: email or phone, value: member info
       
       if (memberSheetData.length > 1) {
         const memberHeaders = memberSheetData[0];
         const memberRows = memberSheetData.slice(1);
         
-        const emailColumnHeader = Object.keys(memberSheetConfig.corresponding_values).find(
-          key => memberSheetConfig.corresponding_values[key] === 'email'
-        );
-        
-        if (emailColumnHeader) {
-          const emailColumnIndex = memberHeaders.indexOf(emailColumnHeader);
-          if (emailColumnIndex !== -1) {
-            memberRows.forEach(row => {
-              if (row[emailColumnIndex]) {
-                processedEmails.add(row[emailColumnIndex]);
-              }
-            });
+        // Extract existing member information for duplicate checking
+        memberRows.forEach(row => {
+          const memberData: any = {};
+          
+          // Map sheet columns to member fields
+          memberHeaders.forEach((header, index) => {
+            const memberField = memberSheetConfig.corresponding_values[header];
+            if (memberField && row[index]) {
+              memberData[memberField] = row[index];
+            }
+          });
+          
+          // Store by email and phone for duplicate detection
+          if (memberData.email) {
+            existingMembers.set(memberData.email.toLowerCase(), memberData as MemberInfo);
           }
-        }
+          if (memberData.phone) {
+            existingMembers.set(memberData.phone, memberData as MemberInfo);
+          }
+        });
       }
 
       let processedCount = 0;
@@ -94,20 +102,43 @@ export class CronJobService {
             continue;
           }
 
-          // Check if member already exists
-          if (processedEmails.has(memberInfo.email)) {
-            console.log(`Member with email ${memberInfo.email} already processed, skipping`);
+          // Check for duplicates by email and phone
+          const emailKey = memberInfo.email?.toLowerCase();
+          const phoneKey = memberInfo.phone;
+          
+          let duplicateInfo: MemberInfo | null = null;
+          if (emailKey && existingMembers.has(emailKey)) {
+            duplicateInfo = existingMembers.get(emailKey)!;
+          } else if (phoneKey && existingMembers.has(phoneKey)) {
+            duplicateInfo = existingMembers.get(phoneKey)!;
+          }
+
+          if (duplicateInfo) {
+            console.log(`Duplicate member found - Email: ${memberInfo.email}, Phone: ${memberInfo.phone}`);
+            
+            // Send duplicate notification email
+            try {
+              await this.emailService.sendDuplicateNotificationEmail(memberInfo, duplicateInfo);
+              
+              // Log duplicate status
+              await this.db.createLog({
+                user: duplicateInfo.membership_number || 'unknown',
+                action: 'cron_duplicate_registration_detected',
+                status: 'duplicate'
+              });
+              
+              console.log(`Sent duplicate notification to: ${memberInfo.email}`);
+            } catch (error) {
+              console.error(`Error sending duplicate notification:`, error);
+            }
+            
             continue;
           }
 
-          // Generate temporary password
-          const temporaryPassword = this.authService.generateRandomPassword();
+          // Generate new membership number and password for new member
+          memberInfo.membership_number = await this.generateMembershipNumber();
+          const temporaryPassword = this.authService.generateRandomPassword(7);
           memberInfo.password = temporaryPassword;
-
-          // Generate membership number if not provided
-          if (!memberInfo.membership_number) {
-            memberInfo.membership_number = this.generateMembershipNumber();
-          }
 
           // Check if user already exists in Moodle
           const existingMoodleUser = await this.moodleService.getUserByEmail(memberInfo.email);
@@ -127,8 +158,13 @@ export class CronJobService {
           // Send welcome email
           await this.emailService.sendWelcomeEmail(memberInfo, temporaryPassword);
 
-          // Mark as processed to avoid future duplicates
-          processedEmails.add(memberInfo.email);
+          // Add to existing members map to avoid duplicates in this same run
+          if (memberInfo.email) {
+            existingMembers.set(memberInfo.email.toLowerCase(), memberInfo);
+          }
+          if (memberInfo.phone) {
+            existingMembers.set(memberInfo.phone, memberInfo);
+          }
 
           // Log successful processing
           await this.db.createLog({
@@ -219,11 +255,66 @@ export class CronJobService {
     }
   }
 
-  private generateMembershipNumber(): string {
-    // Generate a membership number based on current timestamp and random digits
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `M${timestamp}${random}`;
+  private async generateMembershipNumber(): Promise<string> {
+    // Get membership number prefix from environment
+    const prefix = this.env.MEMBERSHIP_NUMBER_PREFIX || '2501';
+    
+    // Get existing membership numbers to find the next sequential number
+    const memberSheetConfig = await this.db.getGoogleSheet();
+    if (!memberSheetConfig) {
+      // If no member sheet config, start with 001
+      return `${prefix}001`;
+    }
+
+    try {
+      const memberSheetData = await this.googleService.getSheetData(memberSheetConfig.google_sheet_id, 'A:Z');
+      
+      if (memberSheetData.length <= 1) {
+        // No existing members, start with 001
+        return `${prefix}001`;
+      }
+
+      const headers = memberSheetData[0];
+      const rows = memberSheetData.slice(1);
+      
+      // Find membership number column
+      const membershipColumnHeader = Object.keys(memberSheetConfig.corresponding_values).find(
+        key => memberSheetConfig.corresponding_values[key] === 'membership_number'
+      );
+      
+      if (!membershipColumnHeader) {
+        // If no membership column mapped, start with 001
+        return `${prefix}001`;
+      }
+
+      const membershipColumnIndex = headers.indexOf(membershipColumnHeader);
+      if (membershipColumnIndex === -1) {
+        return `${prefix}001`;
+      }
+
+      // Find the highest existing number with this prefix
+      let maxNumber = 0;
+      rows.forEach(row => {
+        const membershipNumber = row[membershipColumnIndex];
+        if (membershipNumber && membershipNumber.startsWith(prefix)) {
+          const numberPart = membershipNumber.substring(prefix.length);
+          const num = parseInt(numberPart, 10);
+          if (!isNaN(num) && num > maxNumber) {
+            maxNumber = num;
+          }
+        }
+      });
+
+      // Generate next number
+      const nextNumber = maxNumber + 1;
+      return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
+      
+    } catch (error) {
+      console.error('Error generating membership number:', error);
+      // Fallback to timestamp-based generation
+      const timestamp = Date.now().toString().slice(-6);
+      return `${prefix}${timestamp.slice(-3)}`;
+    }
   }
 
   async cleanupExpiredPasswordResets(): Promise<void> {
