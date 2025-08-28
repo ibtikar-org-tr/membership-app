@@ -1,4 +1,9 @@
 {
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.worker.json" }
+  ],
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
@@ -10,8 +15,6 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "types": ["vite/client"],
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "types": ["vite/client"]
   }
 }

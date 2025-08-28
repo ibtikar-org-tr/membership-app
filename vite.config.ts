@@ -1,12 +1,17 @@
 import { cloudflare } from '@cloudflare/vite-plugin'
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
+import ssrPlugin from "vite-ssr-components/plugin";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [
     cloudflare({
-      tsconfig: 'tsconfig.server.json'
+      experimental: { remoteBindings: true },
+      tsconfig: "tsconfig.worker.json"
     }),
-    tailwindcss()
+    tailwindcss(),
+    ssrPlugin(),
+    react()
   ]
 })

@@ -23,14 +23,21 @@ frontendRoutes.forEach(route => {
 // Catch-all route for client-side routing
 app.get('*', (c) => {
   const path = c.req.path
-  // Only handle non-API routes - serve React app
-  if (!path.startsWith('/api/')) {
-    return renderer(c, () => {})
+  // Only serve React app for non-API, non-asset routes
+  if (!path.startsWith('/api/') && 
+      !path.startsWith('/client/') && // Cloudflare static assets
+      !path.startsWith('/src/') && 
+      !path.startsWith('/node_modules/') &&
+      !path.startsWith('/@') && // Vite internal routes
+      (!path.includes('.') || path.endsWith('.html'))) {
+    return renderer(c)
   }
   return c.notFound()
 })
 
 export default {
   fetch: app.fetch,
-  scheduled: handleCronJob
+  scheduled: async (event: any, env: CloudflareBindings, ctx: any) => {
+    return await handleCronJob(env);
+  }
 };

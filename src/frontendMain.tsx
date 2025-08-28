@@ -6,7 +6,8 @@ export const renderer = (c: any, next?: any) => {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Membership App</title>
-        <script type="module" src="/src/frontend/client.tsx"></script>
+        <link rel="stylesheet" href="/client/assets/index-Dr_0aeVm.css">
+        <script type="module" src="/client/assets/index-Y1sGQUuW.js"></script>
       </head>
       <body>
         <div id="root"></div>
