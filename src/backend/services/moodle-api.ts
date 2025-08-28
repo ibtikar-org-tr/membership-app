@@ -11,6 +11,18 @@ export interface MoodleUser {
   country?: string;
   phone1?: string;
   phone2?: string;
+  // Additional fields from Moodle API
+  auth?: string;
+  createpassword?: number;
+  maildisplay?: number;
+  timezone?: string;
+  description?: string;
+  institution?: string;
+  department?: string;
+  address?: string;
+  lang?: string;
+  calendartype?: string;
+  idnumber?: string;
 }
 
 export class MoodleAPIService {
@@ -18,6 +30,72 @@ export class MoodleAPIService {
     private apiUrl: string,
     private token: string
   ) {}
+  
+  // Helper method to convert country names to ISO codes
+  private getCountryCode(countryName?: string): string {
+    const countryMap: Record<string, string> = {
+      'turkey': 'TR',
+      'türkiye': 'TR',
+      'syria': 'SY',
+      'saudi arabia': 'SA',
+      'united arab emirates': 'AE',
+      'qatar': 'QA',
+      'kuwait': 'KW',
+      'bahrain': 'BH',
+      'oman': 'OM',
+      'yemen': 'YE',
+      'palestine': 'PS',
+      'jordan': 'JO',
+      'lebanon': 'LB',
+      'iraq': 'IQ',
+      'united states': 'US',
+      'usa': 'US',
+      'united kingdom': 'GB',
+      'uk': 'GB',
+      'germany': 'DE',
+      'france': 'FR',
+      'spain': 'ES',
+      'italy': 'IT',
+      'canada': 'CA',
+      'australia': 'AU',
+      'japan': 'JP',
+      'china': 'CN',
+      'india': 'IN',
+      'brazil': 'BR',
+      'russia': 'RU',
+      'netherlands': 'NL',
+      'sweden': 'SE',
+      'norway': 'NO',
+      'denmark': 'DK',
+      'finland': 'FI',
+      'poland': 'PL',
+      'greece': 'GR',
+      'portugal': 'PT',
+      'belgium': 'BE',
+      'austria': 'AT',
+      'switzerland': 'CH',
+      'ireland': 'IE',
+      'czech republic': 'CZ',
+      'hungary': 'HU',
+      'slovakia': 'SK',
+      'slovenia': 'SI',
+      'croatia': 'HR',
+      'serbia': 'RS',
+      'romania': 'RO',
+      'bulgaria': 'BG',
+      'ukraine': 'UA',
+      'belarus': 'BY',
+      'lithuania': 'LT',
+      'latvia': 'LV',
+      'estonia': 'EE'
+    };
+
+    if (countryName === 'israel') return 'PS';
+    if (!countryName) return 'TR'; // Default fallback
+    
+    const normalizedName = countryName.toLowerCase().trim();
+    return countryMap[normalizedName] || 'TR'; // Default to TR if not found
+  }
 
   private async makeRequest(wsfunction: string, params: Record<string, any>): Promise<any> {
     const url = new URL(`${this.apiUrl}/webservice/rest/server.php`);
@@ -60,27 +138,70 @@ export class MoodleAPIService {
   }
 
   async createUser(memberInfo: MemberInfo): Promise<number> {
+    // Validate required fields
+    if (!memberInfo.membership_number) {
+      throw new Error('Membership number is required');
+    }
+    if (!memberInfo.email) {
+      throw new Error('Email is required');
+    }
+    if (!memberInfo.ar_name) {
+      throw new Error('Arabic name is required');
+    }
+    if (!memberInfo.latin_name) {
+      throw new Error('Latin name is required');
+    }
+    if (!memberInfo.password) {
+      throw new Error('Password is required');
+    }
+
     const moodleUser: MoodleUser = {
       username: memberInfo.membership_number,
       password: memberInfo.password,
-      firstname: memberInfo.latin_name.split(' ')[0] || memberInfo.latin_name,
-      lastname: memberInfo.latin_name.split(' ').slice(1).join(' ') || '',
+      firstname: memberInfo.ar_name,
+      lastname: memberInfo.latin_name,
       email: memberInfo.email,
-      city: memberInfo.city,
-      country: memberInfo.country,
-      phone1: memberInfo.phone,
-      phone2: memberInfo.whatsapp,
+      city: memberInfo.city || '',
+      country: this.getCountryCode(memberInfo.country), // Use ISO country code
+      phone1: memberInfo.phone || '',
+      phone2: memberInfo.whatsapp || '',
+      // Enhanced fields
+      auth: 'manual',
+      createpassword: 0, // Don't auto-generate password since we're providing one
+      maildisplay: 1, // Show email to everyone
+      timezone: '99', // Use server default
+      description: `Member since ${new Date().getFullYear()}. University: ${memberInfo.university || 'N/A'}, Major: ${memberInfo.major || 'N/A'}`,
+      institution: memberInfo.university || '',
+      department: memberInfo.major || '',
+      address: memberInfo.district ? `${memberInfo.district}, ${memberInfo.city}, ${memberInfo.country}` : `${memberInfo.city}, ${memberInfo.country}`,
+      lang: 'en',
+      calendartype: 'gregorian',
+      idnumber: memberInfo.membership_number, // Use membership number as ID number for easier lookup
     };
 
-    const result = await this.makeRequest('core_user_create_users', {
-      users: [moodleUser]
-    });
+    try {
+      const result = await this.makeRequest('core_user_create_users', {
+        users: [moodleUser]
+      });
 
-    if (result && result.length > 0) {
-      return result[0].id;
+      if (result && result.length > 0) {
+        return result[0].id;
+      }
+      
+      throw new Error('Failed to create user in Moodle - no user ID returned');
+    } catch (error: any) {
+      // Enhanced error handling
+      if (error.message.includes('Username already exists')) {
+        throw new Error(`Username '${memberInfo.membership_number}' already exists in Moodle`);
+      } else if (error.message.includes('Email already exists')) {
+        throw new Error(`Email '${memberInfo.email}' already exists in Moodle`);
+      } else if (error.message.includes('Invalid email')) {
+        throw new Error(`Invalid email format: '${memberInfo.email}'`);
+      } else if (error.message.includes('country')) {
+        throw new Error(`Invalid country: '${memberInfo.country}'. Please use a valid country name or 2-letter ISO code.`);
+      }
+      throw error;
     }
-    
-    throw new Error('Failed to create user in Moodle');
   }
 
   async getUserById(userId: number): Promise<MoodleUser | null> {
