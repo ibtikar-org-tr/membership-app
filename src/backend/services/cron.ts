@@ -17,11 +17,28 @@ export class CronJobService {
     this.env = env;
     this.db = new Database(env.DB);
     
-    const googleCredentials = JSON.parse(env.GOOGLE_API_KEY);
+    // Validate required environment variables
+    if (!env.GOOGLE_API_KEY) {
+      throw new Error('GOOGLE_API_KEY environment variable is required');
+    }
+    
+    let googleCredentials;
+    try {
+      googleCredentials = JSON.parse(env.GOOGLE_API_KEY);
+    } catch (error) {
+      throw new Error('GOOGLE_API_KEY must be valid JSON: ' + error.message);
+    }
+    
     this.googleService = new GoogleAPIService(googleCredentials);
     
+    if (!env.MOODLE_API_URL || !env.MOODLE_API_TOKEN) {
+      throw new Error('MOODLE_API_URL and MOODLE_API_TOKEN environment variables are required');
+    }
     this.moodleService = new MoodleAPIService(env.MOODLE_API_URL, env.MOODLE_API_TOKEN);
     
+    if (!env.SMTP_HOST || !env.SMTP_PORT || !env.SMTP_USER || !env.SMTP_PASS) {
+      throw new Error('SMTP configuration environment variables are required');
+    }
     this.emailService = new EmailService({
       host: env.SMTP_HOST,
       port: parseInt(env.SMTP_PORT),
@@ -29,6 +46,9 @@ export class CronJobService {
       pass: env.SMTP_PASS
     });
     
+    if (!env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
     this.authService = new AuthService(this.db, this.googleService, env.JWT_SECRET);
   }
 
@@ -341,9 +361,37 @@ export class CronJobService {
 }
 
 export async function handleCronJob(env: CloudflareBindings): Promise<void> {
-  const cronService = new CronJobService(env);
-  await Promise.all([
-    cronService.processNewRegistrations(),
-    cronService.cleanupExpiredPasswordResets()
-  ]);
+  try {
+    console.log('Cron job triggered at:', new Date().toISOString());
+    
+    // Validate environment and create service
+    const cronService = new CronJobService(env);
+    
+    // Run cron tasks
+    await Promise.all([
+      cronService.processNewRegistrations(),
+      cronService.cleanupExpiredPasswordResets()
+    ]);
+    
+    console.log('Cron job completed successfully at:', new Date().toISOString());
+  } catch (error) {
+    console.error('Cron job failed:', error);
+    
+    // Try to log the error if database is available
+    try {
+      if (env.DB) {
+        const db = new Database(env.DB);
+        await db.createLog({
+          user: 'system',
+          action: 'cron_job_initialization_error',
+          status: 'failed'
+        });
+      }
+    } catch (logError) {
+      console.error('Failed to log cron error to database:', logError);
+    }
+    
+    // Re-throw the error to ensure Worker shows failed status
+    throw error;
+  }
 }
