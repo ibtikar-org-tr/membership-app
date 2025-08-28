@@ -4,12 +4,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build2": "tsc -b && vite build",
     "preview": "npm run build && vite preview",
     "deploy": "npm run build && wrangler deploy",
     "deploy:config:local": "npm run build && wrangler deploy --config wrangler.local.jsonc",
     "db:migrate:local": "wrangler d1 migrations apply membership-app-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply membership-app-db --remote",
+    "db:migrate:remote:config:local": "wrangler d1 migrations apply membership-app-db --remote --config wrangler.local.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
