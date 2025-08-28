@@ -129,18 +129,22 @@ export class CronJobService {
           const phoneKey = memberInfo.phone;
           
           let duplicateInfo: MemberInfo | null = null;
+          let matchType: 'email' | 'phone' = 'email';
+          
           if (emailKey && existingMembers.has(emailKey)) {
             duplicateInfo = existingMembers.get(emailKey)!;
+            matchType = 'email';
           } else if (phoneKey && existingMembers.has(phoneKey)) {
             duplicateInfo = existingMembers.get(phoneKey)!;
+            matchType = 'phone';
           }
 
           if (duplicateInfo) {
-            console.log(`Duplicate member found - Email: ${memberInfo.email}, Phone: ${memberInfo.phone}`);
+            console.log(`Duplicate member found - Email: ${memberInfo.email}, Phone: ${memberInfo.phone}, Match type: ${matchType}`);
             
             // Send duplicate notification email
             try {
-              await this.emailService.sendDuplicateNotificationEmail(memberInfo, duplicateInfo);
+              await this.emailService.sendDuplicateNotificationEmail(memberInfo, duplicateInfo, matchType);
               
               // Log duplicate status
               await this.db.createLog({

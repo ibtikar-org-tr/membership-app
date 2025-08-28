@@ -10,7 +10,7 @@ export interface EmailConfig {
 export class EmailService {
   constructor(private config: EmailConfig) {}
 
-  async sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
+  async sendEmail(to: string, subject: string, text: string, html?: string, cc?: string): Promise<void> {
     // Send email using worker-mailer
     try {
       const mailer = await WorkerMailer.connect({
@@ -25,13 +25,19 @@ export class EmailService {
         authType: 'plain',
       });
 
-      await mailer.send({
+      const emailOptions: any = {
         from: this.config.user,
         to,
         subject,
         text,
         html: html || text,
-      });
+      };
+      
+      if (cc) {
+        emailOptions.cc = cc;
+      }
+      
+      await mailer.send(emailOptions);
 
       await mailer.close();
     } catch (error) {
@@ -191,7 +197,11 @@ Membership App Team
     await this.sendEmail(memberInfo.email, subject, text, html);
   }
 
-  async sendDuplicateNotificationEmail(newMemberInfo: MemberInfo, existingMemberInfo: MemberInfo): Promise<void> {
+  async sendDuplicateNotificationEmail(
+    newMemberInfo: MemberInfo, 
+    existingMemberInfo: MemberInfo, 
+    matchType: 'email' | 'phone' = 'email'
+  ): Promise<void> {
     const subject = 'Registration Attempt - Account Already Exists';
     
     const text = `
@@ -199,11 +209,15 @@ Dear ${newMemberInfo.latin_name || 'Member'},
 
 We received a new registration attempt with your information, but we found that you already have an account with us.
 
+Registration Attempt Details:
+- Email: ${newMemberInfo.email}
+- Phone: ${newMemberInfo.phone || 'N/A'}
+- Name: ${newMemberInfo.latin_name || 'N/A'}
+
 Your existing account details:
 - Membership Number: ${existingMemberInfo.membership_number}
 - Email: ${existingMemberInfo.email}
 - Phone: ${existingMemberInfo.phone}
-- Registration Date: ${existingMemberInfo.created_at ? new Date(existingMemberInfo.created_at).toLocaleDateString() : 'N/A'}
 
 If you forgot your password, you can reset it using the "Forgot Password" feature on our login page.
 
@@ -223,6 +237,7 @@ Membership App Team
         .header { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 5px; margin-bottom: 20px; }
         .content { padding: 20px 0; }
         .account-details { background-color: #e9f4ff; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .registration-attempt { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 15px 0; }
         .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; }
         .warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin: 15px 0; }
     </style>
@@ -239,14 +254,22 @@ Membership App Team
                 <strong>⚠️ Registration Attempt Detected</strong><br>
                 We received a new registration attempt with your information, but we found that you already have an account with us.
             </div>
+
+            <div class="registration-attempt">
+                <h3>🚨 Registration Attempt Details:</h3>
+                <ul>
+                    <li><strong>Email:</strong> ${newMemberInfo.email}</li>
+                    <li><strong>Phone:</strong> ${newMemberInfo.phone || 'N/A'}</li>
+                    <li><strong>Name:</strong> ${newMemberInfo.latin_name || 'N/A'}</li>
+                </ul>
+            </div>
             
             <div class="account-details">
-                <h3>Your Existing Account Details:</h3>
+                <h3>📋 Your Existing Account Details:</h3>
                 <ul>
                     <li><strong>Membership Number:</strong> ${existingMemberInfo.membership_number}</li>
                     <li><strong>Email:</strong> ${existingMemberInfo.email}</li>
                     <li><strong>Phone:</strong> ${existingMemberInfo.phone || 'N/A'}</li>
-                    <li><strong>Registration Date:</strong> ${existingMemberInfo.created_at ? new Date(existingMemberInfo.created_at).toLocaleDateString() : 'N/A'}</li>
                 </ul>
             </div>
             
@@ -266,6 +289,11 @@ Membership App Team
 </html>
     `.trim();
 
-    await this.sendEmail(newMemberInfo.email, subject, text, html);
+    // Determine if we need to CC the original email
+    const ccEmail = matchType === 'phone' && existingMemberInfo.email !== newMemberInfo.email 
+      ? existingMemberInfo.email 
+      : undefined;
+    
+    await this.sendEmail(newMemberInfo.email, subject, text, html, ccEmail);
   }
 }
