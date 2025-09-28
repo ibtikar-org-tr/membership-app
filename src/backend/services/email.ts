@@ -161,7 +161,7 @@ Membership App Team
 <body>
     <div class="container">
         <div class="header">
-            <h2>Welcome to Membership App!</h2>
+            <h2>welcome to ibtikar assembly!</h2>
         </div>
         <div class="content">
             <p>Dear ${memberInfo.latin_name},</p>
@@ -178,16 +178,16 @@ Membership App Team
                     <span class="label">Email:</span> ${memberInfo.email}
                 </div>
                 <div class="info-row">
-                    <span class="label">Temporary Password:</span> ${temporaryPassword}
+                    <span class="label">Password:</span> ${temporaryPassword}
                 </div>
             </div>
-            
-            <p><strong>Please log in to the system and change your password as soon as possible.</strong></p>
-            <p>Your account has also been created in our Learning Management System (Moodle) with the same credentials.</p>
+
+            <p><strong>Please save your information because you will need it anytime you use our services.</strong></p>
+            <p>Your account has also been created in our Learning Management System (Moodle LMS) with the same credentials.</p>
             <p>If you have any questions, please don't hesitate to contact us.</p>
         </div>
         <div class="footer">
-            <p>Best regards,<br>Membership App Team</p>
+            <p>Best regards,<br>ibtikar assembly - technical team</p>
         </div>
     </div>
 </body>
