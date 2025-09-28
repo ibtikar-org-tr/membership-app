@@ -40,4 +40,4 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           MEMBERSHIP_NUMBER_PREFIX: ${{ env.MEMBERSHIP_NUMBER_PREFIX }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-        run: wrangler deploy
+        run: wrangler deploy --env deployment
