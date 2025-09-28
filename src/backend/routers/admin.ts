@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { GoogleAPIService } from '../services/google-api';
 import { MoodleAPIService } from '../services/moodle-api';
 import { Database } from '../models/database';
-import { CloudflareBindings, GoogleForm, GoogleSheet, UpdateMemberRequest } from '../models/types';
+import { CloudflareBindings, GoogleSheet, UpdateMemberRequest } from '../models/types';
 
 const adminRouter = new Hono<{ Bindings: CloudflareBindings }>();
 
