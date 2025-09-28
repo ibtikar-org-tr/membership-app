@@ -48,28 +48,28 @@ export class EmailService {
 
   async sendPasswordResetEmail(to: string, resetToken: string, baseUrl: string): Promise<void> {
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
-    
-    const subject = 'Password Reset Request - Membership App';
-    
+
+    const subject = 'طلب إعادة تعيين كلمة المرور - منصّة العضوية التابعة لتجمّع إبتكار';
+
     const text = `
-Hello,
+مرحباً،
 
-You have requested to reset your password for the Membership App.
+لقد طلبت إعادة تعيين كلمة المرور الخاصة بك لمنصّة العضوية التابعة لتجمّع إبتكار.
 
-Please click on the following link to reset your password:
+يرجى النقر على الرابط التالي لإعادة تعيين كلمة المرور:
 ${resetUrl}
 
-This link will expire in 1 hour for security reasons.
+هذا الرابط سينتهي صلاحيته خلال ساعة واحدة لأسباب أمنية.
 
-If you did not request this password reset, please ignore this email.
+إذا لم تطلب إعادة تعيين كلمة المرور، يرجى تجاهل هذا البريد الإلكتروني.
 
-Best regards,
-Membership App Team
+مع خالص التحية،
+مكتب التحوّل الرّقمي - تجمّع إبتكار
     `.trim();
 
     const html = `
 <!DOCTYPE html>
-<html>
+<html dir="rtl">
 <head>
     <meta charset="utf-8">
     <style>
@@ -92,18 +92,18 @@ Membership App Team
 <body>
     <div class="container">
         <div class="header">
-            <h2>Password Reset Request</h2>
+            <h2>طلب إعادة تعيين كلمة المرور</h2>
         </div>
         <div class="content">
-            <p>Hello,</p>
-            <p>You have requested to reset your password for the Membership App.</p>
-            <p>Please click on the button below to reset your password:</p>
-            <a href="${resetUrl}" class="button">Reset Password</a>
-            <p><strong>This link will expire in 1 hour for security reasons.</strong></p>
-            <p>If you did not request this password reset, please ignore this email.</p>
+            <p>مرحباً،</p>
+            <p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك لمنصّة العضوية التابعة لتجمّع إبتكار.</p>
+            <p>يرجى النقر على الزر أدناه لإعادة تعيين كلمة المرور:</p>
+            <a href="${resetUrl}" class="button">إعادة تعيين كلمة المرور</a>
+            <p><strong>هذا الرابط سينتهي صلاحيته خلال ساعة واحدة لأسباب أمنية.</strong></p>
+            <p>إذا لم تطلب إعادة تعيين كلمة المرور، يرجى تجاهل هذا البريد الإلكتروني.</p>
         </div>
         <div class="footer">
-            <p>Best regards,<br>Membership App Team</p>
+            <p>مع خالص التحية،<br>مكتب التحوّل الرّقمي - تجمّع إبتكار</p>
         </div>
     </div>
 </body>
@@ -114,31 +114,31 @@ Membership App Team
   }
 
   async sendWelcomeEmail(memberInfo: MemberInfo, temporaryPassword: string): Promise<void> {
-    const subject = 'Welcome to Membership App - Your Account Details';
+    const subject = 'مرحباً بك في منصّة العضوية - تفاصيل حسابك';
     
     const text = `
-Welcome ${memberInfo.latin_name}!
+مرحباً ${memberInfo.latin_name}!
 
-Your membership account has been successfully created. Here are your account details:
+تم إنشاء حساب العضوية الخاص بك بنجاح. إليك تفاصيل حسابك:
 
-Membership Number: ${memberInfo.membership_number}
-Name: ${memberInfo.latin_name}
-Email: ${memberInfo.email}
-Temporary Password: ${temporaryPassword}
+رقم العضوية: ${memberInfo.membership_number}
+الاسم: ${memberInfo.latin_name}
+البريد الإلكتروني: ${memberInfo.email}
+كلمة المرور: ${temporaryPassword}
 
-Please log in to the system and change your password as soon as possible.
+يرجى حفظ المعلومات هذه حيث أنّك سوف تحتاجها كلما استخدمت خدماتنا.
 
-Your account has also been created in our Learning Management System (Moodle) with the same credentials.
+تم إنشاء حسابك أيضاً في المنصّة التعليميّة الخاصّة بنا بنفس البيانات.
 
-If you have any questions, please don't hesitate to contact us.
+إذا كان لديك أي أسئلة، يرجى عدم التردد في الاتصال بنا.
 
-Best regards,
-Membership App Team
+مع خالص التحية،
+مكتب التحوّل الرّقمي - تجمّع إبتكار
     `.trim();
 
     const html = `
 <!DOCTYPE html>
-<html>
+<html dir="rtl">
 <head>
     <meta charset="utf-8">
     <style>
@@ -161,33 +161,33 @@ Membership App Team
 <body>
     <div class="container">
         <div class="header">
-            <h2>welcome to ibtikar assembly!</h2>
+            <h2>مرحباً بك في تجمّع إبتكار!</h2>
         </div>
         <div class="content">
-            <p>Dear ${memberInfo.latin_name},</p>
-            <p>Your membership account has been successfully created. Here are your account details:</p>
+            <p>عزيزي ${memberInfo.latin_name}،</p>
+            <p>تم إنشاء حساب العضوية الخاص بك بنجاح. إليك تفاصيل حسابك:</p>
             
             <div class="info-box">
                 <div class="info-row">
-                    <span class="label">Membership Number:</span> ${memberInfo.membership_number}
+                    <span class="label">رقم العضوية:</span> ${memberInfo.membership_number}
                 </div>
                 <div class="info-row">
-                    <span class="label">Name:</span> ${memberInfo.latin_name}
+                    <span class="label">الاسم:</span> ${memberInfo.latin_name}
                 </div>
                 <div class="info-row">
-                    <span class="label">Email:</span> ${memberInfo.email}
+                    <span class="label">البريد الإلكتروني:</span> ${memberInfo.email}
                 </div>
                 <div class="info-row">
-                    <span class="label">Password:</span> ${temporaryPassword}
+                    <span class="label">كلمة المرور:</span> ${temporaryPassword}
                 </div>
             </div>
 
-            <p><strong>Please save your information because you will need it anytime you use our services.</strong></p>
-            <p>Your account has also been created in our Learning Management System (Moodle LMS) with the same credentials.</p>
-            <p>If you have any questions, please don't hesitate to contact us.</p>
+            <p><strong>يرجى حفظ معلوماتك لأنك ستحتاجها في أي وقت تستخدم خدماتنا.</strong></p>
+            <p>تم إنشاء حسابك أيضاً في المنصّة التعليميّة الخاصّة بنا بنفس البيانات.</p>
+            <p>إذا كان لديك أي أسئلة، يرجى عدم التردد في الاتصال بنا.</p>
         </div>
         <div class="footer">
-            <p>Best regards,<br>ibtikar assembly - technical team</p>
+            <p>مع خالص التحية،<br>مكتب التحوّل الرّقمي - تجمّع إبتكار</p>
         </div>
     </div>
 </body>
@@ -202,34 +202,34 @@ Membership App Team
     existingMemberInfo: MemberInfo, 
     matchType: 'email' | 'phone' = 'email'
   ): Promise<void> {
-    const subject = 'Registration Attempt - Account Already Exists';
+    const subject = 'محاولة تسجيل - الحساب موجود بالفعل';
     
     const text = `
-Dear ${newMemberInfo.latin_name || 'Member'},
+عزيزي ${newMemberInfo.latin_name || 'العضو'}،
 
-We received a new registration attempt with your information, but we found that you already have an account with us.
+لقد تلقينا محاولة تسجيل جديدة بمعلوماتك، لكننا وجدنا أن لديك حساباً موجوداً لدينا بالفعل.
 
-Registration Attempt Details:
-- Email: ${newMemberInfo.email}
-- Phone: ${newMemberInfo.phone || 'N/A'}
-- Name: ${newMemberInfo.latin_name || 'N/A'}
+تفاصيل محاولة التسجيل:
+- البريد الإلكتروني: ${newMemberInfo.email}
+- الهاتف: ${newMemberInfo.phone || 'غير محدد'}
+- الاسم: ${newMemberInfo.latin_name || 'غير محدد'}
 
-Your existing account details:
-- Membership Number: ${existingMemberInfo.membership_number}
-- Email: ${existingMemberInfo.email}
-- Phone: ${existingMemberInfo.phone}
+تفاصيل حسابك الموجود:
+- رقم العضوية: ${existingMemberInfo.membership_number}
+- البريد الإلكتروني: ${existingMemberInfo.email}
+- الهاتف: ${existingMemberInfo.phone}
 
-If you forgot your password, you can reset it using the "Forgot Password" feature on our login page.
+إذا نسيت كلمة المرور، يمكنك إعادة تعيينها باستخدام ميزة "نسيت كلمة المرور" في صفحة تسجيل الدخول.
 
-If you believe this is an error or if you need assistance, please contact us.
+إذا كنت تعتقد أن هذا خطأ أو إذا كنت بحاجة إلى مساعدة، يرجى الاتصال بنا.
 
-Best regards,
-Membership App Team
+مع خالص التحية،
+مكتب التحوّل الرّقمي - تجمّع إبتكار
     `.trim();
 
     const html = `
 <!DOCTYPE html>
-<html>
+<html dir="rtl">
 <head>
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
@@ -245,44 +245,44 @@ Membership App Team
 <body>
     <div class="container">
         <div class="header">
-            <h2>Registration Attempt - Account Already Exists</h2>
+            <h2>محاولة تسجيل - الحساب موجود بالفعل</h2>
         </div>
         <div class="content">
-            <p>Dear ${newMemberInfo.latin_name || 'Member'},</p>
+            <p>عزيزي ${newMemberInfo.latin_name || 'العضو'}،</p>
             
             <div class="warning">
-                <strong>⚠️ Registration Attempt Detected</strong><br>
-                We received a new registration attempt with your information, but we found that you already have an account with us.
+                <strong>⚠️ تم اكتشاف محاولة تسجيل</strong><br>
+                لقد تلقينا محاولة تسجيل جديدة بمعلوماتك، لكننا وجدنا أن لديك حساباً موجوداً لدينا بالفعل.
             </div>
 
             <div class="registration-attempt">
-                <h3>🚨 Registration Attempt Details:</h3>
+                <h3>🚨 تفاصيل محاولة التسجيل:</h3>
                 <ul>
-                    <li><strong>Email:</strong> ${newMemberInfo.email}</li>
-                    <li><strong>Phone:</strong> ${newMemberInfo.phone || 'N/A'}</li>
-                    <li><strong>Name:</strong> ${newMemberInfo.latin_name || 'N/A'}</li>
+                    <li><strong>البريد الإلكتروني:</strong> ${newMemberInfo.email}</li>
+                    <li><strong>الهاتف:</strong> ${newMemberInfo.phone || 'غير محدد'}</li>
+                    <li><strong>الاسم:</strong> ${newMemberInfo.latin_name || 'غير محدد'}</li>
                 </ul>
             </div>
             
             <div class="account-details">
-                <h3>📋 Your Existing Account Details:</h3>
+                <h3>📋 تفاصيل حسابك الموجود:</h3>
                 <ul>
-                    <li><strong>Membership Number:</strong> ${existingMemberInfo.membership_number}</li>
-                    <li><strong>Email:</strong> ${existingMemberInfo.email}</li>
-                    <li><strong>Phone:</strong> ${existingMemberInfo.phone || 'N/A'}</li>
+                    <li><strong>رقم العضوية:</strong> ${existingMemberInfo.membership_number}</li>
+                    <li><strong>البريد الإلكتروني:</strong> ${existingMemberInfo.email}</li>
+                    <li><strong>الهاتف:</strong> ${existingMemberInfo.phone || 'غير محدد'}</li>
                 </ul>
             </div>
             
-            <p><strong>Need to access your account?</strong></p>
+            <p><strong>تحتاج إلى الوصول إلى حسابك؟</strong></p>
             <ul>
-                <li>If you forgot your password, you can reset it using the "Forgot Password" feature on our login page.</li>
-                <li>Your username is your email address or membership number.</li>
+                <li>إذا نسيت كلمة المرور، يمكنك إعادة تعيينها باستخدام ميزة "نسيت كلمة المرور" في صفحة تسجيل الدخول.</li>
+                <li>اسم المستخدم الخاص بك هو عنوان بريدك الإلكتروني أو رقم العضوية.</li>
             </ul>
             
-            <p>If you believe this is an error or if you need assistance, please contact us.</p>
+            <p>إذا كنت تعتقد أن هذا خطأ أو إذا كنت بحاجة إلى مساعدة، يرجى الاتصال بنا.</p>
         </div>
         <div class="footer">
-            <p>Best regards,<br>Membership App Team</p>
+            <p>مع خالص التحية،<br>فريق تطبيق العضوية</p>
         </div>
     </div>
 </body>
