@@ -189,7 +189,7 @@ export class CronJobService {
 
           // Check if user already exists in Moodle
           const existingMoodleUser = await this.moodleService.getUserByEmail(memberInfo.email);
-          if (existingMoodleUser) {
+          if (existingMoodleUser && existingMoodleUser.id) {
             console.log(`Moodle user with email ${memberInfo.email} already exists, updating password`);
             // Update password in Moodle instead of creating new user
             await this.moodleService.updateUserPassword(existingMoodleUser.id, temporaryPassword);
