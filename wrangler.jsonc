@@ -8,7 +8,7 @@
     {
       "binding": "DB",
       "database_name": "membership-app-db",
-      "database_id": "${D1_DATABASE_ID}" // Replace with your actual D1 database ID
+      "database_id": "7380ce8a-a288-4d57-ad60-703053192c5d"
     }
   ],
   "triggers": { // Cron Triggers - runs every 5 minutes
