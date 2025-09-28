@@ -17,5 +17,5 @@ jobs:
 
       - name: Publish Worker
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: wrangler deploy
