@@ -27,6 +27,11 @@ jobs:
       - name: Install Wrangler
         run: npm install -g wrangler
 
+      - name: Migrate Database
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npm run db:migrate:remote
+        
       - name: Publish Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
