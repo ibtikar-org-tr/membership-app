@@ -30,7 +30,7 @@ jobs:
       - name: Migrate Database
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: wrangler d1 migrations apply membership-app-db --remote
+        run: wrangler d1 migrations apply membership-app-db --remote --database-id 7380ce8a-a288-4d57-ad60-703053192c5d
         
       - name: Publish Worker
         env:
