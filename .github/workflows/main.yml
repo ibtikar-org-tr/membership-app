@@ -22,6 +22,8 @@ jobs:
         run: npm install
 
       - name: Build the project
+        env:
+          CF_ENV: deployment
         run: npm run build
 
       - name: Install Wrangler
@@ -40,4 +42,4 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           MEMBERSHIP_NUMBER_PREFIX: ${{ env.MEMBERSHIP_NUMBER_PREFIX }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-        run: wrangler deploy --env deployment
+        run: wrangler deploy
