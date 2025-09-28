@@ -18,28 +18,28 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
-  "vars": {
-    "ADMIN_PASSWORD": "your-admin-password-here",
-    "MOODLE_API_URL": "https://lms.********.com",
-    "MOODLE_API_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "SMTP_HOST": "smtp.gmail.com",
-    "SMTP_PORT": "587",
-    "SMTP_USER": "yourmail@gmail.com",
-    "SMTP_PASS": "your-password-or-api-key-or-app-password",
-    "JWT_SECRET": "your-super-secret-jwt-key-here-make-it-long-and-random",
-    "MEMBERSHIP_NUMBER_PREFIX": "2501",
-    "GOOGLE_API_KEY": {
-        "type": "service_account",
-        "project_id": "your-project-id",
-        "private_key_id": "your-private-key-id",
-        "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n",
-        "client_email": "your-client-email",
-        "client_id": "your-client-id",
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/your-client-email",
-        "universe_domain": "googleapis.com"
-      }
-  }
+  // "vars": {
+  //   "ADMIN_PASSWORD": "your-admin-password-here",
+  //   "MOODLE_API_URL": "https://lms.********.com",
+  //   "MOODLE_API_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  //   "SMTP_HOST": "smtp.gmail.com",
+  //   "SMTP_PORT": "587",
+  //   "SMTP_USER": "yourmail@gmail.com",
+  //   "SMTP_PASS": "your-password-or-api-key-or-app-password",
+  //   "JWT_SECRET": "your-super-secret-jwt-key-here-make-it-long-and-random",
+  //   "MEMBERSHIP_NUMBER_PREFIX": "2501",
+  //   "GOOGLE_API_KEY": {
+  //       "type": "service_account",
+  //       "project_id": "your-project-id",
+  //       "private_key_id": "your-private-key-id",
+  //       "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n",
+  //       "client_email": "your-client-email",
+  //       "client_id": "your-client-id",
+  //       "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  //       "token_uri": "https://oauth2.googleapis.com/token",
+  //       "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  //       "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/your-client-email",
+  //       "universe_domain": "googleapis.com"
+  //     }
+  // }
 }
