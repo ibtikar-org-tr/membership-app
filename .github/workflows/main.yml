@@ -13,6 +13,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install project dependencies
+        run: npm install
+
       - name: Install Wrangler
         run: npm install -g wrangler
 
