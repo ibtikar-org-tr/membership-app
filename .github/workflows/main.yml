@@ -19,4 +19,4 @@ jobs:
       - name: Publish Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: wrangler deploy
+        run: wrangler deploy --account-id $CLOUDFLARE_ACCOUNT_ID
