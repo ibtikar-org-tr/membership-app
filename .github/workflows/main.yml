@@ -23,15 +23,6 @@ jobs:
 
       - name: Build the project
         env:
-          CF_ENV: deployment
-        run: npm run build
-
-      - name: Install Wrangler
-        run: npm install -g wrangler
-        
-      - name: Publish Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           MOODLE_API_URL: ${{ env.MOODLE_API_URL }}
           MOODLE_API_TOKEN: ${{ secrets.MOODLE_API_TOKEN }}
@@ -42,4 +33,12 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           MEMBERSHIP_NUMBER_PREFIX: ${{ env.MEMBERSHIP_NUMBER_PREFIX }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: npm run build
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+        
+      - name: Publish Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: wrangler deploy
