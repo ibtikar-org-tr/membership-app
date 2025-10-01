@@ -46,7 +46,7 @@ export class EmailService {
     }
   }
 
-  async sendPasswordResetEmail(to: string, resetToken: string, baseUrl: string): Promise<void> {
+  async sendPasswordResetEmail(to: string, resetToken: string, baseUrl: string, member: MemberInfo): Promise<void> {
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     const subject = 'طلب إعادة تعيين كلمة المرور - منصّة العضوية التابعة لتجمّع إبتكار';
@@ -60,6 +60,25 @@ export class EmailService {
 ${resetUrl}
 
 هذا الرابط سينتهي صلاحيته خلال ساعة واحدة لأسباب أمنية.
+
+إليك جميع المعلومات المسجلة في حسابك:
+
+رقم العضوية: ${member.membership_number}
+الاسم العربي: ${member.ar_name}
+الاسم اللاتيني: ${member.latin_name}
+واتساب: ${member.whatsapp}
+الهاتف: ${member.phone}
+البريد الإلكتروني: ${member.email}
+الجنس: ${member.sex}
+تاريخ الميلاد: ${member.birth_date}
+البلد: ${member.country}
+المدينة: ${member.city}
+الحي: ${member.district}
+الجامعة: ${member.university}
+التخصص: ${member.major}
+سنة التخرج: ${member.graduation_year}
+فصيلة الدم: ${member.blood_type}
+كلمة المرور الحالية: ${member.password}
 
 إذا لم تطلب إعادة تعيين كلمة المرور، يرجى تجاهل هذا البريد الإلكتروني.
 
@@ -86,6 +105,15 @@ ${resetUrl}
             border-radius: 5px; 
             margin: 20px 0; 
         }
+        .member-info { 
+            background-color: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            border-radius: 5px; 
+            padding: 15px; 
+            margin: 20px 0; 
+        }
+        .info-row { margin: 8px 0; display: flex; justify-content: space-between; }
+        .label { font-weight: bold; }
         .footer { font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 20px; }
     </style>
 </head>
@@ -100,6 +128,59 @@ ${resetUrl}
             <p>يرجى النقر على الزر أدناه لإعادة تعيين كلمة المرور:</p>
             <a href="${resetUrl}" class="button">إعادة تعيين كلمة المرور</a>
             <p><strong>هذا الرابط سينتهي صلاحيته خلال ساعة واحدة لأسباب أمنية.</strong></p>
+            
+            <div class="member-info">
+                <h3>معلومات حسابك:</h3>
+                <div class="info-row">
+                    <span class="label">رقم العضوية:</span> <span>${member.membership_number}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">الاسم العربي:</span> <span>${member.ar_name}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">الاسم اللاتيني:</span> <span>${member.latin_name}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">واتساب:</span> <span>${member.whatsapp}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">الهاتف:</span> <span>${member.phone}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">البريد الإلكتروني:</span> <span>${member.email}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">الجنس:</span> <span>${member.sex}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">تاريخ الميلاد:</span> <span>${member.birth_date}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">البلد:</span> <span>${member.country}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">المدينة:</span> <span>${member.city}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">الحي:</span> <span>${member.district}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">الجامعة:</span> <span>${member.university}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">التخصص:</span> <span>${member.major}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">سنة التخرج:</span> <span>${member.graduation_year}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">فصيلة الدم:</span> <span>${member.blood_type}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">كلمة المرور الحالية:</span> <span>${member.password}</span>
+                </div>
+            </div>
+            
             <p>إذا لم تطلب إعادة تعيين كلمة المرور، يرجى تجاهل هذا البريد الإلكتروني.</p>
         </div>
         <div class="footer">

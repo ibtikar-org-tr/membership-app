@@ -135,7 +135,7 @@ authRouter.post('/forgot-password', async (c) => {
     });
 
     const baseUrl = new URL(c.req.url).origin;
-    await emailService.sendPasswordResetEmail(member.email, token, baseUrl);
+    await emailService.sendPasswordResetEmail(member.email, token, baseUrl, member);
 
     await db.createLog({
       user: member.membership_number,
