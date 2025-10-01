@@ -9,6 +9,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: deployment
+    env:
+      MOODLE_API_URL: ${{ vars.MOODLE_API_URL }}
+      SMTP_HOST: ${{ vars.SMTP_HOST }}
+      SMTP_PORT: ${{ vars.SMTP_PORT }}
+      SMTP_USER: ${{ vars.SMTP_USER }}
+      MEMBERSHIP_NUMBER_PREFIX: ${{ vars.MEMBERSHIP_NUMBER_PREFIX }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
