@@ -43,13 +43,20 @@ jobs:
           echo "${{ secrets.JWT_SECRET }}" | wrangler secret put JWT_SECRET
           echo "${{ secrets.GOOGLE_API_KEY }}" | wrangler secret put GOOGLE_API_KEY
 
-      - name: Create .action.vars
+      - name: Inject env variables into wrangler.jsonc
         run: |
-          echo "MOODLE_API_URL=${{ env.MOODLE_API_URL }}" >> .action.vars
-          echo "SMTP_HOST=${{ env.SMTP_HOST }}" >> .action.vars
-          echo "SMTP_PORT=${{ env.SMTP_PORT }}" >> .action.vars
-          echo "SMTP_USER=${{ env.SMTP_USER }}" >> .action.vars
-          echo "MEMBERSHIP_NUMBER_PREFIX=${{ env.MEMBERSHIP_NUMBER_PREFIX }}" >> .action.vars
+          jq --arg MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX" \
+             --arg API_BASE_URL "$API_BASE_URL" \
+             --arg SMTP_HOST "$SMTP_HOST" \
+             --arg SMTP_PORT "$SMTP_PORT" \
+             --arg SMTP_USER "$SMTP_USER" \
+             '.vars = {
+                MEMBERSHIP_NUMBER_PREFIX: $MEMBERSHIP_NUMBER_PREFIX,
+                API_BASE_URL: $API_BASE_URL,
+                SMTP_HOST: $SMTP_HOST,
+                SMTP_PORT: $SMTP_PORT,
+                SMTP_USER: $SMTP_USER
+              }' wrangler.jsonc > tmp.json && mv tmp.json wrangler.jsonc
       
       - name: Deploy with vars
         env:
