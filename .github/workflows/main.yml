@@ -45,7 +45,6 @@ jobs:
 
       - name: Inject env variables into wrangler.jsonc
         run: |
-          sed 's://.*$::' wrangler.jsonc > tmp.json && mv tmp.json wrangler.jsonc
           jq --arg MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX" \
              --arg MOODLE_API_URL "$MOODLE_API_URL" \
              --arg SMTP_HOST "$SMTP_HOST" \
