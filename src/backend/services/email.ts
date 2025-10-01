@@ -195,15 +195,16 @@ ${resetUrl}
   }
 
   async sendWelcomeEmail(memberInfo: MemberInfo, temporaryPassword: string): Promise<void> {
-    const subject = 'مرحباً بك في منصّة العضوية - تفاصيل حسابك';
+    const subject = 'مرحباً بك في تجمّع إبتكار - تفاصيل العضويّة الخاصّة بك';
     
     const text = `
-مرحباً ${memberInfo.latin_name}!
+مرحباً ${memberInfo.ar_name}!
 
 تم إنشاء حساب العضوية الخاص بك بنجاح. إليك تفاصيل حسابك:
 
 رقم العضوية: ${memberInfo.membership_number}
-الاسم: ${memberInfo.latin_name}
+الاسم: ${memberInfo.ar_name}
+name: ${memberInfo.latin_name}
 البريد الإلكتروني: ${memberInfo.email}
 كلمة المرور: ${temporaryPassword}
 
