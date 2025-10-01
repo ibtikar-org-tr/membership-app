@@ -5,11 +5,11 @@ import { Select } from '../components/Select';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 
-interface ForgotPasswordProps {
+interface ForgotInfoProps {
   onNavigate: (page: string) => void;
 }
 
-export function ForgotPassword({ onNavigate }: ForgotPasswordProps) {
+export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
   const [type, setType] = useState('');
   const [value, setValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -79,15 +79,15 @@ export function ForgotPassword({ onNavigate }: ForgotPasswordProps) {
   };
 
   return (
-    <Layout title="Reset Password">
+    <Layout title="Request Membership Information">
       <div className="max-w-md mx-auto">
-        <Card title="Forgot Password">
+        <Card title="Forgot Membership Information">
           {success ? (
             <div className="text-center">
               <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 <h3 className="font-medium mb-2">Request Submitted</h3>
                 <p className="text-sm">
-                  If the provided information is valid, a reset link will be sent to your email address.
+                  If the provided information is valid, your membership details will be sent to your email address.
                 </p>
               </div>
               
@@ -111,16 +111,16 @@ export function ForgotPassword({ onNavigate }: ForgotPasswordProps) {
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-4">
-                  Choose how you'd like to reset your password:
+                  Choose how you'd like to receive your membership information:
                 </p>
               </div>
 
               <Select
-                label="Reset Method"
+                label="Identification Method"
                 value={type}
                 onChange={setType}
                 options={typeOptions}
-                placeholder="Select reset method"
+                placeholder="Select identification method"
                 required
               />
 
@@ -146,7 +146,7 @@ export function ForgotPassword({ onNavigate }: ForgotPasswordProps) {
                   disabled={isLoading || !type || !value}
                   className="w-full"
                 >
-                  {isLoading ? 'Sending Request...' : 'Send Reset Link'}
+                  {isLoading ? 'Sending Request...' : 'Send Membership Information'}
                 </Button>
 
                 {/* <Button

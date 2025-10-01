@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
-import { ForgotPassword } from './pages/ForgotPassword';
+import { ForgotInfo } from './pages/ForgotInfo';
 import { ResetPassword } from './pages/ResetPassword';
 import { UserInfo } from './pages/UserInfo';
 import { Admin } from './pages/Admin';
@@ -32,7 +32,7 @@ export function App() {
     const routes: Record<PageType, string> = {
       'landing': '/',
       'login': '/login',
-      'forgot': '/forgot-password',
+      'forgot': '/forgot-info',
       'reset-password': '/reset-password',
       'user-info': '/user-info',
       'admin': '/admin'
@@ -71,7 +71,7 @@ export function App() {
         } else {
           setCurrentPage('login');
         }
-      } else if (path === '/forgot-password') {
+      } else if (path === '/forgot-info') {
         setCurrentPage('forgot');
       } else if (path === '/reset-password') {
         const token = urlParams.get('token');
@@ -135,7 +135,7 @@ export function App() {
       case 'login':
         return <Login onNavigate={navigate} />;
       case 'forgot':
-        return <ForgotPassword onNavigate={navigate} />;
+        return <ForgotInfo onNavigate={navigate} />;
       case 'reset-password':
         return <ResetPassword onNavigate={navigate} token={pageData.token} />;
       case 'user-info':
