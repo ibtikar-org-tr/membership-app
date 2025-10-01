@@ -35,7 +35,7 @@ export function Landing({ onNavigate }: LandingProps) {
               variant="secondary"
               className="w-full"
             >
-              Reset Password
+              Reset Information
             </Button>
           </div>
         </Card>

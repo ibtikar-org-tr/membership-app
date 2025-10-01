@@ -75,7 +75,7 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
 
   if (!isValidToken) {
     return (
-      <Layout title="Reset Password">
+      <Layout title="Reset Information">
         <div className="max-w-md mx-auto">
           <Card title="Invalid Token">
             <div className="text-center">
@@ -106,7 +106,7 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
   }
 
   return (
-    <Layout title="Reset Password">
+    <Layout title="Reset Information">
       <div className="max-w-md mx-auto">
         <Card title="Reset Your Password">
           {success ? (

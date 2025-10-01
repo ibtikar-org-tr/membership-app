@@ -212,7 +212,7 @@ authRouter.post('/reset-password', async (c) => {
 
     return c.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error('Reset Information error:', error);
     return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
