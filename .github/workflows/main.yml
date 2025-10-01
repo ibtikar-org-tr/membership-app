@@ -32,3 +32,23 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: wrangler deploy
+
+      - name: Set secrets in Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "${{ secrets.ADMIN_PASSWORD }}" | wrangler secret put ADMIN_PASSWORD --quiet
+          echo "${{ secrets.MOODLE_API_TOKEN }}" | wrangler secret put MOODLE_API_TOKEN --quiet
+          echo "${{ secrets.SMTP_PASS }}" | wrangler secret put SMTP_PASS --quiet
+          echo "${{ secrets.JWT_SECRET }}" | wrangler secret put JWT_SECRET --quiet
+          echo "${{ secrets.GOOGLE_API_KEY }}" | wrangler secret put GOOGLE_API_KEY --quiet
+
+      - name: Set env vars in Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          wrangler vars put MOODLE_API_URL="${{ env.MOODLE_API_URL }}"
+          wrangler vars put SMTP_HOST="${{ env.SMTP_HOST }}"
+          wrangler vars put SMTP_PORT="${{ env.SMTP_PORT }}"
+          wrangler vars put SMTP_USER="${{ env.SMTP_USER }}"
+          wrangler vars put MEMBERSHIP_NUMBER_PREFIX="${{ env.MEMBERSHIP_NUMBER_PREFIX }}"
