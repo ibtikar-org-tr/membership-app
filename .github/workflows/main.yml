@@ -47,13 +47,13 @@ jobs:
         run: |
           sed 's://.*$::' wrangler.jsonc > tmp.json && mv tmp.json wrangler.jsonc
           jq --arg MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX" \
-             --arg API_BASE_URL "$API_BASE_URL" \
+             --arg MOODLE_API_URL "$MOODLE_API_URL" \
              --arg SMTP_HOST "$SMTP_HOST" \
              --arg SMTP_PORT "$SMTP_PORT" \
              --arg SMTP_USER "$SMTP_USER" \
              '.vars = {
                 MEMBERSHIP_NUMBER_PREFIX: $MEMBERSHIP_NUMBER_PREFIX,
-                API_BASE_URL: $API_BASE_URL,
+                MOODLE_API_URL: $MOODLE_API_URL,
                 SMTP_HOST: $SMTP_HOST,
                 SMTP_PORT: $SMTP_PORT,
                 SMTP_USER: $SMTP_USER
