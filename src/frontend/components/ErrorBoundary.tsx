@@ -37,16 +37,16 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-          <Card title="Something went wrong" className="max-w-md w-full">
+          <Card title="حدث خطأ ما" className="max-w-md w-full">
             <div className="text-center">
               <p className="text-gray-600 mb-4">
-                An unexpected error occurred. Please try reloading the page.
+                حدث خطأ غير متوقع. يرجى إعادة تحميل الصفحة.
               </p>
               
               {this.state.error && (
                 <details className="mb-4 text-left">
                   <summary className="cursor-pointer text-sm text-gray-500 mb-2">
-                    Error Details
+                    تفاصيل الخطأ
                   </summary>
                   <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">
                     {this.state.error.message}
@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
               )}
               
               <Button onClick={this.handleReload} className="w-full">
-                Reload Page
+                إعادة تحميل الصفحة
               </Button>
             </div>
           </Card>

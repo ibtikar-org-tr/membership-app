@@ -46,10 +46,10 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
       if (data.success) {
         setMembers(data.members);
       } else {
-        setError(data.error || 'Failed to load members');
+        setError(data.error || 'فشل في تحميل الأعضاء');
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      setError('خطأ في الشبكة. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +67,7 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
 
   const handleUpdateMember = async () => {
     if (!editingMember || !editingMember.membership_number) {
-      setError('Member information is incomplete');
+      setError('معلومات العضو غير كاملة');
       return;
     }
 
@@ -87,14 +87,14 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
       const data = await response.json();
 
       if (data.success) {
-        setSuccess('Member updated successfully');
+        setSuccess('تم تحديث العضو بنجاح');
         setEditingMember(null);
         loadMembers(); // Reload the list
       } else {
-        setError(data.error || 'Failed to update member');
+        setError(data.error || 'فشل في تحديث العضو');
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      setError('خطأ في الشبكة. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsUpdating(false);
     }
@@ -102,11 +102,11 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
 
   const handleDeleteMember = async (membershipNumber?: string) => {
     if (!membershipNumber) {
-      setError('Member ID not found');
+      setError('لم يتم العثور على معرف العضو');
       return;
     }
     
-    if (!confirm(`Are you sure you want to delete member ${membershipNumber}? This action cannot be undone.`)) {
+    if (!confirm(`هل أنت متأكد من حذف العضو ${membershipNumber}؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
       return;
     }
 
@@ -121,20 +121,20 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
       const data = await response.json();
 
       if (data.success) {
-        setSuccess('Member deleted successfully');
+        setSuccess('تم حذف العضو بنجاح');
         loadMembers(); // Reload the list
       } else {
-        setError(data.error || 'Failed to delete member');
+        setError(data.error || 'فشل في حذف العضو');
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      setError('خطأ في الشبكة. يرجى المحاولة مرة أخرى.');
     }
   };
 
   if (isLoading) {
     return (
       <div className="py-8">
-        <LoadingSpinner size="lg" text="Loading members..." className="py-12" />
+        <LoadingSpinner size="lg" text="جاري تحميل الأعضاء..." className="py-12" />
       </div>
     );
   }
@@ -142,9 +142,9 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
   return (
     <div className="space-y-6">
       {/* Search */}
-      <Card title="Search Members">
+      <Card title="البحث عن الأعضاء">
         <Input
-          placeholder="Search by name, email, or membership number..."
+          placeholder="البحث بالاسم أو البريد الإلكتروني أو رقم العضوية..."
           value={searchTerm}
           onChange={setSearchTerm}
         />
@@ -156,64 +156,64 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Edit Member: {editingMember.latin_name}</h3>
+                <h3 className="text-lg font-medium">تحرير العضو: {editingMember.latin_name}</h3>
                 <Button
                   onClick={() => setEditingMember(null)}
                   variant="secondary"
                   size="sm"
                 >
-                  Close
+                  إغلاق
                 </Button>
               </div>
 
               <div className="grid lg:grid-cols-2 gap-4">
                 <div className="space-y-4">
                   <Input
-                    label="Membership Number"
+                    label="رقم العضوية"
                     value={editingMember.membership_number || ''}
                     onChange={() => {}} // Read-only
                     disabled={true}
                   />
                   
                   <Input
-                    label="Arabic Name"
+                    label="الاسم العربي"
                     value={editingMember.ar_name || ''}
                     onChange={(value) => setEditingMember({...editingMember, ar_name: value})}
                   />
                   
                   <Input
-                    label="Latin Name"
+                    label="الاسم اللاتيني"
                     value={editingMember.latin_name || ''}
                     onChange={(value) => setEditingMember({...editingMember, latin_name: value})}
                   />
                   
                   <Input
-                    label="Email"
+                    label="البريد الإلكتروني"
                     type="email"
                     value={editingMember.email || ''}
                     onChange={(value) => setEditingMember({...editingMember, email: value})}
                   />
                   
                   <Input
-                    label="Phone"
+                    label="الهاتف"
                     value={editingMember.phone || ''}
                     onChange={(value) => setEditingMember({...editingMember, phone: value})}
                   />
                   
                   <Input
-                    label="WhatsApp"
+                    label="واتساب"
                     value={editingMember.whatsapp || ''}
                     onChange={(value) => setEditingMember({...editingMember, whatsapp: value})}
                   />
                   
                   <Input
-                    label="Sex"
+                    label="الجنس"
                     value={editingMember.sex || ''}
                     onChange={(value) => setEditingMember({...editingMember, sex: value})}
                   />
                   
                   <Input
-                    label="Birth Date"
+                    label="تاريخ الميلاد"
                     type="date"
                     value={editingMember.birth_date || ''}
                     onChange={(value) => setEditingMember({...editingMember, birth_date: value})}
@@ -222,43 +222,43 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
 
                 <div className="space-y-4">
                   <Input
-                    label="Country"
+                    label="البلد"
                     value={editingMember.country || ''}
                     onChange={(value) => setEditingMember({...editingMember, country: value})}
                   />
                   
                   <Input
-                    label="City"
+                    label="المدينة"
                     value={editingMember.city || ''}
                     onChange={(value) => setEditingMember({...editingMember, city: value})}
                   />
                   
                   <Input
-                    label="District"
+                    label="الحي"
                     value={editingMember.district || ''}
                     onChange={(value) => setEditingMember({...editingMember, district: value})}
                   />
                   
                   <Input
-                    label="University"
+                    label="الجامعة"
                     value={editingMember.university || ''}
                     onChange={(value) => setEditingMember({...editingMember, university: value})}
                   />
                   
                   <Input
-                    label="Major"
+                    label="التخصص"
                     value={editingMember.major || ''}
                     onChange={(value) => setEditingMember({...editingMember, major: value})}
                   />
                   
                   <Input
-                    label="Graduation Year"
+                    label="سنة التخرج"
                     value={editingMember.graduation_year || ''}
                     onChange={(value) => setEditingMember({...editingMember, graduation_year: value})}
                   />
                   
                   <Input
-                    label="Blood Type"
+                    label="فصيلة الدم"
                     value={editingMember.blood_type || ''}
                     onChange={(value) => setEditingMember({...editingMember, blood_type: value})}
                   />
@@ -271,14 +271,14 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
                   disabled={isUpdating}
                   className="flex-1"
                 >
-                  {isUpdating ? 'Updating...' : 'Update Member'}
+                  {isUpdating ? 'جاري التحديث...' : 'تحديث العضو'}
                 </Button>
                 <Button
                   onClick={() => setEditingMember(null)}
                   variant="secondary"
                   className="flex-1"
                 >
-                  Cancel
+                  إلغاء
                 </Button>
               </div>
             </div>
@@ -287,10 +287,10 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
       )}
 
       {/* Members List */}
-      <Card title={`Members (${filteredMembers.length})`}>
+      <Card title={`الأعضاء (${filteredMembers.length})`}>
         {filteredMembers.length === 0 ? (
           <p className="text-center text-gray-500 py-8">
-            {searchTerm ? 'No members found matching your search.' : 'No members found.'}
+            {searchTerm ? 'لم يتم العثور على أعضاء مطابقين للبحث.' : 'لم يتم العثور على أعضاء.'}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -298,19 +298,19 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Member Info
+                    معلومات العضو
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
+                    التواصل
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
+                    الموقع
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Education
+                    التعليم
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    الإجراءات
                   </th>
                 </tr>
               </thead>
@@ -347,14 +347,14 @@ export function MemberManagement({ setSuccess, setError }: MemberManagementProps
                           size="sm"
                           variant="secondary"
                         >
-                          Edit
+                          تحرير
                         </Button>
                         <Button
                           onClick={() => handleDeleteMember(member.membership_number)}
                           size="sm"
                           variant="danger"
                         >
-                          Delete
+                          حذف
                         </Button>
                       </div>
                     </td>

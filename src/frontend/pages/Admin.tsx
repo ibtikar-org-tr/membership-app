@@ -17,19 +17,19 @@ export function Admin({ onNavigate }: AdminProps) {
   const [error, setError] = useState('');
 
   const tabs = [
-    { id: 'config', label: 'Configuration', component: AdminConfig },
-    { id: 'members', label: 'Member Management', component: MemberManagement },
-    { id: 'logs', label: 'Application Logs', component: ApplicationLogs },
+    { id: 'config', label: 'الإعدادات', component: AdminConfig },
+    { id: 'members', label: 'إدارة الأعضاء', component: MemberManagement },
+    { id: 'logs', label: 'سجلات التطبيق', component: ApplicationLogs },
   ];
 
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || AdminConfig;
 
   return (
-    <Layout title="Admin Panel">
+    <Layout title="لوحة الإدارة">
       <div className="max-w-full mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Administration Dashboard</h2>
+          <h2 className="text-xl font-semibold">لوحة تحكم الإدارة</h2>
           <Button
             onClick={() => {
               clearAuthState();
@@ -37,7 +37,7 @@ export function Admin({ onNavigate }: AdminProps) {
             }}
             variant="secondary"
           >
-            Logout
+            تسجيل الخروج
           </Button>
         </div>
 

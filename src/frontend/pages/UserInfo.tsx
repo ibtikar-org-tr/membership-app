@@ -60,13 +60,13 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess('Information updated successfully');
+        setSuccess('تم تحديث المعلومات بنجاح');
         setEditMode(false);
       } else {
-        setError(data.error || 'Update failed');
+        setError(data.error || 'فشل في التحديث');
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      setError('خطأ في الشبكة. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +76,7 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match');
+      setError('كلمات المرور الجديدة غير متطابقة');
       return;
     }
 
@@ -101,13 +101,13 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
       const data = await response.json();
 
       if (data.success) {
-        setSuccess('Password changed successfully');
+        setSuccess('تم تغيير كلمة المرور بنجاح');
         setShowPasswordForm(false);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        setError(data.error || 'Password change failed');
+        setError(data.error || 'فشل في تغيير كلمة المرور');
       }
     } catch (error) {
       setError('Network error. Please try again.');
@@ -118,11 +118,11 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
 
   if (!memberInfo) {
     return (
-      <Layout title="Member Information">
+      <Layout title="معلومات العضو">
         <div className="text-center">
-          <p className="text-red-600">No member information available</p>
+          <p className="text-red-600">لا توجد معلومات عضو متاحة</p>
           <Button onClick={() => onNavigate('landing')} className="mt-4">
-            Go to Home
+            الذهاب للرئيسية
           </Button>
         </div>
       </Layout>
@@ -130,17 +130,17 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
   }
 
   return (
-    <Layout title="Member Information">
+    <Layout title="معلومات العضو">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Welcome, {memberInfo.latin_name}</h2>
+          <h2 className="text-xl font-semibold">مرحباً، {memberInfo.latin_name}</h2>
           <div className="flex gap-2">
             <Button
               onClick={() => setEditMode(!editMode)}
               variant={editMode ? 'secondary' : 'primary'}
             >
-              {editMode ? 'Cancel' : 'Edit Information'}
+              {editMode ? 'إلغاء' : 'تحرير المعلومات'}
             </Button>
             <Button
               onClick={() => {
@@ -169,31 +169,31 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Personal Information */}
-          <Card title="Personal Information">
+          <Card title="المعلومات الشخصية">
             <div className="grid gap-4">
               <Input
-                label="Membership Number"
+                label="رقم العضوية"
                 value={memberInfo.membership_number}
                 onChange={() => {}} // Read-only
                 disabled={true}
               />
               
               <Input
-                label="Arabic Name"
+                label="الاسم العربي"
                 value={memberInfo.ar_name}
                 onChange={(value) => setMemberInfo({...memberInfo, ar_name: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="Latin Name"
+                label="الاسم اللاتيني"
                 value={memberInfo.latin_name}
                 onChange={(value) => setMemberInfo({...memberInfo, latin_name: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="Email"
+                label="البريد الإلكتروني"
                 type="email"
                 value={memberInfo.email}
                 onChange={(value) => setMemberInfo({...memberInfo, email: value})}
@@ -201,28 +201,28 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
               />
               
               <Input
-                label="Phone"
+                label="الهاتف"
                 value={memberInfo.phone}
                 onChange={(value) => setMemberInfo({...memberInfo, phone: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="WhatsApp"
+                label="واتساب"
                 value={memberInfo.whatsapp}
                 onChange={(value) => setMemberInfo({...memberInfo, whatsapp: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="Sex"
+                label="الجنس"
                 value={memberInfo.sex}
                 onChange={(value) => setMemberInfo({...memberInfo, sex: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="Birth Date"
+                label="تاريخ الميلاد"
                 type="date"
                 value={memberInfo.birth_date}
                 onChange={(value) => setMemberInfo({...memberInfo, birth_date: value})}
@@ -230,7 +230,7 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
               />
               
               <Input
-                label="Blood Type"
+                label="فصيلة الدم"
                 value={memberInfo.blood_type}
                 onChange={(value) => setMemberInfo({...memberInfo, blood_type: value})}
                 disabled={!editMode}
@@ -239,45 +239,45 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
           </Card>
 
           {/* Location & Education */}
-          <Card title="Location & Education">
+          <Card title="الموقع والتعليم">
             <div className="grid gap-4">
               <Input
-                label="Country"
+                label="البلد"
                 value={memberInfo.country}
                 onChange={(value) => setMemberInfo({...memberInfo, country: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="City"
+                label="المدينة"
                 value={memberInfo.city}
                 onChange={(value) => setMemberInfo({...memberInfo, city: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="District"
+                label="الحي"
                 value={memberInfo.district}
                 onChange={(value) => setMemberInfo({...memberInfo, district: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="University"
+                label="الجامعة"
                 value={memberInfo.university}
                 onChange={(value) => setMemberInfo({...memberInfo, university: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="Major"
+                label="التخصص"
                 value={memberInfo.major}
                 onChange={(value) => setMemberInfo({...memberInfo, major: value})}
                 disabled={!editMode}
               />
               
               <Input
-                label="Graduation Year"
+                label="سنة التخرج"
                 value={memberInfo.graduation_year}
                 onChange={(value) => setMemberInfo({...memberInfo, graduation_year: value})}
                 disabled={!editMode}
@@ -291,7 +291,7 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
                   disabled={isLoading}
                   className="w-full"
                 >
-                  {isLoading ? 'Updating...' : 'Save Changes'}
+                  {isLoading ? 'جاري التحديث...' : 'حفظ التغييرات'}
                 </Button>
               </div>
             )}
@@ -300,24 +300,24 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
 
         {/* Password Change Section */}
         <div className="mt-6">
-          <Card title="Change Password">
+          <Card title="تغيير كلمة المرور">
             {!showPasswordForm ? (
               <div className="text-center">
                 <p className="text-gray-600 mb-4">
-                  Update your password for both the membership system and Moodle LMS
+                  تحديث كلمة المرور الخاصة بك في نظام العضوية ومنصة التعلم
                 </p>
                 <Button
                   onClick={() => setShowPasswordForm(true)}
                   variant="secondary"
                 >
-                  Change Password
+                  تغيير كلمة المرور
                 </Button>
               </div>
             ) : (
               <form onSubmit={handleChangePassword}>
                 <div className="grid gap-4 max-w-md mx-auto">
                   <Input
-                    label="Current Password"
+                    label="كلمة المرور الحالية"
                     type="password"
                     value={currentPassword}
                     onChange={setCurrentPassword}
@@ -325,7 +325,7 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
                   />
                   
                   <Input
-                    label="New Password"
+                    label="كلمة المرور الجديدة"
                     type="password"
                     value={newPassword}
                     onChange={setNewPassword}
@@ -333,7 +333,7 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
                   />
                   
                   <Input
-                    label="Confirm New Password"
+                    label="تأكيد كلمة المرور الجديدة"
                     type="password"
                     value={confirmPassword}
                     onChange={setConfirmPassword}
@@ -346,7 +346,7 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
                       disabled={isLoading}
                       className="flex-1"
                     >
-                      {isLoading ? 'Changing...' : 'Change Password'}
+                      {isLoading ? 'جاري التغيير...' : 'تغيير كلمة المرور'}
                     </Button>
                     <Button
                       type="button"
@@ -354,7 +354,7 @@ export function UserInfo({ onNavigate, initialMemberInfo }: UserInfoProps) {
                       onClick={() => setShowPasswordForm(false)}
                       className="flex-1"
                     >
-                      Cancel
+                      إلغاء
                     </Button>
                   </div>
                 </div>

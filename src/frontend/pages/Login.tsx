@@ -58,27 +58,27 @@ export function Login({ onNavigate }: LoginProps) {
   };
 
   return (
-    <Layout title="Login">
+    <Layout title="تسجيل الدخول">
       <div className="max-w-md mx-auto">
-        <Card title="Member Login">
+        <Card title="دخول الأعضاء">
           <form onSubmit={handleSubmit}>
             <Input
-              label="Email, Membership Number, or Admin"
+              label="البريد الإلكتروني أو رقم العضوية أو المدير"
               value={field1}
               onChange={setField1}
-              placeholder="Enter your email, membership number, or 'admin'"
+              placeholder="أدخل البريد الإلكتروني أو رقم العضوية أو 'admin'"
               required
-              error={error && !field1 ? 'This field is required' : ''}
+              error={error && !field1 ? 'هذا الحقل مطلوب' : ''}
             />
 
             <Input
-              label="Password"
+              label="كلمة المرور"
               type="password"
               value={password}
               onChange={setPassword}
-              placeholder="Enter your password"
+              placeholder="أدخل كلمة المرور"
               required
-              error={error && !password ? 'This field is required' : ''}
+              error={error && !password ? 'هذا الحقل مطلوب' : ''}
             />
 
             {error && (
@@ -93,7 +93,7 @@ export function Login({ onNavigate }: LoginProps) {
                 disabled={isLoading}
                 className="w-full hover:cursor-pointer"
               >
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
               </Button>
 
               <Button
@@ -102,7 +102,7 @@ export function Login({ onNavigate }: LoginProps) {
                 onClick={() => onNavigate('forgot')}
                 className="w-1/2 hover:cursor-pointer"
               >
-                Forgot Password?
+                نسيت كلمة المرور؟
               </Button>
 
               <button
@@ -110,7 +110,7 @@ export function Login({ onNavigate }: LoginProps) {
               onClick={() => onNavigate('landing')}
               className="w-full hover:cursor-pointer text-gray-600 hover:text-gray-800 bg-transparent border-none"
               >
-              Back to Home
+              العودة للرئيسية
               </button>
             </div>
           </form>

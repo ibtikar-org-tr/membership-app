@@ -27,26 +27,26 @@ export function ApplicationLogs({ setSuccess, setError }: ApplicationLogsProps) 
   const [limit, setLimit] = useState(100);
 
   const statusOptions = [
-    { value: '', label: 'All Statuses' },
-    { value: 'success', label: 'Success' },
-    { value: 'failed', label: 'Failed' },
-    { value: 'pending', label: 'Pending' },
+    { value: '', label: 'جميع الحالات' },
+    { value: 'success', label: 'نجح' },
+    { value: 'failed', label: 'فشل' },
+    { value: 'pending', label: 'معلق' },
   ];
 
   const actionOptions = [
-    { value: '', label: 'All Actions' },
-    { value: 'login_attempt', label: 'Login Attempt' },
-    { value: 'admin_login', label: 'Admin Login' },
-    { value: 'member_login', label: 'Member Login' },
-    { value: 'password_reset_request', label: 'Password Reset Request' },
-    { value: 'password_reset_completed', label: 'Password Reset Completed' },
-    { value: 'view_profile', label: 'View Profile' },
-    { value: 'update_profile', label: 'Update Profile' },
-    { value: 'change_password', label: 'Change Password' },
-    { value: 'cron_process_registrations', label: 'Process Registrations (Cron)' },
-    { value: 'cron_new_registration_processed', label: 'New Registration Processed' },
-    { value: 'update_google_form_config', label: 'Update Google Form Config' },
-    { value: 'update_google_sheet_config', label: 'Update Google Sheet Config' },
+    { value: '', label: 'جميع الإجراءات' },
+    { value: 'login_attempt', label: 'محاولة تسجيل دخول' },
+    { value: 'admin_login', label: 'تسجيل دخول المدير' },
+    { value: 'member_login', label: 'تسجيل دخول العضو' },
+    { value: 'password_reset_request', label: 'طلب إعادة تعيين كلمة المرور' },
+    { value: 'password_reset_completed', label: 'إكمال إعادة تعيين كلمة المرور' },
+    { value: 'view_profile', label: 'عرض الملف الشخصي' },
+    { value: 'update_profile', label: 'تحديث الملف الشخصي' },
+    { value: 'change_password', label: 'تغيير كلمة المرور' },
+    { value: 'cron_process_registrations', label: 'معالجة التسجيلات (المهام التلقائية)' },
+    { value: 'cron_new_registration_processed', label: 'تم معالجة تسجيل جديد' },
+    { value: 'update_google_form_config', label: 'تحديث إعدادات نموذج جوجل' },
+    { value: 'update_google_sheet_config', label: 'تحديث إعدادات جدول جوجل' },
   ];
 
   useEffect(() => {
@@ -62,10 +62,10 @@ export function ApplicationLogs({ setSuccess, setError }: ApplicationLogsProps) 
       if (data.success) {
         setLogs(data.logs);
       } else {
-        setError(data.error || 'Failed to load logs');
+        setError(data.error || 'فشل في تحميل السجلات');
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      setError('خطأ في الشبكة. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +100,7 @@ export function ApplicationLogs({ setSuccess, setError }: ApplicationLogsProps) 
   if (isLoading) {
     return (
       <div className="py-8">
-        <LoadingSpinner size="lg" text="Loading application logs..." className="py-12" />
+        <LoadingSpinner size="lg" text="جاري تحميل سجلات التطبيق..." className="py-12" />
       </div>
     );
   }
@@ -108,10 +108,10 @@ export function ApplicationLogs({ setSuccess, setError }: ApplicationLogsProps) 
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <Card title="Filter Logs">
+      <Card title="تصفية السجلات">
         <div className="grid lg:grid-cols-4 gap-4">
           <Input
-            placeholder="Search by user or action..."
+            placeholder="البحث بالمستخدم أو الإجراء..."
             value={searchTerm}
             onChange={setSearchTerm}
           />
@@ -120,43 +120,43 @@ export function ApplicationLogs({ setSuccess, setError }: ApplicationLogsProps) 
             value={statusFilter}
             onChange={setStatusFilter}
             options={statusOptions}
-            placeholder="Filter by status"
+            placeholder="تصفية حسب الحالة"
           />
 
           <Select
             value={actionFilter}
             onChange={setActionFilter}
             options={actionOptions}
-            placeholder="Filter by action"
+            placeholder="تصفية حسب الإجراء"
           />
 
           <Select
             value={limit.toString()}
             onChange={(value) => setLimit(parseInt(value))}
             options={[
-              { value: '50', label: '50 logs' },
-              { value: '100', label: '100 logs' },
-              { value: '200', label: '200 logs' },
-              { value: '500', label: '500 logs' },
+              { value: '50', label: '50 سجل' },
+              { value: '100', label: '100 سجل' },
+              { value: '200', label: '200 سجل' },
+              { value: '500', label: '500 سجل' },
             ]}
           />
         </div>
 
         <div className="mt-4 flex justify-between items-center">
           <p className="text-sm text-gray-600">
-            Showing {filteredLogs.length} of {logs.length} logs
+            عرض {filteredLogs.length} من {logs.length} سجل
           </p>
           <Button onClick={loadLogs} variant="secondary" size="sm">
-            Refresh
+            تحديث
           </Button>
         </div>
       </Card>
 
       {/* Logs Table */}
-      <Card title="Application Logs">
+      <Card title="سجلات التطبيق">
         {filteredLogs.length === 0 ? (
           <p className="text-center text-gray-500 py-8">
-            No logs found matching your filters.
+            لم يتم العثور على سجلات مطابقة للتصفية.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -164,16 +164,16 @@ export function ApplicationLogs({ setSuccess, setError }: ApplicationLogsProps) 
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date & Time
+                    التاريخ والوقت
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
+                    المستخدم
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
+                    الإجراء
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    الحالة
                   </th>
                 </tr>
               </thead>

@@ -17,9 +17,9 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
   const [error, setError] = useState('');
 
   const typeOptions = [
-    { value: 'email', label: 'Email Address' },
-    { value: 'phone', label: 'Phone Number' },
-    { value: 'membership_number', label: 'Membership Number' }
+    { value: 'email', label: 'البريد الإلكتروني' },
+    { value: 'phone', label: 'رقم الهاتف' },
+    { value: 'membership_number', label: 'رقم العضوية' }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,13 +57,13 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
   const getPlaceholder = () => {
     switch (type) {
       case 'email':
-        return 'Enter your email address';
+        return 'أدخل البريد الإلكتروني';
       case 'phone':
-        return 'Enter your phone number';
+        return 'أدخل رقم الهاتف';
       case 'membership_number':
-        return 'Enter your membership number';
+        return 'أدخل رقم العضوية';
       default:
-        return 'Select a type first';
+        return 'اختر النوع أولاً';
     }
   };
 
@@ -79,15 +79,15 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
   };
 
   return (
-    <Layout title="Request Membership Information">
+    <Layout title="طلب معلومات العضوية">
       <div className="max-w-md mx-auto">
-        <Card title="Forgot Membership Information">
+        <Card title="نسيت معلومات العضوية">
           {success ? (
             <div className="text-center">
               <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-                <h3 className="font-medium mb-2">Request Submitted</h3>
+                <h3 className="font-medium mb-2">تم إرسال الطلب</h3>
                 <p className="text-sm">
-                  If the provided information is valid, your membership details will be sent to your email address.
+                  إذا كانت المعلومات المقدمة صحيحة، سيتم إرسال تفاصيل العضوية إلى عنوان بريدك الإلكتروني.
                 </p>
               </div>
               
@@ -96,14 +96,14 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
                   onClick={() => onNavigate('login')}
                   className="w-full"
                 >
-                  Go to Login
+                  الذهاب لتسجيل الدخول
                 </Button>
                 <Button
                   variant="secondary"
                   onClick={() => onNavigate('landing')}
                   className="w-full"
                 >
-                  Back to Home
+                  العودة للرئيسية
                 </Button>
               </div>
             </div>
@@ -111,21 +111,21 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-4">
-                  Choose how you'd like to receive your membership information:
+                  اختر كيف تريد الحصول على معلومات العضوية:
                 </p>
               </div>
 
               <Select
-                label="Identification Method"
+                label="طريقة التعريف"
                 value={type}
                 onChange={setType}
                 options={typeOptions}
-                placeholder="Select identification method"
+                placeholder="اختر طريقة التعريف"
                 required
               />
 
               <Input
-                label="Enter Information"
+                label="أدخل المعلومات"
                 type={getInputType()}
                 value={value}
                 onChange={setValue}

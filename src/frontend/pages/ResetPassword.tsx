@@ -23,7 +23,7 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
       const urlParams = new URLSearchParams(window.location.search);
       const urlToken = urlParams.get('token');
       if (!urlToken) {
-        setError('Invalid or missing reset token');
+        setError('رمز إعادة التعيين غير صالح أو مفقود');
         setIsValidToken(false);
       }
     }
@@ -33,12 +33,12 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('كلمات المرور غير متطابقة');
       return;
     }
 
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError('يجب أن تكون كلمة المرور 6 أحرف على الأقل');
       return;
     }
 
@@ -67,7 +67,7 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
         setError(data.error || 'Password reset failed');
       }
     } catch (error) {
-      setError('Network error. Please try again.');
+      setError('خطأ في الشبكة. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsLoading(false);
     }
@@ -75,12 +75,12 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
 
   if (!isValidToken) {
     return (
-      <Layout title="Reset Information">
+      <Layout title="إعادة تعيين المعلومات">
         <div className="max-w-md mx-auto">
-          <Card title="Invalid Token">
+          <Card title="رمز غير صالح">
             <div className="text-center">
               <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                <p>The password reset link is invalid or has expired.</p>
+                <p>رابط إعادة تعيين كلمة المرور غير صالح أو منتهي الصلاحية.</p>
               </div>
               
               <div className="flex flex-col gap-3">
@@ -88,14 +88,14 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
                   onClick={() => onNavigate('forgot')}
                   className="w-full"
                 >
-                  Request New Reset Link
+                  طلب رابط إعادة تعيين جديد
                 </Button>
                 <Button
                   variant="secondary"
                   onClick={() => onNavigate('landing')}
                   className="w-full"
                 >
-                  Back to Home
+                  العودة للرئيسية
                 </Button>
               </div>
             </div>
@@ -106,15 +106,15 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
   }
 
   return (
-    <Layout title="Reset Information">
+    <Layout title="إعادة تعيين المعلومات">
       <div className="max-w-md mx-auto">
-        <Card title="Reset Your Password">
+        <Card title="إعادة تعيين كلمة المرور">
           {success ? (
             <div className="text-center">
               <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-                <h3 className="font-medium mb-2">Password Updated Successfully</h3>
+                <h3 className="font-medium mb-2">تم تحديث كلمة المرور بنجاح</h3>
                 <p className="text-sm">
-                  Your password has been updated for both the membership system and Moodle LMS.
+                  تم تحديث كلمة المرور الخاصة بك في نظام العضوية ومنصة التعلم.
                 </p>
               </div>
               
@@ -123,14 +123,14 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
                   onClick={() => onNavigate('login')}
                   className="w-full"
                 >
-                  Go to Login
+                  الذهاب لتسجيل الدخول
                 </Button>
                 <Button
                   variant="secondary"
                   onClick={() => onNavigate('landing')}
                   className="w-full"
                 >
-                  Back to Home
+                  العودة للرئيسية
                 </Button>
               </div>
             </div>
@@ -138,25 +138,25 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <p className="text-sm text-gray-600">
-                  Please enter your new password below.
+                  يرجى إدخال كلمة المرور الجديدة أدناه.
                 </p>
               </div>
 
               <Input
-                label="New Password"
+                label="كلمة المرور الجديدة"
                 type="password"
                 value={newPassword}
                 onChange={setNewPassword}
-                placeholder="Enter your new password"
+                placeholder="أدخل كلمة المرور الجديدة"
                 required
               />
 
               <Input
-                label="Confirm New Password"
+                label="تأكيد كلمة المرور الجديدة"
                 type="password"
                 value={confirmPassword}
                 onChange={setConfirmPassword}
-                placeholder="Confirm your new password"
+                placeholder="أكد كلمة المرور الجديدة"
                 required
               />
 
@@ -172,7 +172,7 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
                   disabled={isLoading || !newPassword || !confirmPassword}
                   className="w-full"
                 >
-                  {isLoading ? 'Updating Password...' : 'Update Password'}
+                  {isLoading ? 'جاري تحديث كلمة المرور...' : 'تحديث كلمة المرور'}
                 </Button>
 
                 <Button
@@ -181,7 +181,7 @@ export function ResetPassword({ onNavigate, token }: ResetPasswordProps) {
                   onClick={() => onNavigate('landing')}
                   className="w-full"
                 >
-                  Back to Home
+                  العودة للرئيسية
                 </Button>
               </div>
             </form>
