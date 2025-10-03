@@ -34,6 +34,12 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          preCommands: |
+            wrangler vars:set MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX"
+            wrangler vars:set MOODLE_API_URL "$MOODLE_API_URL"
+            wrangler vars:set SMTP_HOST "$SMTP_HOST"
+            wrangler vars:set SMTP_PORT "$SMTP_PORT"
+            wrangler vars:set SMTP_USER "$SMTP_USER"
           secrets: |
             ADMIN_PASSWORD
             MOODLE_API_TOKEN
