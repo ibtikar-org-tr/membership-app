@@ -32,17 +32,41 @@ jobs:
 
       - name: Update wrangler config with environment variables
         run: |
-          # Use Node.js to update wrangler.jsonc with environment variables
-          node -e "
+          # Create script to update wrangler.jsonc
+          cat > update_config.js << 'EOF'
           const fs = require('fs');
-          const config = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, ''));
-          config.vars.MEMBERSHIP_NUMBER_PREFIX = process.env.MEMBERSHIP_NUMBER_PREFIX;
-          config.vars.MOODLE_API_URL = process.env.MOODLE_API_URL;
-          config.vars.SMTP_HOST = process.env.SMTP_HOST;
-          config.vars.SMTP_PORT = process.env.SMTP_PORT;
-          config.vars.SMTP_USER = process.env.SMTP_USER;
-          fs.writeFileSync('wrangler.jsonc', JSON.stringify(config, null, 2));
-          "
+          
+          try {
+            // Read the file
+            let content = fs.readFileSync('wrangler.jsonc', 'utf8');
+            
+            // Remove single-line comments
+            content = content.replace(/\/\/.*$/gm, '');
+            
+            // Remove multi-line comments
+            content = content.replace(/\/\*[\s\S]*?\*\//g, '');
+            
+            // Parse JSON
+            const config = JSON.parse(content);
+            
+            // Update vars
+            if (!config.vars) config.vars = {};
+            config.vars.MEMBERSHIP_NUMBER_PREFIX = process.env.MEMBERSHIP_NUMBER_PREFIX;
+            config.vars.MOODLE_API_URL = process.env.MOODLE_API_URL;
+            config.vars.SMTP_HOST = process.env.SMTP_HOST;
+            config.vars.SMTP_PORT = process.env.SMTP_PORT;
+            config.vars.SMTP_USER = process.env.SMTP_USER;
+            
+            // Write back as JSON (not JSONC)
+            fs.writeFileSync('wrangler.jsonc', JSON.stringify(config, null, 2));
+            console.log('Successfully updated wrangler.jsonc with environment variables');
+          } catch (error) {
+            console.error('Error updating config:', error);
+            process.exit(1);
+          }
+          EOF
+          
+          node update_config.js
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
