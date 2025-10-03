@@ -30,15 +30,6 @@ jobs:
       - name: Build the project
         run: npm run build
 
-      - name: Update wrangler.jsonc with environment variables
-        run: |
-          jq --arg MOODLE_API_URL "$MOODLE_API_URL" \
-             --arg SMTP_HOST "$SMTP_HOST" \
-             --arg SMTP_USER "$SMTP_USER" \
-             '.vars.MOODLE_API_URL = $MOODLE_API_URL |
-              .vars.SMTP_HOST = $SMTP_HOST |
-              .vars.SMTP_USER = $SMTP_USER' wrangler.jsonc > tmp.json && mv tmp.json wrangler.jsonc
-
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
