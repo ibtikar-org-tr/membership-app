@@ -32,8 +32,8 @@ jobs:
 
       - name: Update wrangler config with environment variables
         run: |
-          # Create script to update wrangler.jsonc
-          cat > update_config.js << 'EOF'
+          # Create script to update wrangler.jsonc (using .cjs extension for CommonJS)
+          cat > update_config.cjs << 'EOF'
           const fs = require('fs');
           
           try {
@@ -66,7 +66,7 @@ jobs:
           }
           EOF
           
-          node update_config.js
+          node update_config.cjs
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
