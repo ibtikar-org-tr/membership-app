@@ -30,11 +30,24 @@ jobs:
       - name: Build the project
         run: npm run build
 
+      - name: Update wrangler config with environment variables
+        run: |
+          # Use Node.js to update wrangler.jsonc with environment variables
+          node -e "
+          const fs = require('fs');
+          const config = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, ''));
+          config.vars.MEMBERSHIP_NUMBER_PREFIX = process.env.MEMBERSHIP_NUMBER_PREFIX;
+          config.vars.MOODLE_API_URL = process.env.MOODLE_API_URL;
+          config.vars.SMTP_HOST = process.env.SMTP_HOST;
+          config.vars.SMTP_PORT = process.env.SMTP_PORT;
+          config.vars.SMTP_USER = process.env.SMTP_USER;
+          fs.writeFileSync('wrangler.jsonc', JSON.stringify(config, null, 2));
+          "
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          environment: deployment
           secrets: |
             ADMIN_PASSWORD
             MOODLE_API_TOKEN
