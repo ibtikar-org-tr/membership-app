@@ -32,15 +32,11 @@ jobs:
 
       - name: Update wrangler.jsonc with environment variables
         run: |
-          jq --arg MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX" \
-             --arg MOODLE_API_URL "$MOODLE_API_URL" \
+          jq --arg MOODLE_API_URL "$MOODLE_API_URL" \
              --arg SMTP_HOST "$SMTP_HOST" \
-             --arg SMTP_PORT "$SMTP_PORT" \
              --arg SMTP_USER "$SMTP_USER" \
-             '.vars.MEMBERSHIP_NUMBER_PREFIX = $MEMBERSHIP_NUMBER_PREFIX |
-              .vars.MOODLE_API_URL = $MOODLE_API_URL |
+             '.vars.MOODLE_API_URL = $MOODLE_API_URL |
               .vars.SMTP_HOST = $SMTP_HOST |
-              .vars.SMTP_PORT = $SMTP_PORT |
               .vars.SMTP_USER = $SMTP_USER' wrangler.jsonc > tmp.json && mv tmp.json wrangler.jsonc
 
       - name: Deploy to Cloudflare Workers
