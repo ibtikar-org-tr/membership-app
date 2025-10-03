@@ -30,35 +30,32 @@ jobs:
       - name: Build the project
         run: npm run build
 
-      - name: Install Wrangler
-        run: npm install -g wrangler
-
-      - name: Set secrets in Worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Update wrangler.jsonc with environment variables
         run: |
-          echo "${{ secrets.ADMIN_PASSWORD }}" | wrangler secret put ADMIN_PASSWORD
-          echo "${{ secrets.MOODLE_API_TOKEN }}" | wrangler secret put MOODLE_API_TOKEN
-          echo "${{ secrets.SMTP_PASS }}" | wrangler secret put SMTP_PASS
-          echo "${{ secrets.JWT_SECRET }}" | wrangler secret put JWT_SECRET
-          echo "${{ secrets.GOOGLE_API_KEY }}" | wrangler secret put GOOGLE_API_KEY
-
-      - name: Inject env variables into wrangler.jsonc
-        run: |
-          jq --argjson MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX" \
+          jq --arg MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX" \
              --arg MOODLE_API_URL "$MOODLE_API_URL" \
              --arg SMTP_HOST "$SMTP_HOST" \
-             --argjson SMTP_PORT "$SMTP_PORT" \
+             --arg SMTP_PORT "$SMTP_PORT" \
              --arg SMTP_USER "$SMTP_USER" \
-             '.vars = {
-                MEMBERSHIP_NUMBER_PREFIX: $MEMBERSHIP_NUMBER_PREFIX,
-                MOODLE_API_URL: $MOODLE_API_URL,
-                SMTP_HOST: $SMTP_HOST,
-                SMTP_PORT: $SMTP_PORT,
-                SMTP_USER: $SMTP_USER
-              }' wrangler.jsonc > tmp.json && mv tmp.json wrangler.jsonc
-      
-      - name: Deploy with vars
+             '.vars.MEMBERSHIP_NUMBER_PREFIX = $MEMBERSHIP_NUMBER_PREFIX |
+              .vars.MOODLE_API_URL = $MOODLE_API_URL |
+              .vars.SMTP_HOST = $SMTP_HOST |
+              .vars.SMTP_PORT = $SMTP_PORT |
+              .vars.SMTP_USER = $SMTP_USER' wrangler.jsonc > tmp.json && mv tmp.json wrangler.jsonc
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          secrets: |
+            ADMIN_PASSWORD
+            MOODLE_API_TOKEN
+            SMTP_PASS
+            JWT_SECRET
+            GOOGLE_API_KEY
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: wrangler deploy --env-file .action.vars
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          MOODLE_API_TOKEN: ${{ secrets.MOODLE_API_TOKEN }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
