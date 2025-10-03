@@ -68,22 +68,15 @@ jobs:
           
           node update_config.cjs
 
-      - name: Update existing secrets
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: |
-            echo "$ADMIN_PASSWORD" | wrangler secret put ADMIN_PASSWORD
-            echo "$MOODLE_API_TOKEN" | wrangler secret put MOODLE_API_TOKEN  
-            echo "$SMTP_PASS" | wrangler secret put SMTP_PASS
-            echo "$JWT_SECRET" | wrangler secret put JWT_SECRET
-            echo "$GOOGLE_API_KEY" | wrangler secret put GOOGLE_API_KEY
+      - name: Set secrets in Worker
         env:
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          MOODLE_API_TOKEN: ${{ secrets.MOODLE_API_TOKEN }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "${{ secrets.ADMIN_PASSWORD }}" | wrangler secret put ADMIN_PASSWORD
+          echo "${{ secrets.MOODLE_API_TOKEN }}" | wrangler secret put MOODLE_API_TOKEN
+          echo "${{ secrets.SMTP_PASS }}" | wrangler secret put SMTP_PASS
+          echo "${{ secrets.JWT_SECRET }}" | wrangler secret put JWT_SECRET
+          echo "${{ secrets.GOOGLE_API_KEY }}" | wrangler secret put GOOGLE_API_KEY
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
