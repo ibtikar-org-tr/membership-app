@@ -71,10 +71,18 @@ jobs:
           
           node update_config.cjs
 
-      - name: Set secrets in Worker
+      - name: Clean up existing secrets and set new ones
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
+          # Delete existing secrets if they exist (ignore errors)
+          wrangler secret delete ADMIN_PASSWORD --force || true
+          wrangler secret delete MOODLE_API_TOKEN --force || true
+          wrangler secret delete SMTP_PASS --force || true
+          wrangler secret delete JWT_SECRET --force || true
+          wrangler secret delete GOOGLE_API_KEY --force || true
+          
+          # Set new secrets
           echo "${{ secrets.ADMIN_PASSWORD }}" | wrangler secret put ADMIN_PASSWORD
           echo "${{ secrets.MOODLE_API_TOKEN }}" | wrangler secret put MOODLE_API_TOKEN
           echo "${{ secrets.SMTP_PASS }}" | wrangler secret put SMTP_PASS
