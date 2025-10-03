@@ -32,7 +32,7 @@ jobs:
 
       - name: Update wrangler config with environment variables
         run: |
-          # Create script to update wrangler.jsonc using string replacement
+          # Create script to update wrangler.jsonc - remove secrets and set vars
           cat > update_config.cjs << 'EOF'
           const fs = require('fs');
           
@@ -46,6 +46,16 @@ jobs:
             content = content.replace(/"SMTP_HOST":\s*"[^"]*"/, `"SMTP_HOST": "${process.env.SMTP_HOST}"`);
             content = content.replace(/"SMTP_PORT":\s*"[^"]*"/, `"SMTP_PORT": "${process.env.SMTP_PORT}"`);
             content = content.replace(/"SMTP_USER":\s*"[^"]*"/, `"SMTP_USER": "${process.env.SMTP_USER}"`);
+            
+            // Remove sensitive data from vars (these will be secrets instead)
+            content = content.replace(/"ADMIN_PASSWORD":\s*"[^"]*",?\s*/, '');
+            content = content.replace(/"MOODLE_API_TOKEN":\s*"[^"]*",?\s*/, '');
+            content = content.replace(/"SMTP_PASS":\s*"[^"]*",?\s*/, '');
+            content = content.replace(/"JWT_SECRET":\s*"[^"]*",?\s*/, '');
+            content = content.replace(/"GOOGLE_API_KEY":\s*{[^}]*},?\s*/, '');
+            
+            // Clean up any trailing commas in vars section
+            content = content.replace(/("vars":\s*{[^}]*),\s*}/, '$1}');
             
             // Write back the modified content
             fs.writeFileSync('wrangler.jsonc', content);
