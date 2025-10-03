@@ -30,6 +30,9 @@ jobs:
       - name: Build the project
         run: npm run build
 
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
       - name: Update wrangler config with environment variables
         run: |
           # Create script to update wrangler.jsonc - remove secrets and set vars
