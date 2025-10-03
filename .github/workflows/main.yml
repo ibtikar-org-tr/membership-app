@@ -45,10 +45,10 @@ jobs:
 
       - name: Inject env variables into wrangler.jsonc
         run: |
-          jq --arg MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX" \
+          jq --argjson MEMBERSHIP_NUMBER_PREFIX "$MEMBERSHIP_NUMBER_PREFIX" \
              --arg MOODLE_API_URL "$MOODLE_API_URL" \
              --arg SMTP_HOST "$SMTP_HOST" \
-             --arg SMTP_PORT "$SMTP_PORT" \
+             --argjson SMTP_PORT "$SMTP_PORT" \
              --arg SMTP_USER "$SMTP_USER" \
              '.vars = {
                 MEMBERSHIP_NUMBER_PREFIX: $MEMBERSHIP_NUMBER_PREFIX,
