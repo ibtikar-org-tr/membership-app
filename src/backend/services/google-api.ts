@@ -125,7 +125,7 @@ export class GoogleAPIService {
     const token = await this.getAccessToken();
     
     await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`,
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`,
       {
         method: 'PUT',
         headers: {
@@ -134,6 +134,42 @@ export class GoogleAPIService {
         },
         body: JSON.stringify({
           values,
+        }),
+      }
+    );
+  }
+
+  async appendSheetData(spreadsheetId: string, range: string, values: any[][]): Promise<void> {
+    const token = await this.getAccessToken();
+    
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          values,
+        }),
+      }
+    );
+  }
+
+  async updateSingleCell(spreadsheetId: string, cellRange: string, value: any): Promise<void> {
+    const token = await this.getAccessToken();
+    
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${cellRange}?valueInputOption=USER_ENTERED`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          values: [[value]],
         }),
       }
     );
@@ -198,7 +234,7 @@ export class GoogleAPIService {
     for (let i = 0; i < rows.length; i++) {
       if (rows[i][membershipColumnIndex] === membershipNumber) {
         const updateRange = `${String.fromCharCode(65 + passwordColumnIndex)}${i + 2}`;
-        await this.updateSheetData(spreadsheetId, updateRange, [[newPassword]]);
+        await this.updateSingleCell(spreadsheetId, updateRange, newPassword);
         break;
       }
     }

@@ -261,7 +261,7 @@ export class CronJobService {
       const columnLetter = String.fromCharCode(65 + columnIndex); // Convert 0=A, 1=B, etc.
       const range = `${columnLetter}${rowNumber}`;
       
-      await this.googleService.updateSheetData(sheetId, range, [[status]]);
+      await this.googleService.updateSingleCell(sheetId, range, status);
       console.log(`Marked row ${rowNumber} as ${status} in column ${columnLetter}`);
     } catch (error) {
       console.error(`Failed to mark row ${rowNumber} as ${status}:`, error);
@@ -294,30 +294,27 @@ export class CronJobService {
   }
 
   private async addMemberToMemberSheet(memberInfo: MemberInfo, memberSheetConfig: any): Promise<void> {
-    // Get current member sheet data
-    const data = await this.googleService.getSheetData(memberSheetConfig.google_sheet_id, 'A:Z');
+    // Check if member sheet has any data to determine if we need headers
+    const data = await this.googleService.getSheetData(memberSheetConfig.google_sheet_id, 'A1:A1');
     
     if (data.length === 0) {
-      // If member sheet is empty, create headers
+      // If member sheet is empty, create headers first
       const headers = Object.keys(memberSheetConfig.corresponding_values);
-      const memberRow = headers.map(header => {
-        const memberField = memberSheetConfig.corresponding_values[header];
-        return (memberInfo as any)[memberField] || '';
-      });
-      
-      const newData = [headers, memberRow];
-      await this.googleService.updateSheetData(memberSheetConfig.google_sheet_id, 'A:Z', newData);
-    } else {
-      // Add new row to existing member sheet data
-      const headers = data[0];
-      const memberRow = headers.map(header => {
-        const memberField = memberSheetConfig.corresponding_values[header];
-        return (memberInfo as any)[memberField] || '';
-      });
-      
-      const newData = [...data, memberRow];
-      await this.googleService.updateSheetData(memberSheetConfig.google_sheet_id, 'A:Z', newData);
+      await this.googleService.updateSheetData(memberSheetConfig.google_sheet_id, 'A1:Z1', [headers]);
     }
+    
+    // Get headers from the sheet to ensure correct column mapping
+    const headerData = await this.googleService.getSheetData(memberSheetConfig.google_sheet_id, 'A1:Z1');
+    const headers = headerData[0] || Object.keys(memberSheetConfig.corresponding_values);
+    
+    // Create member row based on header order
+    const memberRow = headers.map(header => {
+      const memberField = memberSheetConfig.corresponding_values[header];
+      return (memberInfo as any)[memberField] || '';
+    });
+    
+    // Append the new member row efficiently
+    await this.googleService.appendSheetData(memberSheetConfig.google_sheet_id, 'A:Z', [memberRow]);
   }
 
   private async generateMembershipNumber(): Promise<string> {
