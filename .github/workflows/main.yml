@@ -84,4 +84,7 @@ jobs:
           echo "${{ secrets.MOODLE_API_TOKEN }}" | wrangler secret put MOODLE_API_TOKEN
           echo "${{ secrets.SMTP_PASS }}" | wrangler secret put SMTP_PASS
           echo "${{ secrets.JWT_SECRET }}" | wrangler secret put JWT_SECRET
-          echo "${{ secrets.GOOGLE_API_KEY }}" | wrangler secret put GOOGLE_API_KEY
+          # Handle JSON secret properly by writing to temp file first
+          echo '${{ secrets.GOOGLE_API_KEY }}' > GOOGLE_API.json
+          wrangler secret put GOOGLE_API_KEY < GOOGLE_API.json
+          rm GOOGLE_API.json
