@@ -143,9 +143,23 @@ authRouter.post('/forgot-password', async (c) => {
       status: 'success'
     });
 
+    // Helper function to mask email for privacy
+    const maskEmail = (email: string): string => {
+      if (!email || !email.includes('@')) {
+        return email;
+      }
+      const [localPart, domain] = email.split('@');
+      if (localPart.length <= 3) {
+        return `${localPart[0]}****${localPart[localPart.length - 1]}@${domain}`;
+      }
+      const maskedLocal = `${localPart.slice(0, 3)}****${localPart.slice(-2)}`;
+      return `${maskedLocal}@${domain}`;
+    };
+
     return c.json({ 
       success: true, 
-      message: 'If the provided information is valid, a reset link will be sent to your email.' 
+      message: 'If the provided information is valid, a reset link will be sent to your email.',
+      maskedEmail: maskEmail(member.email)
     });
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -242,8 +256,8 @@ authRouter.post('/test-jwt', async (c) => {
   } catch (error) {
     return c.json({
       success: false,
-      error: error.message,
-      stack: error.stack
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
     });
   }
 });

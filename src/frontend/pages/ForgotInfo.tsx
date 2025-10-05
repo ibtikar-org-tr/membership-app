@@ -4,7 +4,7 @@ import { Card } from '../components/Card';
 import { Select } from '../components/Select';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-import { maskEmail } from '../utils/auth';
+
 
 interface ForgotInfoProps {
   onNavigate: (page: string) => void;
@@ -16,7 +16,7 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
 
   const typeOptions = [
     { value: 'email', label: 'البريد الإلكتروني' },
@@ -29,7 +29,7 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
     setIsLoading(true);
     setError('');
     setSuccess(false);
-    setSubmittedEmail('');
+    setMaskedEmail('');
 
     try {
       const response = await fetch('/api/auth/forgot-password', {
@@ -46,9 +46,9 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
       const data = await response.json();
 
       if (data.success) {
-        // Store the email for masking in success message if type is email
-        if (type === 'email') {
-          setSubmittedEmail(value);
+        // Store the masked email from backend response if provided
+        if (data.maskedEmail) {
+          setMaskedEmail(data.maskedEmail);
         }
         setSuccess(true);
       } else {
@@ -94,12 +94,15 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
               <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
                 <h3 className="font-medium mb-2">تم إرسال الطلب</h3>
                 <p className="text-sm">
-                  إذا كانت المعلومات المقدمة صحيحة، سيتم إرسال تفاصيل العضوية إلى عنوان بريدك الإلكتروني
-                  {submittedEmail && (
+                  إذا كانت المعلومات المقدمة صحيحة، سيتم إرسال تفاصيل العضوية إلى عنوان بريدك الإلكتروني.
+                  {maskedEmail && (
                     <>
                       <br />
-                      <span className="font-mono text-xs mt-1 block">
-                        {maskEmail(submittedEmail)}
+                      <span className="text-xs mt-2 block text-gray-600">
+                        تم الإرسال إلى: 
+                        <span className="font-mono font-medium text-gray-800">
+                          {maskedEmail}
+                        </span>
                       </span>
                     </>
                   )}
