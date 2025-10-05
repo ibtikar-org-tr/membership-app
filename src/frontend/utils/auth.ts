@@ -50,3 +50,24 @@ export function getMemberInfo(): any {
   const state = loadAuthState();
   return state?.memberInfo || null;
 }
+
+/**
+ * Masks an email address for privacy while keeping it recognizable
+ * Example: john.doe@gmail.com -> joh****oe@gmail.com
+ */
+export function maskEmail(email: string): string {
+  if (!email || !email.includes('@')) {
+    return email;
+  }
+
+  const [localPart, domain] = email.split('@');
+  
+  if (localPart.length <= 3) {
+    // For very short emails, show first and last character
+    return `${localPart[0]}****${localPart[localPart.length - 1]}@${domain}`;
+  }
+  
+  // For longer emails, show first 3 and last 2 characters
+  const maskedLocal = `${localPart.slice(0, 3)}****${localPart.slice(-2)}`;
+  return `${maskedLocal}@${domain}`;
+}
