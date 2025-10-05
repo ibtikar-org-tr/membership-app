@@ -6,7 +6,11 @@ import { memberRouter } from './backend/routers/member'
 import { handleCronJob } from './backend/services/cron'
 import { CloudflareBindings } from './backend/models/types'
 
-const app = new Hono<{ Bindings: CloudflareBindings }>()
+type Bindings = CloudflareBindings & {
+  ASSETS: any // Cloudflare Assets binding
+}
+
+const app = new Hono<{ Bindings: Bindings }>()
 
 // API Routes
 app.route('/api/auth', authRouter)
@@ -19,6 +23,12 @@ const frontendRoutes = ['/', '/login', '/forgot-password', '/reset-password', '/
 frontendRoutes.forEach(route => {
   app.get(route, renderer);
 });
+
+// Handle static assets
+app.get('/client/*', async (c) => {
+  const assetPath = c.req.path.replace('/client', '')
+  return c.env.ASSETS.fetch(new Request(`${new URL(c.req.url).origin}${assetPath}`))
+})
 
 // Catch-all route for client-side routing
 app.get('*', (c) => {

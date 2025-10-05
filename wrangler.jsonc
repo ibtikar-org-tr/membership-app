@@ -4,6 +4,10 @@
   "compatibility_date": "2025-08-03",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./src/backendMain.tsx",
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS"
+  },
   "d1_databases": [
     {
       "binding": "DB",
