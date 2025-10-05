@@ -146,7 +146,7 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
                   disabled={isLoading || !type || !value}
                   className="w-full"
                 >
-                  {isLoading ? 'Sending Request...' : 'Send Membership Information'}
+                  {isLoading ? 'يتمّ الإرسال...' : 'أرسل بيانات العضوية'}
                 </Button>
 
                 {/* <Button
@@ -164,7 +164,7 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
                   onClick={() => onNavigate('landing')}
                   className="w-full"
                 >
-                  Back to Home
+                  العودة للصفحة الرئيسية
                 </Button>
               </div>
             </form>
