@@ -112,7 +112,7 @@ authRouter.post('/forgot-password', async (c) => {
         status: 'failed_user_not_found'
       });
       
-      return c.json({ success: true, message: 'If the provided information is valid, a reset link will be sent to your email.' });
+      return c.json({ success: true, found: false, message: 'If the provided information is valid, a reset link will be sent to your email.' });
     }
 
     // Generate reset token
@@ -158,6 +158,7 @@ authRouter.post('/forgot-password', async (c) => {
 
     return c.json({ 
       success: true, 
+      found: true,
       message: 'If the provided information is valid, a reset link will be sent to your email.',
       maskedEmail: maskEmail(member.email)
     });

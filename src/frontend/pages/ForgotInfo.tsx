@@ -46,13 +46,18 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
       const data = await response.json();
 
       if (data.success) {
-        // Store the masked email from backend response if provided
-        if (data.maskedEmail) {
-          setMaskedEmail(data.maskedEmail);
+        // Check if member was found in datasheet
+        if (data.found === false) {
+          setError('المعلومات المدخلة غير صحيحة أو غير موجودة في قاعدة البيانات');
+        } else {
+          // Store the masked email from backend response if provided
+          if (data.maskedEmail) {
+            setMaskedEmail(data.maskedEmail);
+          }
+          setSuccess(true);
         }
-        setSuccess(true);
       } else {
-        setError(data.error || 'Request failed');
+        setError(data.error || 'حدث خطأ في معالجة الطلب');
       }
     } catch (error) {
       setError('Network error. Please try again.');
@@ -100,6 +105,7 @@ export function ForgotInfo({ onNavigate }: ForgotInfoProps) {
                       <br />
                       <span className="text-xs mt-2 block text-gray-600">
                         تم الإرسال إلى: 
+                        <br />
                         <span className="font-mono font-medium text-gray-800">
                           {maskedEmail}
                         </span>
