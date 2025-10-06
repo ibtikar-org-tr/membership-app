@@ -14,10 +14,13 @@ export function Layout({ children, title }: LayoutProps) {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-sm">ع</span>
-            </div>
-            <span className="text-lg font-semibold text-gray-800">منصّة العضويّة - تجمّع إبتكار</span>
+            <img 
+              src="/logo-blue.svg" 
+              alt="Ibtikar Logo" 
+              className="w-24 h-8 mr-3"
+              onClick={() => window.location.href = '/'}
+              style={{ cursor: 'pointer' }}
+            />
           </div>
           
           {/* GitHub button */}
