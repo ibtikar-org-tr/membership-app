@@ -277,7 +277,19 @@ export class CronJobService {
       headers.forEach((header, index) => {
         const memberField = mapping[header];
         if (memberField && row[index]) {
-          (memberInfo as any)[memberField] = row[index];
+          let value = row[index];
+          
+          // Convert Arabic gender values to English lowercase for new registrations
+          if (memberField === 'sex') {
+            if (value === 'ذكر') {
+              value = 'male';
+            } else if (value === 'أنثى') {
+              value = 'female';
+            }
+            // Keep other values as-is for backward compatibility
+          }
+          
+          (memberInfo as any)[memberField] = value;
         }
       });
 
