@@ -204,7 +204,8 @@ ${resetUrl}
     const subject = 'مرحباً بك في تجمّع إبتكار - تفاصيل العضويّة الخاصّة بك';
     
     const text = `
-مرحباً ${memberInfo.ar_name}!
+${memberInfo.sex === 'أنثى' ? "السيّدة" : "السيّد"} ${memberInfo.ar_name}
+${memberInfo.latin_name}!
 
 تم إنشاء حساب العضوية الخاص بك بنجاح. إليك تفاصيل حسابك:
 
@@ -252,7 +253,8 @@ name: ${memberInfo.latin_name}
             <h2>مرحباً بك في تجمّع إبتكار!</h2>
         </div>
         <div class="content">
-            <p>عزيزي ${memberInfo.latin_name}،</p>
+            <p>${memberInfo.sex === 'أنثى' ? "السيّدة" : "السيّد"} ${memberInfo.ar_name}،</p>
+            <p>${memberInfo.latin_name}،</p>
             <p>تم إنشاء حساب العضوية الخاص بك بنجاح. إليك تفاصيل حسابك:</p>
             
             <div class="info-box">
