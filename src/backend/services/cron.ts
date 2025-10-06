@@ -289,6 +289,11 @@ export class CronJobService {
             // Keep other values as-is for backward compatibility
           }
           
+          // Normalize birth date to YYYY-MM-DD format
+          if (memberField === 'birth_date' && value) {
+            value = this.normalizeBirthDate(value);
+          }
+          
           (memberInfo as any)[memberField] = value;
         }
       });
@@ -302,6 +307,56 @@ export class CronJobService {
     } catch (error) {
       console.error('Error extracting member info from sheet row:', error);
       return null;
+    }
+  }
+
+  private normalizeBirthDate(dateValue: string): string {
+    try {
+      // Return empty string if no value
+      if (!dateValue || dateValue.trim() === '') {
+        return '';
+      }
+
+      const trimmedDate = dateValue.trim();
+      
+      // Check if already in YYYY-MM-DD format
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedDate)) {
+        return trimmedDate;
+      }
+      
+      // Handle DD/MM/YYYY format
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmedDate)) {
+        const [day, month, year] = trimmedDate.split('/');
+        const paddedDay = day.padStart(2, '0');
+        const paddedMonth = month.padStart(2, '0');
+        return `${year}-${paddedMonth}-${paddedDay}`;
+      }
+      
+      // Handle MM/DD/YYYY format (common in some regions)
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmedDate)) {
+        const [part1, part2, year] = trimmedDate.split('/');
+        // Assume DD/MM/YYYY format as default based on the example provided
+        const day = part1.padStart(2, '0');
+        const month = part2.padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      
+      // Handle other common formats if needed
+      // DD-MM-YYYY
+      if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(trimmedDate)) {
+        const [day, month, year] = trimmedDate.split('-');
+        const paddedDay = day.padStart(2, '0');
+        const paddedMonth = month.padStart(2, '0');
+        return `${year}-${paddedMonth}-${paddedDay}`;
+      }
+      
+      // If format is not recognized, return original value
+      console.warn(`Unrecognized date format: ${trimmedDate}`);
+      return trimmedDate;
+      
+    } catch (error) {
+      console.error(`Error normalizing birth date "${dateValue}":`, error);
+      return dateValue; // Return original value on error
     }
   }
 
