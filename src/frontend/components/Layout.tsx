@@ -1,4 +1,5 @@
 import React from 'react';
+import { GitHubButton } from './GitHubButton';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,13 @@ interface LayoutProps {
 export function Layout({ children, title }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Header with GitHub button */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="container mx-auto px-4 py-3 flex justify-end">
+          <GitHubButton url="https://github.com/ibtikar-org-tr/membership-app" />
+        </div>
+      </div>
+      
       <div className="container mx-auto px-4 py-8 max-w-none">
         {title && (
           <div className="mb-8">
