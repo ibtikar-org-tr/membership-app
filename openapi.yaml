@@ -1,0 +1,1022 @@
+openapi: 3.0.3
+info:
+  title: Membership Service API
+  description: |
+    OAuth 2.0 API for authenticating users and retrieving member information.
+
+    This API implements Resource Owner Password Flow with client credentials validation,
+    allowing external services to authenticate users securely and access their full profile data.
+
+    For detailed integration guide with code examples, see API_INTEGRATION.md
+  version: 1.0.0
+  contact:
+    name: Membership Service Support
+    email: admin@example.com
+
+servers:
+- url: https://your-membership-service.com/api
+  description: Production server
+- url: http://localhost:8787/api
+  description: Local development server
+
+security:
+- BearerAuth: []
+
+tags:
+- name: OAuth
+  description: OAuth 2.0 authentication endpoints
+- name: Signup
+  description: User signup and registration endpoints
+- name: Admin
+  description: Admin-only endpoints for managing OAuth clients and approving signups
+
+paths:
+  /oauth/token:
+    post:
+      tags:
+      - OAuth
+      summary: Obtain access token
+      description: |
+        OAuth 2.0 token endpoint implementing Resource Owner Password Flow.
+
+        External services must provide both their own credentials (client_id, client_secret)
+        and the user's credentials (username, password) to obtain an access token.
+
+        The access token is valid for 1 hour and should be cached per user session.
+      operationId: getToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - grant_type
+              - client_id
+              - client_secret
+              - username
+              - password
+              properties:
+                grant_type:
+                  type: string
+                  enum: [ password ]
+                  description: OAuth grant type (must be "password")
+                  example: password
+                client_id:
+                  type: string
+                  description: Your service's OAuth client ID
+                  example: client_abc123def456789
+                client_secret:
+                  type: string
+                  format: password
+                  description: Your service's OAuth client secret
+                  example: secret_xyz789abc123def456
+                username:
+                  type: string
+                  description: User's email address or membership number
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  description: User's password
+                  example: user_secure_password
+                scope:
+                  type: string
+                  description: Requested scope (optional)
+                  example: user_info
+                  default: user_info
+      responses:
+        '200':
+          description: Access token successfully issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Bad request (invalid parameters or unsupported grant type)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRequest:
+                  value:
+                    error: invalid_request
+                    error_description: username and password are required
+                unsupportedGrantType:
+                  value:
+                    error: unsupported_grant_type
+                    error_description: Only password grant type is supported
+        '401':
+          description: Authentication failed (invalid credentials)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidClient:
+                  value:
+                    error: invalid_client
+                    error_description: Invalid client credentials
+                invalidGrant:
+                  value:
+                    error: invalid_grant
+                    error_description: Invalid user credentials
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /oauth/user-info:
+    get:
+      tags:
+      - OAuth
+      summary: Get user profile information
+      description: |
+        Retrieve complete user profile data using a valid access token.
+
+        Returns all available user information including personal details,
+        contact information, educational background, and membership status.
+      operationId: getUserInfo
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: User profile successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+        '401':
+          description: Unauthorized (missing, invalid, or expired token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingToken:
+                  value:
+                    error: invalid_token
+                    error_description: Missing or invalid Authorization header
+                expiredToken:
+                  value:
+                    error: invalid_token
+                    error_description: Token is invalid or expired
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: invalid_token
+                error_description: User not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /oauth/introspect:
+    post:
+      tags:
+      - OAuth
+      summary: Introspect access token
+      description: |
+        Check if an access token is valid and retrieve its metadata.
+
+        Useful for debugging and token validation. Requires client authentication.
+      operationId: introspectToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - token
+              - client_id
+              - client_secret
+              properties:
+                token:
+                  type: string
+                  description: Access token to introspect
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                client_id:
+                  type: string
+                  description: Your service's OAuth client ID
+                  example: client_abc123def456789
+                client_secret:
+                  type: string
+                  format: password
+                  description: Your service's OAuth client secret
+                  example: secret_xyz789abc123def456
+      responses:
+        '200':
+          description: Token introspection result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/IntrospectionResponseActive'
+                - $ref: '#/components/schemas/IntrospectionResponseInactive'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid client credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /signup/request:
+    post:
+      tags:
+      - Signup
+      summary: Submit signup request
+      description: |
+        Public endpoint for users to request membership via API.
+
+        Signup requests are pending until approved by an administrator.
+        Users will receive email notifications about their application status.
+      operationId: requestSignup
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '200':
+          description: Signup request submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Signup request submitted successfully. Please wait for admin approval.
+                  request_id:
+                    type: string
+                    example: 550e8400-e29b-41d4-a716-446655440000
+        '400':
+          description: Bad request (missing fields or email already exists)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Email already registered
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Internal server error
+
+  /signup/status/{email}:
+    get:
+      tags:
+      - Signup
+      summary: Check signup status
+      description: |
+        Check the status of a signup request by email address.
+
+        Possible statuses: pending, approved, rejected, not_found
+      operationId: checkSignupStatus
+      security: []
+      parameters:
+      - name: email
+        in: path
+        required: true
+        description: Email address used for signup
+        schema:
+          type: string
+          format: email
+          example: user@example.com
+      responses:
+        '200':
+          description: Signup status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [ pending, approved, rejected, not_found ]
+                    example: pending
+                  message:
+                    type: string
+                    example: Your request is pending admin approval.
+        '400':
+          description: Bad request (email missing)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Email is required
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Internal server error
+
+  /admin/oauth-clients:
+    get:
+      tags:
+      - Admin
+      summary: List all OAuth clients
+      description: Get a list of all registered OAuth clients (admin only)
+      operationId: listOAuthClients
+      responses:
+        '200':
+          description: List of OAuth clients
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  clients:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OAuthClientResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+
+    post:
+      tags:
+      - Admin
+      summary: Create OAuth client
+      description: |
+        Create a new OAuth client for external service integration (admin only).
+
+        Returns client_id and client_secret. The client_secret is shown only once!
+      operationId: createOAuthClient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                  description: Service name
+                  example: Chatbot Service
+                allowed_ips:
+                  type: string
+                  description: JSON array of allowed IP addresses/CIDRs (optional)
+                  example: '["192.168.1.0/24", "10.0.0.1"]'
+      responses:
+        '200':
+          description: OAuth client created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  client:
+                    $ref: '#/components/schemas/OAuthClientCreatedResponse'
+                  warning:
+                    type: string
+                    example: Save the client_secret securely. It will not be shown again!
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+
+  /admin/oauth-clients/{id}:
+    put:
+      tags:
+      - Admin
+      summary: Update OAuth client
+      description: Update OAuth client details (admin only)
+      operationId: updateOAuthClient
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: OAuth client ID
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New service name
+                allowed_ips:
+                  type: string
+                  description: JSON array of allowed IP addresses/CIDRs
+      responses:
+        '200':
+          description: Client updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+
+    delete:
+      tags:
+      - Admin
+      summary: Delete OAuth client
+      description: Delete an OAuth client (admin only)
+      operationId: deleteOAuthClient
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: OAuth client ID
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Client deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+
+  /admin/pending-signups:
+    get:
+      tags:
+      - Admin
+      summary: List pending signups
+      description: Get all pending signup requests (admin only)
+      operationId: listPendingSignups
+      responses:
+        '200':
+          description: List of pending signups
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  signups:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PendingSignup'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+
+  /admin/pending-signups/{id}/approve:
+    post:
+      tags:
+      - Admin
+      summary: Approve signup request
+      description: Approve a pending signup and create user account (admin only)
+      operationId: approveSignup
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Pending signup ID
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                membership_number:
+                  type: string
+                  description: Assign specific membership number (optional, will auto-generate if not provided)
+                  example: MEM123456
+      responses:
+        '200':
+          description: Signup approved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      membership_number:
+                        type: string
+                      email:
+                        type: string
+        '404':
+          description: Signup request not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Signup request not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+
+  /admin/pending-signups/{id}/reject:
+    post:
+      tags:
+      - Admin
+      summary: Reject signup request
+      description: Reject a pending signup request (admin only)
+      operationId: rejectSignup
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Pending signup ID
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for rejection (optional, will be sent to user)
+                  example: Incomplete information provided
+      responses:
+        '200':
+          description: Signup rejected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '404':
+          description: Signup request not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: Signup request not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from /oauth/token endpoint
+
+  schemas:
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        token_type:
+          type: string
+          enum: [ Bearer ]
+          description: Token type (always "Bearer")
+          example: Bearer
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+          example: 3600
+        scope:
+          type: string
+          description: Granted scope
+          example: user_info
+
+    UserInfoResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    UserProfile:
+      type: object
+      properties:
+        membership_number:
+          type: string
+          description: Unique membership identifier
+          example: MEM123456
+        ar_name:
+          type: string
+          description: Arabic name
+          example: اسم العضو
+        latin_name:
+          type: string
+          description: Latin/English name
+          example: Member Name
+        whatsapp:
+          type: string
+          description: WhatsApp number
+          example: '+1234567890'
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: user@example.com
+        sex:
+          type: string
+          description: Gender
+          example: Male
+        birth_date:
+          type: string
+          format: date
+          description: Date of birth
+          example: '1990-01-01'
+        country:
+          type: string
+          description: Country
+          example: Saudi Arabia
+        city:
+          type: string
+          description: City
+          example: Riyadh
+        district:
+          type: string
+          description: District/neighborhood
+          example: Al Olaya
+        university:
+          type: string
+          description: University name
+          example: King Saud University
+        major:
+          type: string
+          description: Field of study
+          example: Computer Science
+        graduation_year:
+          type: string
+          description: Graduation year
+          example: '2024'
+        blood_type:
+          type: string
+          description: Blood type
+          example: O+
+        phone:
+          type: string
+          description: Phone number
+          example: '+1234567890'
+
+    SignupRequest:
+      type: object
+      required:
+      - email
+      - ar_name
+      - latin_name
+      - whatsapp
+      - phone
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        requested_membership_number:
+          type: string
+          description: Preferred membership number (optional)
+          example: MEM123456
+        ar_name:
+          type: string
+          example: اسم العضو
+        latin_name:
+          type: string
+          example: Member Name
+        whatsapp:
+          type: string
+          example: '+1234567890'
+        phone:
+          type: string
+          example: '+1234567890'
+        sex:
+          type: string
+          example: Male
+        birth_date:
+          type: string
+          format: date
+          example: '1990-01-01'
+        country:
+          type: string
+          example: Saudi Arabia
+        city:
+          type: string
+          example: Riyadh
+        district:
+          type: string
+          example: Al Olaya
+        university:
+          type: string
+          example: King Saud University
+        major:
+          type: string
+          example: Computer Science
+        graduation_year:
+          type: string
+          example: '2024'
+        blood_type:
+          type: string
+          example: O+
+        password:
+          type: string
+          format: password
+          example: secure_password_123
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: invalid_grant
+        error_description:
+          type: string
+          description: Human-readable error description
+          example: Invalid user credentials
+
+    IntrospectionResponseActive:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: true
+        client_id:
+          type: string
+          example: client_abc123def456789
+        username:
+          type: string
+          example: MEM123456
+        scope:
+          type: string
+          example: user_info
+        exp:
+          type: integer
+          description: Token expiration timestamp
+          example: 1738886400
+        iat:
+          type: integer
+          description: Token issued at timestamp
+          example: 1738882800
+
+    IntrospectionResponseInactive:
+      type: object
+      properties:
+        active:
+          type: boolean
+          example: false
+
+    OAuthClientResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        client_id:
+          type: string
+          example: client_abc123def456789
+        name:
+          type: string
+          example: Chatbot Service
+        allowed_ips:
+          type: string
+          nullable: true
+          example: '["192.168.1.0/24"]'
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-02-05T10:00:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2026-02-05T10:00:00Z'
+
+    OAuthClientCreatedResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        client_id:
+          type: string
+          example: client_abc123def456789
+        client_secret:
+          type: string
+          description: Client secret (shown only once!)
+          example: secret_xyz789abc123def456
+        name:
+          type: string
+          example: Chatbot Service
+        allowed_ips:
+          type: string
+          nullable: true
+          example: '["192.168.1.0/24"]'
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-02-05T10:00:00Z'
+
+    PendingSignup:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        requested_membership_number:
+          type: string
+          nullable: true
+          example: MEM123456
+        data:
+          type: object
+          description: Submitted signup data (password excluded)
+        status:
+          type: string
+          enum: [ pending, approved, rejected ]
+          example: pending
+        approval_token:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440001
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-02-05T10:00:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2026-02-05T10:00:00Z'

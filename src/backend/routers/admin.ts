@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { GoogleAPIService } from '../services/google-api';
 import { MoodleAPIService } from '../services/moodle-api';
+import { EmailService } from '../services/email';
 import { Database } from '../models/database';
 import { CloudflareBindings, GoogleSheet, UpdateMemberRequest } from '../models/types';
 
@@ -432,6 +433,319 @@ adminRouter.get('/debug-members', async (c) => {
   } catch (error) {
     console.error('Debug members error:', error);
     return c.json({ success: false, error: 'Internal server error', details: error.message }, 500);
+  }
+});
+
+// OAuth Client Management
+adminRouter.get('/oauth-clients', async (c) => {
+  try {
+    const db = new Database(c.env.DB);
+    const clients = await db.getAllOAuthClients();
+
+    // Remove sensitive data (client_secret_hash) from response
+    const clientsWithoutSecrets = clients.map(client => ({
+      id: client.id,
+      client_id: client.client_id,
+      name: client.name,
+      allowed_ips: client.allowed_ips,
+      created_at: client.created_at,
+      updated_at: client.updated_at,
+    }));
+
+    return c.json({
+      success: true,
+      clients: clientsWithoutSecrets,
+    });
+  } catch (error) {
+    console.error('Get OAuth clients error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+adminRouter.post('/oauth-clients', async (c) => {
+  try {
+    const { name, allowed_ips } = await c.req.json<{ name: string; allowed_ips?: string }>();
+
+    if (!name) {
+      return c.json({ success: false, error: 'Client name is required' }, 400);
+    }
+
+    const db = new Database(c.env.DB);
+
+    // Generate client_id and client_secret
+    const client_id = `client_${crypto.randomUUID().replace(/-/g, '')}`;
+    const client_secret = `secret_${crypto.randomUUID().replace(/-/g, '')}${crypto.randomUUID().replace(/-/g, '')}`;
+    
+    // Hash the client secret
+    const bcrypt = await import('bcryptjs');
+    const client_secret_hash = await bcrypt.hash(client_secret, 12);
+
+    const client = await db.createOAuthClient({
+      client_id,
+      client_secret_hash,
+      name,
+      allowed_ips: allowed_ips || null,
+    });
+
+    await db.createLog({
+      user: 'admin',
+      action: 'create_oauth_client',
+      status: 'success',
+    });
+
+    // Return the plain client_secret only once (user must save it)
+    return c.json({
+      success: true,
+      client: {
+        id: client.id,
+        client_id: client.client_id,
+        client_secret: client_secret, // Only returned once!
+        name: client.name,
+        allowed_ips: client.allowed_ips,
+        created_at: client.created_at,
+      },
+      warning: 'Save the client_secret securely. It will not be shown again!',
+    });
+  } catch (error) {
+    console.error('Create OAuth client error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+adminRouter.put('/oauth-clients/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const updates = await c.req.json<{ name?: string; allowed_ips?: string }>();
+
+    const db = new Database(c.env.DB);
+    await db.updateOAuthClient(id, updates);
+
+    await db.createLog({
+      user: 'admin',
+      action: 'update_oauth_client',
+      status: 'success',
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Update OAuth client error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+adminRouter.delete('/oauth-clients/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+
+    const db = new Database(c.env.DB);
+    await db.deleteOAuthClient(id);
+
+    await db.createLog({
+      user: 'admin',
+      action: 'delete_oauth_client',
+      status: 'success',
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Delete OAuth client error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// Signup Approval Management
+adminRouter.get('/pending-signups', async (c) => {
+  try {
+    const db = new Database(c.env.DB);
+    const pendingSignups = await db.getPendingSignups();
+
+    // Remove password hashes from response
+    const signupsWithoutPasswords = pendingSignups.map(signup => ({
+      ...signup,
+      data: {
+        ...signup.data,
+        password: undefined,
+      },
+    }));
+
+    return c.json({
+      success: true,
+      signups: signupsWithoutPasswords,
+    });
+  } catch (error) {
+    console.error('Get pending signups error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+adminRouter.post('/pending-signups/:id/approve', async (c) => {
+  try {
+    const signupId = c.req.param('id');
+    const { membership_number } = await c.req.json<{ membership_number?: string }>();
+
+    const db = new Database(c.env.DB);
+    
+    // Get the pending signup
+    const pendingSignups = await db.getPendingSignups();
+    const signup = pendingSignups.find(s => s.id === signupId);
+
+    if (!signup) {
+      return c.json({ success: false, error: 'Signup request not found' }, 404);
+    }
+
+    // Generate membership number if not provided
+    const finalMembershipNumber = membership_number || 
+                                  signup.requested_membership_number || 
+                                  `${c.env.MEMBERSHIP_NUMBER_PREFIX || 'MEM'}${Date.now().toString().slice(-6)}`;
+
+    // Create user in database
+    const user = await db.createUser({
+      membership_number: finalMembershipNumber,
+      email: signup.email,
+      password_hash: signup.data.password, // Already hashed during signup
+      role: 'member',
+      status: 'active',
+      latin_name: signup.data.latin_name,
+      phone: signup.data.phone,
+      whatsapp: signup.data.whatsapp,
+    });
+
+    // Update signup status
+    await db.updatePendingSignupStatus(signupId, 'approved');
+
+    // Add to Google Sheet (if configured)
+    try {
+      const sheetConfig = await db.getGoogleSheet();
+      if (sheetConfig) {
+        const googleCredentials = typeof c.env.GOOGLE_API_KEY === 'string'
+          ? JSON.parse(c.env.GOOGLE_API_KEY)
+          : c.env.GOOGLE_API_KEY;
+        const googleService = new GoogleAPIService(googleCredentials);
+
+        // Prepare member data for sheet
+        const memberData = {
+          membership_number: finalMembershipNumber,
+          ...signup.data,
+          password: crypto.randomUUID().slice(0, 8), // Generate new password for Moodle
+        };
+
+        // Add to sheet
+        await googleService.addMemberToSheet(
+          sheetConfig.google_sheet_id,
+          memberData,
+          sheetConfig.corresponding_values
+        );
+      }
+    } catch (sheetError) {
+      console.error('Failed to add to Google Sheet:', sheetError);
+      // Continue even if sheet update fails
+    }
+
+    // Send welcome email
+    try {
+      const emailService = new EmailService({
+        host: c.env.SMTP_HOST,
+        port: parseInt(c.env.SMTP_PORT),
+        user: c.env.SMTP_USER,
+        pass: c.env.SMTP_PASS,
+      });
+
+      await emailService.sendEmail(
+        signup.email,
+        'Membership Approved',
+        `
+Welcome to our membership!
+
+Your account has been approved.
+
+Membership Number: ${finalMembershipNumber}
+Email: ${signup.email}
+
+You can now log in using your email or membership number with the password you provided during registration.
+
+Best regards,
+Membership Team
+        `.trim()
+      );
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+    }
+
+    await db.createLog({
+      user: 'admin',
+      action: 'approve_signup',
+      status: 'success',
+    });
+
+    return c.json({
+      success: true,
+      user: {
+        id: user.id,
+        membership_number: user.membership_number,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error('Approve signup error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+adminRouter.post('/pending-signups/:id/reject', async (c) => {
+  try {
+    const signupId = c.req.param('id');
+    const { reason } = await c.req.json<{ reason?: string }>();
+
+    const db = new Database(c.env.DB);
+    
+    // Get the pending signup
+    const pendingSignups = await db.getPendingSignups();
+    const signup = pendingSignups.find(s => s.id === signupId);
+
+    if (!signup) {
+      return c.json({ success: false, error: 'Signup request not found' }, 404);
+    }
+
+    // Update signup status
+    await db.updatePendingSignupStatus(signupId, 'rejected');
+
+    // Send rejection email
+    try {
+      const emailService = new EmailService({
+        host: c.env.SMTP_HOST,
+        port: parseInt(c.env.SMTP_PORT),
+        user: c.env.SMTP_USER,
+        pass: c.env.SMTP_PASS,
+      });
+
+      await emailService.sendEmail(
+        signup.email,
+        'Membership Application Status',
+        `
+We regret to inform you that your membership application has not been approved at this time.
+
+${reason ? `Reason: ${reason}` : ''}
+
+If you have any questions, please contact us.
+
+Best regards,
+Membership Team
+        `.trim()
+      );
+    } catch (emailError) {
+      console.error('Failed to send rejection email:', emailError);
+    }
+
+    await db.createLog({
+      user: 'admin',
+      action: 'reject_signup',
+      status: 'success',
+    });
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Reject signup error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 

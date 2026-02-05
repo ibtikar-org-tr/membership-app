@@ -9,6 +9,65 @@ export interface PasswordResetRequest {
   token: string;
 }
 
+export interface User {
+  id: string;
+  membership_number: string;
+  email: string;
+  password_hash: string;
+  role: 'member' | 'admin';
+  status: 'pending' | 'active' | 'disabled';
+  latin_name?: string;
+  phone?: string;
+  whatsapp?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PendingSignup {
+  id: string;
+  email: string;
+  requested_membership_number?: string | null;
+  data: Record<string, any>;
+  status: 'pending' | 'approved' | 'rejected';
+  approval_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Session {
+  id: string;
+  user_id: string;
+  ip?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+}
+
+export interface OAuthClient {
+  id: string;
+  client_id: string;
+  client_secret_hash: string;
+  name: string;
+  allowed_ips?: string | null; // JSON array string
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OAuthToken {
+  id: string;
+  client_id: string;
+  user_id?: string | null;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface SheetSyncState {
+  id: string;
+  last_sync_at?: string | null;
+  last_checkpoint?: string | null;
+}
+
 export interface GoogleFormSheet {
   id: string;
   google_form_sheet_id: string; // Now stores the Google Sheet ID that contains form responses
@@ -88,4 +147,6 @@ export interface CloudflareBindings {
   SMTP_PASS: string;
   JWT_SECRET: string;
   MEMBERSHIP_NUMBER_PREFIX: string;
+  ADMIN_EMAIL: string;
+  OAUTH_JWT_SECRET: string;
 }

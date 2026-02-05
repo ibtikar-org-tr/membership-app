@@ -40,7 +40,6 @@ GOOGLE_API.json
 wrangler.local.*
 
 # temp
-*.md
 .*ignore
 
 #
