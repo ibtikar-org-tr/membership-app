@@ -4,9 +4,56 @@ import { GoogleAPIService } from '../services/google-api';
 import { MoodleAPIService } from '../services/moodle-api';
 import { EmailService } from '../services/email';
 import { Database } from '../models/database';
-import { CloudflareBindings, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest } from '../models/types';
+import { CloudflareBindings, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest, User } from '../models/types';
+import bcrypt from 'bcryptjs';
 
 const authRouter = new Hono<{ Bindings: CloudflareBindings }>();
+
+// Session configuration
+const SESSION_COOKIE_NAME = 'session_id';
+const SESSION_IDLE_MINUTES = 30; // idle timeout
+const SESSION_ABSOLUTE_DAYS = 7; // absolute max age
+
+function buildSessionCookie(id: string, expiresAt: Date): string {
+  const parts = [
+    `${SESSION_COOKIE_NAME}=${id}`,
+    `Path=/`,
+    `HttpOnly`,
+    `Secure`,
+    `SameSite=Lax`,
+    `Expires=${expiresAt.toUTCString()}`,
+  ];
+  return parts.join('; ');
+}
+
+function clearSessionCookie(): string {
+  const past = new Date(0);
+  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=${past.toUTCString()}`;
+}
+
+async function getClientIp(c: any): Promise<string | undefined> {
+  return c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || undefined;
+}
+
+async function ensureAdminUser(db: Database, adminEmail: string, adminPassword: string): Promise<User> {
+  // Try to find existing admin user by membership_number 'admin'
+  let user = await db.getUserByMembershipNumber('admin');
+  if (user) {
+    return user;
+  }
+
+  const password_hash = await bcrypt.hash(adminPassword, 12);
+  return db.createUser({
+    membership_number: 'admin',
+    email: adminEmail,
+    password_hash,
+    role: 'admin',
+    status: 'active',
+    latin_name: 'Administrator',
+    phone: undefined,
+    whatsapp: undefined,
+  });
+}
 
 authRouter.post('/login', async (c) => {
   try {
@@ -29,8 +76,8 @@ authRouter.post('/login', async (c) => {
       status: 'pending'
     });
 
+    // Admin login path
     if (field1 === 'admin') {
-      // Admin login
       const isValid = await authService.authenticateAdmin(password, c.env.ADMIN_PASSWORD);
       
       await db.createLog({
@@ -39,33 +86,152 @@ authRouter.post('/login', async (c) => {
         status: isValid ? 'success' : 'failed'
       });
 
-      if (isValid) {
-        return c.json({ success: true, userType: 'admin' });
-      } else {
+      if (!isValid) {
         return c.json({ success: false, error: 'Invalid credentials' }, 401);
       }
-    } else {
-      // Member login
-      const member = await authService.authenticateMember(field1, password);
-      
-      await db.createLog({
-        user: member ? member.membership_number : field1,
-        action: 'member_login',
-        status: member ? 'success' : 'failed'
+
+      const adminUser = await ensureAdminUser(db, c.env.ADMIN_EMAIL, c.env.ADMIN_PASSWORD);
+
+      // Create session for admin
+      const sessionId = crypto.randomUUID();
+      const now = new Date();
+      const absoluteExpiry = new Date(now.getTime() + SESSION_ABSOLUTE_DAYS * 24 * 60 * 60 * 1000);
+      const idleExpiry = new Date(now.getTime() + SESSION_IDLE_MINUTES * 60 * 1000);
+      const expiresAt = idleExpiry < absoluteExpiry ? idleExpiry : absoluteExpiry;
+
+      await db.createSession({
+        id: sessionId,
+        user_id: adminUser.id,
+        ip: await getClientIp(c),
+        user_agent: c.req.header('User-Agent') || undefined,
+        expires_at: expiresAt.toISOString(),
       });
 
-      if (member) {
-        return c.json({ 
-          success: true, 
-          userType: 'member', 
-          memberInfo: member 
-        });
-      } else {
-        return c.json({ success: false, error: 'Invalid credentials' }, 401);
-      }
+      c.header('Set-Cookie', buildSessionCookie(sessionId, expiresAt));
+
+      return c.json({ success: true, userType: 'admin' });
     }
+
+    // Member login
+    const result = await authService.authenticateMember(field1, password);
+
+    await db.createLog({
+      user: result ? result.user.membership_number : field1,
+      action: 'member_login',
+      status: result ? 'success' : 'failed'
+    });
+
+    if (!result) {
+      return c.json({ success: false, error: 'Invalid credentials' }, 401);
+    }
+
+    const { user, member } = result;
+
+    // Create member session
+    const sessionId = crypto.randomUUID();
+    const now = new Date();
+    const absoluteExpiry = new Date(now.getTime() + SESSION_ABSOLUTE_DAYS * 24 * 60 * 60 * 1000);
+    const idleExpiry = new Date(now.getTime() + SESSION_IDLE_MINUTES * 60 * 1000);
+    const expiresAt = idleExpiry < absoluteExpiry ? idleExpiry : absoluteExpiry;
+
+    await db.createSession({
+      id: sessionId,
+      user_id: user.id,
+      ip: await getClientIp(c),
+      user_agent: c.req.header('User-Agent') || undefined,
+      expires_at: expiresAt.toISOString(),
+    });
+
+    c.header('Set-Cookie', buildSessionCookie(sessionId, expiresAt));
+
+    return c.json({ 
+      success: true, 
+      userType: user.role === 'admin' ? 'admin' : 'member', 
+      memberInfo: member 
+    });
   } catch (error) {
     console.error('Login error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// Logout - clear session and cookie
+authRouter.post('/logout', async (c) => {
+  try {
+    const db = new Database(c.env.DB);
+    const cookies = c.req.header('Cookie') || '';
+    const sessionCookie = cookies.split(';').find((p) => p.trim().startsWith(`${SESSION_COOKIE_NAME}=`));
+    if (sessionCookie) {
+      const sessionId = sessionCookie.split('=')[1];
+      if (sessionId) {
+        await db.deleteSession(sessionId);
+      }
+    }
+
+    c.header('Set-Cookie', clearSessionCookie());
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
+  }
+});
+
+// Current authenticated user info based on session
+authRouter.get('/me', async (c) => {
+  try {
+    const db = new Database(c.env.DB);
+    const cookies = c.req.header('Cookie') || '';
+    const sessionCookie = cookies.split(';').find((p) => p.trim().startsWith(`${SESSION_COOKIE_NAME}=`));
+    if (!sessionCookie) {
+      return c.json({ success: false, error: 'Not authenticated' }, 401);
+    }
+
+    const sessionId = sessionCookie.split('=')[1];
+    if (!sessionId) {
+      return c.json({ success: false, error: 'Not authenticated' }, 401);
+    }
+
+    const session = await db.getSession(sessionId);
+    if (!session) {
+      return c.json({ success: false, error: 'Not authenticated' }, 401);
+    }
+
+    const nowIso = new Date().toISOString();
+    if (session.expires_at <= nowIso) {
+      await db.deleteSession(session.id);
+      return c.json({ success: false, error: 'Session expired' }, 401);
+    }
+
+    const user = await db.getUserById(session.user_id);
+    if (!user) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+
+    // Touch session idle timeout
+    const now = new Date();
+    const newIdleExpiry = new Date(now.getTime() + SESSION_IDLE_MINUTES * 60 * 1000);
+    const absExpiry = new Date(session.expires_at);
+    const newExpires = newIdleExpiry < absExpiry ? newIdleExpiry : absExpiry;
+
+    await db.touchSession(session.id, now.toISOString(), newExpires.toISOString());
+    c.header('Set-Cookie', buildSessionCookie(session.id, newExpires));
+
+    // For now, return minimal user info; frontend can still use memberInfo from login if needed
+    return c.json({
+      success: true,
+      user: {
+        id: user.id,
+        membership_number: user.membership_number,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        latin_name: user.latin_name,
+        phone: user.phone,
+        whatsapp: user.whatsapp,
+      },
+    });
+  } catch (error) {
+    console.error('Auth me error:', error);
     return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 });

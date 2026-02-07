@@ -3,6 +3,8 @@ import { renderer } from './frontendMain'
 import { authRouter } from './backend/routers/auth'
 import { adminRouter } from './backend/routers/admin'
 import { memberRouter } from './backend/routers/member'
+import { oauthRouter } from './backend/routers/oauth'
+import { signupRouter } from './backend/routers/signup'
 import { handleCronJob } from './backend/services/cron'
 import { CloudflareBindings } from './backend/models/types'
 
@@ -16,6 +18,8 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.route('/api/auth', authRouter)
 app.route('/api/admin', adminRouter)
 app.route('/api/member', memberRouter)
+app.route('/api/oauth', oauthRouter)
+app.route('/api/signup', signupRouter)
 
 // Frontend Routes - serve React app for all frontend routes
 const frontendRoutes = ['/', '/login', '/forgot-password', '/reset-password', '/user-info', '/admin'];

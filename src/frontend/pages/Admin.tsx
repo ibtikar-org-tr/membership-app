@@ -5,6 +5,8 @@ import { Button } from '../components/Button';
 import { AdminConfig } from './admin/AdminConfig';
 import { MemberManagement } from './admin/MemberManagement';
 import { ApplicationLogs } from './admin/ApplicationLogs';
+import { OAuthClients } from './admin/OAuthClients';
+import { SignupApproval } from './admin/SignupApproval';
 import { clearAuthState } from '../utils/auth';
 
 interface AdminProps {
@@ -12,13 +14,15 @@ interface AdminProps {
 }
 
 export function Admin({ onNavigate }: AdminProps) {
-  const [activeTab, setActiveTab] = useState<'config' | 'members' | 'logs'>('config');
+  const [activeTab, setActiveTab] = useState<'config' | 'members' | 'oauth' | 'signups' | 'logs'>('config');
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
   const tabs = [
     { id: 'config', label: 'الإعدادات', component: AdminConfig },
     { id: 'members', label: 'إدارة الأعضاء', component: MemberManagement },
+    { id: 'oauth', label: 'OAuth Clients', component: OAuthClients },
+    { id: 'signups', label: 'طلبات التسجيل', component: SignupApproval },
     { id: 'logs', label: 'سجلات التطبيق', component: ApplicationLogs },
   ];
 

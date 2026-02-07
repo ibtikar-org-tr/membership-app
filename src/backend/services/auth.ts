@@ -1,6 +1,7 @@
-import { MemberInfo, CloudflareBindings } from '../models/types';
+import { MemberInfo, User } from '../models/types';
 import { GoogleAPIService } from './google-api';
 import { Database } from '../models/database';
+import bcrypt from 'bcryptjs';
 
 export interface JWTPayload {
   membership_number: string;
@@ -20,31 +21,88 @@ export class AuthService {
     return password === adminPassword;
   }
 
-  async authenticateMember(identifier: string, password: string): Promise<MemberInfo | null> {
+  /**
+   * Backward-compatible member authentication:
+   * - First tries D1 users table with bcrypt hashes
+   * - If user not found there, falls back to Google Sheet authentication
+   *   and migrates the user into D1 with a hashed password on success.
+   */
+  async authenticateMember(identifier: string, password: string): Promise<{ user: User; member: MemberInfo } | null> {
     try {
-      // Get Google Sheet configuration
+      // 1) Try D1 users table first (canonical auth)
+      let user = await this.db.getUserByEmail(identifier);
+      if (!user) {
+        user = await this.db.getUserByMembershipNumber(identifier);
+      }
+
+      if (user) {
+        if (user.status !== 'active') {
+          return null;
+        }
+
+        const ok = await bcrypt.compare(password, user.password_hash);
+        if (!ok) {
+          return null;
+        }
+
+        // Load member profile from Google Sheet to keep existing behavior
+        const member = await this.getMemberFromSheetByMembershipNumber(user.membership_number);
+        if (!member) {
+          // If D1 user exists but Sheet row is missing, still allow login but with minimal info
+          const fallbackMember: MemberInfo = {
+            membership_number: user.membership_number,
+            ar_name: '',
+            latin_name: user.latin_name || '',
+            whatsapp: user.whatsapp || '',
+            email: user.email,
+            sex: '',
+            birth_date: '',
+            country: '',
+            city: '',
+            district: '',
+            university: '',
+            major: '',
+            graduation_year: '',
+            blood_type: '',
+            password: '',
+            phone: user.phone || '',
+          };
+          return { user, member: fallbackMember };
+        }
+
+        return { user, member };
+      }
+
+      // 2) Fallback: authenticate against Google Sheet (legacy members)
       const sheetConfig = await this.db.getGoogleSheet();
       if (!sheetConfig) {
         throw new Error('Google Sheet configuration not found');
       }
 
-      // Find member in Google Sheets
       const member = await this.googleService.findMemberByIdentifier(
         sheetConfig.google_sheet_id,
         identifier,
         sheetConfig.corresponding_values
       );
 
-      if (!member) {
+      if (!member || member.password !== password) {
         return null;
       }
 
-      // Verify password
-      if (member.password !== password) {
-        return null;
-      }
+      // 3) Migrate legacy member into D1 users with a bcrypt-hashed password
+      const password_hash = await bcrypt.hash(password, 12);
+      const migratedUser = await this.db.createUser({
+        membership_number: member.membership_number,
+        email: member.email,
+        password_hash,
+        role: 'member',
+        status: 'active',
+        latin_name: member.latin_name,
+        phone: member.phone,
+        whatsapp: member.whatsapp,
+      });
 
-      return member;
+      return { user: migratedUser, member };
     } catch (error) {
       console.error('Authentication error:', error);
       return null;
@@ -180,5 +238,21 @@ export class AuthService {
     }
     
     return password;
+  }
+
+  // Helper to load full member profile from Google Sheet by membership number
+  private async getMemberFromSheetByMembershipNumber(membershipNumber: string): Promise<MemberInfo | null> {
+    const sheetConfig = await this.db.getGoogleSheet();
+    if (!sheetConfig) {
+      return null;
+    }
+
+    const member = await this.googleService.findMemberByIdentifier(
+      sheetConfig.google_sheet_id,
+      membershipNumber,
+      sheetConfig.corresponding_values
+    );
+
+    return member;
   }
 }

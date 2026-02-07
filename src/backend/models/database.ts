@@ -1,4 +1,15 @@
-import { PasswordResetRequest, GoogleFormSheet, GoogleSheet, Log } from './types';
+import {
+  PasswordResetRequest,
+  GoogleFormSheet,
+  GoogleSheet,
+  Log,
+  User,
+  PendingSignup,
+  Session,
+  OAuthClient,
+  OAuthToken,
+  SheetSyncState,
+} from './types';
 
 export class Database {
   constructor(private db: D1Database) {}
@@ -175,5 +186,429 @@ export class Database {
     `).bind(user, limit).all();
     
     return results.results as Log[];
+  }
+
+  // User operations (canonical auth users)
+  async createUser(userData: Omit<User, 'id' | 'created_at' | 'updated_at'>): Promise<User> {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const fullUser: User = {
+      ...userData,
+      id,
+      created_at: now,
+      updated_at: now,
+    };
+
+    await this.db
+      .prepare(
+        `
+      INSERT INTO users (id, membership_number, email, password_hash, role, status, latin_name, phone, whatsapp, created_at, updated_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+    `,
+      )
+      .bind(
+        fullUser.id,
+        fullUser.membership_number,
+        fullUser.email,
+        fullUser.password_hash,
+        fullUser.role,
+        fullUser.status,
+        fullUser.latin_name || null,
+        fullUser.phone || null,
+        fullUser.whatsapp || null,
+        fullUser.created_at,
+        fullUser.updated_at,
+      )
+      .run();
+
+    return fullUser;
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    const result = await this.db
+      .prepare(
+        `
+      SELECT * FROM users WHERE email = ?1
+    `,
+      )
+      .bind(email)
+      .first();
+
+    return result as User | null;
+  }
+
+  async getUserByMembershipNumber(membershipNumber: string): Promise<User | null> {
+    const result = await this.db
+      .prepare(
+        `
+      SELECT * FROM users WHERE membership_number = ?1
+    `,
+      )
+      .bind(membershipNumber)
+      .first();
+
+    return result as User | null;
+  }
+
+  async getUserById(id: string): Promise<User | null> {
+    const result = await this.db
+      .prepare(
+        `
+      SELECT * FROM users WHERE id = ?1
+    `,
+      )
+      .bind(id)
+      .first();
+
+    return result as User | null;
+  }
+
+  async updateUserStatus(id: string, status: User['status']): Promise<void> {
+    const now = new Date().toISOString();
+    await this.db
+      .prepare(
+        `
+      UPDATE users SET status = ?1, updated_at = ?2 WHERE id = ?3
+    `,
+      )
+      .bind(status, now, id)
+      .run();
+  }
+
+  // Pending signup operations
+  async createPendingSignup(data: Omit<PendingSignup, 'id' | 'created_at' | 'updated_at' | 'status'>): Promise<PendingSignup> {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const full: PendingSignup = {
+      ...data,
+      id,
+      status: 'pending',
+      created_at: now,
+      updated_at: now,
+    };
+
+    await this.db
+      .prepare(
+        `
+      INSERT INTO pending_signups (id, email, requested_membership_number, data, status, approval_token, created_at, updated_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+    `,
+      )
+      .bind(
+        full.id,
+        full.email,
+        full.requested_membership_number || null,
+        JSON.stringify(full.data),
+        full.status,
+        full.approval_token,
+        full.created_at,
+        full.updated_at,
+      )
+      .run();
+
+    return full;
+  }
+
+  async getPendingSignupByToken(token: string): Promise<PendingSignup | null> {
+    const result = await this.db
+      .prepare(
+        `
+      SELECT * FROM pending_signups WHERE approval_token = ?1
+    `,
+      )
+      .bind(token)
+      .first();
+
+    if (!result) return null;
+
+    return {
+      ...result,
+      data: JSON.parse(result.data as string),
+    } as PendingSignup;
+  }
+
+  async getPendingSignups(): Promise<PendingSignup[]> {
+    const results = await this.db
+      .prepare(
+        `
+      SELECT * FROM pending_signups WHERE status = 'pending' ORDER BY created_at ASC
+    `,
+      )
+      .all();
+
+    return (results.results || []).map((row: any) => ({
+      ...row,
+      data: JSON.parse(row.data as string),
+    })) as PendingSignup[];
+  }
+
+  async updatePendingSignupStatus(id: string, status: PendingSignup['status']): Promise<void> {
+    const now = new Date().toISOString();
+    await this.db
+      .prepare(
+        `
+      UPDATE pending_signups SET status = ?1, updated_at = ?2 WHERE id = ?3
+    `,
+      )
+      .bind(status, now, id)
+      .run();
+  }
+
+  // Session operations
+  async createSession(session: Omit<Session, 'created_at' | 'last_seen_at'>): Promise<Session> {
+    const now = new Date().toISOString();
+    const full: Session = {
+      ...session,
+      created_at: now,
+      last_seen_at: now,
+    };
+
+    await this.db
+      .prepare(
+        `
+      INSERT INTO sessions (id, user_id, ip, user_agent, created_at, last_seen_at, expires_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+    `,
+      )
+      .bind(
+        full.id,
+        full.user_id,
+        full.ip || null,
+        full.user_agent || null,
+        full.created_at,
+        full.last_seen_at,
+        full.expires_at,
+      )
+      .run();
+
+    return full;
+  }
+
+  async getSession(id: string): Promise<Session | null> {
+    const result = await this.db
+      .prepare(
+        `
+      SELECT * FROM sessions WHERE id = ?1
+    `,
+      )
+      .bind(id)
+      .first();
+
+    return result as Session | null;
+  }
+
+  async touchSession(id: string, newLastSeen: string, newExpiresAt?: string): Promise<void> {
+    if (newExpiresAt) {
+      await this.db
+        .prepare(
+          `
+        UPDATE sessions SET last_seen_at = ?1, expires_at = ?2 WHERE id = ?3
+      `,
+        )
+        .bind(newLastSeen, newExpiresAt, id)
+        .run();
+    } else {
+      await this.db
+        .prepare(
+          `
+        UPDATE sessions SET last_seen_at = ?1 WHERE id = ?2
+      `,
+        )
+        .bind(newLastSeen, id)
+        .run();
+    }
+  }
+
+  async deleteSession(id: string): Promise<void> {
+    await this.db
+      .prepare(
+        `
+      DELETE FROM sessions WHERE id = ?1
+    `,
+      )
+      .bind(id)
+      .run();
+  }
+
+  async deleteExpiredSessions(nowIso: string): Promise<void> {
+    await this.db
+      .prepare(
+        `
+      DELETE FROM sessions WHERE expires_at <= ?1
+    `,
+      )
+      .bind(nowIso)
+      .run();
+  }
+
+  // OAuth client operations
+  async createOAuthClient(client: Omit<OAuthClient, 'id' | 'created_at' | 'updated_at'>): Promise<OAuthClient> {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const full: OAuthClient = {
+      ...client,
+      id,
+      created_at: now,
+      updated_at: now,
+    };
+
+    await this.db
+      .prepare(
+        `
+      INSERT INTO oauth_clients (id, client_id, client_secret_hash, name, allowed_ips, created_at, updated_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+    `,
+      )
+      .bind(
+        full.id,
+        full.client_id,
+        full.client_secret_hash,
+        full.name,
+        full.allowed_ips || null,
+        full.created_at,
+        full.updated_at,
+      )
+      .run();
+
+    return full;
+  }
+
+  async getOAuthClientByClientId(clientId: string): Promise<OAuthClient | null> {
+    const result = await this.db
+      .prepare(
+        `
+      SELECT * FROM oauth_clients WHERE client_id = ?1
+    `,
+      )
+      .bind(clientId)
+      .first();
+
+    return result as OAuthClient | null;
+  }
+
+  async getOAuthClientById(id: string): Promise<OAuthClient | null> {
+    const result = await this.db
+      .prepare(
+        `
+      SELECT * FROM oauth_clients WHERE id = ?1
+    `,
+      )
+      .bind(id)
+      .first();
+
+    return result as OAuthClient | null;
+  }
+
+  async getAllOAuthClients(): Promise<OAuthClient[]> {
+    const results = await this.db
+      .prepare(
+        `
+      SELECT * FROM oauth_clients ORDER BY created_at DESC
+    `,
+      )
+      .all();
+
+    return results.results as OAuthClient[];
+  }
+
+  async updateOAuthClient(
+    id: string,
+    updates: Partial<Pick<OAuthClient, 'name' | 'allowed_ips'>>
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    const client = await this.getOAuthClientById(id);
+
+    if (!client) {
+      throw new Error('OAuth client not found');
+    }
+
+    const name = updates.name ?? client.name;
+    const allowed_ips = updates.allowed_ips !== undefined ? updates.allowed_ips : client.allowed_ips;
+
+    await this.db
+      .prepare(
+        `
+      UPDATE oauth_clients 
+      SET name = ?1, allowed_ips = ?2, updated_at = ?3 
+      WHERE id = ?4
+    `,
+      )
+      .bind(name, allowed_ips || null, now, id)
+      .run();
+  }
+
+  async deleteOAuthClient(id: string): Promise<void> {
+    await this.db
+      .prepare(
+        `
+      DELETE FROM oauth_clients WHERE id = ?1
+    `,
+      )
+      .bind(id)
+      .run();
+  }
+
+  // OAuth token operations (optional auditing)
+  async createOAuthToken(token: Omit<OAuthToken, 'id' | 'created_at'>): Promise<OAuthToken> {
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    const full: OAuthToken = {
+      ...token,
+      id,
+      created_at: now,
+    };
+
+    await this.db
+      .prepare(
+        `
+      INSERT INTO oauth_tokens (id, client_id, user_id, created_at, expires_at)
+      VALUES (?1, ?2, ?3, ?4, ?5)
+    `,
+      )
+      .bind(full.id, full.client_id, full.user_id || null, full.created_at, full.expires_at)
+      .run();
+
+    return full;
+  }
+
+  // Sheet sync state operations
+  async getSheetSyncState(): Promise<SheetSyncState | null> {
+    const result = await this.db
+      .prepare(
+        `
+      SELECT * FROM sheet_sync_state LIMIT 1
+    `,
+      )
+      .first();
+
+    return (result as SheetSyncState) || null;
+  }
+
+  async upsertSheetSyncState(state: Omit<SheetSyncState, 'id'>): Promise<SheetSyncState> {
+    const existing = await this.getSheetSyncState();
+    const id = existing?.id ?? 'default';
+
+    const last_sync_at = state.last_sync_at ?? existing?.last_sync_at ?? null;
+    const last_checkpoint = state.last_checkpoint ?? existing?.last_checkpoint ?? null;
+
+    await this.db
+      .prepare(
+        `
+      INSERT OR REPLACE INTO sheet_sync_state (id, last_sync_at, last_checkpoint)
+      VALUES (?1, ?2, ?3)
+    `,
+      )
+      .bind(id, last_sync_at, last_checkpoint)
+      .run();
+
+    return {
+      id,
+      last_sync_at,
+      last_checkpoint,
+    };
   }
 }
