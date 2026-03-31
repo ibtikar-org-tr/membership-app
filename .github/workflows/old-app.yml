@@ -1,14 +1,21 @@
-name: Deploy to Cloudflare Worker
+name: (main) [old fe+be] Deploy to Cloudflare Worker
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'old-app/**'
+      - .github/workflows/old-app.yml
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: deployment
+    defaults:
+      run:
+        working-directory: ./old-app
     env:
       MOODLE_API_URL: ${{ vars.MOODLE_API_URL }}
       SMTP_HOST: ${{ vars.SMTP_HOST }}
