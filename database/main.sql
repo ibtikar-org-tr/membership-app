@@ -13,10 +13,10 @@ CREATE TABLE IF NOT EXISTS user_info (
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     en_name TEXT NOT NULL,
     ar_name TEXT NOT NULL,
-    phone_number TEXT,
+    phone_number TEXT, -- stored as a string with country code (e.g., "+905316781111")
     sex TEXT CHECK (sex IN ('male', 'female')),
-    date_of_birth TEXT,
-    country TEXT,
+    date_of_birth TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01")
+    country TEXT, -- ISO 3166-1 alpha-2 country code (e.g., "US", "TR", etc.)
     city TEXT,
     address TEXT,
     education_level TEXT,
@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS user_info (
 );
 
 CREATE TABLE IF NOT EXISTS user_registration_info (
+    membership_number TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     where_heard_about_us TEXT, -- how the user heard about the platform (e.g., "friend", "social media", "event", etc.)
     motivation_letter TEXT, -- user's motivation for joining the platform
     friends_on_platform TEXT, -- friends the user knows on the platform (comma-separated list of membership numbers or names),
