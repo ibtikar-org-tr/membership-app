@@ -9,22 +9,21 @@ export function RegistrationPage() {
   const { formData, updateField, handleSubmit } = useRegistrationForm()
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10">
+    <main className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
       <div className="mx-auto w-full max-w-5xl">
         <header className="mb-6 rounded-3xl bg-slate-900 p-6 text-white shadow-xl md:p-8">
           <p className="mb-3 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
             app.com/registration
           </p>
-          <h1 className="text-3xl font-black tracking-tight md:text-4xl">Membership Registration Form</h1>
+          <h1 className="text-3xl font-black tracking-tight md:text-4xl">نموذج تسجيل العضوية</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
-            This frontend form is based on your SQL schema and includes account, profile, education,
-            and community registration details.
+            هذا النموذج مبني على مخطط SQL ويتضمن معلومات الملف الشخصي والتعليم وتفاصيل التسجيل المجتمعي.
           </p>
           <Link
             to="/"
             className="mt-4 inline-block rounded-lg border border-white/50 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900"
           >
-            Back to Home
+            العودة إلى الرئيسية
           </Link>
         </header>
 
@@ -39,7 +38,7 @@ export function RegistrationPage() {
               type="submit"
               className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 md:w-auto"
             >
-              Submit Registration (Frontend Only)
+              إرسال التسجيل
             </button>
           </div>
         </form>

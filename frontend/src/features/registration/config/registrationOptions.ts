@@ -1,29 +1,29 @@
 export const sexOptions = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
+  { value: 'male', label: 'ذكر' },
+  { value: 'female', label: 'أنثى' },
 ]
 
 export const countryOptions = [
-  { value: 'TR', label: 'Turkey' },
-  { value: 'SY', label: 'Syria' },
-  { value: 'IQ', label: 'Iraq' },
-  { value: 'JO', label: 'Jordan' },
-  { value: 'LB', label: 'Lebanon' },
-  { value: 'PS', label: 'Palestine' },
-  { value: 'EG', label: 'Egypt' },
-  { value: 'SA', label: 'Saudi Arabia' },
-  { value: 'QA', label: 'Qatar' },
-  { value: 'AE', label: 'United Arab Emirates' },
-  { value: 'KW', label: 'Kuwait' },
-  { value: 'OM', label: 'Oman' },
-  { value: 'BH', label: 'Bahrain' },
-  { value: 'YE', label: 'Yemen' },
-  { value: 'US', label: 'United States' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'DE', label: 'Germany' },
-  { value: 'FR', label: 'France' },
-  { value: 'CA', label: 'Canada' },
-  { value: 'other', label: 'Other' },
+  { value: 'TR', label: 'الولايات المتحدة' },
+  { value: 'SY', label: 'سوريا' },
+  { value: 'IQ', label: 'العراق' },
+  { value: 'JO', label: 'الأردن' },
+  { value: 'LB', label: 'لبنان' },
+  { value: 'PS', label: 'فلسطين' },
+  { value: 'EG', label: 'مصر' },
+  { value: 'SA', label: 'المملكة العربية السعودية' },
+  { value: 'QA', label: 'قطر' },
+  { value: 'AE', label: 'الإمارات العربية المتحدة' },
+  { value: 'KW', label: 'الكويت' },
+  { value: 'OM', label: 'عمان' },
+  { value: 'BH', label: 'البحرين' },
+  { value: 'YE', label: 'اليمن' },
+  { value: 'US', label: 'الولايات المتحدة' },
+  { value: 'GB', label: 'المملكة المتحدة' },
+  { value: 'DE', label: 'ألمانيا' },
+  { value: 'FR', label: 'فرنسا' },
+  { value: 'CA', label: 'كندا' },
+  { value: 'other', label: 'أخرى' },
 ]
 
 export const bloodTypeOptions = [
@@ -38,24 +38,24 @@ export const bloodTypeOptions = [
 ]
 
 export const educationLevelOptions = [
-  { value: 'high_school', label: 'High School' },
-  { value: 'diploma', label: 'Diploma' },
-  { value: 'bachelor', label: 'Bachelor' },
-  { value: 'master', label: 'Master' },
-  { value: 'phd', label: 'PhD' },
-  { value: 'other', label: 'Other' },
+  { value: 'high_school', label: 'ثانوية' },
+  { value: 'diploma', label: 'دبلوم' },
+  { value: 'bachelor', label: 'بكالوريوس' },
+  { value: 'master', label: 'ماجستير' },
+  { value: 'phd', label: 'دكتوراه' },
+  { value: 'other', label: 'أخرى' },
 ]
 
 export const whereHeardAboutUsOptions = [
-  { value: 'friend', label: 'Friend' },
-  { value: 'social_media', label: 'Social Media' },
-  { value: 'event', label: 'Event' },
-  { value: 'website', label: 'Website' },
-  { value: 'other', label: 'Other' },
+  { value: 'friend', label: 'صديق' },
+  { value: 'social_media', label: 'وسائل التواصل الاجتماعية' },
+  { value: 'event', label: 'حدث' },
+  { value: 'website', label: 'موقع' },
+  { value: 'other', label: 'أخرى' },
 ]
 
 export const volunteeringInterestOptions = [
-  { value: 'yes', label: 'Yes' },
-  { value: 'no', label: 'No' },
-  { value: 'maybe', label: 'Maybe' },
+  { value: 'yes', label: 'نعم' },
+  { value: 'no', label: 'لا' },
+  { value: 'maybe', label: 'ربما' },
 ]

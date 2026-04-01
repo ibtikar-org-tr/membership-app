@@ -22,61 +22,61 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   }
 
   return (
-    <SectionCard title="Personal Details" subtitle="Required identity and contact information.">
+    <SectionCard title="التفاصيل الشخصية" subtitle="معلومات الهوية والاتصال المطلوبة.">
       <div className="grid gap-4 md:grid-cols-2">
         <TextField
           id="email"
-          label="Email"
+          label="البريد الإلكتروني"
           type="email"
           value={data.email}
           onChange={(value) => onFieldChange('email', value)}
           required
         />
         <TextField
-          id="phone-number"
-          label="Phone Number"
-          type="tel"
-          placeholder="+905316781111"
-          value={data.phoneNumber}
-          onChange={(value) => onFieldChange('phoneNumber', value)}
-        />
-        <TextField
           id="en-name"
-          label="English Name"
+          label="الاسم بالإنجليزية"
           value={data.enName}
           onChange={(value) => onFieldChange('enName', value)}
           required
         />
         <TextField
           id="ar-name"
-          label="Arabic Name"
+          label="الاسم بالعربية"
           value={data.arName}
           onChange={(value) => onFieldChange('arName', value)}
           required
         />
+        <TextField
+          id="phone-number"
+          label="رقم الهاتف"
+          type="tel"
+          placeholder="+905316781111"
+          value={data.phoneNumber}
+          onChange={(value) => onFieldChange('phoneNumber', value)}
+        />
         <SelectField
           id="sex"
-          label="Sex"
+          label="الجنس"
           options={sexOptions}
           value={data.sex}
           onChange={(value) => onFieldChange('sex', value)}
         />
         <TextField
           id="dob"
-          label="Date of Birth"
+          label="تاريخ الميلاد"
           type="date"
           value={data.dateOfBirth}
           onChange={(value) => onFieldChange('dateOfBirth', value)}
         />
         <div className="space-y-4 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 md:col-span-2 md:p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Location Details</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">تفاصيل الموقع</p>
 
           <div className="grid gap-4 md:grid-cols-2">
             <SelectField
               id="country"
-              label="Country"
+              label="الدولة"
               options={countryOptions}
-              placeholder="Choose your country"
+              placeholder="اختر دولتك"
               value={data.country}
               onChange={handleCountryChange}
             />
@@ -84,7 +84,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
             {hasCountry && (
               <TextField
                 id="city"
-                label="City"
+                label="المدينة"
                 value={data.city}
                 onChange={(value) => onFieldChange('city', value)}
               />
@@ -94,7 +94,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
               <div className="md:col-span-2">
                 <TextField
                   id="address"
-                  label="Address"
+                  label="العنوان"
                   value={data.address}
                   onChange={(value) => onFieldChange('address', value)}
                 />

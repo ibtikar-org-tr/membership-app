@@ -12,38 +12,38 @@ type ProfileSectionProps = {
 
 export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
   return (
-    <SectionCard title="Profile & Social" subtitle="Bio, links, health and communication preferences.">
+    <SectionCard title="الملف الشخصي والبيانات" subtitle="السيرة الذاتية والروابط والبيانات الصحية.">
       <div className="grid gap-4 md:grid-cols-2">
         <SelectField
           id="blood-type"
-          label="Blood Type"
+          label="فصيلة الدم"
           options={bloodTypeOptions}
           value={data.bloodType}
           onChange={(value) => onFieldChange('bloodType', value)}
         />
         <TextField
           id="profile-picture-url"
-          label="Profile Picture URL"
+          label="رابط صورة الملف الشخصي"
           type="url"
           value={data.profilePictureUrl}
           onChange={(value) => onFieldChange('profilePictureUrl', value)}
         />
         <TextField
           id="telegram-id"
-          label="Telegram ID"
+          label="معرّف Telegram"
           value={data.telegramId}
           onChange={(value) => onFieldChange('telegramId', value)}
         />
         <TextField
           id="telegram-username"
-          label="Telegram Username"
+          label="اسم المستخدم Telegram"
           value={data.telegramUsername}
           onChange={(value) => onFieldChange('telegramUsername', value)}
         />
         <div className="md:col-span-2">
           <TextAreaField
             id="social-media-links"
-            label="Social Media Links (JSON)"
+            label="روابط وسائل التواصل (JSON)"
             placeholder='{"github": "https://...", "linkedin": "https://..."}'
             rows={3}
             value={data.socialMediaLinks}
@@ -53,7 +53,7 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
         <div className="md:col-span-2">
           <TextAreaField
             id="biography"
-            label="Biography"
+            label="السيرة الذاتية"
             rows={4}
             value={data.biography}
             onChange={(value) => onFieldChange('biography', value)}
@@ -61,14 +61,14 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
         </div>
         <TextAreaField
           id="interests"
-          label="Interests (comma-separated)"
+          label="الاهتمامات (مفصولة بفواصل)"
           rows={3}
           value={data.interests}
           onChange={(value) => onFieldChange('interests', value)}
         />
         <TextAreaField
           id="skills"
-          label="Skills (comma-separated)"
+          label="المهارات (مفصولة بفواصل)"
           rows={3}
           value={data.skills}
           onChange={(value) => onFieldChange('skills', value)}
@@ -76,7 +76,7 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
         <div className="md:col-span-2">
           <TextAreaField
             id="languages"
-            label="Languages (comma-separated)"
+            label="اللغات (مفصولة بفواصل)"
             rows={3}
             value={data.languages}
             onChange={(value) => onFieldChange('languages', value)}
