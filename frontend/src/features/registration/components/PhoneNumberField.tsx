@@ -1,5 +1,7 @@
-import { PhoneInput } from 'react-international-phone'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { PhoneInput, defaultCountries, parseCountry } from 'react-international-phone'
 import 'react-international-phone/style.css'
+import type { CountryIso2, PhoneInputRefType } from 'react-international-phone'
 
 type PhoneNumberFieldProps = {
   value: string
@@ -7,24 +9,124 @@ type PhoneNumberFieldProps = {
 }
 
 export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
+  const phoneInputRef = useRef<PhoneInputRefType>(null)
+  const shellRef = useRef<HTMLDivElement>(null)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCountry, setSelectedCountry] = useState<CountryIso2>('tr')
+
+  const countries = useMemo(() => defaultCountries.map((country) => parseCountry(country)), [])
+
+  const filteredCountries = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return countries
+
+    return countries.filter((country) => {
+      return (
+        country.name.toLowerCase().includes(query) ||
+        country.iso2.toLowerCase().includes(query) ||
+        country.dialCode.includes(query.replace('+', ''))
+      )
+    })
+  }, [countries, searchQuery])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!shellRef.current?.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const toFlagEmoji = (iso2: string) => {
+    const codePoints = iso2
+      .toUpperCase()
+      .split('')
+      .map((char) => 127397 + char.charCodeAt(0))
+
+    return String.fromCodePoint(...codePoints)
+  }
+
+  const handleCountrySelect = (countryIso2: CountryIso2) => {
+    phoneInputRef.current?.setCountry(countryIso2)
+    setSelectedCountry(countryIso2)
+    setIsDropdownOpen(false)
+    setSearchQuery('')
+  }
+
   return (
     <div className="md:col-span-2">
       <label htmlFor="phone-number" className="flex flex-col gap-2 text-sm font-medium text-slate-700">
         رقم الهاتف
-        <div dir="ltr" className="phone-input-shell">
+        <div ref={shellRef} dir="ltr" className="phone-input-shell relative">
           <PhoneInput
+            ref={phoneInputRef}
             defaultCountry="tr"
+            hideDropdown
             value={value}
-            onChange={onChange}
+            onChange={(phone, meta) => {
+              onChange(phone)
+              setSelectedCountry(meta.country.iso2)
+            }}
             inputProps={{
               id: 'phone-number',
               className: 'w-full',
             }}
             countrySelectorStyleProps={{
-              buttonClassName:
-                'hover:bg-slate-50 transition',
+              buttonClassName: 'pointer-events-none border-0 bg-white shadow-none',
             }}
           />
+
+          <button
+            type="button"
+            aria-label="اختيار الدولة"
+            onClick={() => setIsDropdownOpen((current) => !current)}
+            className="absolute left-0 top-0 z-20 h-11 w-14 cursor-pointer bg-transparent"
+          />
+
+          {isDropdownOpen && (
+            <div className="absolute left-0 top-[calc(100%+0.5rem)] z-[70] w-[min(22rem,calc(100vw-2rem))] min-w-[18rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+              <div className="border-b border-slate-200 p-2">
+                <input
+                  type="text"
+                  dir="rtl"
+                  value={searchQuery}
+                  placeholder="ابحث عن الدولة أو الرمز"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                />
+              </div>
+
+              <ul className="max-h-64 overflow-y-auto py-1">
+                {filteredCountries.map((country) => {
+                  const isSelected = country.iso2 === selectedCountry
+
+                  return (
+                    <li key={country.iso2}>
+                      <button
+                        type="button"
+                        onClick={() => handleCountrySelect(country.iso2)}
+                        className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition hover:bg-slate-50 ${
+                          isSelected ? 'bg-teal-50 text-teal-700' : 'text-slate-700'
+                        }`}
+                      >
+                        <span className="text-base leading-none">{toFlagEmoji(country.iso2)}</span>
+                        <span className="flex-1 truncate">{country.name}</span>
+                        <span className="text-xs text-slate-500">+{country.dialCode}</span>
+                      </button>
+                    </li>
+                  )
+                })}
+
+                {filteredCountries.length === 0 && (
+                  <li className="px-3 py-3 text-sm text-slate-500">لا توجد نتائج</li>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       </label>
       <style>{`
