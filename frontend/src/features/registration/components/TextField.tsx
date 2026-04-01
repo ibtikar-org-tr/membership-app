@@ -10,6 +10,8 @@ type TextFieldProps = {
   required?: boolean
   validationPattern?: RegExp
   validationMessage?: string
+  inputDir?: 'ltr' | 'rtl' | 'auto'
+  helperText?: string
 }
 
 export function TextField({
@@ -22,6 +24,8 @@ export function TextField({
   required = false,
   validationPattern,
   validationMessage,
+  inputDir = 'auto',
+  helperText,
 }: TextFieldProps) {
   const [hasBlurred, setHasBlurred] = useState(false)
   const isInvalid = Boolean(validationPattern) && value.trim().length > 0 && !validationPattern!.test(value)
@@ -33,6 +37,7 @@ export function TextField({
       <input
         id={id}
         type={type}
+        dir={inputDir}
         value={value}
         required={required}
         placeholder={placeholder}
@@ -44,6 +49,9 @@ export function TextField({
             : 'border-slate-300 focus:border-teal-500 focus:ring-teal-100'
         }`}
       />
+      {helperText && !showError && (
+        <p className="text-xs font-normal text-slate-500/70">{helperText}</p>
+      )}
       {showError && validationMessage && (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
           {validationMessage}

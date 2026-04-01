@@ -55,9 +55,11 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
         />
         <TextField
           id="en-name"
-          label="الاسم بالإنجليزية"
+          label="Name Surname"
           value={data.enName}
           onChange={(value) => onFieldChange('enName', value)}
+          inputDir="ltr"
+          helperText="الاسم الكامل باللغة التركية أو الإنكليزية"
           validationPattern={/^\s*[a-zA-ZçÇğĞıİöÖşŞüÜ]+(?:\s+[a-zA-ZçÇğĞıİöÖşŞüÜ]+)+\s*$/}
           validationMessage="يرجى كتابة الاسم الكامل باللغة التركيّة/الإنكليزيّة"
           required
