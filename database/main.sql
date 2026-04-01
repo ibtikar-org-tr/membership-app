@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS user_info (
     sex TEXT CHECK (sex IN ('male', 'female')),
     date_of_birth TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01")
     country TEXT, -- ISO 3166-1 alpha-2 country code (e.g., "US", "TR", etc.)
-    city TEXT,
+    region TEXT, -- state/region or province within the country (e.g., "Istanbul", "Aleppo", "California" etc.)
+    city TEXT, -- city of residence (e.g., "Fatih", "Al Bab", "Mezitli", "Azaz" etc.)
     address TEXT,
     education_level TEXT, -- highest level of education (e.g., "high_school", "bachelor", "master", "phd", etc.)
     school TEXT, -- name of the school or university
