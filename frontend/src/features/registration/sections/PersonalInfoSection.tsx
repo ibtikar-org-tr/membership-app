@@ -16,6 +16,9 @@ type PersonalInfoSectionProps = {
 export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSectionProps) {
   const [selectedCountryId, setSelectedCountryId] = useState<number>(0)
   const [selectedStateId, setSelectedStateId] = useState<number>(0)
+  const [countrySearch, setCountrySearch] = useState('')
+  const [stateSearch, setStateSearch] = useState('')
+  const [citySearch, setCitySearch] = useState('')
   const [countries, setCountries] = useState<Country[]>([])
   const [states, setStates] = useState<State[]>([])
   const [cities, setCities] = useState<City[]>([])
@@ -105,11 +108,14 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   const handleCountrySelect = (country: Country) => {
     setSelectedCountryId(country.id)
     setSelectedStateId(0)
+    setStateSearch('')
+    setCitySearch('')
     handleCountryChange(country.iso2.toUpperCase())
   }
 
   const handleStateSelect = (state: State) => {
     setSelectedStateId(state.id)
+    setCitySearch('')
     onFieldChange('city', '')
     onFieldChange('address', '')
   }
@@ -126,6 +132,33 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
     const localizedName = arabicRegionNames?.of(country.iso2.toUpperCase())
     return localizedName && localizedName !== country.iso2.toUpperCase() ? localizedName : country.name
   }
+
+  const selectedCountry = countries.find((country) => country.id === selectedCountryId)
+  const selectedState = states.find((state) => state.id === selectedStateId)
+
+  useEffect(() => {
+    if (!selectedCountry) {
+      return
+    }
+
+    setCountrySearch(`${selectedCountry.emoji} ${getArabicCountryName(selectedCountry)}`)
+  }, [selectedCountry])
+
+  useEffect(() => {
+    if (!selectedState) {
+      return
+    }
+
+    setStateSearch(selectedState.name)
+  }, [selectedState])
+
+  useEffect(() => {
+    if (!data.city) {
+      return
+    }
+
+    setCitySearch(data.city)
+  }, [data.city])
 
   return (
     <SectionCard
@@ -235,73 +268,112 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           <div className="grid gap-4 md:grid-cols-2">
             <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
               الدولة
-              <select
-                value={selectedCountryId ? String(selectedCountryId) : ''}
+              <input
+                type="text"
+                list="country-options"
+                value={countrySearch}
                 onChange={(event) => {
-                  const nextId = Number(event.target.value)
-                  const country = countries.find((item) => item.id === nextId)
+                  const nextValue = event.target.value
+                  setCountrySearch(nextValue)
+
+                  if (nextValue.trim() === '') {
+                    setSelectedCountryId(0)
+                    setSelectedStateId(0)
+                    setStateSearch('')
+                    setCitySearch('')
+                    handleCountryChange('')
+                    return
+                  }
+
+                  const normalized = nextValue.trim().toLowerCase()
+                  const country = countries.find((item) => {
+                    const arabicName = getArabicCountryName(item).toLowerCase()
+                    const withEmoji = `${item.emoji} ${getArabicCountryName(item)}`.toLowerCase()
+                    return arabicName === normalized || withEmoji === normalized
+                  })
                   if (country) {
                     handleCountrySelect(country)
                   }
                 }}
+                placeholder="ابحث واختر دولتك"
                 className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                 dir="rtl"
-              >
-                <option value="">اختر دولتك</option>
+              />
+              <datalist id="country-options">
                 {countries.map((country) => (
-                  <option key={country.id} value={country.id}>
-                    {country.emoji} {getArabicCountryName(country)}
-                  </option>
+                  <option key={country.id} value={`${country.emoji} ${getArabicCountryName(country)}`} />
                 ))}
-              </select>
+              </datalist>
             </label>
 
             {selectedCountryId > 0 && (
               <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                 الولاية / المحافظة
-                <select
-                  value={selectedStateId ? String(selectedStateId) : ''}
+                <input
+                  type="text"
+                  list="state-options"
+                  value={stateSearch}
                   onChange={(event) => {
-                    const nextId = Number(event.target.value)
-                    const state = states.find((item) => item.id === nextId)
+                    const nextValue = event.target.value
+                    setStateSearch(nextValue)
+
+                    if (nextValue.trim() === '') {
+                      setSelectedStateId(0)
+                      setCitySearch('')
+                      onFieldChange('city', '')
+                      onFieldChange('address', '')
+                      return
+                    }
+
+                    const normalized = nextValue.trim().toLowerCase()
+                    const state = states.find((item) => item.name.toLowerCase() === normalized)
                     if (state) {
                       handleStateSelect(state)
                     }
                   }}
+                  placeholder="ابحث واختر الولاية / المحافظة"
                   className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                   dir="rtl"
-                >
-                  <option value="">اختر الولاية / المحافظة</option>
+                />
+                <datalist id="state-options">
                   {states.map((state) => (
-                    <option key={state.id} value={state.id}>
-                      {state.name}
-                    </option>
+                    <option key={state.id} value={state.name} />
                   ))}
-                </select>
+                </datalist>
               </label>
             )}
 
             {selectedCountryId > 0 && selectedStateId > 0 && (
               <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                 المدينة
-                <select
-                  value={data.city}
+                <input
+                  type="text"
+                  list="city-options"
+                  value={citySearch}
                   onChange={(event) => {
-                    const city = cities.find((item) => item.name === event.target.value)
+                    const nextValue = event.target.value
+                    setCitySearch(nextValue)
+
+                    if (nextValue.trim() === '') {
+                      onFieldChange('city', '')
+                      return
+                    }
+
+                    const normalized = nextValue.trim().toLowerCase()
+                    const city = cities.find((item) => item.name.toLowerCase() === normalized)
                     if (city) {
                       handleCitySelect(city)
                     }
                   }}
+                  placeholder="ابحث واختر المدينة"
                   className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
                   dir="rtl"
-                >
-                  <option value="">اختر المدينة</option>
+                />
+                <datalist id="city-options">
                   {cities.map((city) => (
-                    <option key={city.id} value={city.name}>
-                      {city.name}
-                    </option>
+                    <option key={city.id} value={city.name} />
                   ))}
-                </select>
+                </datalist>
               </label>
             )}
 
