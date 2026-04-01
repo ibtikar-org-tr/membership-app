@@ -47,20 +47,17 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
 
   const commitIfCompleteAndValid = (nextYear: string, nextMonth: string, nextDay: string) => {
     if (nextYear.length !== 4 || nextMonth.length !== 2 || nextDay.length !== 2) {
-      onChange('')
       return
     }
 
     const monthNumber = Number(nextMonth)
     const dayNumber = Number(nextDay)
     if (monthNumber < 1 || monthNumber > 12) {
-      onChange('')
       return
     }
 
     const maxDay = getDaysInMonth(Number(nextYear), monthNumber)
     if (dayNumber < 1 || dayNumber > maxDay) {
-      onChange('')
       return
     }
 
