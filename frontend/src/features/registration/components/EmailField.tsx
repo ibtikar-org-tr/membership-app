@@ -87,7 +87,7 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
   }
 
   return (
-    <label htmlFor={`${id}-local`} className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
+    <label htmlFor={`${id}-local`} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
       {label}
       <div
         className="grid grid-cols-[2fr_auto_1fr] items-stretch overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100"
