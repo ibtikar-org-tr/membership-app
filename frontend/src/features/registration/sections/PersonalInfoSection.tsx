@@ -2,6 +2,7 @@ import { SelectField } from '../components/SelectField'
 import { SectionCard } from '../components/SectionCard'
 import { TextField } from '../components/TextField'
 import { PhoneNumberField } from '../components/PhoneNumberField'
+import { EmailField } from '../components/EmailField'
 import { countryOptions, sexOptions } from '../config/registrationOptions'
 import type { RegistrationFormData } from '../types/registration'
 
@@ -29,10 +30,9 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
       className="z-[130]"
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <TextField
+        <EmailField
           id="email"
           label="البريد الإلكتروني"
-          type="email"
           value={data.email}
           onChange={(value) => onFieldChange('email', value)}
           required
