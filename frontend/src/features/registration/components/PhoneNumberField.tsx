@@ -10,7 +10,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
     <div className="md:col-span-2">
       <label htmlFor="phone-number" className="flex flex-col gap-2 text-sm font-medium text-slate-700">
         رقم الهاتف
-        <div className="[&_.ric-focus]:ring-2 [&_.ric-focus]:ring-teal-100 [&_.ric-focus]:border-teal-500">
+        <div dir="ltr" className="[&_.ric-focus]:ring-2 [&_.ric-focus]:ring-teal-100 [&_.ric-focus]:border-teal-500">
           <PhoneInput
             defaultCountry="tr"
             value={value}
