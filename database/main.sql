@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS user_info (
     address TEXT,
     education_level TEXT, -- highest level of education (e.g., "high_school", "bachelor", "master", "phd", etc.)
     school TEXT, -- name of the school or university
-    graduation_year INTEGER, -- year of graduation from the high school or university
     field_of_study TEXT, -- field of study in the university or major in the high school
+    graduation_year INTEGER, -- year of graduation from the high school or university
     blood_type TEXT CHECK (blood_type IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')),
     telegram_id TEXT,
     telegram_username TEXT,
