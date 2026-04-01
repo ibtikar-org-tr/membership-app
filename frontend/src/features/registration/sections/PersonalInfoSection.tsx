@@ -18,10 +18,10 @@ type PersonalInfoSectionProps = {
 export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSectionProps) {
   const [selectedCountryId, setSelectedCountryId] = useState<number>(0)
   const [selectedStateId, setSelectedStateId] = useState<number>(0)
+  const [showAddressField, setShowAddressField] = useState(false)
   const [countries, setCountries] = useState<Country[]>([])
   const [states, setStates] = useState<State[]>([])
   const [cities, setCities] = useState<City[]>([])
-  const hasCountry = data.country.trim().length > 0
   const hasCity = data.city.trim().length > 0
 
   const arabicRegionNames = useMemo(() => {
@@ -99,6 +99,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   const handleCountryChange = (value: string) => {
     onFieldChange('country', value)
     if (value !== data.country) {
+      setShowAddressField(false)
       onFieldChange('city', '')
       onFieldChange('address', '')
     }
@@ -112,6 +113,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
 
   const handleStateSelect = (state: State) => {
     setSelectedStateId(state.id)
+    setShowAddressField(false)
     onFieldChange('city', '')
     onFieldChange('address', '')
   }
@@ -318,27 +320,53 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
             )}
 
             {selectedCountryId > 0 && selectedStateId > 0 && (
-              <SearchableSelectField
-                id="city"
-                label="المدينة"
-                placeholder="ابحث واختر المدينة"
-                value={data.city}
-                options={cityOptions}
-                onChange={(nextValue) => {
-                  if (!nextValue) {
-                    onFieldChange('city', '')
-                    return
-                  }
+              <div className="grid items-end gap-2 md:col-span-2" style={{ gridTemplateColumns: 'auto minmax(0, 1fr)' }} dir="ltr">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!hasCity) {
+                      return
+                    }
 
-                  const city = cities.find((item) => item.name === nextValue)
-                  if (city) {
-                    handleCitySelect(city)
-                  }
-                }}
-              />
+                    setShowAddressField((current) => {
+                      const next = !current
+                      if (!next) {
+                        onFieldChange('address', '')
+                      }
+                      return next
+                    })
+                  }}
+                  className="h-8 rounded-md border border-slate-300 px-2 text-xs text-slate-700 opacity-50 transition hover:opacity-80 disabled:cursor-not-allowed"
+                  disabled={!hasCity}
+                >
+                  {showAddressField ? 'إخفاء العنوان' : 'إضافة عنوان (اختياري)'}
+                </button>
+                <div dir="rtl">
+                  <SearchableSelectField
+                    id="city"
+                    label="المدينة"
+                    placeholder="ابحث واختر المدينة"
+                    value={data.city}
+                    options={cityOptions}
+                    onChange={(nextValue) => {
+                      if (!nextValue) {
+                        setShowAddressField(false)
+                        onFieldChange('city', '')
+                        onFieldChange('address', '')
+                        return
+                      }
+
+                      const city = cities.find((item) => item.name === nextValue)
+                      if (city) {
+                        handleCitySelect(city)
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             )}
 
-            {hasCountry && hasCity && (
+            {showAddressField && hasCity && (
               <div className="md:col-span-2">
                 <TextField
                   id="address"
