@@ -54,17 +54,19 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           validationMessage="يرجى كتابة الاسم الكامل باللغة العربيّة"
           required
         />
-        <TextField
-          id="en-name"
-          label="Name Surname"
-          value={data.enName}
-          onChange={(value) => onFieldChange('enName', value)}
-          inputDir="ltr"
-          helperText="الاسم الكامل باللغة التركية أو الإنكليزية"
-          validationPattern={/^\s*[a-zA-ZçÇğĞıİöÖşŞüÜ]+(?:\s+[a-zA-ZçÇğĞıİöÖşŞüÜ]+)+\s*$/}
-          validationMessage="يرجى كتابة الاسم الكامل باللغة التركيّة/الإنكليزيّة"
-          required
-        />
+        <div className="text-left">
+          <TextField
+            id="en-name"
+            label="Name Surname"
+            value={data.enName}
+            onChange={(value) => onFieldChange('enName', value)}
+            inputDir="ltr"
+            helperText="الاسم الكامل باللغة التركية أو الإنكليزية"
+            validationPattern={/^\s*[a-zA-ZçÇğĞıİöÖşŞüÜ]+(?:\s+[a-zA-ZçÇğĞıİöÖşŞüÜ]+)+\s*$/}
+            validationMessage="يرجى كتابة الاسم الكامل باللغة التركيّة/الإنكليزيّة"
+            required
+          />
+        </div>
         <PhoneNumberField
           value={data.phoneNumber}
           onChange={(value) => onFieldChange('phoneNumber', value)}
