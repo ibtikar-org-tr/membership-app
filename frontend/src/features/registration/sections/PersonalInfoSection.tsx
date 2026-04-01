@@ -30,13 +30,20 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
       className="z-[130]"
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <EmailField
-          id="email"
-          label="البريد الإلكتروني"
-          value={data.email}
-          onChange={(value) => onFieldChange('email', value)}
-          required
-        />
+        <div className="space-y-2">
+          <EmailField
+            id="email"
+            label="البريد الإلكتروني"
+            value={data.email}
+            onChange={(value) => onFieldChange('email', value)}
+            required
+          />
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-900">
+            تأكّد أنّك مسجّل من بريدك الالكتروني الأساسي لأننا سنتواصل معك عبر هذا الايميل
+            <br />
+            هام: هذا البريد الإلكتروني سوف تستخدمه في تسجيل الدخول لمنصّات التجمّع لاحقاً، وكذلك سيتمّ التواصل معك عبره، وسيكون من الصّعب تغيير لاحقاً
+          </p>
+        </div>
         <TextField
           id="en-name"
           label="الاسم بالإنجليزية"
