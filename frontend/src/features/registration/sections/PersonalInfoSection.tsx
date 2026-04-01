@@ -49,6 +49,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           label="الاسم بالعربية"
           value={data.arName}
           onChange={(value) => onFieldChange('arName', value)}
+          helperText="الاسم الكامل باللغة العربية"
           validationPattern={/^\s*[أ-يءآًٌٍَُِْ]+(?:\s*[أ-يءآًٌٍَُِْ]+)+\s*$/}
           validationMessage="يرجى كتابة الاسم الكامل باللغة العربيّة"
           required
