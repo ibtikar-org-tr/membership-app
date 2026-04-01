@@ -16,7 +16,21 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCountry, setSelectedCountry] = useState<CountryIso2>('tr')
 
-  const countries = useMemo(() => defaultCountries.map((country) => parseCountry(country)), [])
+  const sourceCountries = useMemo(() => {
+    return defaultCountries.map((country) => {
+      const parsed = parseCountry(country)
+
+      if (parsed.iso2 !== 'il') {
+        return country
+      }
+
+      const next = [...country] as typeof country
+      next[0] = 'Occupied Palestine'
+      return next
+    })
+  }, [])
+
+  const countries = useMemo(() => sourceCountries.map((country) => parseCountry(country)), [sourceCountries])
   const customFlags = useMemo(() => [{ iso2: 'sy' as CountryIso2, src: syriaModernFlag }], [])
 
   const arabicCountryNames = useMemo(() => {
@@ -29,6 +43,12 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
     countries.forEach((country) => {
       const regionCode = country.iso2.toUpperCase()
       const localizedName = displayNames?.of(regionCode)
+
+      if (country.iso2 === 'il') {
+        map.set(country.iso2, 'فلسطين المحتلة')
+        return
+      }
+
       map.set(country.iso2, localizedName && localizedName !== regionCode ? localizedName : country.name)
     })
 
