@@ -3,6 +3,7 @@ import { SectionCard } from '../components/SectionCard'
 import { TextField } from '../components/TextField'
 import { countryOptions, sexOptions } from '../config/registrationOptions'
 import type { RegistrationFormData } from '../types/registration'
+import { PhoneInput } from 'react-international-phone'
 
 type PersonalInfoSectionProps = {
   data: RegistrationFormData
@@ -46,14 +47,20 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           onChange={(value) => onFieldChange('arName', value)}
           required
         />
-        <TextField
-          id="phone-number"
-          label="رقم الهاتف"
-          type="tel"
-          placeholder="+905316781111"
-          value={data.phoneNumber}
-          onChange={(value) => onFieldChange('phoneNumber', value)}
-        />
+        <div className="md:col-span-2">
+          <label htmlFor="phone-number" className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            رقم الهاتف
+            <PhoneInput
+              defaultCountry="tr"
+              value={data.phoneNumber}
+              onChange={(phone) => onFieldChange('phoneNumber', phone)}
+              inputProps={{
+                id: 'phone-number',
+                className: 'w-full h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100',
+              }}
+            />
+          </label>
+        </div>
         <SelectField
           id="sex"
           label="الجنس"
