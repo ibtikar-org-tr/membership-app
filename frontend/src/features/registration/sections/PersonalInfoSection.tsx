@@ -1,9 +1,11 @@
+import { useState } from 'react'
+import { CountrySelect, StateSelect, CitySelect } from 'react-country-state-city'
+import type { Country, State, City } from 'react-country-state-city/dist/esm/types'
 import { SectionCard } from '../components/SectionCard'
 import { TextField } from '../components/TextField'
 import { PhoneNumberField } from '../components/PhoneNumberField'
 import { EmailField } from '../components/EmailField'
 import { BirthDateField } from '../components/BirthDateField'
-import { CountryField } from '../components/CountryField'
 import type { RegistrationFormData } from '../types/registration'
 
 type PersonalInfoSectionProps = {
@@ -12,6 +14,8 @@ type PersonalInfoSectionProps = {
 }
 
 export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSectionProps) {
+  const [selectedCountryId, setSelectedCountryId] = useState<number>(0)
+  const [selectedStateId, setSelectedStateId] = useState<number>(0)
   const hasCountry = data.country.trim().length > 0
   const hasCity = data.city.trim().length > 0
 
@@ -21,6 +25,22 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
       onFieldChange('city', '')
       onFieldChange('address', '')
     }
+  }
+
+  const handleCountrySelect = (country: Country) => {
+    setSelectedCountryId(country.id)
+    setSelectedStateId(0)
+    handleCountryChange(country.iso2.toUpperCase())
+  }
+
+  const handleStateSelect = (state: State) => {
+    setSelectedStateId(state.id)
+    onFieldChange('city', '')
+    onFieldChange('address', '')
+  }
+
+  const handleCitySelect = (city: City) => {
+    onFieldChange('city', city.name)
   }
 
   return (
@@ -129,21 +149,42 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">تفاصيل الموقع</p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <CountryField
-              id="country"
-              label="الدولة"
-              placeholder="اختر دولتك"
-              value={data.country}
-              onChange={handleCountryChange}
-            />
-
-            {hasCountry && (
-              <TextField
-                id="city"
-                label="المدينة"
-                value={data.city}
-                onChange={(value) => onFieldChange('city', value)}
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              الدولة
+              <CountrySelect
+                placeHolder="اختر دولتك"
+                showFlag
+                onChange={(value) => handleCountrySelect(value as Country)}
+                containerClassName="h-11"
+                inputClassName="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
               />
+            </label>
+
+            {selectedCountryId > 0 && (
+              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                الولاية / المحافظة
+                <StateSelect
+                  countryid={selectedCountryId}
+                  placeHolder="اختر الولاية / المحافظة"
+                  onChange={(value) => handleStateSelect(value as State)}
+                  containerClassName="h-11"
+                  inputClassName="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                />
+              </label>
+            )}
+
+            {selectedCountryId > 0 && selectedStateId > 0 && (
+              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                المدينة
+                <CitySelect
+                  countryid={selectedCountryId}
+                  stateid={selectedStateId}
+                  placeHolder="اختر المدينة"
+                  onChange={(value) => handleCitySelect(value as City)}
+                  containerClassName="h-11"
+                  inputClassName="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                />
+              </label>
             )}
 
             {hasCountry && hasCity && (
