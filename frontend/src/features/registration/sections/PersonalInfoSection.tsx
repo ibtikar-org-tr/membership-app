@@ -23,7 +23,11 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   }
 
   return (
-    <SectionCard title="التفاصيل الشخصية" subtitle="معلومات الهوية والاتصال المطلوبة.">
+    <SectionCard
+      title="التفاصيل الشخصية"
+      subtitle="معلومات الهوية والاتصال المطلوبة."
+      className="z-[130]"
+    >
       <div className="grid gap-4 md:grid-cols-2">
         <TextField
           id="email"
