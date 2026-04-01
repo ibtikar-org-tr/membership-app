@@ -2,7 +2,20 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "membership-app-backend",
   "main": "src/index.ts",
-  "compatibility_date": "2026-03-31"
+  "compatibility_date": "2026-03-31",
+  "d1_databases": [
+    {
+      "binding": "MY_DB",
+      "database_name": "membership-app-database",
+      "database_id": ""
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MY_BUCKET",
+      "bucket_name": "membership-app-bucket"
+    }
+  ],
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],
@@ -13,19 +26,6 @@
   //   {
   //     "binding": "MY_KV_NAMESPACE",
   //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
-  // "d1_databases": [
-  //   {
-  //     "binding": "MY_DB",
-  //     "database_name": "my-database",
-  //     "database_id": ""
   //   }
   // ],
   // "ai": {
