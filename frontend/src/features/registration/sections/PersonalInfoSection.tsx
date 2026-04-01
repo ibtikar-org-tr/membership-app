@@ -49,7 +49,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           label="الاسم بالعربية"
           value={data.arName}
           onChange={(value) => onFieldChange('arName', value)}
-          validationPattern={/\s*[أ-يءآًٌٍَُِْ]+(?:\s*[أ-يءآًٌٍَُِْ]+)+\s*/}
+          validationPattern={/^\s*[أ-يءآًٌٍَُِْ]+(?:\s*[أ-يءآًٌٍَُِْ]+)+\s*$/}
           validationMessage="يرجى كتابة الاسم الكامل باللغة العربيّة"
           required
         />
@@ -58,8 +58,8 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           label="الاسم بالإنجليزية"
           value={data.enName}
           onChange={(value) => onFieldChange('enName', value)}
-          validationPattern={/\s*[a-zA-ZçÇğĞıİöÖşŞüÜ]+(?:\s+[a-zA-ZçÇğĞıİöÖşŞüÜ]+)+\s*/}
-        validationMessage="يرجى كتابة الاسم الكامل باللغة التركيّة/الإنكليزيّة"
+          validationPattern={/^\s*[a-zA-ZçÇğĞıİöÖşŞüÜ]+(?:\s+[a-zA-ZçÇğĞıİöÖşŞüÜ]+)+\s*$/}
+          validationMessage="يرجى كتابة الاسم الكامل باللغة التركيّة/الإنكليزيّة"
           required
         />
         <PhoneNumberField
