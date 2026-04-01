@@ -1,7 +1,7 @@
 import { SelectField } from '../components/SelectField'
 import { SectionCard } from '../components/SectionCard'
 import { TextField } from '../components/TextField'
-import { sexOptions } from '../config/registrationOptions'
+import { countryOptions, sexOptions } from '../config/registrationOptions'
 import type { RegistrationFormData } from '../types/registration'
 
 type PersonalInfoSectionProps = {
@@ -10,6 +10,17 @@ type PersonalInfoSectionProps = {
 }
 
 export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSectionProps) {
+  const hasCountry = data.country.trim().length > 0
+  const hasCity = data.city.trim().length > 0
+
+  const handleCountryChange = (value: string) => {
+    onFieldChange('country', value)
+    if (value !== data.country) {
+      onFieldChange('city', '')
+      onFieldChange('address', '')
+    }
+  }
+
   return (
     <SectionCard title="Account & Personal Details" subtitle="Required identity and contact information.">
       <div className="grid gap-4 md:grid-cols-2">
@@ -72,27 +83,34 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           value={data.dateOfBirth}
           onChange={(value) => onFieldChange('dateOfBirth', value)}
         />
-        <TextField
+        <SelectField
           id="country"
-          label="Country (ISO alpha-2)"
-          placeholder="TR"
+          label="Country"
+          options={countryOptions}
+          placeholder="Choose your country"
           value={data.country}
-          onChange={(value) => onFieldChange('country', value)}
+          onChange={handleCountryChange}
         />
-        <TextField
-          id="city"
-          label="City"
-          value={data.city}
-          onChange={(value) => onFieldChange('city', value)}
-        />
-        <div className="md:col-span-2">
+
+        {hasCountry && (
           <TextField
-            id="address"
-            label="Address"
-            value={data.address}
-            onChange={(value) => onFieldChange('address', value)}
+            id="city"
+            label="City"
+            value={data.city}
+            onChange={(value) => onFieldChange('city', value)}
           />
-        </div>
+        )}
+
+        {hasCountry && hasCity && (
+          <div className="md:col-span-2">
+            <TextField
+              id="address"
+              label="Address"
+              value={data.address}
+              onChange={(value) => onFieldChange('address', value)}
+            />
+          </div>
+        )}
       </div>
     </SectionCard>
   )

@@ -3,6 +3,29 @@ export const sexOptions = [
   { value: 'female', label: 'Female' },
 ]
 
+export const countryOptions = [
+  { value: 'TR', label: 'Turkey' },
+  { value: 'SY', label: 'Syria' },
+  { value: 'IQ', label: 'Iraq' },
+  { value: 'JO', label: 'Jordan' },
+  { value: 'LB', label: 'Lebanon' },
+  { value: 'PS', label: 'Palestine' },
+  { value: 'EG', label: 'Egypt' },
+  { value: 'SA', label: 'Saudi Arabia' },
+  { value: 'QA', label: 'Qatar' },
+  { value: 'AE', label: 'United Arab Emirates' },
+  { value: 'KW', label: 'Kuwait' },
+  { value: 'OM', label: 'Oman' },
+  { value: 'BH', label: 'Bahrain' },
+  { value: 'YE', label: 'Yemen' },
+  { value: 'US', label: 'United States' },
+  { value: 'GB', label: 'United Kingdom' },
+  { value: 'DE', label: 'Germany' },
+  { value: 'FR', label: 'France' },
+  { value: 'CA', label: 'Canada' },
+  { value: 'other', label: 'Other' },
+]
+
 export const bloodTypeOptions = [
   { value: 'A+', label: 'A+' },
   { value: 'A-', label: 'A-' },
