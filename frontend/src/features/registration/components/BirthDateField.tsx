@@ -109,7 +109,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
   }
 
   const currentYear = new Date().getFullYear()
-  const minimumYear = 1900
+  const minimumYear = 1990
   const isInvalidYear = year.length === 4 && (Number(year) < minimumYear || Number(year) > currentYear)
   const isInvalidMonth = month.length > 0 && (Number(month) < 1 || Number(month) > 12)
   const invalidDayRange = year.length === 4 && month.length > 0 ? getDaysInMonth(Number(year), Number(month)) : 31
@@ -158,7 +158,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
       <p className="text-xs font-normal text-slate-500/70">صيغة سريعة: YYYY-MM-DD مع انتقال تلقائي بين الخانات</p>
       {showError && (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
-          يرجى إدخال تاريخ ميلاد صالح بين 1900 والسنة الحالية.
+          يرجى إدخال تاريخ ميلاد صالح بين 1990 والسنة الحالية.
         </p>
       )}
     </div>
