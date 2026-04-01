@@ -30,7 +30,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
       className="z-[130]"
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <EmailField
             id="email"
             label="البريد الإلكتروني"
@@ -45,17 +45,17 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           </p>
         </div>
         <TextField
-          id="en-name"
-          label="الاسم بالإنجليزية"
-          value={data.enName}
-          onChange={(value) => onFieldChange('enName', value)}
-          required
-        />
-        <TextField
           id="ar-name"
           label="الاسم بالعربية"
           value={data.arName}
           onChange={(value) => onFieldChange('arName', value)}
+          required
+        />
+        <TextField
+          id="en-name"
+          label="الاسم بالإنجليزية"
+          value={data.enName}
+          onChange={(value) => onFieldChange('enName', value)}
           required
         />
         <PhoneNumberField
