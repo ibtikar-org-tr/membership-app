@@ -1,10 +1,9 @@
-import { SelectField } from '../components/SelectField'
 import { SectionCard } from '../components/SectionCard'
 import { TextField } from '../components/TextField'
 import { PhoneNumberField } from '../components/PhoneNumberField'
 import { EmailField } from '../components/EmailField'
 import { BirthDateField } from '../components/BirthDateField'
-import { countryOptions } from '../config/registrationOptions'
+import { CountryField } from '../components/CountryField'
 import type { RegistrationFormData } from '../types/registration'
 
 type PersonalInfoSectionProps = {
@@ -130,10 +129,9 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">تفاصيل الموقع</p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <SelectField
+            <CountryField
               id="country"
               label="الدولة"
-              options={countryOptions}
               placeholder="اختر دولتك"
               value={data.country}
               onChange={handleCountryChange}
