@@ -7,9 +7,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    base: env.VITE_BASE_PATH || '/mf/membership-app/',
+    base: env.VITE_BASE_PATH || 'mf/membership-app/',
     build: {
-      outDir: 'dist/mf/membership-app'
+      outDir: `dist/${env.VITE_BASE_PATH || 'mf/membership-app/'}`
     }
   }
 })
