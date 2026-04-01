@@ -65,8 +65,9 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
         }
 
         .phone-input-shell .react-international-phone-country-selector-button {
-          border-right: 1px solid #cbd5e1;
+          border: 0;
           background-color: #ffffff;
+          box-shadow: none;
         }
 
         .phone-input-shell .react-international-phone-input {
