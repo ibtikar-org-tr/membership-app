@@ -16,12 +16,12 @@
       "bucket_name": "membership-app-bucket"
     }
   ],
+  "vars": {
+    "MEMBERSHIP_NUMBER_PREFIX": "2501",
+  },
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",
