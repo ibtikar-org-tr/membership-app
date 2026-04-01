@@ -42,6 +42,15 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
 
         .phone-input-shell .react-international-phone-input-container {
           width: 100%;
+          border: 1px solid #cbd5e1;
+          border-radius: 0.75rem;
+          background-color: #ffffff;
+          overflow: hidden;
+        }
+
+        .phone-input-shell .react-international-phone-input-container:focus-within {
+          border-color: #14b8a6;
+          box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.1);
         }
 
         .phone-input-shell .react-international-phone-country-selector-dropdown {
@@ -56,11 +65,14 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
 
         .phone-input-shell .react-international-phone-country-selector-button {
           border-right: 1px solid #cbd5e1;
+          background-color: #ffffff;
         }
 
         .phone-input-shell .react-international-phone-input {
           font-size: 0.875rem;
           padding: 0 0.75rem;
+          background-color: #ffffff;
+          border: 0;
         }
       `}</style>
     </div>
