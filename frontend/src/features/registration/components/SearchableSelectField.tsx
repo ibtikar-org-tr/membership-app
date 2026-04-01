@@ -30,6 +30,7 @@ export function SearchableSelectField({
   onChange,
 }: SearchableSelectFieldProps) {
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -46,6 +47,14 @@ export function SearchableSelectField({
       return haystack.includes(query)
     })
   }, [options, searchQuery])
+
+  useEffect(() => {
+    if (isOpen) {
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus()
+      })
+    }
+  }, [isOpen])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -87,9 +96,10 @@ export function SearchableSelectField({
         </button>
 
         {isOpen && !disabled && (
-          <div className="absolute left-0 top-[calc(100%+0.5rem)] z-[70] w-[min(22rem,calc(100vw-2rem))] min-w-[18rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+          <div className="absolute left-0 top-full z-[70] w-[min(22rem,calc(100vw-2rem))] min-w-[18rem] overflow-hidden rounded-b-xl border border-t-0 border-slate-200 bg-white shadow-xl">
             <div className="border-b border-slate-200 p-2">
               <input
+                ref={searchInputRef}
                 type="text"
                 dir="rtl"
                 value={searchQuery}
