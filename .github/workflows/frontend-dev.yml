@@ -1,9 +1,9 @@
-name: (main) [frontend] Deploy to Cloudflare Workers
+name: (dev) [frontend] Deploy to Cloudflare Workers
 
 on:
   push:
     branches:
-      - main
+      - dev
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend.yml'
@@ -12,7 +12,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: deployment
+    environment: dev
     defaults:
       run:
         working-directory: ./frontend
@@ -39,4 +39,4 @@ jobs:
       - name: Deploy to Cloudflare Workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: wrangler deploy
+        run: wrangler deploy --name membership-app-frontend-dev
