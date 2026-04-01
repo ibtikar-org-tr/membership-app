@@ -7,32 +7,22 @@
     {
       "binding": "MY_DB",
       "database_name": "membership-app-database",
-      "database_id": ""
+      "database_id": "",
+      "remote": true
     }
   ],
   "r2_buckets": [
     {
       "binding": "MY_BUCKET",
-      "bucket_name": "membership-app-bucket"
+      "bucket_name": "membership-app-bucket",
+      "remote": true
     }
   ],
   "vars": {
     "MEMBERSHIP_NUMBER_PREFIX": "2501",
   },
-  // "compatibility_flags": [
-  //   "nodejs_compat"
-  // ],
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "ai": {
-  //   "binding": "AI"
-  // },
-  // "observability": {
-  //   "enabled": true,
-  //   "head_sampling_rate": 1
-  // }
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
 }
