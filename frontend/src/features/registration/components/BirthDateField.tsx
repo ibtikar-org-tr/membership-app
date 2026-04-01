@@ -90,6 +90,24 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
     }
   }
 
+  const handleMonthBlur = () => {
+    setHasBlurred(true)
+    if (month.length === 1 && Number(month) >= 1 && Number(month) <= 9) {
+      const normalizedMonth = `0${month}`
+      setMonth(normalizedMonth)
+      commitIfCompleteAndValid(year, normalizedMonth, day)
+    }
+  }
+
+  const handleDayBlur = () => {
+    setHasBlurred(true)
+    if (day.length === 1 && Number(day) >= 1 && Number(day) <= 9) {
+      const normalizedDay = `0${day}`
+      setDay(normalizedDay)
+      commitIfCompleteAndValid(year, month, normalizedDay)
+    }
+  }
+
   const currentYear = new Date().getFullYear()
   const minimumYear = 1900
   const isInvalidYear = year.length === 4 && (Number(year) < minimumYear || Number(year) > currentYear)
@@ -121,7 +139,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
           inputMode="numeric"
           placeholder="MM"
           onChange={(event) => handleMonthChange(event.target.value)}
-          onBlur={() => setHasBlurred(true)}
+          onBlur={handleMonthBlur}
           className="min-w-0 h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
         />
         <span className="text-slate-400">-</span>
@@ -133,7 +151,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
           inputMode="numeric"
           placeholder="DD"
           onChange={(event) => handleDayChange(event.target.value)}
-          onBlur={() => setHasBlurred(true)}
+          onBlur={handleDayBlur}
           className="min-w-0 h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
         />
       </div>
