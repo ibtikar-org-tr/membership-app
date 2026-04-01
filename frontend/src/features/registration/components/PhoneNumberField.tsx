@@ -45,7 +45,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
           border: 1px solid #cbd5e1;
           border-radius: 0.75rem;
           background-color: #ffffff;
-          overflow: hidden;
+          overflow: visible;
         }
 
         .phone-input-shell .react-international-phone-input-container:focus-within {
@@ -60,6 +60,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
           width: min(22rem, calc(100vw - 2rem));
           min-width: 18rem;
           left: 0;
+          top: calc(100% + 0.5rem);
           max-height: 16rem;
         }
 
