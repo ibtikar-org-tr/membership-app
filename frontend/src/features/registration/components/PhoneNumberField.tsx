@@ -48,7 +48,9 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
           z-index: 60;
           border: 1px solid #e2e8f0;
           border-radius: 0.75rem;
-          width: 100%;
+          width: min(22rem, calc(100vw - 2rem));
+          min-width: 18rem;
+          left: 0;
           max-height: 16rem;
         }
 
