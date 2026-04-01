@@ -8,6 +8,8 @@ type EmailFieldProps = {
   required?: boolean
 }
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 function splitEmailParts(email: string) {
   const atIndex = email.indexOf('@')
   if (atIndex === -1) {
@@ -25,6 +27,7 @@ function splitEmailParts(email: string) {
 
 export function EmailField({ id, label, value, onChange, required = false }: EmailFieldProps) {
   const domainInputRef = useRef<HTMLInputElement | null>(null)
+  const [hasBlurred, setHasBlurred] = useState(false)
   const { localPart: initialLocalPart, domainPart: initialDomainPart } = useMemo(
     () => splitEmailParts(value),
     [value],
@@ -86,11 +89,19 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
     })
   }
 
+  const trimmedValue = value.trim()
+  const isInvalid = trimmedValue.length > 0 && !emailPattern.test(trimmedValue)
+  const showError = hasBlurred && isInvalid
+
   return (
     <label htmlFor={`${id}-local`} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
       {label}
       <div
-        className="grid grid-cols-[2fr_auto_1fr] items-stretch overflow-hidden rounded-xl border border-slate-300 bg-white focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100"
+        className={`grid grid-cols-[2fr_auto_1fr] items-stretch overflow-hidden rounded-xl border bg-white focus-within:ring-2 ${
+          showError
+            ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-100'
+            : 'border-slate-300 focus-within:border-teal-500 focus-within:ring-teal-100'
+        }`}
         dir="ltr"
       >
         <input
@@ -105,6 +116,7 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           value={localPart}
           onChange={(event) => handleLocalPartChange(event.target.value)}
           onKeyDown={handleLocalPartKeyDown}
+          onBlur={() => setHasBlurred(true)}
           className="h-11 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
           dir="ltr"
         />
@@ -123,10 +135,16 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           placeholder="example.com"
           value={domainPart}
           onChange={(event) => handleDomainPartChange(event.target.value)}
+          onBlur={() => setHasBlurred(true)}
           className="h-11 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
           dir="ltr"
         />
       </div>
+      {showError && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+          البريد الإلكتروني غير صالح. اكتب الصيغة الصحيحة مثل: name@example.com
+        </p>
+      )}
     </label>
   )
 }
