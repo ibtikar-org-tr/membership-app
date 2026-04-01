@@ -3,6 +3,7 @@ import { SectionCard } from '../components/SectionCard'
 import { TextField } from '../components/TextField'
 import { PhoneNumberField } from '../components/PhoneNumberField'
 import { EmailField } from '../components/EmailField'
+import { BirthDateField } from '../components/BirthDateField'
 import { countryOptions } from '../config/registrationOptions'
 import type { RegistrationFormData } from '../types/registration'
 
@@ -118,12 +119,12 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
             </button>
           </div>
         </div>
-        <TextField
+        <BirthDateField
           id="dob"
           label="تاريخ الميلاد"
-          type="date"
           value={data.dateOfBirth}
           onChange={(value) => onFieldChange('dateOfBirth', value)}
+          required
         />
         <div className="space-y-4 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 md:col-span-2 md:p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">تفاصيل الموقع</p>
