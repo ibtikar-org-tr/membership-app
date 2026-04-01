@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS users (
     membership_number TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS user_info (
     country TEXT, -- ISO 3166-1 alpha-2 country code (e.g., "US", "TR", etc.)
     city TEXT,
     address TEXT,
-    education_level TEXT,
+    education_level TEXT, -- highest level of education (e.g., "high_school", "bachelor", "master", "phd", etc.)
     school TEXT, -- name of the school or university
     graduation_year INTEGER, -- year of graduation from the high school or university
     field_of_study TEXT, -- field of study in the university or major in the high school
