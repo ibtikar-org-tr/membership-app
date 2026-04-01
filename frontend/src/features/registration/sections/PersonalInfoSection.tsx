@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { CountrySelect, StateSelect, CitySelect } from 'react-country-state-city'
+import { useEffect, useMemo, useState } from 'react'
+import { GetCountries, GetState, GetCity } from 'react-country-state-city'
 import type { Country, State, City } from 'react-country-state-city/dist/esm/types'
 import { SectionCard } from '../components/SectionCard'
 import { TextField } from '../components/TextField'
@@ -16,8 +16,83 @@ type PersonalInfoSectionProps = {
 export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSectionProps) {
   const [selectedCountryId, setSelectedCountryId] = useState<number>(0)
   const [selectedStateId, setSelectedStateId] = useState<number>(0)
+  const [countries, setCountries] = useState<Country[]>([])
+  const [states, setStates] = useState<State[]>([])
+  const [cities, setCities] = useState<City[]>([])
   const hasCountry = data.country.trim().length > 0
   const hasCity = data.city.trim().length > 0
+
+  const arabicRegionNames = useMemo(() => {
+    return typeof Intl !== 'undefined' && 'DisplayNames' in Intl
+      ? new Intl.DisplayNames(['ar'], { type: 'region' })
+      : null
+  }, [])
+
+  useEffect(() => {
+    let isActive = true
+
+    GetCountries().then((nextCountries) => {
+      if (!isActive) return
+      setCountries(nextCountries)
+    })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedCountryId > 0) {
+      return
+    }
+
+    const iso2 = data.country.trim().toLowerCase()
+    if (!iso2 || countries.length === 0) {
+      return
+    }
+
+    const matchedCountry = countries.find((country) => country.iso2.toLowerCase() === iso2)
+    if (matchedCountry) {
+      setSelectedCountryId(matchedCountry.id)
+    }
+  }, [countries, data.country, selectedCountryId])
+
+  useEffect(() => {
+    let isActive = true
+
+    if (!selectedCountryId) {
+      setStates([])
+      setCities([])
+      return
+    }
+
+    GetState(selectedCountryId).then((nextStates) => {
+      if (!isActive) return
+      setStates(nextStates)
+    })
+
+    return () => {
+      isActive = false
+    }
+  }, [selectedCountryId])
+
+  useEffect(() => {
+    let isActive = true
+
+    if (!selectedCountryId || !selectedStateId) {
+      setCities([])
+      return
+    }
+
+    GetCity(selectedCountryId, selectedStateId).then((nextCities) => {
+      if (!isActive) return
+      setCities(nextCities)
+    })
+
+    return () => {
+      isActive = false
+    }
+  }, [selectedCountryId, selectedStateId])
 
   const handleCountryChange = (value: string) => {
     onFieldChange('country', value)
@@ -41,6 +116,15 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
 
   const handleCitySelect = (city: City) => {
     onFieldChange('city', city.name)
+  }
+
+  const getArabicCountryName = (country: Country) => {
+    if (country.iso2.toLowerCase() === 'il') {
+      return 'فلسطين المحتلة'
+    }
+
+    const localizedName = arabicRegionNames?.of(country.iso2.toUpperCase())
+    return localizedName && localizedName !== country.iso2.toUpperCase() ? localizedName : country.name
   }
 
   return (
@@ -151,39 +235,73 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           <div className="grid gap-4 md:grid-cols-2">
             <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
               الدولة
-              <CountrySelect
-                placeHolder="اختر دولتك"
-                showFlag
-                onChange={(value) => handleCountrySelect(value as Country)}
-                containerClassName="h-11"
-                inputClassName="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-              />
+              <select
+                value={selectedCountryId ? String(selectedCountryId) : ''}
+                onChange={(event) => {
+                  const nextId = Number(event.target.value)
+                  const country = countries.find((item) => item.id === nextId)
+                  if (country) {
+                    handleCountrySelect(country)
+                  }
+                }}
+                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                dir="rtl"
+              >
+                <option value="">اختر دولتك</option>
+                {countries.map((country) => (
+                  <option key={country.id} value={country.id}>
+                    {country.emoji} {getArabicCountryName(country)}
+                  </option>
+                ))}
+              </select>
             </label>
 
             {selectedCountryId > 0 && (
               <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                 الولاية / المحافظة
-                <StateSelect
-                  countryid={selectedCountryId}
-                  placeHolder="اختر الولاية / المحافظة"
-                  onChange={(value) => handleStateSelect(value as State)}
-                  containerClassName="h-11"
-                  inputClassName="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                />
+                <select
+                  value={selectedStateId ? String(selectedStateId) : ''}
+                  onChange={(event) => {
+                    const nextId = Number(event.target.value)
+                    const state = states.find((item) => item.id === nextId)
+                    if (state) {
+                      handleStateSelect(state)
+                    }
+                  }}
+                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                  dir="rtl"
+                >
+                  <option value="">اختر الولاية / المحافظة</option>
+                  {states.map((state) => (
+                    <option key={state.id} value={state.id}>
+                      {state.name}
+                    </option>
+                  ))}
+                </select>
               </label>
             )}
 
             {selectedCountryId > 0 && selectedStateId > 0 && (
               <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
                 المدينة
-                <CitySelect
-                  countryid={selectedCountryId}
-                  stateid={selectedStateId}
-                  placeHolder="اختر المدينة"
-                  onChange={(value) => handleCitySelect(value as City)}
-                  containerClassName="h-11"
-                  inputClassName="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                />
+                <select
+                  value={data.city}
+                  onChange={(event) => {
+                    const city = cities.find((item) => item.name === event.target.value)
+                    if (city) {
+                      handleCitySelect(city)
+                    }
+                  }}
+                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                  dir="rtl"
+                >
+                  <option value="">اختر المدينة</option>
+                  {cities.map((city) => (
+                    <option key={city.id} value={city.name}>
+                      {city.name}
+                    </option>
+                  ))}
+                </select>
               </label>
             )}
 
