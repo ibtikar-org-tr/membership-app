@@ -100,9 +100,9 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
   const showError = hasBlurred && (isInvalidYear || isInvalidMonth || isInvalidDay || value === '')
 
   return (
-    <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+    <div className="min-w-0 flex flex-col gap-2 text-sm font-medium text-slate-700">
       <span>{label}</span>
-      <div className="grid grid-cols-[1.4fr_auto_1fr_auto_1fr] items-center gap-2" dir="ltr">
+      <div className="min-w-0 grid grid-cols-[1.4fr_auto_1fr_auto_1fr] items-center gap-2" dir="ltr">
         <input
           id={`${id}-year`}
           value={year}
@@ -111,7 +111,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
           onChange={(event) => handleYearChange(event.target.value)}
           onBlur={() => setHasBlurred(true)}
           required={required}
-          className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+          className="min-w-0 h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
         />
         <span className="text-slate-400">-</span>
 
@@ -123,7 +123,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
           placeholder="MM"
           onChange={(event) => handleMonthChange(event.target.value)}
           onBlur={() => setHasBlurred(true)}
-          className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+          className="min-w-0 h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
         />
         <span className="text-slate-400">-</span>
 
@@ -135,7 +135,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
           placeholder="DD"
           onChange={(event) => handleDayChange(event.target.value)}
           onBlur={() => setHasBlurred(true)}
-          className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+          className="min-w-0 h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
         />
       </div>
       <p className="text-xs font-normal text-slate-500/70">صيغة سريعة: YYYY-MM-DD مع انتقال تلقائي بين الخانات</p>
