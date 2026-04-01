@@ -320,7 +320,31 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
             )}
 
             {selectedCountryId > 0 && selectedStateId > 0 && (
-              <div className="grid items-end gap-2 md:col-span-2" style={{ gridTemplateColumns: 'auto minmax(0, 1fr)' }} dir="ltr">
+              <SearchableSelectField
+                id="city"
+                label="المدينة"
+                placeholder="ابحث واختر المدينة"
+                value={data.city}
+                options={cityOptions}
+                onChange={(nextValue) => {
+                  if (!nextValue) {
+                    setShowAddressField(false)
+                    onFieldChange('city', '')
+                    onFieldChange('address', '')
+                    return
+                  }
+
+                  const city = cities.find((item) => item.name === nextValue)
+                  if (city) {
+                    handleCitySelect(city)
+                  }
+                }}
+              />
+            )}
+
+            {selectedCountryId > 0 && selectedStateId > 0 && (
+              <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                <span className="opacity-50">العنوان (اختياري)</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -336,33 +360,11 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
                       return next
                     })
                   }}
-                  className="h-8 rounded-md border border-slate-300 px-2 text-xs text-slate-700 opacity-50 transition hover:opacity-80 disabled:cursor-not-allowed"
+                  className="h-8 w-fit rounded-md border border-slate-300 px-2 text-xs text-slate-700 opacity-50 transition hover:opacity-80 disabled:cursor-not-allowed"
                   disabled={!hasCity}
                 >
-                  {showAddressField ? 'إخفاء العنوان' : 'إضافة عنوان (اختياري)'}
+                  {showAddressField ? 'إخفاء العنوان' : 'إضافة عنوان'}
                 </button>
-                <div dir="rtl">
-                  <SearchableSelectField
-                    id="city"
-                    label="المدينة"
-                    placeholder="ابحث واختر المدينة"
-                    value={data.city}
-                    options={cityOptions}
-                    onChange={(nextValue) => {
-                      if (!nextValue) {
-                        setShowAddressField(false)
-                        onFieldChange('city', '')
-                        onFieldChange('address', '')
-                        return
-                      }
-
-                      const city = cities.find((item) => item.name === nextValue)
-                      if (city) {
-                        handleCitySelect(city)
-                      }
-                    }}
-                  />
-                </div>
               </div>
             )}
 
