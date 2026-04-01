@@ -17,18 +17,37 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
 
   const countries = useMemo(() => defaultCountries.map((country) => parseCountry(country)), [])
 
+  const arabicCountryNames = useMemo(() => {
+    const map = new Map<CountryIso2, string>()
+    const displayNames =
+      typeof Intl !== 'undefined' && 'DisplayNames' in Intl
+        ? new Intl.DisplayNames(['ar'], { type: 'region' })
+        : null
+
+    countries.forEach((country) => {
+      const regionCode = country.iso2.toUpperCase()
+      const localizedName = displayNames?.of(regionCode)
+      map.set(country.iso2, localizedName && localizedName !== regionCode ? localizedName : country.name)
+    })
+
+    return map
+  }, [countries])
+
   const filteredCountries = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     if (!query) return countries
 
     return countries.filter((country) => {
+      const arabicName = (arabicCountryNames.get(country.iso2) ?? '').toLowerCase()
+
       return (
+        arabicName.includes(query) ||
         country.name.toLowerCase().includes(query) ||
         country.iso2.toLowerCase().includes(query) ||
         country.dialCode.includes(query.replace('+', ''))
       )
     })
-  }, [countries, searchQuery])
+  }, [arabicCountryNames, countries, searchQuery])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -103,6 +122,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
               <ul className="max-h-64 overflow-y-auto py-1">
                 {filteredCountries.map((country) => {
                   const isSelected = country.iso2 === selectedCountry
+                  const arabicName = arabicCountryNames.get(country.iso2) ?? country.name
 
                   return (
                     <li key={country.iso2}>
@@ -114,7 +134,9 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
                         }`}
                       >
                         <span className="text-base leading-none">{toFlagEmoji(country.iso2)}</span>
-                        <span className="flex-1 truncate">{country.name}</span>
+                        <span dir="rtl" className="flex-1 truncate text-right">
+                          {arabicName}
+                        </span>
                         <span className="text-xs text-slate-500">+{country.dialCode}</span>
                       </button>
                     </li>
