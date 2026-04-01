@@ -107,7 +107,7 @@ export function SearchableSelectField({
         </button>
 
         {isOpen && !disabled && (
-          <div className="absolute left-0 top-full z-[70] w-[min(22rem,calc(100vw-2rem))] min-w-[18rem] overflow-hidden rounded-b-xl border border-t-0 border-slate-200 bg-white shadow-xl">
+          <div className="absolute left-0 top-full z-[220] w-[min(22rem,calc(100vw-2rem))] min-w-[18rem] overflow-hidden rounded-b-xl border border-t-0 border-slate-200 bg-white shadow-xl">
             <div className="border-b border-slate-200 p-2">
               <input
                 ref={searchInputRef}
