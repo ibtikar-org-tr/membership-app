@@ -83,34 +83,40 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           value={data.dateOfBirth}
           onChange={(value) => onFieldChange('dateOfBirth', value)}
         />
-        <SelectField
-          id="country"
-          label="Country"
-          options={countryOptions}
-          placeholder="Choose your country"
-          value={data.country}
-          onChange={handleCountryChange}
-        />
+        <div className="space-y-4 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 md:col-span-2 md:p-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Location Details</p>
 
-        {hasCountry && (
-          <TextField
-            id="city"
-            label="City"
-            value={data.city}
-            onChange={(value) => onFieldChange('city', value)}
-          />
-        )}
-
-        {hasCountry && hasCity && (
-          <div className="md:col-span-2">
-            <TextField
-              id="address"
-              label="Address"
-              value={data.address}
-              onChange={(value) => onFieldChange('address', value)}
+          <div className="grid gap-4 md:grid-cols-2">
+            <SelectField
+              id="country"
+              label="Country"
+              options={countryOptions}
+              placeholder="Choose your country"
+              value={data.country}
+              onChange={handleCountryChange}
             />
+
+            {hasCountry && (
+              <TextField
+                id="city"
+                label="City"
+                value={data.city}
+                onChange={(value) => onFieldChange('city', value)}
+              />
+            )}
+
+            {hasCountry && hasCity && (
+              <div className="md:col-span-2">
+                <TextField
+                  id="address"
+                  label="Address"
+                  value={data.address}
+                  onChange={(value) => onFieldChange('address', value)}
+                />
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </SectionCard>
   )
