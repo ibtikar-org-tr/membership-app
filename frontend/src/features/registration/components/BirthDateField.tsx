@@ -69,15 +69,17 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
 
   const handleDayChange = (rawValue: string) => {
     const nextDay = sanitizeNumber(rawValue, 2)
-    setDay(nextDay)
-    commitIfCompleteAndValid(year, month, nextDay)
+    const normalizedDay = nextDay.length === 1 && Number(nextDay) >= 4 ? `0${nextDay}` : nextDay
+    setDay(normalizedDay)
+    commitIfCompleteAndValid(year, month, normalizedDay)
   }
 
   const handleMonthChange = (rawValue: string) => {
     const nextMonth = sanitizeNumber(rawValue, 2)
-    setMonth(nextMonth)
-    commitIfCompleteAndValid(year, nextMonth, day)
-    if (nextMonth.length === 2) {
+    const normalizedMonth = nextMonth.length === 1 && Number(nextMonth) >= 2 ? `0${nextMonth}` : nextMonth
+    setMonth(normalizedMonth)
+    commitIfCompleteAndValid(year, normalizedMonth, day)
+    if (normalizedMonth.length === 2) {
       dayRef.current?.focus()
     }
   }
