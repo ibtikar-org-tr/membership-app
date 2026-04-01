@@ -1,7 +1,6 @@
-import { SelectField } from '../components/SelectField'
 import { SectionCard } from '../components/SectionCard'
+import { SearchableSelectField } from '../components/SearchableSelectField'
 import { TextField } from '../components/TextField'
-import { educationLevelOptions } from '../config/registrationOptions'
 import type { RegistrationFormData } from '../types/registration'
 
 type EducationSectionProps = {
@@ -10,12 +9,23 @@ type EducationSectionProps = {
 }
 
 export function EducationSection({ data, onFieldChange }: EducationSectionProps) {
+  const educationLevelOptions = [
+    { value: 'high_school', label: 'ثانوية', secondaryLabel: 'مدرسة' },
+    { value: 'diploma', label: 'دبلوم', secondaryLabel: 'معهد' },
+    { value: 'bachelor', label: 'بكالوريوس', secondaryLabel: 'جامعة' },
+    { value: 'master', label: 'ماجستير', secondaryLabel: 'دراسات عليا' },
+    { value: 'phd', label: 'دكتوراه', secondaryLabel: 'دراسات عليا' },
+    { value: 'other', label: 'أخرى' },
+  ]
+
   return (
     <SectionCard title="التعليم" subtitle="الخلفية الأكاديمية ومادة الدراسة.">
       <div className="grid gap-4 md:grid-cols-2">
-        <SelectField
+        <SearchableSelectField
           id="education-level"
           label="مستوى التعليم"
+          placeholder="اختر مستوى التعليم"
+          defaultAdornment={null}
           options={educationLevelOptions}
           value={data.educationLevel}
           onChange={(value) => onFieldChange('educationLevel', value)}

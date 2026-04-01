@@ -38,11 +38,11 @@ export const bloodTypeOptions = [
 ]
 
 export const educationLevelOptions = [
-  { value: 'high_school', label: 'ثانوية' },
-  { value: 'diploma', label: 'دبلوم' },
-  { value: 'bachelor', label: 'بكالوريوس' },
-  { value: 'master', label: 'ماجستير' },
-  { value: 'phd', label: 'دكتوراه' },
+  { value: 'high_school', label: 'ثانوية (مدرسة)' },
+  { value: 'diploma', label: 'دبلوم (معهد)' },
+  { value: 'bachelor', label: 'بكالوريوس (جامعة)' },
+  { value: 'master', label: 'ماجستير (دراسات عليا)' },
+  { value: 'phd', label: 'دكتوراه (دراسات عليا)' },
   { value: 'other', label: 'أخرى' },
 ]
 

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 type SearchableOption = {
   value: string
   label: string
+  secondaryLabel?: string
   leftAdornment?: ReactNode
   rightAdornment?: string
   searchText?: string
@@ -15,6 +16,7 @@ type SearchableSelectFieldProps = {
   placeholder: string
   emptyMessage?: string
   disabled?: boolean
+  defaultAdornment?: ReactNode
   value: string
   options: SearchableOption[]
   onChange: (value: string) => void
@@ -26,6 +28,7 @@ export function SearchableSelectField({
   placeholder,
   emptyMessage = 'لا توجد نتائج',
   disabled = false,
+  defaultAdornment = <span className="text-base leading-none text-slate-400">🌍</span>,
   value,
   options,
   onChange,
@@ -88,11 +91,18 @@ export function SearchableSelectField({
           {selectedOption?.leftAdornment ? (
             <span className="text-base leading-none">{selectedOption.leftAdornment}</span>
           ) : (
-            <span className="text-base leading-none text-slate-400">🌍</span>
+            defaultAdornment
           )}
-          <span className={`flex-1 truncate text-right ${selectedOption ? 'text-slate-900' : 'text-slate-400'}`}>
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
+          {selectedOption ? (
+            <span className="flex-1 truncate text-right text-slate-900">
+              {selectedOption.label}
+              {selectedOption.secondaryLabel ? (
+                <span className="mr-1 text-xs text-slate-500 opacity-50">({selectedOption.secondaryLabel})</span>
+              ) : null}
+            </span>
+          ) : (
+            <span className="flex-1 truncate text-right text-slate-400">{placeholder}</span>
+          )}
           <span className="text-xs text-slate-500">▾</span>
         </button>
 
@@ -130,6 +140,9 @@ export function SearchableSelectField({
                       )}
                       <span dir="rtl" className="flex-1 truncate text-right">
                         {option.label}
+                        {option.secondaryLabel ? (
+                          <span className="mr-1 text-xs text-slate-500 opacity-50">({option.secondaryLabel})</span>
+                        ) : null}
                       </span>
                       {option.rightAdornment ? (
                         <span className="text-xs text-slate-500">{option.rightAdornment}</span>
