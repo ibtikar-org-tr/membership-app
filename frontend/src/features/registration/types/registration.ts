@@ -13,10 +13,7 @@ export type RegistrationFormData = {
   graduationYear: string
   fieldOfStudy: string
   bloodType: string
-  telegramId: string
-  telegramUsername: string
   socialMediaLinks: string
-  profilePictureUrl: string
   biography: string
   interests: string
   skills: string
@@ -45,10 +42,7 @@ export const initialRegistrationFormData: RegistrationFormData = {
   graduationYear: '',
   fieldOfStudy: '',
   bloodType: '',
-  telegramId: '',
-  telegramUsername: '',
   socialMediaLinks: '',
-  profilePictureUrl: '',
   biography: '',
   interests: '',
   skills: '',

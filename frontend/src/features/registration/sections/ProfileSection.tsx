@@ -21,25 +21,6 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           value={data.bloodType}
           onChange={(value) => onFieldChange('bloodType', value)}
         />
-        <TextField
-          id="profile-picture-url"
-          label="رابط صورة الملف الشخصي"
-          type="url"
-          value={data.profilePictureUrl}
-          onChange={(value) => onFieldChange('profilePictureUrl', value)}
-        />
-        <TextField
-          id="telegram-id"
-          label="معرّف Telegram"
-          value={data.telegramId}
-          onChange={(value) => onFieldChange('telegramId', value)}
-        />
-        <TextField
-          id="telegram-username"
-          label="اسم المستخدم Telegram"
-          value={data.telegramUsername}
-          onChange={(value) => onFieldChange('telegramUsername', value)}
-        />
         <div className="md:col-span-2">
           <TextAreaField
             id="social-media-links"
