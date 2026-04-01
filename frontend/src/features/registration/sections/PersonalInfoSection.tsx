@@ -7,6 +7,7 @@ import { PhoneNumberField } from '../components/PhoneNumberField'
 import { EmailField } from '../components/EmailField'
 import { BirthDateField } from '../components/BirthDateField'
 import { SearchableSelectField } from '../components/SearchableSelectField'
+import syriaModernFlag from '../../../assets/flags/syria-modern.svg'
 import type { RegistrationFormData } from '../types/registration'
 
 type PersonalInfoSectionProps = {
@@ -135,7 +136,12 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
       countries.map((country) => ({
         value: String(country.id),
         label: getArabicCountryName(country),
-        leftAdornment: country.emoji,
+        leftAdornment:
+          country.iso2.toLowerCase() === 'sy' ? (
+            <img src={syriaModernFlag} alt="" className="h-[18px] w-[18px] rounded-sm object-cover" />
+          ) : (
+            country.emoji
+          ),
         rightAdornment: `+${country.phone_code}`,
         searchText: `${country.name} ${country.iso2} ${country.iso3} ${country.phone_code}`,
       })),

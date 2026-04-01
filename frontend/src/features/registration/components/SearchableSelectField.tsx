@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 
 type SearchableOption = {
   value: string
   label: string
-  leftAdornment?: string
+  leftAdornment?: ReactNode
   rightAdornment?: string
   searchText?: string
 }
