@@ -70,6 +70,10 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
           box-shadow: none;
         }
 
+        .phone-input-shell .react-international-phone-country-selector-button__flag-emoji {
+          margin-left: 0.75rem;
+        }
+
         .phone-input-shell .react-international-phone-input {
           font-size: 0.875rem;
           padding: 0 0.75rem;
