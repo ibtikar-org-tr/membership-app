@@ -22,29 +22,14 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   }
 
   return (
-    <SectionCard title="Account & Personal Details" subtitle="Required identity and contact information.">
+    <SectionCard title="Personal Details" subtitle="Required identity and contact information.">
       <div className="grid gap-4 md:grid-cols-2">
-        <TextField
-          id="membership-number"
-          label="Membership Number"
-          value={data.membershipNumber}
-          onChange={(value) => onFieldChange('membershipNumber', value)}
-          required
-        />
         <TextField
           id="email"
           label="Email"
           type="email"
           value={data.email}
           onChange={(value) => onFieldChange('email', value)}
-          required
-        />
-        <TextField
-          id="password"
-          label="Password"
-          type="password"
-          value={data.password}
-          onChange={(value) => onFieldChange('password', value)}
           required
         />
         <TextField

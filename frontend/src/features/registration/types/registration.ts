@@ -1,7 +1,5 @@
 export type RegistrationFormData = {
-  membershipNumber: string
   email: string
-  password: string
   enName: string
   arName: string
   phoneNumber: string
@@ -33,9 +31,7 @@ export type RegistrationFormData = {
 export type FormFieldName = keyof RegistrationFormData
 
 export const initialRegistrationFormData: RegistrationFormData = {
-  membershipNumber: '',
   email: '',
-  password: '',
   enName: '',
   arName: '',
   phoneNumber: '',
