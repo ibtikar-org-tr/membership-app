@@ -6,6 +6,7 @@ import { TextField } from '../components/TextField'
 import { PhoneNumberField } from '../components/PhoneNumberField'
 import { EmailField } from '../components/EmailField'
 import { BirthDateField } from '../components/BirthDateField'
+import { SearchableSelectField } from '../components/SearchableSelectField'
 import type { RegistrationFormData } from '../types/registration'
 
 type PersonalInfoSectionProps = {
@@ -16,9 +17,6 @@ type PersonalInfoSectionProps = {
 export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSectionProps) {
   const [selectedCountryId, setSelectedCountryId] = useState<number>(0)
   const [selectedStateId, setSelectedStateId] = useState<number>(0)
-  const [countrySearch, setCountrySearch] = useState('')
-  const [stateSearch, setStateSearch] = useState('')
-  const [citySearch, setCitySearch] = useState('')
   const [countries, setCountries] = useState<Country[]>([])
   const [states, setStates] = useState<State[]>([])
   const [cities, setCities] = useState<City[]>([])
@@ -108,14 +106,11 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   const handleCountrySelect = (country: Country) => {
     setSelectedCountryId(country.id)
     setSelectedStateId(0)
-    setStateSearch('')
-    setCitySearch('')
     handleCountryChange(country.iso2.toUpperCase())
   }
 
   const handleStateSelect = (state: State) => {
     setSelectedStateId(state.id)
-    setCitySearch('')
     onFieldChange('city', '')
     onFieldChange('address', '')
   }
@@ -134,31 +129,37 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   }
 
   const selectedCountry = countries.find((country) => country.id === selectedCountryId)
-  const selectedState = states.find((state) => state.id === selectedStateId)
 
-  useEffect(() => {
-    if (!selectedCountry) {
-      return
-    }
+  const countryOptions = useMemo(
+    () =>
+      countries.map((country) => ({
+        value: String(country.id),
+        label: getArabicCountryName(country),
+        leftAdornment: country.emoji,
+        rightAdornment: `+${country.phone_code}`,
+        searchText: `${country.name} ${country.iso2} ${country.iso3} ${country.phone_code}`,
+      })),
+    [countries, arabicRegionNames],
+  )
 
-    setCountrySearch(`${selectedCountry.emoji} ${getArabicCountryName(selectedCountry)}`)
-  }, [selectedCountry])
+  const stateOptions = useMemo(
+    () =>
+      states.map((state) => ({
+        value: String(state.id),
+        label: state.name,
+        searchText: state.state_code,
+      })),
+    [states],
+  )
 
-  useEffect(() => {
-    if (!selectedState) {
-      return
-    }
-
-    setStateSearch(selectedState.name)
-  }, [selectedState])
-
-  useEffect(() => {
-    if (!data.city) {
-      return
-    }
-
-    setCitySearch(data.city)
-  }, [data.city])
+  const cityOptions = useMemo(
+    () =>
+      cities.map((city) => ({
+        value: city.name,
+        label: city.name,
+      })),
+    [cities],
+  )
 
   return (
     <SectionCard
@@ -266,115 +267,69 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">تفاصيل الموقع</p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-              الدولة
-              <input
-                type="text"
-                list="country-options"
-                value={countrySearch}
-                onChange={(event) => {
-                  const nextValue = event.target.value
-                  setCountrySearch(nextValue)
+            <SearchableSelectField
+              id="country"
+              label="الدولة"
+              placeholder="ابحث واختر دولتك"
+              value={selectedCountry ? String(selectedCountry.id) : ''}
+              options={countryOptions}
+              onChange={(nextValue) => {
+                if (!nextValue) {
+                  setSelectedCountryId(0)
+                  setSelectedStateId(0)
+                  handleCountryChange('')
+                  return
+                }
 
-                  if (nextValue.trim() === '') {
-                    setSelectedCountryId(0)
+                const country = countries.find((item) => String(item.id) === nextValue)
+                if (country) {
+                  handleCountrySelect(country)
+                }
+              }}
+            />
+
+            {selectedCountryId > 0 && (
+              <SearchableSelectField
+                id="state"
+                label="الولاية / المحافظة"
+                placeholder="ابحث واختر الولاية / المحافظة"
+                value={selectedStateId ? String(selectedStateId) : ''}
+                options={stateOptions}
+                onChange={(nextValue) => {
+                  if (!nextValue) {
                     setSelectedStateId(0)
-                    setStateSearch('')
-                    setCitySearch('')
-                    handleCountryChange('')
+                    onFieldChange('city', '')
+                    onFieldChange('address', '')
                     return
                   }
 
-                  const normalized = nextValue.trim().toLowerCase()
-                  const country = countries.find((item) => {
-                    const arabicName = getArabicCountryName(item).toLowerCase()
-                    const withEmoji = `${item.emoji} ${getArabicCountryName(item)}`.toLowerCase()
-                    return arabicName === normalized || withEmoji === normalized
-                  })
-                  if (country) {
-                    handleCountrySelect(country)
+                  const state = states.find((item) => String(item.id) === nextValue)
+                  if (state) {
+                    handleStateSelect(state)
                   }
                 }}
-                placeholder="ابحث واختر دولتك"
-                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                dir="rtl"
               />
-              <datalist id="country-options">
-                {countries.map((country) => (
-                  <option key={country.id} value={`${country.emoji} ${getArabicCountryName(country)}`} />
-                ))}
-              </datalist>
-            </label>
-
-            {selectedCountryId > 0 && (
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                الولاية / المحافظة
-                <input
-                  type="text"
-                  list="state-options"
-                  value={stateSearch}
-                  onChange={(event) => {
-                    const nextValue = event.target.value
-                    setStateSearch(nextValue)
-
-                    if (nextValue.trim() === '') {
-                      setSelectedStateId(0)
-                      setCitySearch('')
-                      onFieldChange('city', '')
-                      onFieldChange('address', '')
-                      return
-                    }
-
-                    const normalized = nextValue.trim().toLowerCase()
-                    const state = states.find((item) => item.name.toLowerCase() === normalized)
-                    if (state) {
-                      handleStateSelect(state)
-                    }
-                  }}
-                  placeholder="ابحث واختر الولاية / المحافظة"
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                  dir="rtl"
-                />
-                <datalist id="state-options">
-                  {states.map((state) => (
-                    <option key={state.id} value={state.name} />
-                  ))}
-                </datalist>
-              </label>
             )}
 
             {selectedCountryId > 0 && selectedStateId > 0 && (
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                المدينة
-                <input
-                  type="text"
-                  list="city-options"
-                  value={citySearch}
-                  onChange={(event) => {
-                    const nextValue = event.target.value
-                    setCitySearch(nextValue)
+              <SearchableSelectField
+                id="city"
+                label="المدينة"
+                placeholder="ابحث واختر المدينة"
+                value={data.city}
+                options={cityOptions}
+                onChange={(nextValue) => {
+                  if (!nextValue) {
+                    onFieldChange('city', '')
+                    return
+                  }
 
-                    if (nextValue.trim() === '') {
-                      onFieldChange('city', '')
-                      return
-                    }
-
-                    const normalized = nextValue.trim().toLowerCase()
-                    const city = cities.find((item) => item.name.toLowerCase() === normalized)
-                    if (city) {
-                      handleCitySelect(city)
-                    }
-                  }}
-                  placeholder="ابحث واختر المدينة"
-                  className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-                  dir="rtl"
-                />
-                <datalist id="city-options">
-                  {cities.map((city) => (
-                    <option key={city.id} value={city.name} />
-                  ))}
-                </datalist>
-              </label>
+                  const city = cities.find((item) => item.name === nextValue)
+                  if (city) {
+                    handleCitySelect(city)
+                  }
+                }}
+              />
             )}
 
             {hasCountry && hasCity && (
