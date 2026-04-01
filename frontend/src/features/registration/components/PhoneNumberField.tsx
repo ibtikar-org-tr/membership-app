@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { PhoneInput, defaultCountries, parseCountry } from 'react-international-phone'
 import 'react-international-phone/style.css'
 import type { CountryIso2, PhoneInputRefType } from 'react-international-phone'
+import syriaModernFlag from '../../../assets/flags/syria-modern.svg'
 
 type PhoneNumberFieldProps = {
   value: string
@@ -16,6 +17,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
   const [selectedCountry, setSelectedCountry] = useState<CountryIso2>('tr')
 
   const countries = useMemo(() => defaultCountries.map((country) => parseCountry(country)), [])
+  const customFlags = useMemo(() => [{ iso2: 'sy' as CountryIso2, src: syriaModernFlag }], [])
 
   const arabicCountryNames = useMemo(() => {
     const map = new Map<CountryIso2, string>()
@@ -87,6 +89,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
             ref={phoneInputRef}
             defaultCountry="tr"
             hideDropdown
+            flags={customFlags}
             value={value}
             onChange={(phone, meta) => {
               onChange(phone)
@@ -125,6 +128,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
                 {filteredCountries.map((country) => {
                   const isSelected = country.iso2 === selectedCountry
                   const arabicName = arabicCountryNames.get(country.iso2) ?? country.name
+                  const isSyria = country.iso2 === 'sy'
 
                   return (
                     <li key={country.iso2}>
@@ -135,7 +139,11 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
                           isSelected ? 'bg-teal-50 text-teal-700' : 'text-slate-700'
                         }`}
                       >
-                        <span className="text-base leading-none">{toFlagEmoji(country.iso2)}</span>
+                        {isSyria ? (
+                          <img src={syriaModernFlag} alt="" className="h-[18px] w-[18px] rounded-sm object-cover" />
+                        ) : (
+                          <span className="text-base leading-none">{toFlagEmoji(country.iso2)}</span>
+                        )}
                         <span dir="rtl" className="flex-1 truncate text-right">
                           {arabicName}
                         </span>
