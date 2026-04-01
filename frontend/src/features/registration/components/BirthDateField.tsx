@@ -26,7 +26,9 @@ function parseIsoDate(value: string) {
 }
 
 export function BirthDateField({ id, label, value, onChange, required = false }: BirthDateFieldProps) {
-  const [hasBlurred, setHasBlurred] = useState(false)
+  const [hasInteracted, setHasInteracted] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
+  const fieldWrapperRef = useRef<HTMLDivElement | null>(null)
   const monthRef = useRef<HTMLInputElement | null>(null)
   const dayRef = useRef<HTMLInputElement | null>(null)
   const parsed = parseIsoDate(value)
@@ -65,6 +67,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
   }
 
   const handleDayChange = (rawValue: string) => {
+    setHasInteracted(true)
     const nextDay = sanitizeNumber(rawValue, 2)
     const normalizedDay = nextDay.length === 1 && Number(nextDay) >= 4 ? `0${nextDay}` : nextDay
     setDay(normalizedDay)
@@ -72,6 +75,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
   }
 
   const handleMonthChange = (rawValue: string) => {
+    setHasInteracted(true)
     const nextMonth = sanitizeNumber(rawValue, 2)
     const normalizedMonth = nextMonth.length === 1 && Number(nextMonth) >= 2 ? `0${nextMonth}` : nextMonth
     setMonth(normalizedMonth)
@@ -82,6 +86,7 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
   }
 
   const handleYearChange = (rawValue: string) => {
+    setHasInteracted(true)
     const nextYear = sanitizeNumber(rawValue, 4)
     setYear(nextYear)
     commitIfCompleteAndValid(nextYear, month, day)
@@ -91,7 +96,6 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
   }
 
   const handleMonthBlur = () => {
-    setHasBlurred(true)
     if (month.length === 1 && Number(month) >= 1 && Number(month) <= 9) {
       const normalizedMonth = `0${month}`
       setMonth(normalizedMonth)
@@ -100,7 +104,6 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
   }
 
   const handleDayBlur = () => {
-    setHasBlurred(true)
     if (day.length === 1 && Number(day) >= 1 && Number(day) <= 9) {
       const normalizedDay = `0${day}`
       setDay(normalizedDay)
@@ -114,19 +117,32 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
   const isInvalidMonth = month.length > 0 && (Number(month) < 1 || Number(month) > 12)
   const invalidDayRange = year.length === 4 && month.length > 0 ? getDaysInMonth(Number(year), Number(month)) : 31
   const isInvalidDay = day.length > 0 && (Number(day) < 1 || Number(day) > invalidDayRange)
-  const showError = hasBlurred && (isInvalidYear || isInvalidMonth || isInvalidDay || value === '')
+  const isCompleteDate = year.length === 4 && month.length === 2 && day.length === 2
+  const hasInvalidField = isInvalidYear || isInvalidMonth || isInvalidDay
+  const showError = hasInteracted && !isFocused && (hasInvalidField || !isCompleteDate)
 
   return (
     <div className="min-w-0 flex flex-col gap-2 text-sm font-medium text-slate-700">
       <span>{label}</span>
-      <div className="min-w-0 grid grid-cols-[1.4fr_auto_1fr_auto_1fr] items-center gap-2" dir="ltr">
+      <div
+        ref={fieldWrapperRef}
+        className="min-w-0 grid grid-cols-[1.4fr_auto_1fr_auto_1fr] items-center gap-2"
+        dir="ltr"
+        onFocusCapture={() => setIsFocused(true)}
+        onBlurCapture={(event) => {
+          const nextTarget = event.relatedTarget as Node | null
+          if (!event.currentTarget.contains(nextTarget)) {
+            setIsFocused(false)
+            setHasInteracted(true)
+          }
+        }}
+      >
         <input
           id={`${id}-year`}
           value={year}
           inputMode="numeric"
           placeholder="YYYY"
           onChange={(event) => handleYearChange(event.target.value)}
-          onBlur={() => setHasBlurred(true)}
           required={required}
           className="min-w-0 h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
         />
