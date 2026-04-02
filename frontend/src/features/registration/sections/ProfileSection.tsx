@@ -1,7 +1,9 @@
 import { SectionCard } from '../components/SectionCard'
+import { SearchableTagsField } from '../components/SearchableTagsField'
 import { SocialMediaLinksField } from '../components/SocialMediaLinksField'
 import { TextAreaField } from '../components/TextAreaField'
 import { bloodTypeOptions } from '../config/registrationOptions'
+import { POPULAR_SKILLS } from '../config/popularSkills'
 import type { RegistrationFormData } from '../types/registration'
 
 type ProfileSectionProps = {
@@ -48,18 +50,20 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
             onChange={(value) => onFieldChange('socialMediaLinks', value)}
           />
         </div>
-        <TextAreaField
+        <SearchableTagsField
           id="interests"
           label="الاهتمامات (مفصولة بفواصل)"
-          rows={3}
           value={data.interests}
+          options={POPULAR_SKILLS}
+          placeholder="ابحث عن اهتمام أو أضف اهتمامًا مخصصًا"
           onChange={(value) => onFieldChange('interests', value)}
         />
-        <TextAreaField
+        <SearchableTagsField
           id="skills"
           label="المهارات (مفصولة بفواصل)"
-          rows={3}
           value={data.skills}
+          options={POPULAR_SKILLS}
+          placeholder="ابحث عن مهارة أو أضف مهارة مخصصة"
           onChange={(value) => onFieldChange('skills', value)}
         />
         <div className="md:col-span-2">

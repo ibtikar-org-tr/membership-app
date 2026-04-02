@@ -1,0 +1,185 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+type SearchableTagsFieldProps = {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: string[]
+  placeholder?: string
+}
+
+function parseValue(value: string) {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function dedupe(values: string[]) {
+  const seen = new Set<string>()
+  const result: string[] = []
+
+  for (const value of values) {
+    const normalized = value.toLowerCase()
+    if (!seen.has(normalized)) {
+      seen.add(normalized)
+      result.push(value)
+    }
+  }
+
+  return result
+}
+
+export function SearchableTagsField({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = 'ابحث أو اكتب قيمة ثم اضغط Enter',
+}: SearchableTagsFieldProps) {
+  const [query, setQuery] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  const selected = useMemo(() => parseValue(value), [value])
+  const selectedSet = useMemo(
+    () => new Set(selected.map((item) => item.toLowerCase())),
+    [selected],
+  )
+
+  const filteredOptions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+
+    return options
+      .filter((option) => !selectedSet.has(option.toLowerCase()))
+      .filter((option) => {
+        if (!normalizedQuery) {
+          return true
+        }
+        return option.toLowerCase().includes(normalizedQuery)
+      })
+      .slice(0, 12)
+  }, [options, query, selectedSet])
+
+  const canAddCustom = useMemo(() => {
+    const trimmed = query.trim()
+    if (!trimmed) {
+      return false
+    }
+
+    return !selectedSet.has(trimmed.toLowerCase())
+  }, [query, selectedSet])
+
+  const updateSelected = (next: string[]) => {
+    onChange(dedupe(next).join(', '))
+  }
+
+  const addTag = (tag: string) => {
+    const trimmed = tag.trim()
+    if (!trimmed || selectedSet.has(trimmed.toLowerCase())) {
+      return
+    }
+
+    updateSelected([...selected, trimmed])
+    setQuery('')
+  }
+
+  const removeTag = (tag: string) => {
+    updateSelected(selected.filter((item) => item.toLowerCase() !== tag.toLowerCase()))
+  }
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (!containerRef.current?.contains(target)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  return (
+    <div ref={containerRef} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+      <label htmlFor={id}>{label}</label>
+
+      <div className="rounded-xl border border-slate-300 bg-white p-2 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100">
+        {selected.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {selected.map((tag) => (
+              <span
+                key={tag.toLowerCase()}
+                className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="inline-flex h-4 w-4 items-center justify-center rounded-full text-teal-700 hover:bg-teal-100"
+                  aria-label={`إزالة ${tag}`}
+                >
+                  x
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <input
+          id={id}
+          type="text"
+          value={query}
+          onFocus={() => setIsOpen(true)}
+          onChange={(event) => {
+            setQuery(event.target.value)
+            setIsOpen(true)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ',') {
+              event.preventDefault()
+
+              if (query.trim()) {
+                const exactMatch = options.find(
+                  (option) => option.toLowerCase() === query.trim().toLowerCase(),
+                )
+                addTag(exactMatch ?? query)
+              }
+            }
+          }}
+          placeholder={placeholder}
+          className="h-9 w-full border-none px-1 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+        />
+      </div>
+
+      {isOpen && (filteredOptions.length > 0 || canAddCustom) && (
+        <div className="max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+          {filteredOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => addTag(option)}
+              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
+            >
+              <span>{option}</span>
+              <span className="text-xs text-slate-400">إضافة</span>
+            </button>
+          ))}
+
+          {canAddCustom && (
+            <button
+              type="button"
+              onClick={() => addTag(query)}
+              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-teal-700 transition hover:bg-teal-50"
+            >
+              <span>{`إضافة مخصص: ${query.trim()}`}</span>
+              <span className="text-xs">Custom</span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
