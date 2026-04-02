@@ -24,6 +24,28 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
     return { value: year, label: year }
   })
 
+  const hasEducationLevel = data.educationLevel.trim().length > 0
+  const isSchoolTrack = data.educationLevel === 'high_school'
+
+  const schoolOrUniversityLabel = hasEducationLevel
+    ? (isSchoolTrack ? 'اسم المدرسة' : 'اسم الجامعة')
+    : 'المدرسة أو الجامعة'
+
+  const schoolOrUniversityHelperText = hasEducationLevel
+    ? (isSchoolTrack ? 'اكتب اسم المدرسة.' : 'اكتب اسم الجامعة.')
+    : undefined
+
+  const graduationYearHelperText = hasEducationLevel
+    ? (isSchoolTrack
+      ? 'السنة التي تخرجت فيها أو تتوقع التخرج فيها من المدرسة.'
+      : 'السنة التي تخرجت فيها أو تتوقع التخرج فيها من الجامعة')
+    : 'السنة التي تخرجت فيها أو تتوقع التخرج فيها.'
+
+  const fieldOfStudyLabel = hasEducationLevel ? 'الفرع الدراسي' : 'مجال الدراسة'
+  const fieldOfStudyHelperText = hasEducationLevel
+    ? (isSchoolTrack ? 'التخصص في المدرسة' : 'الفرع الجامعي')
+    : undefined
+
   return (
     <SectionCard title="التعليم" subtitle="الخلفية الأكاديمية ومادة الدراسة.">
       <div className="grid gap-4 md:grid-cols-2">
@@ -39,25 +61,26 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
         />
         <TextField
           id="school"
-          label="المدرسة أو الجامعة"
+          label={schoolOrUniversityLabel}
           value={data.school}
           onChange={(value) => onFieldChange('school', value)}
+          helperText={schoolOrUniversityHelperText}
         />
         <SelectField
           id="graduation-year"
           label="سنة التخرج"
           placeholder="اختر سنة التخرج"
-          helperText="السنة التي تخرجت فيها أو تتوقع التخرج فيها."
+          helperText={graduationYearHelperText}
           options={graduationYearOptions}
           value={data.graduationYear}
           onChange={(value) => onFieldChange('graduationYear', value)}
         />
         <TextField
           id="field-of-study"
-          label="الفرع الدراسي"
+          label={fieldOfStudyLabel}
           value={data.fieldOfStudy}
           onChange={(value) => onFieldChange('fieldOfStudy', value)}
-          helperText='الفرع الجامعي أو التخصص في المدرسة'
+          helperText={fieldOfStudyHelperText}
         />
       </div>
     </SectionCard>
