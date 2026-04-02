@@ -1,76 +1,34 @@
+import iso from 'iso-countries-languages'
+import type { SearchableTagOption } from '../components/SearchableTagsField'
+
+const languagesAr = iso.getLanguages('ar') as Record<string, string>
+const languagesEn = iso.getLanguages('en') as Record<string, string>
+
+const languageCodes = Object.keys(languagesEn).filter((code) => {
+  return Boolean(languagesEn[code])
+})
+
 export const POPULAR_LANGUAGES_INITIAL_SUGGESTIONS = [
-  'Arabic',
   'English',
+  'Arabic',
   'Turkish',
   'French',
   'German',
   'Spanish',
   'Russian',
   'Portuguese',
-  'Mandarin',
+  'Chinese',
 ]
 
-export const POPULAR_LANGUAGES = [
-  'Arabic',
-  'English',
-  'Turkish',
-  'French',
-  'German',
-  'Spanish',
-  'Russian',
-  'Portuguese',
-  'Mandarin',
-  'Hindi',
-  'Japanese',
-  'Korean',
-  'Italian',
-  'Dutch',
-  'Hebrew',
-  'Urdu',
-  'Persian',
-  'Polish',
-  'Ukrainian',
-  'Romanian',
-  'Greek',
-  'Czech',
-  'Swedish',
-  'Norwegian',
-  'Danish',
-  'Finnish',
-  'Hungarian',
-  'Bulgarian',
-  'Croatian',
-  'Serbian',
-  'Bosnian',
-  'Albanian',
-  'Malay',
-  'Indonesian',
-  'Thai',
-  'Vietnamese',
-  'Filipino',
-  'Bengali',
-  'Tamil',
-  'Telugu',
-  'Gujarati',
-  'Punjabi',
-  'Swahili',
-  'Amharic',
-  'Somali',
-  'Kurdish',
-  'Pashto',
-  'Azerbaijani',
-  'Kazakh',
-  'Uzbek',
-  'Malayalam',
-  'Sinhala',
-  'Nepali',
-  'Marathi',
-  'Slovak',
-  'Slovenian',
-  'Lithuanian',
-  'Latvian',
-  'Estonian',
-  'Icelandic',
-  'Irish',
-  'Welsh',
-]
+export const POPULAR_LANGUAGE_OPTIONS: SearchableTagOption[] = languageCodes
+  .map((code) => {
+    const englishName = languagesEn[code]
+    const arabicName = languagesAr[code] || englishName
+
+    return {
+      value: englishName,
+      label: arabicName,
+      searchText: `${arabicName} ${englishName} ${code}`,
+    }
+  })
+  .sort((a, b) => a.label.localeCompare(b.label, 'ar'))

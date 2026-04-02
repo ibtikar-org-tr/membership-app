@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
+    "iso-countries-languages": "^0.3.0",
     "react": "^19.2.4",
     "react-country-state-city": "^1.1.12",
     "react-dom": "^19.2.4",

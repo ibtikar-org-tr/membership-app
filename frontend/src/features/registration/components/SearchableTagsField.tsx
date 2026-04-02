@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
+export type SearchableTagOption = {
+  value: string
+  label: string
+  searchText?: string
+}
+
 type SearchableTagsFieldProps = {
   id: string
   label: string
   value: string
   onChange: (value: string) => void
-  options: string[]
+  options: Array<string | SearchableTagOption>
   initialSuggestions?: string[]
+  allowCustom?: boolean
   placeholder?: string
 }
 
@@ -40,6 +47,7 @@ export function SearchableTagsField({
   onChange,
   options,
   initialSuggestions = [],
+  allowCustom = true,
   placeholder = 'ابحث أو اكتب قيمة ثم اضغط Enter',
 }: SearchableTagsFieldProps) {
   const [query, setQuery] = useState('')
@@ -55,9 +63,37 @@ export function SearchableTagsField({
     [selected],
   )
 
+  const normalizedOptions = useMemo<SearchableTagOption[]>(() => {
+    return options.map((option) => {
+      if (typeof option === 'string') {
+        return {
+          value: option,
+          label: option,
+          searchText: option,
+        }
+      }
+
+      return {
+        value: option.value,
+        label: option.label,
+        searchText: option.searchText ?? `${option.label} ${option.value}`,
+      }
+    })
+  }, [options])
+
+  const optionsByValue = useMemo(() => {
+    const map = new Map<string, SearchableTagOption>()
+    for (const option of normalizedOptions) {
+      map.set(option.value.toLowerCase(), option)
+    }
+    return map
+  }, [normalizedOptions])
+
   const filteredOptions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    const availableOptions = options.filter((option) => !selectedSet.has(option.toLowerCase()))
+    const availableOptions = normalizedOptions.filter(
+      (option) => !selectedSet.has(option.value.toLowerCase()),
+    )
 
     if (!normalizedQuery && initialSuggestions.length > 0) {
       const seen = new Set<string>()
@@ -65,15 +101,17 @@ export function SearchableTagsField({
       return initialSuggestions
         .map((item) => item.trim())
         .filter(Boolean)
-        .filter((item) => {
-          const normalized = item.toLowerCase()
+        .map((item) => optionsByValue.get(item.toLowerCase()))
+        .filter((item): item is SearchableTagOption => Boolean(item))
+        .filter((option) => {
+          const normalized = option.value.toLowerCase()
           if (seen.has(normalized)) {
             return false
           }
           seen.add(normalized)
           return true
         })
-        .filter((item) => !selectedSet.has(item.toLowerCase()))
+        .filter((option) => !selectedSet.has(option.value.toLowerCase()))
         .slice(0, 12)
     }
 
@@ -82,19 +120,24 @@ export function SearchableTagsField({
         if (!normalizedQuery) {
           return true
         }
-        return option.toLowerCase().includes(normalizedQuery)
+        const haystack = `${option.label} ${option.searchText ?? ''} ${option.value}`.toLowerCase()
+        return haystack.includes(normalizedQuery)
       })
       .slice(0, 12)
-  }, [options, query, selectedSet, initialSuggestions])
+  }, [normalizedOptions, query, selectedSet, initialSuggestions, optionsByValue])
 
   const canAddCustom = useMemo(() => {
+    if (!allowCustom) {
+      return false
+    }
+
     const trimmed = query.trim()
     if (!trimmed) {
       return false
     }
 
     return !selectedSet.has(trimmed.toLowerCase())
-  }, [query, selectedSet])
+  }, [query, selectedSet, allowCustom])
 
   const updateSelected = (next: string[]) => {
     onChange(dedupe(next).join(', '))
@@ -213,10 +256,17 @@ export function SearchableTagsField({
               event.preventDefault()
 
               if (query.trim()) {
-                const exactMatch = options.find(
-                  (option) => option.toLowerCase() === query.trim().toLowerCase(),
-                )
-                addTag(exactMatch ?? query)
+                const exactMatch = normalizedOptions.find((option) => {
+                  return (
+                    option.value.toLowerCase() === query.trim().toLowerCase() ||
+                    option.label.toLowerCase() === query.trim().toLowerCase()
+                  )
+                })
+                if (exactMatch) {
+                  addTag(exactMatch.value)
+                } else if (allowCustom) {
+                  addTag(query)
+                }
               }
             }
           }}
@@ -239,12 +289,12 @@ export function SearchableTagsField({
         >
           {filteredOptions.map((option) => (
             <button
-              key={option}
+              key={option.value.toLowerCase()}
               type="button"
-              onClick={() => addTag(option)}
+              onClick={() => addTag(option.value)}
               className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
             >
-              <span>{option}</span>
+              <span>{option.label}</span>
               <span className="text-xs text-slate-400">إضافة</span>
             </button>
           ))}
