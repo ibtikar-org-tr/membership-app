@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
       esbuildOptions: {
         define: {
           global: 'globalThis',
-        },
+        }
       },
     },
     base: env.VITE_BASE_PATH || '/mf/membership-app/',
