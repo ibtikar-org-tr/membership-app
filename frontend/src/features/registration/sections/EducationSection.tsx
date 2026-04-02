@@ -47,15 +47,17 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
           id="graduation-year"
           label="سنة التخرج"
           placeholder="اختر سنة التخرج"
+          helperText="السنة التي تخرجت فيها أو تتوقع التخرج فيها."
           options={graduationYearOptions}
           value={data.graduationYear}
           onChange={(value) => onFieldChange('graduationYear', value)}
         />
         <TextField
           id="field-of-study"
-          label="مجال الدراسة"
+          label="الفرع الدراسي"
           value={data.fieldOfStudy}
           onChange={(value) => onFieldChange('fieldOfStudy', value)}
+          helperText='الفرع الجامعي أو التخصص في المدرسة'
         />
       </div>
     </SectionCard>

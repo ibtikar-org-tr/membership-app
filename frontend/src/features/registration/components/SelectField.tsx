@@ -11,6 +11,7 @@ type SelectFieldProps = {
   options: SelectOption[]
   placeholder?: string
   required?: boolean
+  helperText?: string
 }
 
 export function SelectField({
@@ -21,6 +22,7 @@ export function SelectField({
   options,
   placeholder = 'Select an option',
   required = false,
+  helperText,
 }: SelectFieldProps) {
   return (
     <label htmlFor={id} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
@@ -39,6 +41,7 @@ export function SelectField({
           </option>
         ))}
       </select>
+      {helperText && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
     </label>
   )
 }
