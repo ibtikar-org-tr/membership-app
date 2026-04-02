@@ -23,7 +23,9 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => onFieldChange('bloodType', option.value)}
+                  onClick={() =>
+                    onFieldChange('bloodType', isSelected ? '' : option.value)
+                  }
                   className={`h-10 rounded-lg border text-sm font-semibold transition ${
                     isSelected
                       ? 'border-rose-400 bg-rose-50 text-rose-700'
