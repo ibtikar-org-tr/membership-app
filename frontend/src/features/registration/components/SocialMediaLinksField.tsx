@@ -9,14 +9,14 @@ import {
   FaYoutube,
 } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
-import { SiTiktok } from 'react-icons/si'
+import { SiHuggingface, SiMastodon, SiTiktok, SiWhatsapp } from 'react-icons/si'
 
 type SocialPlatform = {
   key: string
   label: string
   icon: IconType
   placeholder: string
-  acceptedHosts: string[]
+  acceptedHosts?: string[]
 }
 
 const socialPlatforms: SocialPlatform[] = [
@@ -56,6 +56,13 @@ const socialPlatforms: SocialPlatform[] = [
     acceptedHosts: ['t.me', 'telegram.me'],
   },
   {
+    key: 'whatsapp',
+    label: 'WhatsApp',
+    icon: SiWhatsapp,
+    placeholder: 'https://wa.me/905xxxxxxxxx',
+    acceptedHosts: ['wa.me', 'whatsapp.com', 'api.whatsapp.com'],
+  },
+  {
     key: 'github',
     label: 'GitHub',
     icon: FaGithub,
@@ -75,6 +82,19 @@ const socialPlatforms: SocialPlatform[] = [
     icon: SiTiktok,
     placeholder: 'https://www.tiktok.com/@username',
     acceptedHosts: ['tiktok.com'],
+  },
+  {
+    key: 'huggingface',
+    label: 'Hugging Face',
+    icon: SiHuggingface,
+    placeholder: 'https://huggingface.co/username',
+    acceptedHosts: ['huggingface.co'],
+  },
+  {
+    key: 'mastodon',
+    label: 'Mastodon',
+    icon: SiMastodon,
+    placeholder: 'https://mastodon.social/@username',
   },
 ]
 
@@ -119,10 +139,19 @@ function normalizeUrl(raw: string) {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
-function isValidPlatformUrl(value: string, acceptedHosts: string[]) {
+function isValidPlatformUrl(value: string, acceptedHosts?: string[]) {
   const normalized = normalizeUrl(value)
   if (!normalized) {
     return false
+  }
+
+  if (!acceptedHosts || acceptedHosts.length === 0) {
+    try {
+      const url = new URL(normalized)
+      return ['http:', 'https:'].includes(url.protocol)
+    } catch {
+      return false
+    }
   }
 
   try {
@@ -229,7 +258,9 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
                     <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
                       {!hasValue
                         ? `أضف رابط ${platform.label}.`
-                        : `رابط ${platform.label} غير صالح. استخدم رابطًا من ${platform.acceptedHosts[0]}.`}
+                        : platform.acceptedHosts && platform.acceptedHosts.length > 0
+                          ? `رابط ${platform.label} غير صالح. استخدم رابطًا من ${platform.acceptedHosts[0]}.`
+                          : `رابط ${platform.label} غير صالح.`}
                     </p>
                   )}
                 </div>
