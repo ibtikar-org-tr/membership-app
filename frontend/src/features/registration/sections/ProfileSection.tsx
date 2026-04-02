@@ -1,7 +1,7 @@
 import { SectionCard } from '../components/SectionCard'
 import { SearchableTagsField } from '../components/SearchableTagsField'
 import { SocialMediaLinksField } from '../components/SocialMediaLinksField'
-import { TextAreaField } from '../components/TextAreaField'
+import { POPULAR_LANGUAGES, POPULAR_LANGUAGES_INITIAL_SUGGESTIONS } from '../config/languages'
 import { bloodTypeOptions } from '../config/registrationOptions'
 import { POPULAR_SKILLS, POPULAR_SKILLS_INITIAL_SUGGESTIONS } from '../config/popularSkills'
 import type { RegistrationFormData } from '../types/registration'
@@ -69,11 +69,13 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           onChange={(value) => onFieldChange('interests', value)}
         />
         <div className="md:col-span-2">
-          <TextAreaField
+          <SearchableTagsField
             id="languages"
-            label="اللغات (مفصولة بفواصل)"
-            rows={3}
+            label="اللغات"
             value={data.languages}
+            options={POPULAR_LANGUAGES}
+            initialSuggestions={POPULAR_LANGUAGES_INITIAL_SUGGESTIONS}
+            placeholder="ابحث عن لغة أو أضف لغة مخصصة"
             onChange={(value) => onFieldChange('languages', value)}
           />
         </div>
