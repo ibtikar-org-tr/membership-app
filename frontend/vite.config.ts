@@ -8,6 +8,16 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    define: {
+      global: 'globalThis',
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        define: {
+          global: 'globalThis',
+        },
+      },
+    },
     base: env.VITE_BASE_PATH || '/mf/membership-app/',
     build: {
       outDir: `dist${env.VITE_BASE_PATH || '/mf/membership-app/'}`
