@@ -1,7 +1,6 @@
 import { SectionCard } from '../components/SectionCard'
 import { SocialMediaLinksField } from '../components/SocialMediaLinksField'
 import { TextAreaField } from '../components/TextAreaField'
-import { TextField } from '../components/TextField'
 import { bloodTypeOptions } from '../config/registrationOptions'
 import type { RegistrationFormData } from '../types/registration'
 
@@ -12,7 +11,7 @@ type ProfileSectionProps = {
 
 export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
   return (
-    <SectionCard title="الملف الشخصي والبيانات" subtitle="السيرة الذاتية والروابط والبيانات الصحية.">
+    <SectionCard title="الملف الشخصي والبيانات" subtitle="روابط التواصل والبيانات الصحية.">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
           <span>فصيلة الدم</span>
@@ -47,15 +46,6 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
             label="روابط وسائل التواصل"
             value={data.socialMediaLinks}
             onChange={(value) => onFieldChange('socialMediaLinks', value)}
-          />
-        </div>
-        <div className="md:col-span-2">
-          <TextAreaField
-            id="biography"
-            label="السيرة الذاتية"
-            rows={4}
-            value={data.biography}
-            onChange={(value) => onFieldChange('biography', value)}
           />
         </div>
         <TextAreaField

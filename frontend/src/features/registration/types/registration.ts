@@ -14,7 +14,6 @@ export type RegistrationFormData = {
   fieldOfStudy: string
   bloodType: string
   socialMediaLinks: string
-  biography: string
   interests: string
   skills: string
   languages: string
@@ -43,7 +42,6 @@ export const initialRegistrationFormData: RegistrationFormData = {
   fieldOfStudy: '',
   bloodType: '',
   socialMediaLinks: '',
-  biography: '',
   interests: '',
   skills: '',
   languages: '',
