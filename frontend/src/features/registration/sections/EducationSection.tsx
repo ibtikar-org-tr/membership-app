@@ -1,5 +1,6 @@
 import { SectionCard } from '../components/SectionCard'
 import { SearchableSelectField } from '../components/SearchableSelectField'
+import { SelectField } from '../components/SelectField'
 import { TextField } from '../components/TextField'
 import type { RegistrationFormData } from '../types/registration'
 
@@ -17,6 +18,11 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
     { value: 'phd', label: 'دكتوراه', secondaryLabel: 'دراسات عليا' },
     { value: 'other', label: 'أخرى' },
   ]
+
+  const graduationYearOptions = Array.from({ length: 2033 - 2010 + 1 }, (_, index) => {
+    const year = String(2033 - index)
+    return { value: year, label: year }
+  })
 
   return (
     <SectionCard title="التعليم" subtitle="الخلفية الأكاديمية ومادة الدراسة.">
@@ -37,10 +43,11 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
           value={data.school}
           onChange={(value) => onFieldChange('school', value)}
         />
-        <TextField
+        <SelectField
           id="graduation-year"
           label="سنة التخرج"
-          type="number"
+          placeholder="اختر سنة التخرج"
+          options={graduationYearOptions}
           value={data.graduationYear}
           onChange={(value) => onFieldChange('graduationYear', value)}
         />
