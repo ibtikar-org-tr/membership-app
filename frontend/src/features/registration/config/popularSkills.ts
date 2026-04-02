@@ -18,7 +18,8 @@ export const POPULAR_SKILLS = [
   
   // Frontend Technologies
   'React', 'Vue.js', 'Angular', 'HTML', 'CSS', 'Sass', 'Less', 'Bootstrap', 'Tailwind CSS',
-  'jQuery', 'Next.js', 'Nuxt.js', 'Gatsby', 'Svelte', 'Webpack', 'Vite', 'Parcel',
+  'jQuery', 'Next.js', 'Nuxt.js', 'Gatsby', 'Svelte', 'Webpack', 'Vite', 'Parcel', 'Module Federation',
+  'Micro Frontends',
   
   // Backend Technologies
   'Node.js', 'Express.js', 'Django', 'Flask', 'FastAPI', 'Spring Boot', 'Laravel', 'Ruby on Rails',
@@ -31,7 +32,8 @@ export const POPULAR_SKILLS = [
   // Cloud & DevOps
   'AWS', 'Azure', 'Google Cloud Platform', 'Docker', 'Kubernetes', 'Jenkins', 'Git', 'GitHub',
   'GitLab', 'Bitbucket', 'CI/CD', 'Terraform', 'Ansible', 'Chef', 'Puppet', 'Vagrant',
-  'Linux', 'Ubuntu', 'CentOS', 'Nginx', 'Apache', 'CloudFlare',
+  'Linux', 'Ubuntu', 'CentOS', 'Nginx', 'Apache', 'CloudFlare', 'Domain Management', 'Tunnel Management',
+  'VPN', 'CDN', 'Zero Trust Security', 'Edge Computing', 'Cloud Security',
   
   // Mobile Development
   'React Native', 'Flutter', 'iOS Development', 'Android Development', 'Xamarin', 'Ionic',
