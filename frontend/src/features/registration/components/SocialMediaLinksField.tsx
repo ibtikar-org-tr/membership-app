@@ -4,6 +4,7 @@ import {
   FaFacebookF,
   FaGithub,
   FaInstagram,
+  FaLink,
   FaLinkedinIn,
   FaTelegramPlane,
   FaYoutube,
@@ -167,8 +168,39 @@ function isValidPlatformUrl(value: string, acceptedHosts?: string[]) {
   }
 }
 
+function getCustomKeys(links: Record<string, string>) {
+  return Object.keys(links).filter((key) => key.startsWith('custom_'))
+}
+
+function getNextCustomKey(links: Record<string, string>) {
+  const maxId = getCustomKeys(links).reduce((currentMax, key) => {
+    const maybeNumber = Number.parseInt(key.replace('custom_', ''), 10)
+    if (Number.isNaN(maybeNumber)) {
+      return currentMax
+    }
+    return Math.max(currentMax, maybeNumber)
+  }, 0)
+
+  return `custom_${maxId + 1}`
+}
+
+function isValidGenericUrl(value: string) {
+  const normalized = normalizeUrl(value)
+  if (!normalized) {
+    return false
+  }
+
+  try {
+    const url = new URL(normalized)
+    return ['http:', 'https:'].includes(url.protocol)
+  } catch {
+    return false
+  }
+}
+
 export function SocialMediaLinksField({ id, label, value, onChange }: SocialMediaLinksFieldProps) {
   const links = useMemo(() => parseLinks(value), [value])
+  const customKeys = useMemo(() => getCustomKeys(links), [links])
   const [touchedPlatforms, setTouchedPlatforms] = useState<Record<string, boolean>>({})
 
   const updateLinks = (next: Record<string, string>) => {
@@ -189,6 +221,17 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
 
   const setPlatformUrl = (platformKey: string, nextValue: string) => {
     updateLinks({ ...links, [platformKey]: nextValue })
+  }
+
+  const addCustomField = () => {
+    const customKey = getNextCustomKey(links)
+    updateLinks({ ...links, [customKey]: '' })
+  }
+
+  const removeField = (fieldKey: string) => {
+    const next = { ...links }
+    delete next[fieldKey]
+    updateLinks(next)
   }
 
   return (
@@ -216,9 +259,17 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
             </button>
           )
         })}
+        <button
+          type="button"
+          onClick={addCustomField}
+          className="flex h-10 items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+        >
+          <span className="text-base leading-none">+</span>
+          <span>المزيد</span>
+        </button>
       </div>
 
-      {socialPlatforms.some((platform) => platform.key in links) && (
+      {(socialPlatforms.some((platform) => platform.key in links) || customKeys.length > 0) && (
         <div className="grid gap-3">
           {socialPlatforms
             .filter((platform) => platform.key in links)
@@ -266,10 +317,60 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
                 </div>
               )
             })}
+
+          {customKeys.map((customKey, index) => {
+            const currentValue = links[customKey] ?? ''
+            const isTouched = Boolean(touchedPlatforms[customKey])
+            const hasValue = currentValue.trim().length > 0
+            const isValid = hasValue && isValidGenericUrl(currentValue)
+            const showError = isTouched && (!hasValue || !isValid)
+
+            return (
+              <div key={customKey} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2 text-sm font-semibold text-slate-700">
+                  <div className="flex items-center gap-2">
+                    <FaLink className="text-base" aria-hidden="true" />
+                    <span>{`رابط إضافي ${index + 1}`}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeField(customKey)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-white text-sm font-bold text-slate-600 transition hover:border-red-300 hover:text-red-600"
+                    aria-label="حذف الرابط الإضافي"
+                  >
+                    X
+                  </button>
+                </div>
+                <input
+                  type="url"
+                  dir="ltr"
+                  value={currentValue}
+                  onChange={(event) => setPlatformUrl(customKey, event.target.value)}
+                  onBlur={() =>
+                    setTouchedPlatforms((current) => ({
+                      ...current,
+                      [customKey]: true,
+                    }))
+                  }
+                  placeholder="https://example.com/your-profile"
+                  className={`h-11 w-full rounded-xl border bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 ${
+                    showError
+                      ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                      : 'border-slate-300 focus:border-teal-500 focus:ring-teal-100'
+                  }`}
+                />
+                {showError && (
+                  <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+                    {!hasValue ? 'أضف رابطًا للرابط الإضافي.' : 'الرابط غير صالح. استخدم رابط http أو https.'}
+                  </p>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {!socialPlatforms.some((platform) => platform.key in links) && (
+      {!socialPlatforms.some((platform) => platform.key in links) && customKeys.length === 0 && (
         <p className="text-xs font-normal text-slate-500/70">
           اختر منصة واحدة أو أكثر، ثم أضف رابط حسابك لكل منصة.
         </p>
