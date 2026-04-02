@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 type SearchableOption = {
   value: string
@@ -17,6 +18,7 @@ type SearchableSelectFieldProps = {
   emptyMessage?: string
   disabled?: boolean
   defaultAdornment?: ReactNode
+  dropdownZIndex?: number
   value: string
   options: SearchableOption[]
   onChange: (value: string) => void
@@ -29,14 +31,18 @@ export function SearchableSelectField({
   emptyMessage = 'لا توجد نتائج',
   disabled = false,
   defaultAdornment = <span className="text-base leading-none text-slate-400">🌍</span>,
+  dropdownZIndex = 1400,
   value,
   options,
   onChange,
 }: SearchableSelectFieldProps) {
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0, width: 288 })
 
   const selectedOption = useMemo(() => options.find((option) => option.value === value), [options, value])
 
@@ -52,8 +58,28 @@ export function SearchableSelectField({
     })
   }, [options, searchQuery])
 
+  const updateDropdownPosition = () => {
+    const trigger = triggerRef.current
+    if (!trigger) {
+      return
+    }
+
+    const rect = trigger.getBoundingClientRect()
+    const maxAllowedWidth = Math.max(220, window.innerWidth - 16)
+    const nextWidth = Math.min(Math.max(rect.width, 288), maxAllowedWidth)
+    const maxLeft = window.innerWidth - nextWidth - 8
+    const nextLeft = Math.min(Math.max(rect.left, 8), Math.max(8, maxLeft))
+
+    setDropdownStyle({
+      top: rect.bottom,
+      left: nextLeft,
+      width: nextWidth,
+    })
+  }
+
   useEffect(() => {
     if (isOpen) {
+      updateDropdownPosition()
       requestAnimationFrame(() => {
         searchInputRef.current?.focus()
       })
@@ -61,8 +87,28 @@ export function SearchableSelectField({
   }, [isOpen])
 
   useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    const handleWindowChange = () => updateDropdownPosition()
+    window.addEventListener('resize', handleWindowChange)
+    window.addEventListener('scroll', handleWindowChange, true)
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange)
+      window.removeEventListener('scroll', handleWindowChange, true)
+    }
+  }, [isOpen])
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!shellRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (shellRef.current?.contains(target) || dropdownRef.current?.contains(target)) {
+        return
+      }
+
+      if (!shellRef.current?.contains(target)) {
         setIsOpen(false)
       }
     }
@@ -83,6 +129,7 @@ export function SearchableSelectField({
       <div ref={shellRef} className="relative" dir="rtl">
         <button
           id={id}
+          ref={triggerRef}
           type="button"
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((current) => !current)}
@@ -106,8 +153,18 @@ export function SearchableSelectField({
           <span className="text-xs text-slate-500">▾</span>
         </button>
 
-        {isOpen && !disabled && (
-          <div className="absolute left-0 top-full z-[220] w-[min(22rem,calc(100vw-2rem))] min-w-[18rem] overflow-hidden rounded-b-xl border border-t-0 border-slate-200 bg-white shadow-xl">
+        {isOpen && !disabled && createPortal(
+          <div
+            ref={dropdownRef}
+            className="overflow-hidden rounded-b-xl border border-t-0 border-slate-200 bg-white shadow-xl"
+            style={{
+              position: 'fixed',
+              top: dropdownStyle.top,
+              left: dropdownStyle.left,
+              width: dropdownStyle.width,
+              zIndex: dropdownZIndex,
+            }}
+          >
             <div className="border-b border-slate-200 p-2">
               <input
                 ref={searchInputRef}
@@ -156,7 +213,8 @@ export function SearchableSelectField({
                 <li className="px-3 py-3 text-sm text-slate-500">{emptyMessage}</li>
               )}
             </ul>
-          </div>
+          </div>,
+          document.body,
         )}
       </div>
     </label>

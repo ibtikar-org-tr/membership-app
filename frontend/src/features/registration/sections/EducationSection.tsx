@@ -19,13 +19,14 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
   ]
 
   return (
-    <SectionCard title="التعليم" subtitle="الخلفية الأكاديمية ومادة الدراسة." className="z-[180]">
+    <SectionCard title="التعليم" subtitle="الخلفية الأكاديمية ومادة الدراسة.">
       <div className="grid gap-4 md:grid-cols-2">
         <SearchableSelectField
           id="education-level"
           label="مستوى التعليم"
           placeholder="اختر مستوى التعليم"
           defaultAdornment={null}
+          dropdownZIndex={1600}
           options={educationLevelOptions}
           value={data.educationLevel}
           onChange={(value) => onFieldChange('educationLevel', value)}
