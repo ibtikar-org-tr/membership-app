@@ -51,20 +51,20 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           />
         </div>
         <SearchableTagsField
-          id="interests"
-          label="الاهتمامات (مفصولة بفواصل)"
-          value={data.interests}
-          options={POPULAR_SKILLS}
-          placeholder="ابحث عن اهتمام أو أضف اهتمامًا مخصصًا"
-          onChange={(value) => onFieldChange('interests', value)}
-        />
-        <SearchableTagsField
           id="skills"
-          label="المهارات (مفصولة بفواصل)"
+          label="المهارات (التي تُتقنها)"
           value={data.skills}
           options={POPULAR_SKILLS}
           placeholder="ابحث عن مهارة أو أضف مهارة مخصصة"
           onChange={(value) => onFieldChange('skills', value)}
+        />
+        <SearchableTagsField
+          id="interests"
+          label="الاهتمامات (التي تودّ تعلّمها)"
+          value={data.interests}
+          options={POPULAR_SKILLS}
+          placeholder="ابحث عن اهتمام أو أضف اهتمامًا مخصصًا"
+          onChange={(value) => onFieldChange('interests', value)}
         />
         <div className="md:col-span-2">
           <TextAreaField
