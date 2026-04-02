@@ -14,6 +14,7 @@
     "react": "^19.2.4",
     "react-country-state-city": "^1.1.12",
     "react-dom": "^19.2.4",
+    "react-icons": "^5.6.0",
     "react-international-phone": "^4.8.0",
     "react-router-dom": "^7.13.2",
     "tailwindcss": "^4.2.2"

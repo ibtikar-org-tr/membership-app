@@ -1,4 +1,5 @@
 import { SectionCard } from '../components/SectionCard'
+import { SocialMediaLinksField } from '../components/SocialMediaLinksField'
 import { TextAreaField } from '../components/TextAreaField'
 import { TextField } from '../components/TextField'
 import { bloodTypeOptions } from '../config/registrationOptions'
@@ -41,11 +42,9 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           </div>
         </div>
         <div className="md:col-span-2">
-          <TextAreaField
+          <SocialMediaLinksField
             id="social-media-links"
-            label="روابط وسائل التواصل (JSON)"
-            placeholder='{"github": "https://...", "linkedin": "https://..."}'
-            rows={3}
+            label="روابط وسائل التواصل"
             value={data.socialMediaLinks}
             onChange={(value) => onFieldChange('socialMediaLinks', value)}
           />
