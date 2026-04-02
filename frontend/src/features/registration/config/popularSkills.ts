@@ -1,4 +1,16 @@
 // Most popular skills from LinkedIn across all industries
+export const POPULAR_SKILLS_INITIAL_SUGGESTIONS = [
+  'JavaScript',
+  'Business Management',
+  'Medical Research',
+  'Mechanical Engineering',
+  'Digital Marketing',
+  'Graphic Design',
+  'Public Speaking',
+  'Quality Assurance',
+  'Project Management',
+]
+
 export const POPULAR_SKILLS = [
   // Programming Languages & Tech
   'JavaScript', 'Python', 'Java', 'TypeScript', 'C#', 'C++', 'PHP', 'Ruby', 'Go', 'Rust',

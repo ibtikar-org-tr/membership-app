@@ -3,7 +3,7 @@ import { SearchableTagsField } from '../components/SearchableTagsField'
 import { SocialMediaLinksField } from '../components/SocialMediaLinksField'
 import { TextAreaField } from '../components/TextAreaField'
 import { bloodTypeOptions } from '../config/registrationOptions'
-import { POPULAR_SKILLS } from '../config/popularSkills'
+import { POPULAR_SKILLS, POPULAR_SKILLS_INITIAL_SUGGESTIONS } from '../config/popularSkills'
 import type { RegistrationFormData } from '../types/registration'
 
 type ProfileSectionProps = {
@@ -55,6 +55,7 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           label="المهارات (التي تُتقنها)"
           value={data.skills}
           options={POPULAR_SKILLS}
+          initialSuggestions={POPULAR_SKILLS_INITIAL_SUGGESTIONS}
           placeholder="ابحث عن مهارة أو أضف مهارة مخصصة"
           onChange={(value) => onFieldChange('skills', value)}
         />
@@ -63,6 +64,7 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           label="الاهتمامات (التي تودّ تعلّمها)"
           value={data.interests}
           options={POPULAR_SKILLS}
+          initialSuggestions={POPULAR_SKILLS_INITIAL_SUGGESTIONS}
           placeholder="ابحث عن اهتمام أو أضف اهتمامًا مخصصًا"
           onChange={(value) => onFieldChange('interests', value)}
         />

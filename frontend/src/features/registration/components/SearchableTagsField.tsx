@@ -7,6 +7,7 @@ type SearchableTagsFieldProps = {
   value: string
   onChange: (value: string) => void
   options: string[]
+  initialSuggestions?: string[]
   placeholder?: string
 }
 
@@ -38,6 +39,7 @@ export function SearchableTagsField({
   value,
   onChange,
   options,
+  initialSuggestions = [],
   placeholder = 'ابحث أو اكتب قيمة ثم اضغط Enter',
 }: SearchableTagsFieldProps) {
   const [query, setQuery] = useState('')
@@ -55,9 +57,27 @@ export function SearchableTagsField({
 
   const filteredOptions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
+    const availableOptions = options.filter((option) => !selectedSet.has(option.toLowerCase()))
 
-    return options
-      .filter((option) => !selectedSet.has(option.toLowerCase()))
+    if (!normalizedQuery && initialSuggestions.length > 0) {
+      const seen = new Set<string>()
+
+      return initialSuggestions
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .filter((item) => {
+          const normalized = item.toLowerCase()
+          if (seen.has(normalized)) {
+            return false
+          }
+          seen.add(normalized)
+          return true
+        })
+        .filter((item) => !selectedSet.has(item.toLowerCase()))
+        .slice(0, 12)
+    }
+
+    return availableOptions
       .filter((option) => {
         if (!normalizedQuery) {
           return true
@@ -65,7 +85,7 @@ export function SearchableTagsField({
         return option.toLowerCase().includes(normalizedQuery)
       })
       .slice(0, 12)
-  }, [options, query, selectedSet])
+  }, [options, query, selectedSet, initialSuggestions])
 
   const canAddCustom = useMemo(() => {
     const trimmed = query.trim()
