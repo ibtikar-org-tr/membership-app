@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 type SearchableTagsFieldProps = {
   id: string
@@ -42,6 +43,9 @@ export function SearchableTagsField({
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLDivElement | null>(null)
+  const dropdownRef = useRef<HTMLDivElement | null>(null)
+  const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0, width: 260 })
 
   const selected = useMemo(() => parseValue(value), [value])
   const selectedSet = useMemo(
@@ -90,9 +94,53 @@ export function SearchableTagsField({
     updateSelected(selected.filter((item) => item.toLowerCase() !== tag.toLowerCase()))
   }
 
+  const updateDropdownPosition = () => {
+    const trigger = triggerRef.current
+    if (!trigger) {
+      return
+    }
+
+    const rect = trigger.getBoundingClientRect()
+    const maxAllowedWidth = Math.max(220, window.innerWidth - 16)
+    const nextWidth = Math.min(Math.max(rect.width, 260), maxAllowedWidth)
+    const maxLeft = window.innerWidth - nextWidth - 8
+    const nextLeft = Math.min(Math.max(rect.left, 8), Math.max(8, maxLeft))
+
+    setDropdownStyle({
+      top: rect.bottom,
+      left: nextLeft,
+      width: nextWidth,
+    })
+  }
+
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition()
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    const handleWindowChange = () => updateDropdownPosition()
+    window.addEventListener('resize', handleWindowChange)
+    window.addEventListener('scroll', handleWindowChange, true)
+
+    return () => {
+      window.removeEventListener('resize', handleWindowChange)
+      window.removeEventListener('scroll', handleWindowChange, true)
+    }
+  }, [isOpen])
+
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
       const target = event.target as Node
+      if (containerRef.current?.contains(target) || dropdownRef.current?.contains(target)) {
+        return
+      }
+
       if (!containerRef.current?.contains(target)) {
         setIsOpen(false)
       }
@@ -106,7 +154,10 @@ export function SearchableTagsField({
     <div ref={containerRef} className="relative flex flex-col gap-2 text-sm font-medium text-slate-700">
       <label htmlFor={id}>{label}</label>
 
-      <div className="rounded-xl border border-slate-300 bg-white p-2 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100">
+      <div
+        ref={triggerRef}
+        className="rounded-xl border border-slate-300 bg-white p-2 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100"
+      >
         {selected.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {selected.map((tag) => (
@@ -154,8 +205,18 @@ export function SearchableTagsField({
         />
       </div>
 
-      {isOpen && (filteredOptions.length > 0 || canAddCustom) && (
-        <div className="absolute top-full right-0 left-0 z-40 mt-1 max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+      {isOpen && (filteredOptions.length > 0 || canAddCustom) && createPortal(
+        <div
+          ref={dropdownRef}
+          className="max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+          style={{
+            position: 'fixed',
+            top: dropdownStyle.top,
+            left: dropdownStyle.left,
+            width: dropdownStyle.width,
+            zIndex: 1400,
+          }}
+        >
           {filteredOptions.map((option) => (
             <button
               key={option}
@@ -178,7 +239,8 @@ export function SearchableTagsField({
               <span className="text-xs">Custom</span>
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )
