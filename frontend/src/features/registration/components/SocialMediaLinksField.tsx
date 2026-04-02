@@ -106,7 +106,14 @@ type SocialMediaLinksFieldProps = {
   onChange: (value: string) => void
 }
 
-function parseLinks(value: string): Record<string, string> {
+type SocialLinkValue =
+  | string
+  | {
+      label: string
+      url: string
+    }
+
+function parseLinks(value: string): Record<string, SocialLinkValue> {
   if (!value.trim()) {
     return {}
   }
@@ -117,15 +124,36 @@ function parseLinks(value: string): Record<string, string> {
       return {}
     }
 
-    return Object.entries(parsed).reduce<Record<string, string>>((acc, [key, raw]) => {
+    return Object.entries(parsed).reduce<Record<string, SocialLinkValue>>((acc, [key, raw]) => {
       if (typeof raw === 'string') {
         acc[key] = raw
+      } else if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        const hasLabelOrUrlField = 'label' in raw || 'url' in raw
+        if (hasLabelOrUrlField) {
+          const maybeLabel = 'label' in raw && typeof raw.label === 'string' ? raw.label : ''
+          const maybeUrl = 'url' in raw && typeof raw.url === 'string' ? raw.url : ''
+          acc[key] = { label: maybeLabel, url: maybeUrl }
+        }
       }
       return acc
     }, {})
   } catch {
     return {}
   }
+}
+
+function getLinkUrl(value: SocialLinkValue | undefined) {
+  if (!value) {
+    return ''
+  }
+  return typeof value === 'string' ? value : value.url
+}
+
+function getLinkLabel(value: SocialLinkValue | undefined) {
+  if (!value || typeof value === 'string') {
+    return ''
+  }
+  return value.label
 }
 
 function isHostAccepted(hostname: string, acceptedHosts: string[]) {
@@ -168,11 +196,11 @@ function isValidPlatformUrl(value: string, acceptedHosts?: string[]) {
   }
 }
 
-function getCustomKeys(links: Record<string, string>) {
+function getCustomKeys(links: Record<string, SocialLinkValue>) {
   return Object.keys(links).filter((key) => key.startsWith('custom_'))
 }
 
-function getNextCustomKey(links: Record<string, string>) {
+function getNextCustomKey(links: Record<string, SocialLinkValue>) {
   const maxId = getCustomKeys(links).reduce((currentMax, key) => {
     const maybeNumber = Number.parseInt(key.replace('custom_', ''), 10)
     if (Number.isNaN(maybeNumber)) {
@@ -203,7 +231,7 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
   const customKeys = useMemo(() => getCustomKeys(links), [links])
   const [touchedPlatforms, setTouchedPlatforms] = useState<Record<string, boolean>>({})
 
-  const updateLinks = (next: Record<string, string>) => {
+  const updateLinks = (next: Record<string, SocialLinkValue>) => {
     onChange(JSON.stringify(next))
   }
 
@@ -225,7 +253,29 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
 
   const addCustomField = () => {
     const customKey = getNextCustomKey(links)
-    updateLinks({ ...links, [customKey]: '' })
+    updateLinks({ ...links, [customKey]: { label: '', url: '' } })
+  }
+
+  const setCustomName = (customKey: string, nextValue: string) => {
+    const current = links[customKey]
+    updateLinks({
+      ...links,
+      [customKey]: {
+        label: nextValue,
+        url: getLinkUrl(current),
+      },
+    })
+  }
+
+  const setCustomUrl = (customKey: string, nextValue: string) => {
+    const current = links[customKey]
+    updateLinks({
+      ...links,
+      [customKey]: {
+        label: getLinkLabel(current),
+        url: nextValue,
+      },
+    })
   }
 
   const removeField = (fieldKey: string) => {
@@ -274,7 +324,7 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
           {socialPlatforms
             .filter((platform) => platform.key in links)
             .map((platform) => {
-              const currentValue = links[platform.key] ?? ''
+              const currentValue = getLinkUrl(links[platform.key])
               const isTouched = Boolean(touchedPlatforms[platform.key])
               const hasValue = currentValue.trim().length > 0
               const isValid = hasValue && isValidPlatformUrl(currentValue, platform.acceptedHosts)
@@ -319,11 +369,16 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
             })}
 
           {customKeys.map((customKey, index) => {
-            const currentValue = links[customKey] ?? ''
-            const isTouched = Boolean(touchedPlatforms[customKey])
+            const customName = getLinkLabel(links[customKey])
+            const currentValue = getLinkUrl(links[customKey])
+            const isNameTouched = Boolean(touchedPlatforms[`${customKey}_name`])
+            const isUrlTouched = Boolean(touchedPlatforms[`${customKey}_url`])
+            const hasName = customName.trim().length > 0
             const hasValue = currentValue.trim().length > 0
             const isValid = hasValue && isValidGenericUrl(currentValue)
-            const showError = isTouched && (!hasValue || !isValid)
+            const showNameError = isNameTouched && !hasName
+            const showUrlError = isUrlTouched && (!hasValue || !isValid)
+            const showError = showNameError || showUrlError
 
             return (
               <div key={customKey} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
@@ -342,26 +397,48 @@ export function SocialMediaLinksField({ id, label, value, onChange }: SocialMedi
                   </button>
                 </div>
                 <input
-                  type="url"
-                  dir="ltr"
-                  value={currentValue}
-                  onChange={(event) => setPlatformUrl(customKey, event.target.value)}
+                  type="text"
+                  dir="auto"
+                  value={customName}
+                  onChange={(event) => setCustomName(customKey, event.target.value)}
                   onBlur={() =>
                     setTouchedPlatforms((current) => ({
                       ...current,
-                      [customKey]: true,
+                      [`${customKey}_name`]: true,
+                    }))
+                  }
+                  placeholder="اسم المنصة أو الحساب"
+                  className={`mb-2 h-11 w-full rounded-xl border bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 ${
+                    showNameError
+                      ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                      : 'border-slate-300 focus:border-teal-500 focus:ring-teal-100'
+                  }`}
+                />
+                <input
+                  type="url"
+                  dir="ltr"
+                  value={currentValue}
+                  onChange={(event) => setCustomUrl(customKey, event.target.value)}
+                  onBlur={() =>
+                    setTouchedPlatforms((current) => ({
+                      ...current,
+                      [`${customKey}_url`]: true,
                     }))
                   }
                   placeholder="https://example.com/your-profile"
                   className={`h-11 w-full rounded-xl border bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 ${
-                    showError
+                    showUrlError
                       ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
                       : 'border-slate-300 focus:border-teal-500 focus:ring-teal-100'
                   }`}
                 />
                 {showError && (
                   <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
-                    {!hasValue ? 'أضف رابطًا للرابط الإضافي.' : 'الرابط غير صالح. استخدم رابط http أو https.'}
+                    {showNameError
+                      ? 'أضف اسمًا للرابط الإضافي.'
+                      : !hasValue
+                        ? 'أضف رابطًا للرابط الإضافي.'
+                        : 'الرابط غير صالح. استخدم رابط http أو https.'}
                   </p>
                 )}
               </div>
