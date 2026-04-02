@@ -1,5 +1,4 @@
 // Most popular skills from LinkedIn across all industries
-// Most popular skills from LinkedIn across all industries
 export const POPULAR_SKILLS = [
   // Programming Languages & Tech
   'JavaScript', 'Python', 'Java', 'TypeScript', 'C#', 'C++', 'PHP', 'Ruby', 'Go', 'Rust',
