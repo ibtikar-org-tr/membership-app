@@ -103,7 +103,7 @@ export function SearchableTagsField({
   }, [])
 
   return (
-    <div ref={containerRef} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+    <div ref={containerRef} className="relative flex flex-col gap-2 text-sm font-medium text-slate-700">
       <label htmlFor={id}>{label}</label>
 
       <div className="rounded-xl border border-slate-300 bg-white p-2 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100">
@@ -155,7 +155,7 @@ export function SearchableTagsField({
       </div>
 
       {isOpen && (filteredOptions.length > 0 || canAddCustom) && (
-        <div className="max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+        <div className="absolute top-full right-0 left-0 z-40 mt-1 max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
           {filteredOptions.map((option) => (
             <button
               key={option}
