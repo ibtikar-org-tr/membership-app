@@ -1,11 +1,15 @@
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { EmailField } from '../features/registration/components/EmailField'
+import { PhoneNumberField } from '../features/registration/components/PhoneNumberField'
 
 type RecoveryOption = '' | 'email' | 'membershipNumber' | 'phoneNumber'
 
 export function IForgotPage() {
   const [recoveryOption, setRecoveryOption] = useState<RecoveryOption>('')
-  const [inputValue, setInputValue] = useState('')
+  const [emailValue, setEmailValue] = useState('')
+  const [membershipNumberValue, setMembershipNumberValue] = useState('')
+  const [phoneNumberValue, setPhoneNumberValue] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [showSelectionError, setShowSelectionError] = useState(false)
   const [showValueError, setShowValueError] = useState(false)
@@ -20,7 +24,17 @@ export function IForgotPage() {
       return
     }
 
-    if (!inputValue.trim()) {
+    const isEmailValid = emailValue.trim().length > 0
+    const isMembershipValid = membershipNumberValue.trim().length > 0
+    const phoneDigitsCount = phoneNumberValue.replace(/\D/g, '').length
+    const isPhoneValid = phoneDigitsCount >= 7
+
+    const hasValidValueByOption =
+      (recoveryOption === 'email' && isEmailValid) ||
+      (recoveryOption === 'membershipNumber' && isMembershipValid) ||
+      (recoveryOption === 'phoneNumber' && isPhoneValid)
+
+    if (!hasValidValueByOption) {
       setShowSelectionError(false)
       setShowValueError(true)
       setSubmitted(false)
@@ -30,29 +44,6 @@ export function IForgotPage() {
     setShowSelectionError(false)
     setShowValueError(false)
     setSubmitted(true)
-  }
-
-  const inputConfig: Record<Exclude<RecoveryOption, ''>, { id: string, label: string, type: string, placeholder: string, autoComplete?: string }> = {
-    email: {
-      id: 'recover-email',
-      label: 'البريد الإلكتروني',
-      type: 'email',
-      placeholder: 'example@domain.com',
-      autoComplete: 'email',
-    },
-    membershipNumber: {
-      id: 'membership-number',
-      label: 'رقم العضوية',
-      type: 'text',
-      placeholder: 'M-1024',
-    },
-    phoneNumber: {
-      id: 'phone-number',
-      label: 'رقم الهاتف',
-      type: 'tel',
-      placeholder: '+90 5xx xxx xx xx',
-      autoComplete: 'tel',
-    },
   }
 
   return (
@@ -82,7 +73,6 @@ export function IForgotPage() {
                 onChange={(event) => {
                   const nextOption = event.target.value as RecoveryOption
                   setRecoveryOption(nextOption)
-                  setInputValue('')
                   setShowSelectionError(false)
                   setShowValueError(false)
                   setSubmitted(false)
@@ -96,27 +86,51 @@ export function IForgotPage() {
               </select>
             </div>
 
-            {recoveryOption ? (
+            {recoveryOption === 'email' ? (
+              <EmailField
+                id="recover-email"
+                label="البريد الإلكتروني"
+                value={emailValue}
+                onChange={(value) => {
+                  setEmailValue(value)
+                  setShowValueError(false)
+                  setSubmitted(false)
+                }}
+                required
+              />
+            ) : null}
+
+            {recoveryOption === 'membershipNumber' ? (
               <div>
-                <label htmlFor={inputConfig[recoveryOption].id} className="mb-2 block text-sm font-semibold text-slate-700">
-                  {inputConfig[recoveryOption].label}
+                <label htmlFor="membership-number" className="mb-2 block text-sm font-semibold text-slate-700">
+                  رقم العضوية
                 </label>
                 <input
-                  id={inputConfig[recoveryOption].id}
-                  name={inputConfig[recoveryOption].id}
-                  type={inputConfig[recoveryOption].type}
-                  autoComplete={inputConfig[recoveryOption].autoComplete}
+                  id="membership-number"
+                  name="membership-number"
+                  type="text"
                   required
-                  value={inputValue}
+                  value={membershipNumberValue}
                   onChange={(event) => {
-                    setInputValue(event.target.value)
+                    setMembershipNumberValue(event.target.value)
                     setShowValueError(false)
                     setSubmitted(false)
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                  placeholder={inputConfig[recoveryOption].placeholder}
+                  placeholder="M-1024"
                 />
               </div>
+            ) : null}
+
+            {recoveryOption === 'phoneNumber' ? (
+              <PhoneNumberField
+                value={phoneNumberValue}
+                onChange={(value) => {
+                  setPhoneNumberValue(value)
+                  setShowValueError(false)
+                  setSubmitted(false)
+                }}
+              />
             ) : null}
 
             {showSelectionError ? (
