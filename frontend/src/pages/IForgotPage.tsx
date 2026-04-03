@@ -117,7 +117,7 @@ export function IForgotPage() {
                     setSubmitted(false)
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                  placeholder="M-1024"
+                  placeholder="2503017"
                 />
               </div>
             ) : null}
