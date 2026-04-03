@@ -7,10 +7,10 @@ export function HomePage() {
         <section className="grid w-full gap-8 rounded-3xl border border-white/60 bg-white/70 p-8 shadow-2xl backdrop-blur md:grid-cols-2 md:p-12">
           <div className="space-y-6">
             <p className="inline-block rounded-full bg-teal-100 px-4 py-1 text-sm font-semibold text-teal-700">
-              تجمّع إبتكار
+              #جيلٌ_يبتكر
             </p>
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 md:text-5xl">
-              جيل يبتكر حلولاً مؤثرة
+              منصّة أعضاء تجمّع إبتكار
             </h1>
             <p className="text-lg leading-relaxed text-slate-600">
               تطوير مهارات الطلاب التقنية وتحفيز الابتكار والإبداع لخدمة المجتمع. انضم إلى مجتمع من الطلاب الجامعيين الناطقين بالعربية المهتمّين بالابتكار والتكنولوجيا.
