@@ -15,7 +15,9 @@ const router = createBrowserRouter([
     path: '*',
     element: <Navigate to="/" replace />,
   },
-])
+], {
+  basename: import.meta.env.VITE_BASE_PATH || '/mf/membership-app/',
+})
 
 export function AppRouter() {
   return <RouterProvider router={router} />
