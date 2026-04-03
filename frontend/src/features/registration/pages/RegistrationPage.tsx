@@ -23,7 +23,7 @@ export function RegistrationPage() {
   const { formData, isAutosaveEnabled, updateField, handleSubmit, toggleAutosave } = useRegistrationForm()
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
+    <main className="min-h-screen bg-linear-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
       <div className="mx-auto w-full max-w-5xl">
         <header className="relative mb-6 rounded-3xl bg-slate-900 p-6 text-white shadow-xl md:p-8">
           <img
@@ -38,13 +38,13 @@ export function RegistrationPage() {
           <p className="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
             تطوير مهارات الطلاب التقنية وتحفيز الابتكار والإبداع. يرجى ملء هذا النموذج لتقديم طلب الانضمام إلى تجمّع إبتكار.
           </p>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <a
                 href="https://data.ibtikar.org.tr/documents/ar/intro.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900"
+                className="inline-block w-full rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900 sm:w-auto"
               >
                 📄 الملف التّعريفي
               </a>
@@ -52,14 +52,14 @@ export function RegistrationPage() {
                 href="https://github.com/ibtikar-org-tr/bylaws"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900"
+                className="inline-block w-full rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900 sm:w-auto"
               >
                 📋 النظام الداخلي
               </a>
             </div>
             <Link
               to="/"
-              className="inline-block rounded-lg border border-white/50 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900"
+              className="inline-block w-full rounded-lg border border-white/50 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900 sm:w-auto"
             >
               ← العودة إلى الرئيسية
             </Link>
@@ -81,7 +81,7 @@ export function RegistrationPage() {
           </Suspense>
 
           <div className="rounded-2xl bg-white p-4 shadow-md md:p-6">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <button
                 type="submit"
                 className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 md:w-auto"

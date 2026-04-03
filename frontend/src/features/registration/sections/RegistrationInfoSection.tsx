@@ -17,10 +17,10 @@ type RegistrationInfoSectionProps = {
 const MOTIVATION_LETTER_MIN_LENGTH = 50
 
 const VOLUNTEER_CIRCLE_STYLES = [
-  'h-28 w-28 bg-emerald-300/35 blur-[1px]',
-  'h-16 w-16 bg-teal-300/35',
-  'h-32 w-32 bg-cyan-300/25',
-  'h-20 w-20 bg-emerald-200/40',
+  'h-20 w-20 bg-emerald-300/35 blur-[1px] md:h-28 md:w-28',
+  'h-12 w-12 bg-teal-300/35 md:h-16 md:w-16',
+  'h-24 w-24 bg-cyan-300/25 md:h-32 md:w-32',
+  'h-16 w-16 bg-emerald-200/40 md:h-20 md:w-20',
 ]
 
 export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInfoSectionProps) {
@@ -145,9 +145,9 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
         </div>
         <div
           ref={volunteeringAreaRef}
-          className="relative isolate overflow-hidden md:col-span-2 rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-teal-50 p-4 shadow-sm md:p-5"
+          className="relative isolate overflow-hidden md:col-span-2 rounded-2xl border border-emerald-200 bg-linear-to-b from-emerald-50 to-teal-50 p-4 shadow-sm md:p-5"
         >
-          <div className="pointer-events-none absolute left-0 right-0 top-0 -z-10 h-[240px] overflow-hidden md:h-[280px]">
+          <div className="pointer-events-none absolute left-0 right-0 top-0 -z-10 h-60 overflow-hidden md:h-70">
             {VOLUNTEER_CIRCLE_STYLES.map((circleClassName, index) => (
               <span
                 key={circleClassName}
@@ -186,7 +186,7 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
               </div>
               <div className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
                 <span>فصيلة الدم</span>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {bloodTypeOptions.map((option) => {
                     const isSelected = data.bloodType === option.value
 
@@ -197,7 +197,7 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
                         onClick={() =>
                           onFieldChange('bloodType', isSelected ? '' : option.value)
                         }
-                        className={`h-10 rounded-lg border text-sm font-semibold transition ${
+                        className={`h-11 rounded-lg border text-sm font-semibold transition ${
                           isSelected
                             ? 'border-rose-400 bg-rose-50 text-rose-700'
                             : 'border-slate-300 bg-white text-slate-700 hover:border-rose-300'
