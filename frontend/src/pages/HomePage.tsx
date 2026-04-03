@@ -67,33 +67,24 @@ export function HomePage() {
             </div>
 
             <div className="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-700 p-5 text-white shadow-lg">
-              <p className="text-sm font-semibold text-slate-300">توزيع الأعضاء</p>
+              <p className="text-sm font-semibold text-slate-300">توزيع الأعضاء حسب الجنس</p>
               <div className="mt-4 space-y-4">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm">
-                    <span>التقنية والبرمجة</span>
-                    <span>48%</span>
+                    <span>الذكور</span>
+                    <span>56%</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/15">
-                    <div className="h-2 w-[48%] rounded-full bg-emerald-400" />
+                    <div className="h-2 w-[56%] rounded-full bg-emerald-400" />
                   </div>
                 </div>
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm">
-                    <span>التصميم والإعلام</span>
-                    <span>31%</span>
+                    <span>الإناث</span>
+                    <span>44%</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/15">
-                    <div className="h-2 w-[31%] rounded-full bg-cyan-400" />
-                  </div>
-                </div>
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span>القيادة والعمل التطوعي</span>
-                    <span>21%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-white/15">
-                    <div className="h-2 w-[21%] rounded-full bg-amber-400" />
+                    <div className="h-2 w-[44%] rounded-full bg-cyan-400" />
                   </div>
                 </div>
               </div>
