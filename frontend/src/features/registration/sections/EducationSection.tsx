@@ -47,7 +47,7 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
     : undefined
 
   return (
-    <SectionCard title="التعليم" subtitle="الخلفية الأكاديمية ومادة الدراسة.">
+    <SectionCard title="التعليم" subtitle="معلومات عن خلفيتك التعليمية.">
       <div className="grid gap-4 md:grid-cols-2">
         <SearchableSelectField
           id="education-level"

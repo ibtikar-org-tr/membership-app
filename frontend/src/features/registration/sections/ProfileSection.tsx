@@ -13,7 +13,7 @@ type ProfileSectionProps = {
 
 export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
   return (
-    <SectionCard title="الملف الشخصي والبيانات" subtitle="روابط التواصل والبيانات الصحية.">
+    <SectionCard title="الملف الشخصي والبيانات" subtitle="روابط التواصل والمهارات.">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
           <span>فصيلة الدم</span>
