@@ -44,7 +44,7 @@ export function RegistrationPage() {
                 href="https://data.ibtikar.org.tr/documents/ar/intro.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block w-full rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900 sm:w-auto"
+                className="inline-flex w-auto self-start rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:px-4 sm:py-2 sm:text-sm"
               >
                 📄 الملف التّعريفي
               </a>
@@ -52,14 +52,14 @@ export function RegistrationPage() {
                 href="https://github.com/ibtikar-org-tr/bylaws"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block w-full rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900 sm:w-auto"
+                className="inline-flex w-auto self-start rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:px-4 sm:py-2 sm:text-sm"
               >
                 📋 النظام الداخلي
               </a>
             </div>
             <Link
               to="/"
-              className="inline-block w-full rounded-lg border border-white/50 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900 sm:w-auto"
+              className="inline-flex w-auto self-start rounded-lg border border-white/50 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:px-4 sm:py-2 sm:text-sm"
             >
               ← العودة إلى الرئيسية
             </Link>
