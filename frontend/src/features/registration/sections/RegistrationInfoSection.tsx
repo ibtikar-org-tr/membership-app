@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SearchableTagsField } from '../components/SearchableTagsField'
 import { SelectField } from '../components/SelectField'
 import { SectionCard } from '../components/SectionCard'
 import { TextAreaField } from '../components/TextAreaField'
@@ -38,11 +39,12 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           value={data.whereHeardAboutUs}
           onChange={(value) => onFieldChange('whereHeardAboutUs', value)}
         />
-        <TextAreaField
+        <SearchableTagsField
           id="friends-on-platform"
           label="أصدقاء على المنصة"
-          placeholder="membership_1, membership_2"
-          rows={3}
+          placeholder="اكتب اسم المستخدم ثم اضغط Enter"
+          options={[]}
+          initialSuggestions={[]}
           value={data.friendsOnPlatform}
           onChange={(value) => onFieldChange('friendsOnPlatform', value)}
         />
