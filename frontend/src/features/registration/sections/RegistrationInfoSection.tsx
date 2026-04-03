@@ -30,7 +30,7 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
   }
 
   return (
-    <SectionCard title="تسجيل المجتمع" subtitle="دافعيتك وتفضيلات المشاركة.">
+    <SectionCard title="معلومات إضافيّة تهمّنا" subtitle="نسعد بالتعرّف عليكم أكثر من خلال هذه المعلومات الاختيارية.">
       <div className="grid gap-4 md:grid-cols-2">
         <SelectField
           id="heard-about-us"
