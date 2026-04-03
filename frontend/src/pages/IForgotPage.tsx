@@ -51,10 +51,10 @@ export function IForgotPage() {
       <div className="mx-auto flex min-h-[80vh] w-full max-w-4xl items-center justify-center">
         <section className="w-full rounded-3xl border border-white/70 bg-white/85 p-8 shadow-2xl backdrop-blur md:p-10">
           <p className="inline-block rounded-full bg-sky-100 px-4 py-1 text-sm font-semibold text-sky-700">
-            استرجاع معلومات العضوية
+            استرجاع بيانات العضوية
           </p>
           <h1 className="mt-5 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-            نسيت معلومات الدخول؟
+            نسيت بيانات العضويّة؟
           </h1>
           <p className="mt-3 text-sm leading-7 text-slate-600">
             اختر طريقة البحث أولًا، ثم أدخل القيمة المطلوبة.
