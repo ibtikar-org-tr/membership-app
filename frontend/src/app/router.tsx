@@ -23,6 +23,13 @@ const router = createBrowserRouter([
     },
   },
   {
+    path: '/iforgot',
+    lazy: async () => {
+      const { IForgotPage } = await import('../pages/IForgotPage')
+      return { Component: IForgotPage }
+    },
+  },
+  {
     path: '*',
     element: <Navigate to="/" replace />,
   },

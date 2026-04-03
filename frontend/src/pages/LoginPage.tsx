@@ -67,9 +67,9 @@ export function LoginPage() {
                 <input type="checkbox" name="remember" className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500" />
                 تذكرني
               </label>
-              <button type="button" className="font-medium text-cyan-700 transition hover:text-cyan-900">
+              <Link to="/iforgot" className="font-medium text-cyan-700 transition hover:text-cyan-900">
                 نسيت كلمة المرور؟
-              </button>
+              </Link>
             </div>
 
             <button
