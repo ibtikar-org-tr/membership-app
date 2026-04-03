@@ -6,7 +6,7 @@ import { RegistrationInfoSection } from '../sections/RegistrationInfoSection'
 import { useRegistrationForm } from '../hooks/useRegistrationForm'
 
 export function RegistrationPage() {
-  const { formData, updateField, handleSubmit } = useRegistrationForm()
+  const { formData, isAutosaveEnabled, updateField, handleSubmit, toggleAutosave } = useRegistrationForm()
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
@@ -59,12 +59,36 @@ export function RegistrationPage() {
           <RegistrationInfoSection data={formData} onFieldChange={updateField} />
 
           <div className="rounded-2xl bg-white p-4 shadow-md md:p-6">
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 md:w-auto"
-            >
-              إرسال التسجيل
-            </button>
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 md:w-auto"
+              >
+                إرسال التسجيل
+              </button>
+
+              <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isAutosaveEnabled}
+                  onClick={toggleAutosave}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+                    isAutosaveEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}
+                >
+                  <span className="sr-only">تفعيل حفظ النموذج محلياً</span>
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                      isAutosaveEnabled ? '-translate-x-1' : '-translate-x-6'
+                    }`}
+                  />
+                </button>
+                <p className="max-w-xs text-xs leading-relaxed text-slate-600 md:text-right">
+                  عند تفعيل هذا الخيار، سيتم حفظ تقدمك في المتصفح تلقائياً لمنع فقدان البيانات عند تحديث الصفحة أو إغلاقها.
+                </p>
+              </div>
+            </div>
           </div>
         </form>
       </div>
