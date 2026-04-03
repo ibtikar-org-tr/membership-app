@@ -72,11 +72,11 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           <>
             <TextAreaField
               id="previous-experience"
-              label="الخبرة السابقة"
+              label="الخبرات التطوعيّة السابقة"
               rows={3}
               value={data.previousExperience}
               onChange={(value) => onFieldChange('previousExperience', value)}
-              helperText="حدّثنا عن خبراتك السابقة في التطوع"
+              helperText="حدّثنا عن خبراتك السابقة في التطوع لكي يسهل علينا إيجاد فرص تطوّع مناسبة لك في المستقبل!"
             />
             <div className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
               <span>فصيلة الدم</span>
