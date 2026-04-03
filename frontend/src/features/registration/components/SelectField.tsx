@@ -12,6 +12,7 @@ type SelectFieldProps = {
   placeholder?: string
   required?: boolean
   helperText?: string
+  helperTextPosition?: 'above' | 'below'
 }
 
 export function SelectField({
@@ -23,10 +24,12 @@ export function SelectField({
   placeholder = 'Select an option',
   required = false,
   helperText,
+  helperTextPosition = 'below',
 }: SelectFieldProps) {
   return (
     <label htmlFor={id} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
       {label}
+      {helperText && helperTextPosition === 'above' && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
       <select
         id={id}
         value={value}
@@ -41,7 +44,7 @@ export function SelectField({
           </option>
         ))}
       </select>
-      {helperText && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
+      {helperText && helperTextPosition === 'below' && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
     </label>
   )
 }

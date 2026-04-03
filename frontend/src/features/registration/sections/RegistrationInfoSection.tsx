@@ -67,6 +67,7 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           value={data.interestInVolunteering}
           helperText="اختر ما إذا كنت مهتمّاً بالمشاركة في الأنشطة التّطوعيّة في تجمّع إبتكار"
           onChange={(value) => onFieldChange('interestInVolunteering', value)}
+          helperTextPosition='above'
         />
         {(data.interestInVolunteering === 'yes' || data.interestInVolunteering === 'maybe') && (
           <>
