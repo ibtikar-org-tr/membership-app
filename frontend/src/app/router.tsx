@@ -3,6 +3,7 @@ import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
 const router = createBrowserRouter([
   {
     path: '/',
+    hydrateFallbackElement: <div />,
     lazy: async () => {
       const { HomePage } = await import('../pages/HomePage')
       return { Component: HomePage }
@@ -10,6 +11,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/registration',
+    hydrateFallbackElement: <div />,
     lazy: async () => {
       const { RegistrationPage } = await import('../features/registration/pages/RegistrationPage')
       return { Component: RegistrationPage }
@@ -17,6 +19,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/login',
+    hydrateFallbackElement: <div />,
     lazy: async () => {
       const { LoginPage } = await import('../pages/LoginPage')
       return { Component: LoginPage }
@@ -24,6 +27,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/iforgot',
+    hydrateFallbackElement: <div />,
     lazy: async () => {
       const { IForgotPage } = await import('../pages/IForgotPage')
       return { Component: IForgotPage }
@@ -31,6 +35,7 @@ const router = createBrowserRouter([
   },
   {
     path: '*',
+    hydrateFallbackElement: <div />,
     element: <Navigate to="/" replace />,
   },
 ], {
