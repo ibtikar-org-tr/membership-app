@@ -75,7 +75,7 @@ export function RegistrationPage() {
                   aria-checked={isAutosaveEnabled}
                   onClick={toggleAutosave}
                   className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
-                    isAutosaveEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+                    isAutosaveEnabled ? 'bg-sky-500' : 'bg-slate-300'
                   }`}
                 >
                   <span className="sr-only">تفعيل حفظ النموذج محلياً</span>
