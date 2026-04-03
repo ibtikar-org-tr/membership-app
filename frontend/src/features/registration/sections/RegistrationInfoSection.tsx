@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { gsap } from 'gsap'
 import { SearchableTagsField } from '../components/SearchableTagsField'
 import { SelectField } from '../components/SelectField'
 import { SectionCard } from '../components/SectionCard'
@@ -15,6 +16,31 @@ const MOTIVATION_LETTER_MIN_LENGTH = 50
 
 export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInfoSectionProps) {
   const [motivationLetterTouched, setMotivationLetterTouched] = useState(false)
+  const volunteeringAreaRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const area = volunteeringAreaRef.current
+    if (!area) return
+
+    const circles = Array.from(area.querySelectorAll<HTMLElement>('[data-volunteer-circle]'))
+    if (circles.length === 0) return
+
+    const ctx = gsap.context(() => {
+      circles.forEach((circle, index) => {
+        gsap.to(circle, {
+          x: index % 2 === 0 ? 20 : -24,
+          y: index % 2 === 0 ? -16 : 18,
+          rotation: index % 2 === 0 ? 18 : -14,
+          duration: 6 + index * 1.2,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+        })
+      })
+    }, area)
+
+    return () => ctx.revert()
+  }, [])
 
   const getMotivationLetterError = () => {
     if (!motivationLetterTouched) return undefined
@@ -60,7 +86,28 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
             error={getMotivationLetterError()}
           />
         </div>
-        <div className="md:col-span-2 rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-teal-50 p-4 shadow-sm md:p-5">
+        <div
+          ref={volunteeringAreaRef}
+          className="relative isolate overflow-hidden md:col-span-2 rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-teal-50 p-4 shadow-sm md:p-5"
+        >
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <span
+              data-volunteer-circle
+              className="absolute right-[-28px] top-[-24px] h-28 w-28 rounded-full bg-emerald-300/35 blur-[1px]"
+            />
+            <span
+              data-volunteer-circle
+              className="absolute left-[18%] top-[8%] h-16 w-16 rounded-full bg-teal-300/35"
+            />
+            <span
+              data-volunteer-circle
+              className="absolute bottom-[-30px] left-[-16px] h-32 w-32 rounded-full bg-cyan-300/25"
+            />
+            <span
+              data-volunteer-circle
+              className="absolute bottom-[16%] right-[22%] h-20 w-20 rounded-full bg-emerald-200/40"
+            />
+          </div>
           <p className="mb-2 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
             مساحة التطوع
           </p>
