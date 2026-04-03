@@ -41,9 +41,10 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
         />
         <SearchableTagsField
           id="friends-on-platform"
-          label="أصدقاء على المنصة"
-          placeholder="اكتب اسم المستخدم ثم اضغط Enter"
+          label="هل يمكنك ذكر أسماء لأشخاص تعرفهم من تجمّع إبتكار"
+          placeholder="اكتب اسم الشخص ثم اضغط Enter"
           options={[]}
+          helperText="اذا كان انضمامك عبر دعوة من عضو في التجمّع، يرجى ذكر اسم العضو"
           initialSuggestions={[]}
           value={data.friendsOnPlatform}
           onChange={(value) => onFieldChange('friendsOnPlatform', value)}

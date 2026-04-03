@@ -16,6 +16,7 @@ type SearchableTagsFieldProps = {
   initialSuggestions?: string[]
   allowCustom?: boolean
   placeholder?: string
+  helperText?: string
 }
 
 function parseValue(value: string) {
@@ -49,6 +50,7 @@ export function SearchableTagsField({
   initialSuggestions = [],
   allowCustom = true,
   placeholder = 'ابحث أو اكتب قيمة ثم اضغط Enter',
+  helperText,
 }: SearchableTagsFieldProps) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
@@ -216,6 +218,7 @@ export function SearchableTagsField({
   return (
     <div ref={containerRef} className="relative flex flex-col gap-2 text-sm font-medium text-slate-700">
       <label htmlFor={id}>{label}</label>
+      {helperText && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
 
       <div
         ref={triggerRef}
