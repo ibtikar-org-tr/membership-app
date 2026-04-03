@@ -43,6 +43,7 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           label="الاهتمام بالتطوع"
           options={volunteeringInterestOptions}
           value={data.interestInVolunteering}
+          helperText="اختر مدى اهتمامك بالمشاركة في أنشطة التطوع داخل المجتمع."
           onChange={(value) => onFieldChange('interestInVolunteering', value)}
         />
         <div className="md:col-span-2">
@@ -64,13 +65,16 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           value={data.friendsOnPlatform}
           onChange={(value) => onFieldChange('friendsOnPlatform', value)}
         />
-        <TextAreaField
-          id="previous-experience"
-          label="الخبرة السابقة"
-          rows={3}
-          value={data.previousExperience}
-          onChange={(value) => onFieldChange('previousExperience', value)}
-        />
+        {data.interestInVolunteering !== 'no' && (
+          <TextAreaField
+            id="previous-experience"
+            label="الخبرة السابقة"
+            rows={3}
+            value={data.previousExperience}
+            onChange={(value) => onFieldChange('previousExperience', value)}
+            helperText="حدّثنا عن خبراتك السابقة في التطوع"
+          />
+        )}
       </div>
     </SectionCard>
   )
