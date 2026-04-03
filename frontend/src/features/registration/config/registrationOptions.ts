@@ -47,10 +47,11 @@ export const educationLevelOptions = [
 ]
 
 export const whereHeardAboutUsOptions = [
-  { value: 'friend', label: 'صديق' },
-  { value: 'social_media', label: 'وسائل التواصل الاجتماعية' },
-  { value: 'event', label: 'حدث' },
-  { value: 'website', label: 'موقع' },
+  { value: 'friend', label: 'من صديقٍ لي' },
+  { value: 'social_media', label: 'من وسائل التواصل الاجتماعي' },
+  { value: 'event', label: 'من فعالية قام بها التجمّع' },
+  { value: 'internet_search', label: 'من البحث في الإنترنت' },
+  { value: 'llm', label: 'عبر سؤال الذكاء الاصنطاعي' },
   { value: 'other', label: 'أخرى' },
 ]
 
