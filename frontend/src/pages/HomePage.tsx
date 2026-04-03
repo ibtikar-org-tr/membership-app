@@ -53,12 +53,12 @@ export function HomePage() {
                   <p className="mt-1 text-xl font-bold text-slate-900">742</p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-slate-500">طلبات جديدة</p>
+                  <p className="text-slate-500">منتسبين جدد</p>
                   <p className="mt-1 text-xl font-bold text-slate-900">38</p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-slate-500">الدول</p>
-                  <p className="mt-1 text-xl font-bold text-slate-900">14</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">2</p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-slate-500">الجامعات</p>
