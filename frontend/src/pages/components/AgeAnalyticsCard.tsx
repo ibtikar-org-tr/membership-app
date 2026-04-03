@@ -37,11 +37,11 @@ export function AgeAnalyticsCard() {
     const config: ChartConfiguration<'line'> = {
       type: 'line',
       data: {
-        labels: ['15', '20', '23', '30', '35'],
+        labels: ['15', '19', '21', '23', '34'],
         datasets: [
           {
-            label: 'العمر',
-            data: [8, 22, 34, 18, 6],
+            label: 'عدد الأعضاء',
+            data: [18, 396, 430, 340, 100],
             borderColor: '#0f766e',
             backgroundColor: 'rgba(15, 118, 110, 0.14)',
             pointBackgroundColor: ['#0f766e', '#06b6d4', '#06b6d4', '#f59e0b', '#f59e0b'],
@@ -64,7 +64,7 @@ export function AgeAnalyticsCard() {
           tooltip: {
             rtl: true,
             callbacks: {
-              label: (tooltipItem: TooltipItem<'line'>) => ` ${tooltipItem.formattedValue}`,
+              label: (tooltipItem: TooltipItem<'line'>) => ` ${tooltipItem.formattedValue} عضو`,
             },
           },
         },
