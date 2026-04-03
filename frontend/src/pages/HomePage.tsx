@@ -21,12 +21,20 @@ export function HomePage() {
             >
               نموذج الانتساب لتجمّع إبتكار
             </Link>
-            <Link
-              to="/login"
-              className="mr-3 inline-flex items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-400"
-            >
-              تسجيل الدخول
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                to="/login"
+                className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-400"
+              >
+                تسجيل الدخول
+              </Link>
+              <Link
+                to="/iforgot"
+                className="inline-flex items-center rounded-xl px-1 py-3 text-base font-semibold text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline"
+              >
+                نسيت معلوماتي
+              </Link>
+            </div>
           </div>
 
           <div className="grid gap-4">
