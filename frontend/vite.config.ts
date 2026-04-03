@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const basePath = env.VITE_BASE_PATH || '/mf/membership-app/'
 
   return {
     plugins: [react(), tailwindcss()],
@@ -18,9 +19,9 @@ export default defineConfig(({ mode }) => {
         }
       },
     },
-    base: env.VITE_BASE_PATH || '/mf/membership-app/',
+    base: basePath,
     build: {
-      outDir: `dist${env.VITE_BASE_PATH || '/mf/membership-app/'}`
-    }
+      outDir: 'dist',
+    },
   }
 })
