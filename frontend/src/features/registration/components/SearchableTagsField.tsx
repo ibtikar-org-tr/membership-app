@@ -170,7 +170,7 @@ export function SearchableTagsField({
     const nextLeft = Math.min(Math.max(rect.left, 8), Math.max(8, maxLeft))
 
     setDropdownStyle({
-      top: rect.bottom,
+      top: rect.bottom + 4,
       left: nextLeft,
       width: nextWidth,
     })
@@ -180,7 +180,7 @@ export function SearchableTagsField({
     if (isOpen) {
       updateDropdownPosition()
     }
-  }, [isOpen])
+  }, [isOpen, selected.length])
 
   useEffect(() => {
     if (!isOpen) {
