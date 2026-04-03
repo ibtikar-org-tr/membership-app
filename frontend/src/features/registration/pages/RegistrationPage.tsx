@@ -1,9 +1,23 @@
+import { Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
-import { EducationSection } from '../sections/EducationSection'
-import { PersonalInfoSection } from '../sections/PersonalInfoSection'
-import { ProfileSection } from '../sections/ProfileSection'
-import { RegistrationInfoSection } from '../sections/RegistrationInfoSection'
 import { useRegistrationForm } from '../hooks/useRegistrationForm'
+
+const PersonalInfoSection = lazy(() =>
+  import('../sections/PersonalInfoSection').then((module) => ({ default: module.PersonalInfoSection })),
+)
+const EducationSection = lazy(() =>
+  import('../sections/EducationSection').then((module) => ({ default: module.EducationSection })),
+)
+const ProfileSection = lazy(() =>
+  import('../sections/ProfileSection').then((module) => ({ default: module.ProfileSection })),
+)
+const RegistrationInfoSection = lazy(() =>
+  import('../sections/RegistrationInfoSection').then((module) => ({ default: module.RegistrationInfoSection })),
+)
+
+function SectionLoadingCard() {
+  return <div className="h-28 animate-pulse rounded-2xl bg-white/70 shadow-sm" />
+}
 
 export function RegistrationPage() {
   const { formData, isAutosaveEnabled, updateField, handleSubmit, toggleAutosave } = useRegistrationForm()
@@ -53,10 +67,18 @@ export function RegistrationPage() {
         </header>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
-          <PersonalInfoSection data={formData} onFieldChange={updateField} />
-          <EducationSection data={formData} onFieldChange={updateField} />
-          <ProfileSection data={formData} onFieldChange={updateField} />
-          <RegistrationInfoSection data={formData} onFieldChange={updateField} />
+          <Suspense fallback={<SectionLoadingCard />}>
+            <PersonalInfoSection data={formData} onFieldChange={updateField} />
+          </Suspense>
+          <Suspense fallback={<SectionLoadingCard />}>
+            <EducationSection data={formData} onFieldChange={updateField} />
+          </Suspense>
+          <Suspense fallback={<SectionLoadingCard />}>
+            <ProfileSection data={formData} onFieldChange={updateField} />
+          </Suspense>
+          <Suspense fallback={<SectionLoadingCard />}>
+            <RegistrationInfoSection data={formData} onFieldChange={updateField} />
+          </Suspense>
 
           <div className="rounded-2xl bg-white p-4 shadow-md md:p-6">
             <div className="flex items-center justify-between gap-4">

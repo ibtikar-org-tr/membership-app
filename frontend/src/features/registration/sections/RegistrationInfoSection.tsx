@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import confetti from 'canvas-confetti'
-import { gsap } from 'gsap'
 import { SearchableTagsField } from '../components/SearchableTagsField'
 import { SelectField } from '../components/SelectField'
 import { SectionCard } from '../components/SectionCard'
 import { TextAreaField } from '../components/TextAreaField'
 import { whereHeardAboutUsOptions, volunteeringInterestOptions, bloodTypeOptions } from '../config/registrationOptions'
 import type { RegistrationFormData } from '../types/registration'
+
+const gsapModulePromise = import('gsap')
+const confettiModulePromise = import('canvas-confetti')
 
 type RegistrationInfoSectionProps = {
   data: RegistrationFormData
@@ -42,22 +43,34 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
     const circles = Array.from(area.querySelectorAll<HTMLElement>('[data-volunteer-circle]'))
     if (circles.length === 0) return
 
-    const ctx = gsap.context(() => {
-      circles.forEach((circle, index) => {
-        gsap.to(circle, {
-          x: index % 2 === 0 ? 20 : -24,
-          y: index % 2 === 0 ? -16 : 18,
-          rotation: index % 2 === 0 ? 18 : -14,
-          duration: 6 + index * 1.2,
-          repeat: -1,
-          yoyo: true,
-          ease: 'sine.inOut',
-          force3D: true,
-        })
-      })
-    }, area)
+    let cleanup: (() => void) | undefined
+    let isActive = true
 
-    return () => ctx.revert()
+    void gsapModulePromise.then(({ gsap }) => {
+      if (!isActive) return
+
+      const ctx = gsap.context(() => {
+        circles.forEach((circle, index) => {
+          gsap.to(circle, {
+            x: index % 2 === 0 ? 20 : -24,
+            y: index % 2 === 0 ? -16 : 18,
+            rotation: index % 2 === 0 ? 18 : -14,
+            duration: 6 + index * 1.2,
+            repeat: -1,
+            yoyo: true,
+            ease: 'sine.inOut',
+            force3D: true,
+          })
+        })
+      }, area)
+
+      cleanup = () => ctx.revert()
+    })
+
+    return () => {
+      isActive = false
+      cleanup?.()
+    }
   }, [])
 
   useEffect(() => {
@@ -69,14 +82,16 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
       if (!reduceMotion) {
-        confetti({
-          particleCount: 90,
-          spread: 72,
-          startVelocity: 44,
-          scalar: 0.9,
-          ticks: 220,
-          origin: { x: 0.5, y: 0.45 },
-          zIndex: 2000,
+        void confettiModulePromise.then(({ default: confetti }) => {
+          confetti({
+            particleCount: 90,
+            spread: 72,
+            startVelocity: 44,
+            scalar: 0.9,
+            ticks: 220,
+            origin: { x: 0.5, y: 0.45 },
+            zIndex: 2000,
+          })
         })
       }
     }

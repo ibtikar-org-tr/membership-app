@@ -12,13 +12,6 @@ export default defineConfig(({ mode }) => {
     define: {
       global: 'globalThis',
     },
-    optimizeDeps: {
-      esbuildOptions: {
-        define: {
-          global: 'globalThis',
-        }
-      },
-    },
     base: basePath,
     build: {
       outDir: `dist${basePath}`,

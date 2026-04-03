@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { GetCountries, GetState, GetCity } from 'react-country-state-city'
 import type { Country, State, City } from 'react-country-state-city/dist/esm/types'
 import { SectionCard } from '../components/SectionCard'
 import { TextField } from '../components/TextField'
@@ -9,6 +8,8 @@ import { BirthDateField } from '../components/BirthDateField'
 import { SearchableSelectField } from '../components/SearchableSelectField'
 import syriaModernFlag from '../../../assets/flags/syria-modern.svg'
 import type { RegistrationFormData } from '../types/registration'
+
+const countryStateCityModulePromise = import('react-country-state-city')
 
 type PersonalInfoSectionProps = {
   data: RegistrationFormData
@@ -33,7 +34,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   useEffect(() => {
     let isActive = true
 
-    GetCountries().then((nextCountries) => {
+    countryStateCityModulePromise.then(({ GetCountries }) => GetCountries()).then((nextCountries) => {
       if (!isActive) return
       setCountries(nextCountries)
     })
@@ -68,7 +69,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
       return
     }
 
-    GetState(selectedCountryId).then((nextStates) => {
+    countryStateCityModulePromise.then(({ GetState }) => GetState(selectedCountryId)).then((nextStates) => {
       if (!isActive) return
       setStates(nextStates)
     })
@@ -86,10 +87,12 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
       return
     }
 
-    GetCity(selectedCountryId, selectedStateId).then((nextCities) => {
-      if (!isActive) return
-      setCities(nextCities)
-    })
+    countryStateCityModulePromise
+      .then(({ GetCity }) => GetCity(selectedCountryId, selectedStateId))
+      .then((nextCities) => {
+        if (!isActive) return
+        setCities(nextCities)
+      })
 
     return () => {
       isActive = false

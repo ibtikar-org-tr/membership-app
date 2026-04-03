@@ -1,17 +1,21 @@
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
-import { HomePage } from '../pages/HomePage'
-import { RegistrationPage } from '../features/registration/pages/RegistrationPage'
 
 const router = createBrowserRouter(
 
 [
   {
     path: '/',
-    element: <HomePage />,
+    lazy: async () => {
+      const { HomePage } = await import('../pages/HomePage')
+      return { Component: HomePage }
+    },
   },
   {
     path: '/registration',
-    element: <RegistrationPage />,
+    lazy: async () => {
+      const { RegistrationPage } = await import('../features/registration/pages/RegistrationPage')
+      return { Component: RegistrationPage }
+    },
   },
   {
     path: '*',
