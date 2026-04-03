@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import confetti from 'canvas-confetti'
 import { gsap } from 'gsap'
 import { SearchableTagsField } from '../components/SearchableTagsField'
 import { SelectField } from '../components/SelectField'
@@ -24,6 +25,7 @@ const VOLUNTEER_CIRCLE_STYLES = [
 export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInfoSectionProps) {
   const [motivationLetterTouched, setMotivationLetterTouched] = useState(false)
   const volunteeringAreaRef = useRef<HTMLDivElement | null>(null)
+  const previousVolunteeringValueRef = useRef(data.interestInVolunteering)
   const volunteerCirclePositions = useMemo(
     () =>
       VOLUNTEER_CIRCLE_STYLES.map(() => ({
@@ -57,6 +59,30 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
 
     return () => ctx.revert()
   }, [])
+
+  useEffect(() => {
+    const previousValue = previousVolunteeringValueRef.current
+    const currentValue = data.interestInVolunteering
+
+    if (currentValue === 'yes' && previousValue !== 'yes') {
+      const reduceMotion = typeof window !== 'undefined'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+      if (!reduceMotion) {
+        confetti({
+          particleCount: 90,
+          spread: 72,
+          startVelocity: 44,
+          scalar: 0.9,
+          ticks: 220,
+          origin: { x: 0.5, y: 0.45 },
+          zIndex: 2000,
+        })
+      }
+    }
+
+    previousVolunteeringValueRef.current = currentValue
+  }, [data.interestInVolunteering])
 
   const getMotivationLetterError = () => {
     if (!motivationLetterTouched) return undefined
