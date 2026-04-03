@@ -27,7 +27,6 @@ export function SelectField({
   return (
     <label htmlFor={id} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
       {label}
-      {helperText && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
       <select
         id={id}
         value={value}
@@ -42,6 +41,7 @@ export function SelectField({
           </option>
         ))}
       </select>
+      {helperText && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
     </label>
   )
 }
