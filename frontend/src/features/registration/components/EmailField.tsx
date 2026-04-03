@@ -89,6 +89,14 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
     })
   }
 
+  const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    const relatedTarget = event.relatedTarget as HTMLElement | null
+    const isMovingWithinField = relatedTarget?.closest('[data-email-field]') === event.currentTarget
+    if (!isMovingWithinField) {
+      setHasBlurred(true)
+    }
+  }
+
   const trimmedValue = value.trim()
   const isInvalid = trimmedValue.length > 0 && !emailPattern.test(trimmedValue)
   const showError = hasBlurred && isInvalid
@@ -97,6 +105,8 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
     <label htmlFor={`${id}-local`} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
       {label}
       <div
+        data-email-field
+        onBlur={handleBlur}
         className={`grid grid-cols-[2fr_auto_1fr] items-stretch overflow-hidden rounded-xl border bg-white focus-within:ring-2 ${
           showError
             ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-100'
@@ -116,7 +126,6 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           value={localPart}
           onChange={(event) => handleLocalPartChange(event.target.value)}
           onKeyDown={handleLocalPartKeyDown}
-          onBlur={() => setHasBlurred(true)}
           className="h-11 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
           dir="ltr"
         />
@@ -135,7 +144,6 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           placeholder="example.com"
           value={domainPart}
           onChange={(event) => handleDomainPartChange(event.target.value)}
-          onBlur={() => setHasBlurred(true)}
           className="h-11 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
           dir="ltr"
         />
