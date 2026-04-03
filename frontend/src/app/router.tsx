@@ -2,7 +2,9 @@ import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { HomePage } from '../pages/HomePage'
 import { RegistrationPage } from '../features/registration/pages/RegistrationPage'
 
-const router = createBrowserRouter([
+const router = createBrowserRouter(
+
+[
   {
     path: '/',
     element: <HomePage />,
@@ -16,7 +18,7 @@ const router = createBrowserRouter([
     element: <Navigate to="/" replace />,
   },
 ], {
-  basename: import.meta.env.VITE_BASE_PATH || '/mf/membership-app/',
+  basename: import.meta.env.VITE_BASE_PATH === '/.' ? '/' : import.meta.env.VITE_BASE_PATH || '/mf/membership-app/',
 })
 
 export function AppRouter() {
