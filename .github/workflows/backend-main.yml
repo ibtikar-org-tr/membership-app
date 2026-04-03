@@ -1,0 +1,53 @@
+name: (main) [backend] Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-main.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: main
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install project dependencies
+        run: npm install
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Update wrangler config with environment variables
+        run: |
+          jq \
+            --arg dbid "${{ vars.D1_DATABASE_ID }}" \
+            --arg dbname "${{ vars.D1_DATABASE_NAME }}" \
+            --arg bucketname "${{ vars.BUCKET_NAME }}" \
+            --arg mprefix "${{ vars.MEMBERSHIP_NUMBER_PREFIX }}" \
+            '.d1_databases[0].database_id = $dbid | .d1_databases[0].database_name = $dbname | .r2_buckets[0].bucket_name = $bucketname | .vars.MEMBERSHIP_NUMBER_PREFIX = $mprefix' \
+            wrangler.jsonc > wrangler.local.jsonc
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: wrangler deploy --config wrangler.local.jsonc --name membership-app-backend
+
+      - name: Set secrets in Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "${{ secrets.JWT_SECRET }}" | wrangler secret put JWT_SECRET --config wrangler.local.jsonc --name membership-app-backend
