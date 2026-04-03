@@ -32,7 +32,7 @@ export function TextField({
   const showError = hasBlurred && isInvalid
 
   return (
-    <label htmlFor={id} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+    <label htmlFor={id} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
       {label}
       <input
         id={id}
@@ -43,7 +43,7 @@ export function TextField({
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
         onBlur={() => setHasBlurred(true)}
-        className={`h-11 rounded-xl border bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 ${
+        className={`h-11 w-full min-w-0 rounded-xl border bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-2 ${
           showError
             ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
             : 'border-slate-300 focus:border-teal-500 focus:ring-teal-100'

@@ -143,7 +143,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
         label: getArabicCountryName(country),
         leftAdornment:
           country.iso2.toLowerCase() === 'sy' ? (
-            <img src={syriaModernFlag} alt="" className="h-[18px] w-[18px] rounded-sm object-cover" />
+            <img src={syriaModernFlag} alt="" className="h-4.5 w-4.5 rounded-sm object-cover" />
           ) : (
             country.emoji
           ),
@@ -176,10 +176,10 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
     <SectionCard
       title="التفاصيل الشخصية"
       subtitle="معلومات الهوية والاتصال المطلوبة."
-      className="z-[130]"
+      className="z-130"
     >
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2 md:col-span-2">
+        <div className="min-w-0 space-y-2 md:col-span-2">
           <EmailField
             id="email"
             label="البريد الإلكتروني"
@@ -187,7 +187,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
             onChange={(value) => onFieldChange('email', value)}
             required
           />
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-900">
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-900 wrap-break-word">
             تأكّد أنّك مسجّل من بريدك الالكتروني الأساسي لأننا سنتواصل معك عبر هذا الايميل
             <br />
             هام: هذا البريد الإلكتروني سوف تستخدمه في تسجيل الدخول لمنصّات التجمّع لاحقاً، وكذلك سيتمّ التواصل معك عبره، وسيكون من الصّعب تغيير لاحقاً
@@ -203,7 +203,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           validationMessage="يرجى كتابة الاسم الكامل باللغة العربيّة"
           required
         />
-        <div className="text-left">
+        <div className="min-w-0 text-left">
           <TextField
             id="en-name"
             label="Name Surname"
@@ -274,7 +274,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           onChange={(value) => onFieldChange('dateOfBirth', value)}
           required
         />
-        <div className="space-y-4 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 md:col-span-2 md:p-5">
+        <div className="min-w-0 space-y-4 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 md:col-span-2 md:p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">تفاصيل الموقع</p>
 
           <div className="grid gap-4 md:grid-cols-2">

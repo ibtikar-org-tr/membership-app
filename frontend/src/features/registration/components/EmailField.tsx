@@ -102,12 +102,12 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
   const showError = hasBlurred && isInvalid
 
   return (
-    <label htmlFor={`${id}-local`} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+    <label htmlFor={`${id}-local`} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
       {label}
       <div
         data-email-field
         onBlur={handleBlur}
-        className={`grid grid-cols-[2fr_auto_1fr] items-stretch overflow-hidden rounded-xl border bg-white focus-within:ring-2 ${
+        className={`grid min-w-0 grid-cols-[minmax(0,2fr)_auto_minmax(0,1fr)] items-stretch overflow-hidden rounded-xl border bg-white focus-within:ring-2 ${
           showError
             ? 'border-red-400 focus-within:border-red-500 focus-within:ring-red-100'
             : 'border-slate-300 focus-within:border-teal-500 focus-within:ring-teal-100'
@@ -126,7 +126,7 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           value={localPart}
           onChange={(event) => handleLocalPartChange(event.target.value)}
           onKeyDown={handleLocalPartKeyDown}
-          className="h-11 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
+          className="h-11 w-full min-w-0 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
           dir="ltr"
         />
         <div className="flex h-11 w-12 items-center justify-center border-x border-slate-300 bg-slate-50 text-base font-bold text-slate-700" aria-hidden="true">
@@ -144,7 +144,7 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           placeholder="example.com"
           value={domainPart}
           onChange={(event) => handleDomainPartChange(event.target.value)}
-          className="h-11 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
+          className="h-11 w-full min-w-0 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
           dir="ltr"
         />
       </div>

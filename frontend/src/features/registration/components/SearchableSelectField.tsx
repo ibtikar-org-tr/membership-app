@@ -124,16 +124,16 @@ export function SearchableSelectField({
   }
 
   return (
-    <label htmlFor={id} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+    <label htmlFor={id} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
       {label}
-      <div ref={shellRef} className="relative" dir="rtl">
+      <div ref={shellRef} className="relative min-w-0" dir="rtl">
         <button
           id={id}
           ref={triggerRef}
           type="button"
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((current) => !current)}
-          className="flex h-11 w-full items-center gap-3 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition enabled:hover:border-slate-400 enabled:focus:border-teal-500 enabled:focus:ring-2 enabled:focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          className="flex h-11 w-full min-w-0 items-center gap-3 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition enabled:hover:border-slate-400 enabled:focus:border-teal-500 enabled:focus:ring-2 enabled:focus:ring-teal-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
         >
           {selectedOption?.leftAdornment ? (
             <span className="text-base leading-none">{selectedOption.leftAdornment}</span>

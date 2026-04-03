@@ -101,10 +101,10 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
   }
 
   return (
-    <div className="md:col-span-2">
+    <div className="min-w-0 md:col-span-2">
       <label htmlFor="phone-number" className="flex flex-col gap-2 text-sm font-medium text-slate-700">
         رقم الهاتف
-        <div ref={shellRef} dir="ltr" className="phone-input-shell relative">
+        <div ref={shellRef} dir="ltr" className="phone-input-shell relative min-w-0">
           <PhoneInput
             ref={phoneInputRef}
             defaultCountry="tr"
@@ -132,7 +132,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
           />
 
           {isDropdownOpen && (
-            <div className="absolute left-0 top-[calc(100%+0.5rem)] z-[70] w-[min(22rem,calc(100vw-2rem))] min-w-[18rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+            <div className="absolute left-0 top-[calc(100%+0.5rem)] z-70 w-[min(22rem,calc(100vw-1rem))] min-w-[16rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
               <div className="border-b border-slate-200 p-2">
                 <input
                   type="text"
@@ -160,7 +160,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
                         }`}
                       >
                         {isSyria ? (
-                          <img src={syriaModernFlag} alt="" className="h-[18px] w-[18px] rounded-sm object-cover" />
+                          <img src={syriaModernFlag} alt="" className="h-4.5 w-4.5 rounded-sm object-cover" />
                         ) : (
                           <span className="text-base leading-none">{toFlagEmoji(country.iso2)}</span>
                         )}
@@ -196,6 +196,7 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
 
         .phone-input-shell .react-international-phone-input-container {
           width: 100%;
+          min-width: 0;
           border: 1px solid #cbd5e1;
           border-radius: 0.75rem;
           background-color: #ffffff;
@@ -211,8 +212,8 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
           z-index: 60;
           border: 1px solid #e2e8f0;
           border-radius: 0.75rem;
-          width: min(22rem, calc(100vw - 2rem));
-          min-width: 18rem;
+          width: min(22rem, calc(100vw - 1rem));
+          min-width: 16rem;
           left: 0;
           top: calc(100% + 0.5rem);
           max-height: 16rem;
