@@ -60,54 +60,64 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
             error={getMotivationLetterError()}
           />
         </div>
-        <SelectField
-          id="volunteering-interest"
-          label="الاهتمام بالتطوع"
-          options={volunteeringInterestOptions}
-          value={data.interestInVolunteering}
-          helperText="اختر ما إذا كنت مهتمّاً بالمشاركة في الأنشطة التّطوعيّة في تجمّع إبتكار"
-          onChange={(value) => onFieldChange('interestInVolunteering', value)}
-          helperTextPosition='above'
-        />
-        {(data.interestInVolunteering === 'yes' || data.interestInVolunteering === 'maybe') && (
-          <>
-            <TextAreaField
-              id="previous-experience"
-              label="الخبرات التطوعيّة السابقة"
-              rows={3}
-              value={data.previousExperience}
-              onChange={(value) => onFieldChange('previousExperience', value)}
-              helperText="حدّثنا عن خبراتك السابقة في التطوع لكي يسهل علينا إيجاد فرص تطوّع مناسبة لك في المستقبل!"
+        <div className="md:col-span-2 rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-teal-50 p-4 shadow-sm md:p-5">
+          <p className="mb-2 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+            مساحة التطوع
+          </p>
+          <div className="max-w-xl">
+            <SelectField
+              id="volunteering-interest"
+              label="الاهتمام بالتطوع"
+              options={volunteeringInterestOptions}
+              value={data.interestInVolunteering}
+              helperText="اختر ما إذا كنت مهتمّاً بالمشاركة في الأنشطة التّطوعيّة في تجمّع إبتكار"
+              onChange={(value) => onFieldChange('interestInVolunteering', value)}
+              helperTextPosition="above"
             />
-            <div className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
-              <span>فصيلة الدم</span>
-              <div className="grid grid-cols-4 gap-2">
-                {bloodTypeOptions.map((option) => {
-                  const isSelected = data.bloodType === option.value
+          </div>
 
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() =>
-                        onFieldChange('bloodType', isSelected ? '' : option.value)
-                      }
-                      className={`h-10 rounded-lg border text-sm font-semibold transition ${
-                        isSelected
-                          ? 'border-rose-400 bg-rose-50 text-rose-700'
-                          : 'border-slate-300 bg-white text-slate-700 hover:border-rose-300'
-                      }`}
-                      aria-pressed={isSelected}
-                      aria-label={`فصيلة الدم ${option.label}`}
-                    >
-                      {option.label}
-                    </button>
-                  )
-                })}
+          {(data.interestInVolunteering === 'yes' || data.interestInVolunteering === 'maybe') && (
+            <div className="mt-4 grid gap-4 rounded-xl border border-emerald-200 bg-white/80 p-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <TextAreaField
+                  id="previous-experience"
+                  label="الخبرات التطوعيّة السابقة"
+                  rows={3}
+                  value={data.previousExperience}
+                  onChange={(value) => onFieldChange('previousExperience', value)}
+                  helperText="حدّثنا عن خبراتك السابقة في التطوع لكي يسهل علينا إيجاد فرص تطوّع مناسبة لك في المستقبل!"
+                />
+              </div>
+              <div className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
+                <span>فصيلة الدم</span>
+                <div className="grid grid-cols-4 gap-2">
+                  {bloodTypeOptions.map((option) => {
+                    const isSelected = data.bloodType === option.value
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() =>
+                          onFieldChange('bloodType', isSelected ? '' : option.value)
+                        }
+                        className={`h-10 rounded-lg border text-sm font-semibold transition ${
+                          isSelected
+                            ? 'border-rose-400 bg-rose-50 text-rose-700'
+                            : 'border-slate-300 bg-white text-slate-700 hover:border-rose-300'
+                        }`}
+                        aria-pressed={isSelected}
+                        aria-label={`فصيلة الدم ${option.label}`}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </SectionCard>
   )
