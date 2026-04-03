@@ -3,6 +3,7 @@ import {
   CategoryScale,
   Chart,
   Filler,
+  LineController,
   LineElement,
   LinearScale,
   PointElement,
@@ -11,7 +12,7 @@ import {
   type TooltipItem,
 } from 'chart.js'
 
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip)
+Chart.register(CategoryScale, LinearScale, PointElement, LineController, LineElement, Filler, Tooltip)
 
 export function AgeAnalyticsCard() {
   const ageChartRef = useRef<HTMLCanvasElement | null>(null)
@@ -28,8 +29,9 @@ export function AgeAnalyticsCard() {
       return
     }
 
-    if (ageChartInstanceRef.current) {
-      ageChartInstanceRef.current.destroy()
+    const existingChart = Chart.getChart(canvas)
+    if (existingChart) {
+      existingChart.destroy()
     }
 
     const config: ChartConfiguration<'line'> = {
@@ -99,7 +101,8 @@ export function AgeAnalyticsCard() {
     ageChartInstanceRef.current = new Chart(context, config)
 
     return () => {
-      ageChartInstanceRef.current?.destroy()
+      const chart = ageChartInstanceRef.current ?? Chart.getChart(canvas)
+      chart?.destroy()
       ageChartInstanceRef.current = null
     }
   }, [])
