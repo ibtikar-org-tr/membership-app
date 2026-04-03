@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { SelectField } from '../components/SelectField'
 import { SectionCard } from '../components/SectionCard'
 import { TextAreaField } from '../components/TextAreaField'
@@ -9,7 +10,24 @@ type RegistrationInfoSectionProps = {
   onFieldChange: (field: keyof RegistrationFormData, value: string) => void
 }
 
+const MOTIVATION_LETTER_MIN_LENGTH = 50
+
 export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInfoSectionProps) {
+  const [motivationLetterTouched, setMotivationLetterTouched] = useState(false)
+
+  const getMotivationLetterError = () => {
+    if (!motivationLetterTouched) return undefined
+    if (data.motivationLetter.length < MOTIVATION_LETTER_MIN_LENGTH) {
+      return `يجب أن يكون طول الرسالة 50 حرفاً على الأقل (${data.motivationLetter.length}/${MOTIVATION_LETTER_MIN_LENGTH})`
+    }
+    return undefined
+  }
+
+  const handleMotivationLetterChange = (value: string) => {
+    setMotivationLetterTouched(true)
+    onFieldChange('motivationLetter', value)
+  }
+
   return (
     <SectionCard title="تسجيل المجتمع" subtitle="دافعيتك وتفضيلات المشاركة.">
       <div className="grid gap-4 md:grid-cols-2">
@@ -33,7 +51,9 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
             label="خطاب الدافع"
             rows={5}
             value={data.motivationLetter}
-            onChange={(value) => onFieldChange('motivationLetter', value)}
+            onChange={handleMotivationLetterChange}
+            helperText="لماذا ترغب في الانضمام إلى مجتمعنا؟ ما الذي تأمل في تحقيقه أو المساهمة به؟"
+            error={getMotivationLetterError()}
           />
         </div>
         <TextAreaField
