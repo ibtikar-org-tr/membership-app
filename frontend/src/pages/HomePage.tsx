@@ -19,7 +19,13 @@ export function HomePage() {
               to="/registration"
               className="inline-flex items-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-700"
             >
-              فتح نموذج التسجيل
+              نموذج الانتساب لتجمّع إبتكار
+            </Link>
+            <Link
+              to="/login"
+              className="mr-3 inline-flex items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-800 transition hover:-translate-y-0.5 hover:border-slate-400"
+            >
+              تسجيل الدخول
             </Link>
           </div>
 

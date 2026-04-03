@@ -1,8 +1,6 @@
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
 
-const router = createBrowserRouter(
-
-[
+const router = createBrowserRouter([
   {
     path: '/',
     lazy: async () => {
@@ -15,6 +13,13 @@ const router = createBrowserRouter(
     lazy: async () => {
       const { RegistrationPage } = await import('../features/registration/pages/RegistrationPage')
       return { Component: RegistrationPage }
+    },
+  },
+  {
+    path: '/login',
+    lazy: async () => {
+      const { LoginPage } = await import('../pages/LoginPage')
+      return { Component: LoginPage }
     },
   },
   {
