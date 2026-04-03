@@ -19,23 +19,25 @@ export function RegistrationPage() {
           <p className="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
             تطوير مهارات الطلاب التقنية وتحفيز الابتكار والإبداع. يرجى ملء هذا النموذج لتقديم طلب الانضمام إلى تجمّع إبتكار.
           </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <a
-              href="https://data.ibtikar.org.tr/documents/ar/intro.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block rounded-lg bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900 border border-white/30"
-            >
-              📄 الملف التّعريفي
-            </a>
-            <a
-              href="https://github.com/ibtikar-org-tr/bylaws"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block rounded-lg bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900 border border-white/30"
-            >
-              📋 النظام الداخلي
-            </a>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="https://data.ibtikar.org.tr/documents/ar/intro.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900"
+              >
+                📄 الملف التّعريفي
+              </a>
+              <a
+                href="https://github.com/ibtikar-org-tr/bylaws"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900"
+              >
+                📋 النظام الداخلي
+              </a>
+            </div>
             <Link
               to="/"
               className="inline-block rounded-lg border border-white/50 px-4 py-2 text-sm font-medium transition hover:bg-white hover:text-slate-900"
