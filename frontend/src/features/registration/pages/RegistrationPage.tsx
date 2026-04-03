@@ -59,7 +59,7 @@ export function RegistrationPage() {
           <RegistrationInfoSection data={formData} onFieldChange={updateField} />
 
           <div className="rounded-2xl bg-white p-4 shadow-md md:p-6">
-            <div className="mb-4 flex items-start justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
               <button
                 type="submit"
                 className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 md:w-auto"
@@ -85,9 +85,13 @@ export function RegistrationPage() {
                     }`}
                   />
                 </button>
-                <p className="max-w-xs text-xs leading-relaxed text-slate-400 md:text-right">
-                  عند تفعيل هذا الخيار، سيتم حفظ تقدمك في المتصفح تلقائياً لمنع فقدان البيانات عند تحديث الصفحة أو إغلاقها.
-                </p>
+                {isAutosaveEnabled ? (
+                  <p className="max-w-xs text-xs leading-relaxed text-slate-500 md:text-right">يتم حفظ التقدم تلقائياً في المتصفح.</p>
+                ) : (
+                  <p className="max-w-xs text-xs leading-relaxed text-slate-400 md:text-right">
+                    عند تفعيل هذا الخيار، سيتم حفظ تقدمك في المتصفح تلقائياً لمنع فقدان البيانات عند تحديث الصفحة أو إغلاقها.
+                  </p>
+                )}
               </div>
             </div>
           </div>
