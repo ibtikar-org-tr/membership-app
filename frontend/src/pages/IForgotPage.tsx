@@ -1,34 +1,58 @@
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-type RecoverFormState = {
-  email: string
-  membershipNumber: string
-  phoneNumber: string
-}
-
-const initialFormState: RecoverFormState = {
-  email: '',
-  membershipNumber: '',
-  phoneNumber: '',
-}
+type RecoveryOption = '' | 'email' | 'membershipNumber' | 'phoneNumber'
 
 export function IForgotPage() {
-  const [formState, setFormState] = useState<RecoverFormState>(initialFormState)
+  const [recoveryOption, setRecoveryOption] = useState<RecoveryOption>('')
+  const [inputValue, setInputValue] = useState('')
   const [submitted, setSubmitted] = useState(false)
-  const [showIdentityError, setShowIdentityError] = useState(false)
+  const [showSelectionError, setShowSelectionError] = useState(false)
+  const [showValueError, setShowValueError] = useState(false)
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!formState.membershipNumber.trim() && !formState.phoneNumber.trim()) {
-      setShowIdentityError(true)
+    if (!recoveryOption) {
+      setShowSelectionError(true)
+      setShowValueError(false)
       setSubmitted(false)
       return
     }
 
-    setShowIdentityError(false)
+    if (!inputValue.trim()) {
+      setShowSelectionError(false)
+      setShowValueError(true)
+      setSubmitted(false)
+      return
+    }
+
+    setShowSelectionError(false)
+    setShowValueError(false)
     setSubmitted(true)
+  }
+
+  const inputConfig: Record<Exclude<RecoveryOption, ''>, { id: string, label: string, type: string, placeholder: string, autoComplete?: string }> = {
+    email: {
+      id: 'recover-email',
+      label: 'البريد الإلكتروني',
+      type: 'email',
+      placeholder: 'example@domain.com',
+      autoComplete: 'email',
+    },
+    membershipNumber: {
+      id: 'membership-number',
+      label: 'رقم العضوية',
+      type: 'text',
+      placeholder: 'M-1024',
+    },
+    phoneNumber: {
+      id: 'phone-number',
+      label: 'رقم الهاتف',
+      type: 'tel',
+      placeholder: '+90 5xx xxx xx xx',
+      autoComplete: 'tel',
+    },
   }
 
   return (
@@ -42,70 +66,68 @@ export function IForgotPage() {
             نسيت معلومات الدخول؟
           </h1>
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            أدخل البريد الإلكتروني، ثم رقم العضوية أو رقم الهاتف للتحقق من هويتك.
+            اختر طريقة البحث أولًا، ثم أدخل القيمة المطلوبة.
             سنرسل معلوماتك عبر البريد الإلكتروني.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
             <div>
-              <label htmlFor="recover-email" className="mb-2 block text-sm font-semibold text-slate-700">
-                البريد الإلكتروني
+              <label htmlFor="recovery-option" className="mb-2 block text-sm font-semibold text-slate-700">
+                طريقة البحث
               </label>
-              <input
-                id="recover-email"
-                name="recover-email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formState.email}
+              <select
+                id="recovery-option"
+                name="recovery-option"
+                value={recoveryOption}
                 onChange={(event) => {
-                  setFormState((previous) => ({ ...previous, email: event.target.value }))
+                  const nextOption = event.target.value as RecoveryOption
+                  setRecoveryOption(nextOption)
+                  setInputValue('')
+                  setShowSelectionError(false)
+                  setShowValueError(false)
+                  setSubmitted(false)
                 }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                placeholder="example@domain.com"
-              />
+              >
+                <option value="">اختر أحد الخيارات</option>
+                <option value="email">البريد الإلكتروني</option>
+                <option value="membershipNumber">رقم العضوية</option>
+                <option value="phoneNumber">رقم الهاتف</option>
+              </select>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
+            {recoveryOption ? (
               <div>
-                <label htmlFor="membership-number" className="mb-2 block text-sm font-semibold text-slate-700">
-                  رقم العضوية
+                <label htmlFor={inputConfig[recoveryOption].id} className="mb-2 block text-sm font-semibold text-slate-700">
+                  {inputConfig[recoveryOption].label}
                 </label>
                 <input
-                  id="membership-number"
-                  name="membership-number"
-                  type="text"
-                  value={formState.membershipNumber}
+                  id={inputConfig[recoveryOption].id}
+                  name={inputConfig[recoveryOption].id}
+                  type={inputConfig[recoveryOption].type}
+                  autoComplete={inputConfig[recoveryOption].autoComplete}
+                  required
+                  value={inputValue}
                   onChange={(event) => {
-                    setFormState((previous) => ({ ...previous, membershipNumber: event.target.value }))
+                    setInputValue(event.target.value)
+                    setShowValueError(false)
+                    setSubmitted(false)
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                  placeholder="M-1024"
+                  placeholder={inputConfig[recoveryOption].placeholder}
                 />
               </div>
+            ) : null}
 
-              <div>
-                <label htmlFor="phone-number" className="mb-2 block text-sm font-semibold text-slate-700">
-                  رقم الهاتف
-                </label>
-                <input
-                  id="phone-number"
-                  name="phone-number"
-                  type="tel"
-                  autoComplete="tel"
-                  value={formState.phoneNumber}
-                  onChange={(event) => {
-                    setFormState((previous) => ({ ...previous, phoneNumber: event.target.value }))
-                  }}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                  placeholder="+90 5xx xxx xx xx"
-                />
-              </div>
-            </div>
-
-            {showIdentityError ? (
+            {showSelectionError ? (
               <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                يرجى إدخال رقم العضوية أو رقم الهاتف على الأقل.
+                يرجى اختيار طريقة البحث أولًا.
+              </p>
+            ) : null}
+
+            {showValueError ? (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                يرجى إدخال قيمة الحقل المختار.
               </p>
             ) : null}
 
