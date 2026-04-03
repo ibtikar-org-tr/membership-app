@@ -141,7 +141,7 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           autoCorrect="off"
           spellCheck={false}
           required={required}
-          placeholder="example.com"
+          placeholder="proton.me"
           value={domainPart}
           onChange={(event) => handleDomainPartChange(event.target.value)}
           className="h-11 w-full min-w-0 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
