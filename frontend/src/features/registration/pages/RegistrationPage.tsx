@@ -13,11 +13,11 @@ export function RegistrationPage() {
       <div className="mx-auto w-full max-w-5xl">
         <header className="mb-6 rounded-3xl bg-slate-900 p-6 text-white shadow-xl md:p-8">
           <p className="mb-3 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
-            app.com/registration
+            #جيلٌ_يبتكر
           </p>
-          <h1 className="text-3xl font-black tracking-tight md:text-4xl">نموذج تسجيل العضوية</h1>
+          <h1 className="text-3xl font-black tracking-tight md:text-4xl">نموذج الانضمام إلى مجتمعنا</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-200 md:text-base">
-            هذا النموذج مبني على مخطط SQL ويتضمن معلومات الملف الشخصي والتعليم وتفاصيل التسجيل المجتمعي.
+            تطوير مهارات الطلاب التقنية وتحفيز الابتكار والإبداع. يرجى ملء هذا النموذج لتقديم طلب الانضمام إلى تجمّع إبتكار.
           </p>
           <Link
             to="/"

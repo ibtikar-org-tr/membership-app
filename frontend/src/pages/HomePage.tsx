@@ -7,13 +7,13 @@ export function HomePage() {
         <section className="grid w-full gap-8 rounded-3xl border border-white/60 bg-white/70 p-8 shadow-2xl backdrop-blur md:grid-cols-2 md:p-12">
           <div className="space-y-6">
             <p className="inline-block rounded-full bg-teal-100 px-4 py-1 text-sm font-semibold text-teal-700">
-              إبتكار
+              تجمّع إبتكار
             </p>
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 md:text-5xl">
-              بوابة عضوية لمجتمع أقوى
+              جيل يبتكر حلولاً مؤثرة
             </h1>
             <p className="text-lg leading-relaxed text-slate-600">
-              انضم إلى الشبكة، وشارك قصتك، وساعدنا في بناء مبادرات مؤثرة معاً.
+              تطوير مهارات الطلاب التقنية وتحفيز الابتكار والإبداع لخدمة المجتمع. انضم إلى مجتمع من الطلاب الجامعيين الناطقين بالعربية المهتمّين بالابتكار والتكنولوجيا.
             </p>
             <Link
               to="/registration"
@@ -25,16 +25,16 @@ export function HomePage() {
 
           <div className="grid gap-4">
             <div className="rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">الملف الشخصي</h2>
-              <p className="mt-1 text-sm text-teal-50">البيانات الأساسية ومعلومات الاتصال والسيرة الذاتية</p>
+              <h2 className="text-lg font-bold">البيانات الشخصية</h2>
+              <p className="mt-1 text-sm text-teal-50">معلوماتك الأساسية والاتصال والخلفية الجغرافية</p>
             </div>
             <div className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">الالتعليم والمهارات</h2>
-              <p className="mt-1 text-sm text-amber-50">الخلفية الأكاديمية والخبرة</p>
+              <h2 className="text-lg font-bold">التعليم والمهارات</h2>
+              <p className="mt-1 text-sm text-amber-50">الخلفية الأكاديمية والمهارات والاهتمامات</p>
             </div>
             <div className="rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">رحلة المجتمع</h2>
-              <p className="mt-1 text-sm text-sky-50">كيف سمعت عنا وتحفيزك</p>
+              <h2 className="text-lg font-bold">الدافعية والمشاركة</h2>
+              <p className="mt-1 text-sm text-sky-50">رسالتك الدافعة والاهتمام بالتطوع</p>
             </div>
           </div>
         </section>
