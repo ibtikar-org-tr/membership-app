@@ -50,6 +50,7 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           repeat: -1,
           yoyo: true,
           ease: 'sine.inOut',
+          force3D: true,
         })
       })
     }, area)
@@ -105,12 +106,12 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           ref={volunteeringAreaRef}
           className="relative isolate overflow-hidden md:col-span-2 rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-teal-50 p-4 shadow-sm md:p-5"
         >
-          <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="pointer-events-none absolute left-0 right-0 top-0 -z-10 h-[240px] overflow-hidden md:h-[280px]">
             {VOLUNTEER_CIRCLE_STYLES.map((circleClassName, index) => (
               <span
                 key={circleClassName}
                 data-volunteer-circle
-                className={`absolute rounded-full ${circleClassName}`}
+                className={`absolute rounded-full will-change-transform ${circleClassName}`}
                 style={volunteerCirclePositions[index]}
               />
             ))}
