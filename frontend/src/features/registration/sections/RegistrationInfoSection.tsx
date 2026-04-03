@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { SearchableTagsField } from '../components/SearchableTagsField'
 import { SelectField } from '../components/SelectField'
@@ -14,9 +14,24 @@ type RegistrationInfoSectionProps = {
 
 const MOTIVATION_LETTER_MIN_LENGTH = 50
 
+const VOLUNTEER_CIRCLE_STYLES = [
+  'h-28 w-28 bg-emerald-300/35 blur-[1px]',
+  'h-16 w-16 bg-teal-300/35',
+  'h-32 w-32 bg-cyan-300/25',
+  'h-20 w-20 bg-emerald-200/40',
+]
+
 export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInfoSectionProps) {
   const [motivationLetterTouched, setMotivationLetterTouched] = useState(false)
   const volunteeringAreaRef = useRef<HTMLDivElement | null>(null)
+  const volunteerCirclePositions = useMemo(
+    () =>
+      VOLUNTEER_CIRCLE_STYLES.map(() => ({
+        top: `${Math.floor(Math.random() * 85)}%`,
+        left: `${Math.floor(Math.random() * 85)}%`,
+      })),
+    [],
+  )
 
   useEffect(() => {
     const area = volunteeringAreaRef.current
@@ -91,22 +106,14 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           className="relative isolate overflow-hidden md:col-span-2 rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-teal-50 p-4 shadow-sm md:p-5"
         >
           <div className="pointer-events-none absolute inset-0 -z-10">
-            <span
-              data-volunteer-circle
-              className="absolute right-[-28px] top-[-24px] h-28 w-28 rounded-full bg-emerald-300/35 blur-[1px]"
-            />
-            <span
-              data-volunteer-circle
-              className="absolute left-[18%] top-[8%] h-16 w-16 rounded-full bg-teal-300/35"
-            />
-            <span
-              data-volunteer-circle
-              className="absolute bottom-[-30px] left-[-16px] h-32 w-32 rounded-full bg-cyan-300/25"
-            />
-            <span
-              data-volunteer-circle
-              className="absolute bottom-[16%] right-[22%] h-20 w-20 rounded-full bg-emerald-200/40"
-            />
+            {VOLUNTEER_CIRCLE_STYLES.map((circleClassName, index) => (
+              <span
+                key={circleClassName}
+                data-volunteer-circle
+                className={`absolute rounded-full ${circleClassName}`}
+                style={volunteerCirclePositions[index]}
+              />
+            ))}
           </div>
           <p className="mb-2 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
             مساحة التطوع
