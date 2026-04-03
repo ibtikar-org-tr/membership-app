@@ -12,9 +12,6 @@ export function HomePage() {
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 md:text-5xl">
               منصّة أعضاء تجمّع إبتكار
             </h1>
-            <p className="text-lg leading-relaxed text-slate-600">
-              تطوير مهارات الطلاب التقنية وتحفيز الابتكار والإبداع لخدمة المجتمع. انضم إلى مجتمع من الطلاب الجامعيين الناطقين بالعربية المهتمّين بالابتكار والتكنولوجيا.
-            </p>
             <Link
               to="/registration"
               className="inline-flex items-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-700"
@@ -38,17 +35,68 @@ export function HomePage() {
           </div>
 
           <div className="grid gap-4">
-            <div className="rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">البيانات الشخصية</h2>
-              <p className="mt-1 text-sm text-teal-50">معلوماتك الأساسية والاتصال والخلفية الجغرافية</p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-lg">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-500">إجمالي الأعضاء</p>
+                  <p className="mt-2 text-3xl font-black text-slate-900">1,284</p>
+                </div>
+                <div className="rounded-2xl bg-emerald-100 px-4 py-2 text-right">
+                  <p className="text-xs font-semibold text-emerald-700">+12% هذه الدورة</p>
+                  <p className="mt-1 text-sm text-emerald-900">نمو مستمر</p>
+                </div>
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-slate-500">نشطون على التلغرام</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">742</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-slate-500">طلبات جديدة</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">38</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-slate-500">الدول</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">14</p>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-4">
+                  <p className="text-slate-500">الجامعات</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">62</p>
+                </div>
+              </div>
             </div>
-            <div className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">التعليم والمهارات</h2>
-              <p className="mt-1 text-sm text-amber-50">الخلفية الأكاديمية والمهارات والاهتمامات</p>
-            </div>
-            <div className="rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">الدافعية والمشاركة</h2>
-              <p className="mt-1 text-sm text-sky-50">رسالتك الدافعة والاهتمام بالتطوع</p>
+
+            <div className="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-700 p-5 text-white shadow-lg">
+              <p className="text-sm font-semibold text-slate-300">توزيع الأعضاء</p>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span>التقنية والبرمجة</span>
+                    <span>48%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/15">
+                    <div className="h-2 w-[48%] rounded-full bg-emerald-400" />
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span>التصميم والإعلام</span>
+                    <span>31%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/15">
+                    <div className="h-2 w-[31%] rounded-full bg-cyan-400" />
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span>القيادة والعمل التطوعي</span>
+                    <span>21%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/15">
+                    <div className="h-2 w-[21%] rounded-full bg-amber-400" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
