@@ -59,7 +59,7 @@ export function RegistrationPage() {
             </div>
             <Link
               to="/"
-              className="inline-flex w-auto self-start rounded-lg border border-white/50 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:px-4 sm:py-2 sm:text-sm"
+              className="inline-flex w-auto self-end rounded-lg border border-white/50 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:self-auto sm:px-4 sm:py-2 sm:text-sm"
             >
               ← العودة إلى الرئيسية
             </Link>
