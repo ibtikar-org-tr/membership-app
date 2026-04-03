@@ -12,10 +12,15 @@ export function useRegistrationForm() {
   const [formData, setFormData] = useState<RegistrationFormData>(initialRegistrationFormData)
   const [isAutosaveEnabled, setIsAutosaveEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') {
-      return false
+      return true
     }
 
-    return window.localStorage.getItem(AUTOSAVE_STORAGE_KEY) === 'true'
+    const savedPreference = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY)
+    if (savedPreference === null) {
+      return true
+    }
+
+    return savedPreference === 'true'
   })
 
   useEffect(() => {
