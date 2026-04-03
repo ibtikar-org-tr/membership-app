@@ -218,7 +218,6 @@ export function SearchableTagsField({
   return (
     <div ref={containerRef} className="relative flex flex-col gap-2 text-sm font-medium text-slate-700">
       <label htmlFor={id}>{label}</label>
-      {helperText && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
 
       <div
         ref={triggerRef}
@@ -277,6 +276,8 @@ export function SearchableTagsField({
           className="h-9 w-full border-none px-1 text-sm text-slate-900 outline-none placeholder:text-slate-400"
         />
       </div>
+
+      {helperText && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
 
       {isOpen && (filteredOptions.length > 0 || canAddCustom) && createPortal(
         <div
