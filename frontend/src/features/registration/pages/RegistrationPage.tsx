@@ -68,6 +68,7 @@ export function RegistrationPage() {
               </button>
 
               <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
+                <p className="text-sm font-semibold text-slate-800 md:text-right">حفظ الجلسة</p>
                 <button
                   type="button"
                   role="switch"
@@ -84,7 +85,7 @@ export function RegistrationPage() {
                     }`}
                   />
                 </button>
-                <p className="max-w-xs text-xs leading-relaxed text-slate-600 md:text-right">
+                <p className="max-w-xs text-xs leading-relaxed text-slate-400 md:text-right">
                   عند تفعيل هذا الخيار، سيتم حفظ تقدمك في المتصفح تلقائياً لمنع فقدان البيانات عند تحديث الصفحة أو إغلاقها.
                 </p>
               </div>
