@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" aria-label="Syrian flag">
+  <rect width="640" height="160" y="0" fill="#007a3d" />
+  <rect width="640" height="160" y="160" fill="#ffffff" />
+  <rect width="640" height="160" y="320" fill="#000000" />
+
+  <polygon points="160,200 171,232 205,232 177,252 188,286 160,266 132,286 143,252 115,232 149,232" fill="#ce1126" />
+  <polygon points="320,200 331,232 365,232 337,252 348,286 320,266 292,286 303,252 275,232 309,232" fill="#ce1126" />
+  <polygon points="480,200 491,232 525,232 497,252 508,286 480,266 452,286 463,252 435,232 469,232" fill="#ce1126" />
+</svg>

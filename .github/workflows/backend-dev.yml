@@ -6,7 +6,7 @@ on:
       - dev
     paths:
       - 'backend/**'
-      - '.github/workflows/backend.yml'
+      - '.github/workflows/backend-dev.yml'
   workflow_dispatch:
 
 jobs:
@@ -37,7 +37,8 @@ jobs:
             --arg dbid "${{ vars.D1_DATABASE_ID }}" \
             --arg dbname "${{ vars.D1_DATABASE_NAME }}" \
             --arg bucketname "${{ vars.BUCKET_NAME }}" \
-            '.d1_databases[0].database_id = $dbid | .d1_databases[0].database_name = $dbname | .r2_buckets[0].bucket_name = $bucketname' \
+            --arg mprefix "${{ vars.MEMBERSHIP_NUMBER_PREFIX }}" \
+            '.d1_databases[0].database_id = $dbid | .d1_databases[0].database_name = $dbname | .r2_buckets[0].bucket_name = $bucketname | .vars.MEMBERSHIP_NUMBER_PREFIX = $mprefix' \
             wrangler.jsonc > wrangler.local.jsonc
 
       - name: Deploy to Cloudflare Workers
