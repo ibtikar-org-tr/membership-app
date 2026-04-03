@@ -38,13 +38,13 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           value={data.whereHeardAboutUs}
           onChange={(value) => onFieldChange('whereHeardAboutUs', value)}
         />
-        <SelectField
-          id="volunteering-interest"
-          label="الاهتمام بالتطوع"
-          options={volunteeringInterestOptions}
-          value={data.interestInVolunteering}
-          helperText="اختر مدى اهتمامك بالمشاركة في أنشطة التطوع داخل المجتمع."
-          onChange={(value) => onFieldChange('interestInVolunteering', value)}
+        <TextAreaField
+          id="friends-on-platform"
+          label="أصدقاء على المنصة"
+          placeholder="membership_1, membership_2"
+          rows={3}
+          value={data.friendsOnPlatform}
+          onChange={(value) => onFieldChange('friendsOnPlatform', value)}
         />
         <div className="md:col-span-2">
           <TextAreaField
@@ -57,13 +57,13 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
             error={getMotivationLetterError()}
           />
         </div>
-        <TextAreaField
-          id="friends-on-platform"
-          label="أصدقاء على المنصة"
-          placeholder="membership_1, membership_2"
-          rows={3}
-          value={data.friendsOnPlatform}
-          onChange={(value) => onFieldChange('friendsOnPlatform', value)}
+        <SelectField
+          id="volunteering-interest"
+          label="الاهتمام بالتطوع"
+          options={volunteeringInterestOptions}
+          value={data.interestInVolunteering}
+          helperText="اختر ما إذا كنت مهتمّاً بالمشاركة في الأنشطة التّطوعيّة في تجمّع إبتكار"
+          onChange={(value) => onFieldChange('interestInVolunteering', value)}
         />
         {data.interestInVolunteering !== 'no' && (
           <TextAreaField
