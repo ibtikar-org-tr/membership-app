@@ -68,7 +68,7 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           helperText="اختر ما إذا كنت مهتمّاً بالمشاركة في الأنشطة التّطوعيّة في تجمّع إبتكار"
           onChange={(value) => onFieldChange('interestInVolunteering', value)}
         />
-        {data.interestInVolunteering !== 'no' && (
+        {(data.interestInVolunteering === 'yes' || data.interestInVolunteering === 'maybe') && (
           <TextAreaField
             id="previous-experience"
             label="الخبرة السابقة"
