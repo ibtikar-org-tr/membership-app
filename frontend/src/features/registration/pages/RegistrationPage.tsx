@@ -11,7 +11,12 @@ export function RegistrationPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
       <div className="mx-auto w-full max-w-5xl">
-        <header className="mb-6 rounded-3xl bg-slate-900 p-6 text-white shadow-xl md:p-8">
+        <header className="relative mb-6 rounded-3xl bg-slate-900 p-6 text-white shadow-xl md:p-8">
+          <img
+            src="/white_long_logo.svg"
+            alt="IBTIKAR"
+            className="pointer-events-none absolute left-6 top-6 h-8 w-auto opacity-95 md:h-20"
+          />
           <p className="mb-3 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
             #جيلٌ_يبتكر
           </p>
