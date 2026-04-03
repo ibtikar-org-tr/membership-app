@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { AgeAnalyticsCard } from './components/AgeAnalyticsCard'
 
 export function HomePage() {
   return (
@@ -89,6 +90,8 @@ export function HomePage() {
                 </div>
               </div>
             </div>
+
+            <AgeAnalyticsCard />
           </div>
         </section>
       </div>
