@@ -4,10 +4,17 @@ import type { AppBindings } from './types/bindings'
 
 const app = new Hono<{ Bindings: AppBindings }>()
 
-app.get('/', (c) => {
+app.get('/ms/membership-app', (c) => {
   return c.json({
     service: 'membership-app-backend',
     status: 'ok',
+  })
+})
+
+app.get('/ms/membership-app/health', (c) => {
+  return c.json({
+    service: 'membership-app-backend',
+    status: 'healthy',
   })
 })
 
