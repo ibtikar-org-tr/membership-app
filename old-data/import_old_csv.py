@@ -318,6 +318,27 @@ def heuristic_normalize_friends(raw_value: str | None) -> str | None:
     return ", ".join(deduped) if deduped else None
 
 
+def normalize_comma_separated_value(value: str | None) -> str | None:
+    cleaned = clean(value)
+    if cleaned is None:
+        return None
+
+    pieces = [clean(part) for part in cleaned.replace("\n", ",").replace(";", ",").replace("،", ",").split(",")]
+    pieces = [piece for piece in pieces if piece]
+    if not pieces:
+        return None
+
+    seen: set[str] = set()
+    normalized_parts: list[str] = []
+    for piece in pieces:
+        key = piece.casefold()
+        if key not in seen:
+            seen.add(key)
+            normalized_parts.append(piece)
+
+    return ", ".join(normalized_parts)
+
+
 def infer_friends_with_deepseek(
     raw_value: str | None,
     *,
@@ -378,7 +399,7 @@ def infer_friends_with_deepseek(
 
         content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
         parsed = extract_json_object(content) or {}
-        normalized = heuristic_normalize_friends(clean(parsed.get("friends_on_platform")))
+        normalized = normalize_comma_separated_value(heuristic_normalize_friends(clean(parsed.get("friends_on_platform"))))
         result = normalized if normalized is not None else fallback
         cache[raw_clean] = result
         return result
