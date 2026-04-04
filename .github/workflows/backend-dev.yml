@@ -33,6 +33,15 @@ jobs:
 
       - name: Update wrangler config with environment variables
         run: |
+          jq_filter='.d1_databases[0].database_id = $dbid
+          | .d1_databases[0].database_name = $dbname
+          | .r2_buckets[0].bucket_name = $bucketname
+          | .vars.MEMBERSHIP_NUMBER_PREFIX = $mprefix
+          | .vars.SMTP_HOST = $smtpHost
+          | .vars.SMTP_PORT = $smtpPort
+          | .vars.SMTP_USER = $smtpUser
+          | .vars.SMTP_PASS = $smtpPass'
+
           jq \
             --arg dbid "${{ vars.D1_DATABASE_ID }}" \
             --arg dbname "${{ vars.D1_DATABASE_NAME }}" \
@@ -42,10 +51,7 @@ jobs:
             --arg smtpPort "${{ secrets.SMTP_PORT }}" \
             --arg smtpUser "${{ secrets.SMTP_USER }}" \
             --arg smtpPass "${{ secrets.SMTP_PASS }}" \
-            '.d1_databases[0].database_id = $dbid | .d1_databases[0].database_name = $dbname |\
-            .r2_buckets[0].bucket_name = $bucketname | .vars.MEMBERSHIP_NUMBER_PREFIX = $mprefix |\
-            .vars.SMTP_HOST = $smtpHost | .vars.SMTP_PORT = $smtpPort | .vars.SMTP_USER = $smtpUser |\
-            .vars.SMTP_PASS = $smtpPass' \
+            "$jq_filter" \
             wrangler.jsonc > wrangler.local.jsonc
 
       - name: Deploy to Cloudflare Workers
