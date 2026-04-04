@@ -32,6 +32,7 @@ function hasCompletedNonOptionalFields(formData: RegistrationFormData) {
     Boolean(formData.email.trim())
     && Boolean(formData.arName.trim())
     && Boolean(formData.enName.trim())
+    && Boolean(formData.phoneNumber.trim())
     && ALLOWED_SEX_VALUES.has(formData.sex.trim())
     && Boolean(formData.country.trim())
     && Boolean(formData.region.trim())

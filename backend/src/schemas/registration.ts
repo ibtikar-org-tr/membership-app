@@ -13,7 +13,7 @@ export const registrationSchema = z.object({
 
   enName: z.string().trim().min(2).max(120),
   arName: z.string().trim().min(2).max(120),
-  phoneNumber: optionalTrimmedString,
+  phoneNumber: requiredTrimmedString,
   sex: z.enum(['male', 'female']),
   dateOfBirth: z.string().regex(dateOnlyRegex, 'Use YYYY-MM-DD format').optional(),
   country: z.string().trim().toUpperCase().length(2),

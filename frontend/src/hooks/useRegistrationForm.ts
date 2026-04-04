@@ -105,7 +105,7 @@ function toRegistrationPayload(formData: RegistrationFormData) {
     email: formData.email.trim().toLowerCase(),
     enName: formData.enName.trim(),
     arName: formData.arName.trim(),
-    phoneNumber: toOptionalTrimmedString(formData.phoneNumber),
+    phoneNumber: formData.phoneNumber.trim(),
     sex: ALLOWED_SEX_VALUES.has(normalizedSex) ? normalizedSex : undefined,
     dateOfBirth: toOptionalTrimmedString(formData.dateOfBirth),
     country: toOptionalTrimmedString(formData.country)?.toUpperCase(),
@@ -134,6 +134,7 @@ function validateRequiredFields(formData: RegistrationFormData) {
   if (!formData.email.trim()) return 'يرجى إدخال البريد الإلكتروني.'
   if (!formData.arName.trim()) return 'يرجى إدخال الاسم بالعربية.'
   if (!formData.enName.trim()) return 'يرجى إدخال الاسم بالإنكليزية أو التركية.'
+  if (!formData.phoneNumber.trim()) return 'يرجى إدخال رقم الهاتف.'
   if (!ALLOWED_SEX_VALUES.has(formData.sex.trim())) return 'يرجى اختيار الجنس.'
   if (!formData.country.trim()) return 'يرجى اختيار الدولة.'
   if (!formData.region.trim()) return 'يرجى اختيار الولاية / المحافظة.'

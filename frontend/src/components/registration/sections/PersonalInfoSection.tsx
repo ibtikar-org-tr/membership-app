@@ -237,6 +237,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
         <PhoneNumberField
           value={data.phoneNumber}
           onChange={(value) => onFieldChange('phoneNumber', value)}
+          required
         />
         <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
           <span>

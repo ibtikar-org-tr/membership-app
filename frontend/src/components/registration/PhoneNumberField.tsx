@@ -7,9 +7,10 @@ import syriaModernFlag from '@assets/flags/syria-modern.svg'
 type PhoneNumberFieldProps = {
   value: string
   onChange: (value: string) => void
+  required?: boolean
 }
 
-export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
+export function PhoneNumberField({ value, onChange, required = false }: PhoneNumberFieldProps) {
   const phoneInputRef = useRef<PhoneInputRefType>(null)
   const shellRef = useRef<HTMLDivElement>(null)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -103,7 +104,20 @@ export function PhoneNumberField({ value, onChange }: PhoneNumberFieldProps) {
   return (
     <div className="min-w-0 md:col-span-2">
       <label htmlFor="phone-number" className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-        رقم الهاتف
+        <span>
+          رقم الهاتف
+          {required && <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>}
+        </span>
+        {required && (
+          <input
+            tabIndex={-1}
+            aria-hidden="true"
+            value={value}
+            onChange={() => undefined}
+            required
+            className="sr-only"
+          />
+        )}
         <div ref={shellRef} dir="ltr" className="phone-input-shell relative min-w-0">
           <PhoneInput
             ref={phoneInputRef}
