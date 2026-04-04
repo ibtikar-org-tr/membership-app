@@ -1,8 +1,10 @@
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
+import { RouteErrorBoundary } from '../components/errors/RouteErrorBoundary'
 
 const router = createBrowserRouter([
   {
     path: '/',
+    errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
     lazy: async () => {
       const { HomePage } = await import('../pages/HomePage')
@@ -11,6 +13,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/registration',
+    errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
     lazy: async () => {
       const { RegistrationPage } = await import('../pages/RegistrationPage')
@@ -19,6 +22,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/login',
+    errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
     lazy: async () => {
       const { LoginPage } = await import('../pages/LoginPage')
@@ -27,6 +31,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/iforgot',
+    errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
     lazy: async () => {
       const { IForgotPage } = await import('../pages/IForgotPage')
@@ -35,6 +40,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/dashboard',
+    errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
     lazy: async () => {
       const { DashboardPage } = await import('../pages/DashboardPage')
