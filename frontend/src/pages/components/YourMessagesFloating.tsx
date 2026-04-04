@@ -4,24 +4,29 @@ import { gsap } from 'gsap'
 const messageItems = [
   {
     title: 'عبد الكريم لحموني',
-    text: 'مرحباً بكم جميعاً في تجمّع إبتكار', 
+    timestamp: '2026-02-01',
+    text: 'مرحباً بكم جميعاً في تجمّع إبتكار',
   },
   {
     title: 'عبد الله دعمش',
+    timestamp: '2026-03-03',
     text: 'إبتكاااااااااااااااااااااااااااااار',
   },
   {
     title: 'سعد الرفاعي',
+    timestamp: '2026-01-30',
     text: 'الحياة عبارة عن علاقات. إبتكار هي فرصة كبيرة.',
   },
   {
     title: 'أحمد شمس الدين',
+    timestamp: '2025-10-07',
     text: 'انضمّو إلينا في نادي الأمن السيبراني، حيث نعمل على مشاريع رائعة',
   },
   {
     title: 'عدنان فهد',
+    timestamp: '2025-08-15',
     text: 'تجمّع إبتكار هو المكان الذي يجمع بين الشغف والابتكار والتعاون',
-  }
+  },
 ]
 
 export function YourMessagesFloating() {
@@ -82,7 +87,10 @@ export function YourMessagesFloating() {
           }}
           className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-xl backdrop-blur"
         >
-          <p className="text-xs font-semibold text-teal-700">{item.title}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-teal-700">{item.title}</p>
+            <p className="text-[10px] font-medium text-slate-400">{item.timestamp}</p>
+          </div>
           <p className="mt-2 text-sm leading-6 text-slate-700">{item.text}</p>
         </div>
       ))}
