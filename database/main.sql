@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS user_info (
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     en_name TEXT NOT NULL,
     ar_name TEXT NOT NULL,
-    phone_number TEXT, -- stored as a string with country code (e.g., "+905316781111")
+    phone_number TEXT UNIQUE, -- stored as a string with country code (e.g., "+905316781111")
     sex TEXT CHECK (sex IN ('male', 'female')),
     date_of_birth TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01")
     country TEXT, -- ISO 3166-1 alpha-2 country code (e.g., "US", "TR", etc.)
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS user_info (
     field_of_study TEXT, -- field of study in the university or major in the high school
     graduation_year INTEGER, -- year of graduation from the high school or university
     blood_type TEXT CHECK (blood_type IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')),
-    telegram_id TEXT,
+    telegram_id TEXT UNIQUE, -- unique Telegram user ID (e.g., "123456789"), this will be stored by the bot
     telegram_username TEXT,
     social_media_links TEXT, -- JSON string for Dict<string, string> (e.g., {"github": "url", "linkedin": "url", ...})
     profile_picture_url TEXT,
