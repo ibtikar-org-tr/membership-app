@@ -206,7 +206,7 @@ export function DashboardPage() {
   return (
     <main className="min-h-screen w-full bg-linear-to-br from-slate-100 via-cyan-50 to-sky-100 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
       <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
-        <aside className="w-full border-b border-slate-200 bg-white p-4 shadow-sm lg:fixed lg:inset-y-0 lg:right-0 lg:w-80 lg:overflow-y-auto lg:border-b-0 lg:border-l">
+        <aside className="w-full border-b border-slate-200 bg-white p-4 shadow-sm lg:fixed lg:inset-y-0 lg:right-0 lg:flex lg:w-80 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-l">
           <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">لوحة التحكم</p>
           <h1 className="mt-2 text-xl font-black text-slate-900">مرحباً أحمد</h1>
           <p className="mt-1 text-sm text-slate-500">صفحة تجريبية بدون ربط خلفي</p>
@@ -238,6 +238,22 @@ export function DashboardPage() {
           >
             العودة إلى الرئيسية
           </Link>
+
+          <div className="mt-6 space-y-3 border-t border-slate-200 pt-4 lg:mt-auto">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold text-slate-500">المستخدم الحالي</p>
+              <p className="mt-1 text-sm font-black text-slate-900">أحمد سالم</p>
+              <p className="mt-1 text-xs text-slate-600">ahmad.salem@example.com</p>
+              <p className="mt-2 text-[11px] font-medium text-cyan-700"># العضوية: IBT-2026-0137</p>
+            </div>
+
+            <Link
+              to="/login"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100"
+            >
+              تسجيل الخروج
+            </Link>
+          </div>
         </aside>
 
         <section className="w-full flex-1 p-4 md:p-6 lg:h-screen lg:overflow-y-auto lg:pr-[22rem] lg:pl-8 lg:py-8">{renderedSection}</section>
