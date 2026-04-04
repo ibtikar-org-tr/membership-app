@@ -11,6 +11,6 @@ app.get('/', (c) => {
   })
 })
 
-app.route('/api', registrationRoute)
+app.route('/ms/membership-app/api', registrationRoute)
 
 export default app
