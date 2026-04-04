@@ -31,3 +31,9 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# development files
+samples/
+*.md
+!README.md
+
