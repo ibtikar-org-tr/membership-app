@@ -14,6 +14,7 @@ type SearchableOption = {
 type SearchableSelectFieldProps = {
   id: string
   label: string
+  required?: boolean
   placeholder: string
   emptyMessage?: string
   disabled?: boolean
@@ -27,6 +28,7 @@ type SearchableSelectFieldProps = {
 export function SearchableSelectField({
   id,
   label,
+  required = false,
   placeholder,
   emptyMessage = 'لا توجد نتائج',
   disabled = false,
@@ -125,7 +127,10 @@ export function SearchableSelectField({
 
   return (
     <label htmlFor={id} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
-      {label}
+      <span>
+        {label}
+        {required && <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>}
+      </span>
       <div ref={shellRef} className="relative min-w-0" dir="rtl">
         <button
           id={id}

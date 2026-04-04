@@ -103,7 +103,10 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
 
   return (
     <label htmlFor={`${id}-local`} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
-      {label}
+      <span>
+        {label}
+        {required && <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>}
+      </span>
       <div
         data-email-field
         onBlur={handleBlur}

@@ -96,6 +96,9 @@ export function RegistrationPage() {
           </section>
         ) : (
           <form className="space-y-5" onSubmit={handleSubmit}>
+            <p className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-800">
+              الحقول المعلّمة بعلامة <span className="font-bold text-red-600">*</span> مطلوبة.
+            </p>
             <Suspense fallback={<SectionLoadingCard />}>
               <PersonalInfoSection data={formData} onFieldChange={updateField} />
             </Suspense>

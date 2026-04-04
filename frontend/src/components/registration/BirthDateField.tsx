@@ -123,7 +123,10 @@ export function BirthDateField({ id, label, value, onChange, required = false }:
 
   return (
     <div className="min-w-0 flex flex-col gap-2 text-sm font-medium text-slate-700">
-      <span>{label}</span>
+      <span>
+        {label}
+        {required && <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>}
+      </span>
       <div
         ref={fieldWrapperRef}
         className="min-w-0 grid grid-cols-[1.4fr_auto_1fr_auto_1fr] items-center gap-2"

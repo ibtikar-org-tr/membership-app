@@ -28,7 +28,10 @@ export function SelectField({
 }: SelectFieldProps) {
   return (
     <label htmlFor={id} className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-      {label}
+      <span>
+        {label}
+        {required && <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>}
+      </span>
       {helperText && helperTextPosition === 'above' && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
       <select
         id={id}

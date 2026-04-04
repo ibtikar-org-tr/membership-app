@@ -33,7 +33,10 @@ export function TextField({
 
   return (
     <label htmlFor={id} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
-      {label}
+      <span>
+        {label}
+        {required && <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>}
+      </span>
       <input
         id={id}
         type={type}
