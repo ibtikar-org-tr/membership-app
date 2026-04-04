@@ -15,7 +15,6 @@ const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/
 
 export const registrationSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(8).max(128),
 
   enName: z.string().trim().min(2).max(120),
   arName: z.string().trim().min(2).max(120),
@@ -31,10 +30,7 @@ export const registrationSchema = z.object({
   fieldOfStudy: optionalTrimmedString,
   graduationYear: z.number().int().min(1950).max(2100).optional(),
   bloodType: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).optional(),
-  telegramId: optionalTrimmedString,
-  telegramUsername: optionalTrimmedString,
   socialMediaLinks: z.record(z.string().trim(), z.string().trim().url()).optional(),
-  profilePictureUrl: z.string().trim().url().optional(),
   biography: optionalTrimmedString,
   interests: optionalStringArray,
   skills: optionalStringArray,

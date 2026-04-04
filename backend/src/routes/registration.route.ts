@@ -30,7 +30,7 @@ registrationRoute.post(
 
       return c.json(
         {
-          message: 'Registration completed successfully.',
+          message: 'Registration completed successfully. Your temporary password has been sent to your email.',
           membershipNumber: result.membershipNumber,
         },
         201,

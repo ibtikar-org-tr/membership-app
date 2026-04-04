@@ -1,11 +1,15 @@
 import { EmailAlreadyExistsError } from '../errors/registration.errors'
-import { createUserInfo } from '../repositories/user-info.repository'
-import { createUserRegistrationInfo } from '../repositories/user-registration-info.repository'
+import { createUserInfo, deleteUserInfoByMembershipNumber } from '../repositories/user-info.repository'
+import {
+  createUserRegistrationInfo,
+  deleteUserRegistrationInfoByMembershipNumber,
+} from '../repositories/user-registration-info.repository'
 import { createUser, deleteUserByMembershipNumber, getLatestMembershipNumber } from '../repositories/users.repository'
 import type { RegistrationInput } from '../schemas/registration'
+import { sendRegistrationCredentialsEmail } from './registration-email.service'
 import type { AppBindings } from '../types/bindings'
 import { generateNextMembershipNumber } from '../utils/membership-number'
-import { hashPassword } from '../utils/password'
+import { generateTemporaryPassword, hashPassword } from '../utils/password'
 
 export interface RegistrationResult {
   membershipNumber: string
@@ -31,7 +35,8 @@ export async function registerUser(bindings: AppBindings, input: RegistrationInp
   const db = bindings.MY_DB
   const lastMembershipNumber = await getLatestMembershipNumber(db)
   const membershipNumber = generateNextMembershipNumber(lastMembershipNumber, bindings.MEMBERSHIP_NUMBER_PREFIX)
-  const passwordHash = await hashPassword(input.password)
+  const temporaryPassword = generateTemporaryPassword()
+  const passwordHash = await hashPassword(temporaryPassword)
 
   try {
     await createUser(db, {
@@ -64,10 +69,10 @@ export async function registerUser(bindings: AppBindings, input: RegistrationInp
       fieldOfStudy: input.fieldOfStudy ?? null,
       graduationYear: input.graduationYear ?? null,
       bloodType: input.bloodType ?? null,
-      telegramId: input.telegramId ?? null,
-      telegramUsername: input.telegramUsername ?? null,
+      telegramId: null,
+      telegramUsername: null,
       socialMediaLinks: toJsonOrNull(input.socialMediaLinks),
-      profilePictureUrl: input.profilePictureUrl ?? null,
+      profilePictureUrl: null,
       biography: input.biography ?? null,
       interests: toCsvOrNull(input.interests),
       skills: toCsvOrNull(input.skills),
@@ -82,8 +87,18 @@ export async function registerUser(bindings: AppBindings, input: RegistrationInp
       interestInVolunteering: input.interestInVolunteering ?? null,
       previousExperience: input.previousExperience ?? null,
     })
+
+    await sendRegistrationCredentialsEmail(bindings, {
+      recipientEmail: input.email,
+      membershipNumber,
+      temporaryPassword,
+    })
   } catch (error) {
-    await deleteUserByMembershipNumber(db, membershipNumber)
+    await Promise.allSettled([
+      deleteUserRegistrationInfoByMembershipNumber(db, membershipNumber),
+      deleteUserInfoByMembershipNumber(db, membershipNumber),
+      deleteUserByMembershipNumber(db, membershipNumber),
+    ])
     throw error
   }
 

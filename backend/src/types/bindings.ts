@@ -14,4 +14,10 @@ export interface D1DatabaseLike {
 export interface AppBindings {
   MY_DB: D1DatabaseLike
   MEMBERSHIP_NUMBER_PREFIX: string
+  SMTP_HOST: string
+  SMTP_PORT: string | number
+  SMTP_USER: string
+  SMTP_PASS: string
+  REGISTRATION_EMAIL_FROM_NAME: string
+  REGISTRATION_EMAIL_FROM_ADDRESS: string
 }
