@@ -5,6 +5,13 @@ export class EmailAlreadyExistsError extends Error {
   }
 }
 
+export class PhoneNumberAlreadyExistsError extends Error {
+  constructor() {
+    super('An account with this phone number already exists.')
+    this.name = 'PhoneNumberAlreadyExistsError'
+  }
+}
+
 export class RegistrationEmailError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message)

@@ -1,5 +1,5 @@
-import { EmailAlreadyExistsError } from '../errors/registration.errors'
-import { createUserInfo, deleteUserInfoByMembershipNumber } from '../repositories/user-info.repository'
+import { EmailAlreadyExistsError, PhoneNumberAlreadyExistsError } from '../errors/registration.errors'
+import { createUserInfo, deleteUserInfoByMembershipNumber, phoneNumberExists } from '../repositories/user-info.repository'
 import {
   createUserRegistrationInfo,
   deleteUserRegistrationInfoByMembershipNumber,
@@ -37,6 +37,14 @@ export async function registerUser(bindings: AppBindings, input: RegistrationInp
   const membershipNumber = generateNextMembershipNumber(lastMembershipNumber, bindings.MEMBERSHIP_NUMBER_PREFIX)
   const temporaryPassword = generateTemporaryPassword()
   const passwordHash = await hashPassword(temporaryPassword)
+
+  // Check if phone number already exists (if provided)
+  if (input.phoneNumber) {
+    const phoneExists = await phoneNumberExists(db, input.phoneNumber)
+    if (phoneExists) {
+      throw new PhoneNumberAlreadyExistsError()
+    }
+  }
 
   try {
     await createUser(db, {

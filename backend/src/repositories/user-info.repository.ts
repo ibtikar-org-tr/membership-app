@@ -61,3 +61,11 @@ export async function createUserInfo(db: D1DatabaseLike, params: CreateUserInfoP
 export async function deleteUserInfoByMembershipNumber(db: D1DatabaseLike, membershipNumber: string): Promise<void> {
   await db.prepare('DELETE FROM user_info WHERE membership_number = ?').bind(membershipNumber).run()
 }
+
+export async function phoneNumberExists(db: D1DatabaseLike, phoneNumber: string): Promise<boolean> {
+  const result = await db
+    .prepare('SELECT 1 FROM user_info WHERE phone_number = ? LIMIT 1')
+    .bind(phoneNumber)
+    .first()
+  return !!result
+}
