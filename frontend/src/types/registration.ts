@@ -23,6 +23,7 @@ export type RegistrationFormData = {
   friendsOnPlatform: string
   interestInVolunteering: string
   previousExperience: string
+  bylawsAcknowledgement: string
 }
 
 export type FormFieldName = keyof RegistrationFormData
@@ -52,4 +53,5 @@ export const initialRegistrationFormData: RegistrationFormData = {
   friendsOnPlatform: '',
   interestInVolunteering: '',
   previousExperience: '',
+  bylawsAcknowledgement: '',
 }

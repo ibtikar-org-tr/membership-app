@@ -14,6 +14,7 @@ const REGISTRATION_ENDPOINT = MEMBER_MS_BASE_URL
   : '/ms/membership-app/api/registration'
 const ALLOWED_SEX_VALUES = new Set(['male', 'female'])
 const ALLOWED_BLOOD_TYPES = new Set(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])
+const BYLAWS_ACKNOWLEDGEMENT_REGEX = /^نعم$/
 
 type SubmissionStatus = {
   message: string
@@ -141,6 +142,9 @@ function validateRequiredFields(formData: RegistrationFormData) {
   if (!formData.fieldOfStudy.trim()) return 'يرجى إدخال الفرع الدراسي.'
   if (!formData.graduationYear.trim()) return 'يرجى اختيار سنة التخرج.'
   if (!toOptionalStringArray(formData.interests)) return 'يرجى إضافة اهتمام واحد على الأقل.'
+  if (!BYLAWS_ACKNOWLEDGEMENT_REGEX.test(formData.bylawsAcknowledgement)) {
+    return 'لإتمام التسجيل، يجب كتابة "نعم" تماماً في خانة الإقرار بالنظام الداخلي.'
+  }
 
   return null
 }
@@ -178,7 +182,10 @@ export function useRegistrationForm() {
 
     try {
       const parsedDraft = JSON.parse(savedDraft) as RegistrationFormData
-      setFormData(parsedDraft)
+      setFormData({
+        ...initialRegistrationFormData,
+        ...parsedDraft,
+      })
     } catch {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY)
     }
