@@ -204,9 +204,9 @@ export function DashboardPage() {
   }, [activeSection])
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-slate-100 via-cyan-50 to-sky-100 px-4 py-8 text-slate-800 md:px-6 md:py-10" dir="rtl">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 lg:flex-row-reverse lg:items-start">
-        <aside className="w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-6 lg:w-72">
+    <main className="min-h-screen w-full bg-linear-to-br from-slate-100 via-cyan-50 to-sky-100 text-slate-800" dir="rtl">
+      <div className="flex min-h-screen w-full flex-col lg:flex-row-reverse">
+        <aside className="w-full border-b border-slate-200 bg-white p-4 shadow-sm lg:h-screen lg:w-80 lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-l">
           <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">لوحة التحكم</p>
           <h1 className="mt-2 text-xl font-black text-slate-900">مرحباً أحمد</h1>
           <p className="mt-1 text-sm text-slate-500">صفحة تجريبية بدون ربط خلفي</p>
@@ -240,7 +240,7 @@ export function DashboardPage() {
           </Link>
         </aside>
 
-        <section className="w-full">{renderedSection}</section>
+        <section className="w-full flex-1 p-4 md:p-6 lg:p-8">{renderedSection}</section>
       </div>
     </main>
   )
