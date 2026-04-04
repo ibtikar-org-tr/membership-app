@@ -66,17 +66,17 @@ export function HomePage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-amber-50 via-teal-50 to-sky-100 px-6 py-10 text-slate-800" dir="rtl">
-      <div className="relative mx-auto flex min-h-[80vh] w-full max-w-6xl items-center">
+    <main className="min-h-screen overflow-x-clip bg-linear-to-br from-amber-50 via-teal-50 to-sky-100 px-3 py-6 text-slate-800 sm:px-4 sm:py-8 md:px-6 md:py-10" dir="rtl">
+      <div className="relative mx-auto flex min-h-[80vh] w-full max-w-6xl items-start md:items-center">
         <Suspense fallback={null}>
           <YourMessagesFloating />
         </Suspense>
         <section
           ref={sectionRef}
-          className="relative z-10 w-full overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-2xl backdrop-blur transition-[height] duration-1000 ease-out"
+          className="relative z-10 w-full overflow-hidden rounded-2xl border border-white/60 bg-white/70 shadow-2xl backdrop-blur transition-[height] duration-1000 ease-out sm:rounded-3xl"
           style={sectionHeight === null ? undefined : { height: `${sectionHeight}px` }}
         >
-          <div ref={contentRef} className="grid gap-8 p-8 md:grid-cols-2 md:p-12">
+          <div ref={contentRef} className="grid gap-5 p-4 sm:gap-6 sm:p-6 md:grid-cols-2 md:gap-8 md:p-12">
             <HomeHeroSection />
 
             <div className="grid gap-4">

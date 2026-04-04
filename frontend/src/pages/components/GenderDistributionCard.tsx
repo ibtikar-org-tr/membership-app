@@ -5,7 +5,7 @@ export function GenderDistributionCard() {
   const femaleRatio = useCountUp(44)
 
   return (
-    <div className="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-700 p-5 text-white shadow-lg">
+    <div className="rounded-2xl bg-linear-to-r from-slate-900 to-slate-700 p-4 text-white shadow-lg sm:p-5">
       <p className="text-sm font-semibold text-slate-300">توزيع الأعضاء حسب الجنس</p>
       <div className="mt-4 space-y-4">
         <div>
