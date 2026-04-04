@@ -282,6 +282,111 @@ def infer_education_with_deepseek(
         return fallback
 
 
+def heuristic_normalize_friends(raw_value: str | None) -> str | None:
+    value = clean(raw_value)
+    if value is None:
+        return None
+
+    lowered = value.casefold()
+    none_tokens = {
+        "لا يوجد",
+        "لايوجد",
+        "none",
+        "n/a",
+        "na",
+        "no one",
+        "unknown",
+        "-",
+        ".",
+    }
+    if lowered in none_tokens:
+        return None
+
+    normalized = value.replace("\n", ", ").replace(";", ",").replace("،", ",")
+    parts = [clean(part) for part in normalized.split(",")]
+    parts = [part for part in parts if part]
+
+    # Deduplicate while preserving order.
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for part in parts:
+        key = part.casefold()
+        if key not in seen:
+            seen.add(key)
+            deduped.append(part)
+
+    return ", ".join(deduped) if deduped else None
+
+
+def infer_friends_with_deepseek(
+    raw_value: str | None,
+    *,
+    api_key: str | None,
+    model: str,
+    base_url: str,
+    timeout_seconds: int,
+    cache: dict[str | None, str | None],
+) -> str | None:
+    raw_clean = clean(raw_value)
+    if raw_clean in cache:
+        return cache[raw_clean]
+
+    fallback = heuristic_normalize_friends(raw_clean)
+    if not api_key:
+        cache[raw_clean] = fallback
+        return fallback
+
+    prompt = {
+        "friends_raw": raw_clean,
+        "task": "Normalize this field into a comma-separated list of names only.",
+        "rules": [
+            "If the value means no friends (e.g., لا يوجد), return null.",
+            "Remove extra punctuation and repeated names.",
+            "Keep names as-is (Arabic/Turkish/English) without transliteration.",
+        ],
+        "output": "Return ONLY JSON: {\"friends_on_platform\": string|null}",
+    }
+
+    body = {
+        "model": model,
+        "temperature": 0,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You normalize names list fields. Return strict JSON only.",
+            },
+            {
+                "role": "user",
+                "content": json.dumps(prompt, ensure_ascii=False),
+            },
+        ],
+    }
+
+    try:
+        endpoint = base_url.rstrip("/") + "/chat/completions"
+        request = urllib.request.Request(
+            endpoint,
+            data=json.dumps(body).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+
+        content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+        parsed = extract_json_object(content) or {}
+        normalized = heuristic_normalize_friends(clean(parsed.get("friends_on_platform")))
+        result = normalized if normalized is not None else fallback
+        cache[raw_clean] = result
+        return result
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, KeyError, IndexError):
+        cache[raw_clean] = fallback
+        return fallback
+
+
 def map_volunteering(value: str | None) -> str | None:
     value = clean(value)
     if value is None:
@@ -338,6 +443,7 @@ def render_upsert_sql(
     deepseek_base_url: str,
     deepseek_timeout_seconds: int,
     education_cache: dict[tuple[str | None, str | None, str | None], dict[str, Any]],
+    friends_cache: dict[str | None, str | None],
 ) -> list[str]:
     membership_number = get_value(row, "رقم العضوية")
     email = get_value(row, "البريد الإلكتروني")
@@ -379,7 +485,14 @@ def render_upsert_sql(
 
     where_heard_about_us = get_value(row, "من أين سمعت بتجمّع إبتكار؟")
     motivation_letter = get_value(row, "ما الهدف الذي تسعى لتحقيقه من خلال انضمامك لمجتمعنا؟")
-    friends_on_platform = get_value(row, "هل يمكنك ذكر اسمين لأشخاص تعرفهم من تجمع إبتكار\n(أو كتابة لا يوجد)")
+    friends_on_platform = infer_friends_with_deepseek(
+        get_value(row, "هل يمكنك ذكر اسمين لأشخاص تعرفهم من تجمع إبتكار\n(أو كتابة لا يوجد)"),
+        api_key=deepseek_api_key,
+        model=deepseek_model,
+        base_url=deepseek_base_url,
+        timeout_seconds=deepseek_timeout_seconds,
+        cache=friends_cache,
+    )
     interest_in_volunteering = map_volunteering(get_value(row, "منبر المتطوعين"))
 
     user_sql = f"""
@@ -495,6 +608,7 @@ def generate_sql_file(
         "BEGIN TRANSACTION;",
     ]
     education_cache: dict[tuple[str | None, str | None, str | None], dict[str, Any]] = {}
+    friends_cache: dict[str | None, str | None] = {}
 
     for index, row in enumerate(rows, start=1):
         try:
@@ -505,6 +619,7 @@ def generate_sql_file(
                 deepseek_base_url=deepseek_base_url,
                 deepseek_timeout_seconds=deepseek_timeout_seconds,
                 education_cache=education_cache,
+                friends_cache=friends_cache,
             )
             sql_lines.extend(statements)
             stats.imported_rows += 1
