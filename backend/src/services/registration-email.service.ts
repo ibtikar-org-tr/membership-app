@@ -14,13 +14,13 @@ export async function sendRegistrationCredentialsEmail(
 ): Promise<void> {
   if (!bindings.SMTP_HOST || !bindings.SMTP_USER || !bindings.SMTP_PASS) {
     throw new RegistrationEmailError(
-      'SMTP configuration is incomplete. Please configure SMTP_HOST, SMTP_USER, and SMTP_PASS.',
+      'SMTP configuration is incomplete. Please configure SMTP_HOST, SMTP_USER, and SMTP_PASS. يرجى التواصل مع الأدمين وإخباره',
     )
   }
 
   const smtpPort = Number.parseInt(String(bindings.SMTP_PORT ?? '587'), 10)
   if (!Number.isFinite(smtpPort) || smtpPort <= 0) {
-    throw new RegistrationEmailError('SMTP_PORT must be a valid positive number.')
+    throw new RegistrationEmailError('SMTP_PORT must be a valid positive number. يرجى التواصل مع الأدمين وإخباره')
   }
 
   const text = [
@@ -53,7 +53,7 @@ export async function sendRegistrationCredentialsEmail(
       html: text,
     })
   } catch (error) {
-    throw new RegistrationEmailError('Unable to send registration credentials email at this time.', { cause: error })
+    throw new RegistrationEmailError('Unable to send registration credentials email at this time. يرجى التواصل مع الأدمين وإخباره', { cause: error })
   } finally {
     if (mailer) {
       await mailer.close()
