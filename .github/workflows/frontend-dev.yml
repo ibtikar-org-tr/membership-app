@@ -30,7 +30,7 @@ jobs:
 
       - name: Build project
         env:
-          VITE_AUTH_MS: ${{ vars.VITE_AUTH_MS }}
+          VITE_MEMBER_MS: ${{ vars.VITE_MEMBER_MS || vars.VITE_AUTH_MS }}
           VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
         run: npm run build
 
