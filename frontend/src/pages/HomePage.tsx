@@ -34,6 +34,8 @@ export function HomePage() {
                 نسيت معلوماتي
               </Link>
             </div>
+
+            <VolunteersStatsCard />
           </div>
 
           <div className="grid gap-4">
@@ -93,7 +95,6 @@ export function HomePage() {
             </div>
 
             <AgeAnalyticsCard />
-            <VolunteersStatsCard />
           </div>
         </section>
       </div>
