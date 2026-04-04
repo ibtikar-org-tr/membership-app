@@ -25,10 +25,12 @@ export function RegistrationPage() {
     isSubmitting,
     submitError,
     submitSuccessMessage,
+    hasSubmittedForm,
     isAutosaveEnabled,
     updateField,
     handleSubmit,
     toggleAutosave,
+    resetSubmissionStatus,
   } = useRegistrationForm()
 
   return (
@@ -75,71 +77,84 @@ export function RegistrationPage() {
           </div>
         </header>
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <Suspense fallback={<SectionLoadingCard />}>
-            <PersonalInfoSection data={formData} onFieldChange={updateField} />
-          </Suspense>
-          <Suspense fallback={<SectionLoadingCard />}>
-            <EducationSection data={formData} onFieldChange={updateField} />
-          </Suspense>
-          <Suspense fallback={<SectionLoadingCard />}>
-            <ProfileSection data={formData} onFieldChange={updateField} />
-          </Suspense>
-          <Suspense fallback={<SectionLoadingCard />}>
-            <RegistrationInfoSection data={formData} onFieldChange={updateField} />
-          </Suspense>
+        {hasSubmittedForm ? (
+          <section className="rounded-2xl bg-white p-6 shadow-md md:p-8">
+            <h2 className="text-2xl font-black text-emerald-700 md:text-3xl">تم استلام طلبك بنجاح</h2>
+            <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 md:text-base">
+              {submitSuccessMessage ?? 'تم إرسال طلب التسجيل بنجاح.'}
+            </p>
+            <p className="mt-4 text-sm leading-relaxed text-slate-600 md:text-base">
+              يبدو أنك أتممت تعبئة نموذج الانتساب سابقاً. إذا رغبت بتعبئته من جديد، يمكنك استخدام الزر أدناه.
+            </p>
+            <button
+              type="button"
+              onClick={resetSubmissionStatus}
+              className="mt-6 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-700"
+            >
+              تعبئة النموذج مرة أخرى
+            </button>
+          </section>
+        ) : (
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <Suspense fallback={<SectionLoadingCard />}>
+              <PersonalInfoSection data={formData} onFieldChange={updateField} />
+            </Suspense>
+            <Suspense fallback={<SectionLoadingCard />}>
+              <EducationSection data={formData} onFieldChange={updateField} />
+            </Suspense>
+            <Suspense fallback={<SectionLoadingCard />}>
+              <ProfileSection data={formData} onFieldChange={updateField} />
+            </Suspense>
+            <Suspense fallback={<SectionLoadingCard />}>
+              <RegistrationInfoSection data={formData} onFieldChange={updateField} />
+            </Suspense>
 
-          <div className="rounded-2xl bg-white p-4 shadow-md md:p-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400 md:w-auto"
-              >
-                {isSubmitting ? 'جارٍ إرسال التسجيل...' : 'إرسال التسجيل'}
-              </button>
-
-              <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
-                <p className="text-sm font-semibold text-slate-800 md:text-right">حفظ الجلسة</p>
+            <div className="rounded-2xl bg-white p-4 shadow-md md:p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <button
-                  type="button"
-                  role="switch"
-                  aria-checked={isAutosaveEnabled}
-                  onClick={toggleAutosave}
-                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
-                    isAutosaveEnabled ? 'bg-sky-500' : 'bg-slate-300'
-                  }`}
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400 md:w-auto"
                 >
-                  <span className="sr-only">تفعيل حفظ النموذج محلياً</span>
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
-                      isAutosaveEnabled ? '-translate-x-1' : '-translate-x-6'
-                    }`}
-                  />
+                  {isSubmitting ? 'جارٍ إرسال التسجيل...' : 'إرسال التسجيل'}
                 </button>
-                {isAutosaveEnabled ? (
-                  <p className="max-w-xs text-xs leading-relaxed text-slate-500 md:text-right">يتم حفظ التقدم تلقائياً في المتصفح.</p>
-                ) : (
-                  <p className="max-w-xs text-xs leading-relaxed text-slate-400 md:text-right">
-                    عند تفعيل هذا الخيار، سيتم حفظ تقدمك في المتصفح تلقائياً لمنع فقدان البيانات عند تحديث الصفحة أو إغلاقها.
-                  </p>
-                )}
+
+                <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
+                  <p className="text-sm font-semibold text-slate-800 md:text-right">حفظ الجلسة</p>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isAutosaveEnabled}
+                    onClick={toggleAutosave}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+                      isAutosaveEnabled ? 'bg-sky-500' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span className="sr-only">تفعيل حفظ النموذج محلياً</span>
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                        isAutosaveEnabled ? '-translate-x-1' : '-translate-x-6'
+                      }`}
+                    />
+                  </button>
+                  {isAutosaveEnabled ? (
+                    <p className="max-w-xs text-xs leading-relaxed text-slate-500 md:text-right">يتم حفظ التقدم تلقائياً في المتصفح.</p>
+                  ) : (
+                    <p className="max-w-xs text-xs leading-relaxed text-slate-400 md:text-right">
+                      عند تفعيل هذا الخيار، سيتم حفظ تقدمك في المتصفح تلقائياً لمنع فقدان البيانات عند تحديث الصفحة أو إغلاقها.
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {submitError && (
+                <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                  {submitError}
+                </p>
+              )}
             </div>
-
-            {submitError && (
-              <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                {submitError}
-              </p>
-            )}
-
-            {submitSuccessMessage && (
-              <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-                {submitSuccessMessage}
-              </p>
-            )}
-          </div>
-        </form>
+          </form>
+        )}
       </div>
     </main>
   )

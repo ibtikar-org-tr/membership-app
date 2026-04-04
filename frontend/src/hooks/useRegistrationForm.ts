@@ -7,12 +7,41 @@ import type { FormFieldName, RegistrationFormData } from '../types/registration'
 
 const DRAFT_STORAGE_KEY = 'registration-form-draft-v1'
 const AUTOSAVE_STORAGE_KEY = 'registration-form-autosave-v1'
+const SUBMISSION_STATUS_STORAGE_KEY = 'registration-form-submitted-v1'
 const MEMBER_MS_BASE_URL = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
 const REGISTRATION_ENDPOINT = MEMBER_MS_BASE_URL
   ? `${MEMBER_MS_BASE_URL.replace(/\/+$/, '')}/api/registration`
   : '/ms/membership-app/api/registration'
 const ALLOWED_SEX_VALUES = new Set(['male', 'female'])
 const ALLOWED_BLOOD_TYPES = new Set(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])
+
+type SubmissionStatus = {
+  message: string
+}
+
+function readSubmissionStatus(): SubmissionStatus | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const rawStatus = window.localStorage.getItem(SUBMISSION_STATUS_STORAGE_KEY)
+  if (!rawStatus) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(rawStatus) as SubmissionStatus
+    if (!parsed || typeof parsed.message !== 'string' || !parsed.message.trim()) {
+      window.localStorage.removeItem(SUBMISSION_STATUS_STORAGE_KEY)
+      return null
+    }
+
+    return parsed
+  } catch {
+    window.localStorage.removeItem(SUBMISSION_STATUS_STORAGE_KEY)
+    return null
+  }
+}
 
 function toOptionalTrimmedString(value: string) {
   const trimmed = value.trim()
@@ -100,10 +129,12 @@ function toRegistrationPayload(formData: RegistrationFormData) {
 }
 
 export function useRegistrationForm() {
+  const initialSubmissionStatus = readSubmissionStatus()
   const [formData, setFormData] = useState<RegistrationFormData>(initialRegistrationFormData)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [submitSuccessMessage, setSubmitSuccessMessage] = useState<string | null>(null)
+  const [submitSuccessMessage, setSubmitSuccessMessage] = useState<string | null>(initialSubmissionStatus?.message ?? null)
+  const [hasSubmittedForm, setHasSubmittedForm] = useState<boolean>(Boolean(initialSubmissionStatus))
   const [isAutosaveEnabled, setIsAutosaveEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') {
       return true
@@ -182,11 +213,20 @@ export function useRegistrationForm() {
         return
       }
 
-      setSubmitSuccessMessage(responseBody?.message ?? 'تم إرسال طلب التسجيل بنجاح.')
+      const successMessage = responseBody?.message ?? 'تم إرسال طلب التسجيل بنجاح.'
+
+      setSubmitSuccessMessage(successMessage)
+      setHasSubmittedForm(true)
       setFormData(initialRegistrationFormData)
 
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(DRAFT_STORAGE_KEY)
+        window.localStorage.setItem(
+          SUBMISSION_STATUS_STORAGE_KEY,
+          JSON.stringify({
+            message: successMessage,
+          }),
+        )
       }
     } catch {
       setSubmitError('تعذّر الاتصال بالخادم. تحقّق من الشبكة ثم حاول مجددًا.')
@@ -199,14 +239,25 @@ export function useRegistrationForm() {
     setIsAutosaveEnabled((current) => !current)
   }
 
+  const resetSubmissionStatus = () => {
+    setHasSubmittedForm(false)
+    setSubmitSuccessMessage(null)
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(SUBMISSION_STATUS_STORAGE_KEY)
+    }
+  }
+
   return {
     formData,
     isSubmitting,
     submitError,
     submitSuccessMessage,
+    hasSubmittedForm,
     isAutosaveEnabled,
     updateField,
     handleSubmit,
     toggleAutosave,
+    resetSubmissionStatus,
   }
 }
