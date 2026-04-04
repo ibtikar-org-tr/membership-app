@@ -222,7 +222,7 @@ def infer_education_with_deepseek(
         "task": "Normalize education fields.",
         "rules": {
             "education_level": "One of: high_school, diploma, bachelor, master, phd, other, or null",
-            "graduation_year": "4-digit integer that is graduation year, calculate it if necessary, or null if unknown",
+            "graduation_year": "4-digit integer that is graduation year, calculate it if the student's current year is provided (assume we are in 2025), or null if unknown",
             "school": "Normalized institution name or null",
             "field_of_study": "Normalized major/field or null",
         },
