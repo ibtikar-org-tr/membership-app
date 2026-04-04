@@ -1,12 +1,23 @@
 import { Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
+import { LazyReveal } from './LazyReveal'
 
 const VolunteersStatsCard = lazy(() =>
   import('./VolunteersStatsCard').then((module) => ({ default: module.VolunteersStatsCard })),
 )
 
 function VolunteersCardFallback() {
-  return <div className="h-56 animate-pulse rounded-2xl border border-slate-200 bg-white/70 shadow-lg" />
+  return (
+    <div className="h-56 animate-pulse rounded-2xl border border-slate-200 bg-white/75 p-4 shadow-lg">
+      <div className="h-4 w-24 rounded bg-slate-200/80" />
+      <div className="mt-4 h-8 w-32 rounded bg-slate-200/70" />
+      <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="h-14 rounded bg-slate-200/70" />
+        <div className="h-14 rounded bg-slate-200/70" />
+        <div className="h-14 rounded bg-slate-200/70" />
+      </div>
+    </div>
+  )
 }
 
 export function HomeHeroSection() {
@@ -39,7 +50,9 @@ export function HomeHeroSection() {
         </Link>
       </div>
       <Suspense fallback={<VolunteersCardFallback />}>
-        <VolunteersStatsCard />
+        <LazyReveal delayMs={120}>
+          <VolunteersStatsCard />
+        </LazyReveal>
       </Suspense>
     </div>
   )

@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { HomeHeroSection } from './components/HomeHeroSection'
+import { LazyReveal } from './components/LazyReveal'
 
 const MembersOverviewCard = lazy(() =>
   import('./components/MembersOverviewCard').then((module) => ({ default: module.MembersOverviewCard })),
@@ -12,7 +13,16 @@ const AgeAnalyticsCard = lazy(() =>
 )
 
 function StatsCardFallback() {
-  return <div className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white/70 shadow-lg" />
+  return (
+    <div className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white/75 p-4 shadow-lg">
+      <div className="h-4 w-28 rounded bg-slate-200/80" />
+      <div className="mt-4 h-8 w-40 rounded bg-slate-200/70" />
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="h-12 rounded bg-slate-200/70" />
+        <div className="h-12 rounded bg-slate-200/70" />
+      </div>
+    </div>
+  )
 }
 
 export function HomePage() {
@@ -24,13 +34,19 @@ export function HomePage() {
 
           <div className="grid gap-4">
             <Suspense fallback={<StatsCardFallback />}>
-              <MembersOverviewCard />
+              <LazyReveal delayMs={0}>
+                <MembersOverviewCard />
+              </LazyReveal>
             </Suspense>
             <Suspense fallback={<StatsCardFallback />}>
-              <GenderDistributionCard />
+              <LazyReveal delayMs={90}>
+                <GenderDistributionCard />
+              </LazyReveal>
             </Suspense>
             <Suspense fallback={<StatsCardFallback />}>
-              <AgeAnalyticsCard />
+              <LazyReveal delayMs={170}>
+                <AgeAnalyticsCard />
+              </LazyReveal>
             </Suspense>
           </div>
         </section>
