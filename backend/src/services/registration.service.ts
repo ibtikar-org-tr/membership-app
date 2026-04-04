@@ -1,7 +1,10 @@
 import { EmailAlreadyExistsError } from '../errors/registration.errors'
+import { createUserInfo } from '../repositories/user-info.repository'
+import { createUserRegistrationInfo } from '../repositories/user-registration-info.repository'
+import { createUser, deleteUserByMembershipNumber, getLatestMembershipNumber } from '../repositories/users.repository'
 import type { RegistrationInput } from '../schemas/registration'
 import type { AppBindings } from '../types/bindings'
-import { generateUniqueMembershipNumber } from '../utils/membership-number'
+import { generateNextMembershipNumber } from '../utils/membership-number'
 import { hashPassword } from '../utils/password'
 
 export interface RegistrationResult {
@@ -26,14 +29,17 @@ function toJsonOrNull(value?: Record<string, string>): string | null {
 
 export async function registerUser(bindings: AppBindings, input: RegistrationInput): Promise<RegistrationResult> {
   const db = bindings.MY_DB
-  const membershipNumber = await generateUniqueMembershipNumber(db, bindings.MEMBERSHIP_NUMBER_PREFIX)
+  const lastMembershipNumber = await getLatestMembershipNumber(db)
+  const membershipNumber = generateNextMembershipNumber(lastMembershipNumber, bindings.MEMBERSHIP_NUMBER_PREFIX)
   const passwordHash = await hashPassword(input.password)
 
   try {
-    await db
-      .prepare('INSERT INTO users (membership_number, email, password_hash, role) VALUES (?, ?, ?, ?)')
-      .bind(membershipNumber, input.email, passwordHash, 'member')
-      .run()
+    await createUser(db, {
+      membershipNumber,
+      email: input.email,
+      passwordHash,
+      role: 'member',
+    })
   } catch (error) {
     if (error instanceof Error && error.message.includes('UNIQUE constraint failed: users.email')) {
       throw new EmailAlreadyExistsError()
@@ -42,83 +48,42 @@ export async function registerUser(bindings: AppBindings, input: RegistrationInp
   }
 
   try {
-    await db
-      .prepare(
-        `INSERT INTO user_info (
-          membership_number,
-          en_name,
-          ar_name,
-          phone_number,
-          sex,
-          date_of_birth,
-          country,
-          region,
-          city,
-          address,
-          education_level,
-          school,
-          field_of_study,
-          graduation_year,
-          blood_type,
-          telegram_id,
-          telegram_username,
-          social_media_links,
-          profile_picture_url,
-          biography,
-          interests,
-          skills,
-          languages
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .bind(
-        membershipNumber,
-        input.enName,
-        input.arName,
-        input.phoneNumber ?? null,
-        input.sex ?? null,
-        input.dateOfBirth ?? null,
-        input.country ?? null,
-        input.region ?? null,
-        input.city ?? null,
-        input.address ?? null,
-        input.educationLevel ?? null,
-        input.school ?? null,
-        input.fieldOfStudy ?? null,
-        input.graduationYear ?? null,
-        input.bloodType ?? null,
-        input.telegramId ?? null,
-        input.telegramUsername ?? null,
-        toJsonOrNull(input.socialMediaLinks),
-        input.profilePictureUrl ?? null,
-        input.biography ?? null,
-        toCsvOrNull(input.interests),
-        toCsvOrNull(input.skills),
-        toCsvOrNull(input.languages),
-      )
-      .run()
+    await createUserInfo(db, {
+      membershipNumber,
+      enName: input.enName,
+      arName: input.arName,
+      phoneNumber: input.phoneNumber ?? null,
+      sex: input.sex ?? null,
+      dateOfBirth: input.dateOfBirth ?? null,
+      country: input.country ?? null,
+      region: input.region ?? null,
+      city: input.city ?? null,
+      address: input.address ?? null,
+      educationLevel: input.educationLevel ?? null,
+      school: input.school ?? null,
+      fieldOfStudy: input.fieldOfStudy ?? null,
+      graduationYear: input.graduationYear ?? null,
+      bloodType: input.bloodType ?? null,
+      telegramId: input.telegramId ?? null,
+      telegramUsername: input.telegramUsername ?? null,
+      socialMediaLinks: toJsonOrNull(input.socialMediaLinks),
+      profilePictureUrl: input.profilePictureUrl ?? null,
+      biography: input.biography ?? null,
+      interests: toCsvOrNull(input.interests),
+      skills: toCsvOrNull(input.skills),
+      languages: toCsvOrNull(input.languages),
+    })
 
-    await db
-      .prepare(
-        `INSERT INTO user_registration_info (
-          membership_number,
-          where_heard_about_us,
-          motivation_letter,
-          friends_on_platform,
-          interest_in_volunteering,
-          previous_experience
-        ) VALUES (?, ?, ?, ?, ?, ?)`
-      )
-      .bind(
-        membershipNumber,
-        input.whereHeardAboutUs ?? null,
-        input.motivationLetter ?? null,
-        toCsvOrNull(input.friendsOnPlatform),
-        input.interestInVolunteering ?? null,
-        input.previousExperience ?? null,
-      )
-      .run()
+    await createUserRegistrationInfo(db, {
+      membershipNumber,
+      whereHeardAboutUs: input.whereHeardAboutUs ?? null,
+      motivationLetter: input.motivationLetter ?? null,
+      friendsOnPlatform: toCsvOrNull(input.friendsOnPlatform),
+      interestInVolunteering: input.interestInVolunteering ?? null,
+      previousExperience: input.previousExperience ?? null,
+    })
   } catch (error) {
-    await db.prepare('DELETE FROM users WHERE membership_number = ?').bind(membershipNumber).run()
+    await deleteUserByMembershipNumber(db, membershipNumber)
     throw error
   }
 
