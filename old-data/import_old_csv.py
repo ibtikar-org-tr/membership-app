@@ -133,7 +133,9 @@ def normalize_sex(value: str | None) -> str | None:
 
 
 def normalize_country(_value: str | None) -> str | None:
-    # Legacy dataset is Turkey-based; keep a consistent ISO code.
+    value = clean(_value)
+    if value == "سوريا":
+        return "SY"
     return "TR"
 
 
