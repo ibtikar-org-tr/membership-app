@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS user_info (
-    membership_number TEXT PRIMARY KEY,
+    membership_number TEXT PRIMARY KEY REFERENCES users(membership_number) ON DELETE CASCADE ON UPDATE CASCADE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     en_name TEXT NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS user_info (
 );
 
 CREATE TABLE IF NOT EXISTS user_registration_info (
-    membership_number TEXT PRIMARY KEY,
+    membership_number TEXT PRIMARY KEY REFERENCES users(membership_number) ON DELETE CASCADE ON UPDATE CASCADE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     where_heard_about_us TEXT, -- how the user heard about the platform (e.g., "friend", "social media", "event", etc.)
