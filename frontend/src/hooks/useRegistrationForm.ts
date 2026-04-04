@@ -20,6 +20,33 @@ type SubmissionStatus = {
   message: string
 }
 
+function normalizeDraftField(value: unknown): string {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  return String(value)
+}
+
+function normalizeRegistrationDraft(rawDraft: unknown): RegistrationFormData {
+  const normalizedDraft = { ...initialRegistrationFormData }
+
+  if (!rawDraft || typeof rawDraft !== 'object' || Array.isArray(rawDraft)) {
+    return normalizedDraft
+  }
+
+  const draftRecord = rawDraft as Record<string, unknown>
+  for (const fieldName of Object.keys(initialRegistrationFormData) as FormFieldName[]) {
+    normalizedDraft[fieldName] = normalizeDraftField(draftRecord[fieldName])
+  }
+
+  return normalizedDraft
+}
+
 function readSubmissionStatus(): SubmissionStatus | null {
   if (typeof window === 'undefined') {
     return null
@@ -182,11 +209,8 @@ export function useRegistrationForm() {
     }
 
     try {
-      const parsedDraft = JSON.parse(savedDraft) as RegistrationFormData
-      setFormData({
-        ...initialRegistrationFormData,
-        ...parsedDraft,
-      })
+      const parsedDraft = JSON.parse(savedDraft) as unknown
+      setFormData(normalizeRegistrationDraft(parsedDraft))
     } catch {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY)
     }
