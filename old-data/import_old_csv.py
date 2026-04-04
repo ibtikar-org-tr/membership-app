@@ -648,6 +648,8 @@ def generate_sql_file(
     friends_cache: dict[str | None, str | None] = {}
 
     for index, row in enumerate(rows, start=1):
+        membership_number = get_value(row, "رقم العضوية")
+        print(f"[{index}/{stats.total_rows}] processing membership={membership_number!r}")
         try:
             statements = render_upsert_sql(
                 row,
@@ -660,9 +662,9 @@ def generate_sql_file(
             )
             sql_lines.extend(statements)
             stats.imported_rows += 1
+            print(f"[{index}/{stats.total_rows}] ok membership={membership_number!r}")
         except Exception as exc:
             stats.failed_rows += 1
-            membership_number = get_value(row, "رقم العضوية")
             sql_lines.append(
                 f"-- [row {index}] failed for membership={membership_number!r}: {str(exc).replace(chr(10), ' ')}"
             )
