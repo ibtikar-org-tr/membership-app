@@ -46,9 +46,9 @@ jobs:
             --arg dbname "${{ vars.D1_DATABASE_NAME }}" \
             --arg bucketname "${{ vars.BUCKET_NAME }}" \
             --arg mprefix "${{ vars.MEMBERSHIP_NUMBER_PREFIX }}" \
-            --arg smtpHost "${{ secrets.SMTP_HOST }}" \
-            --arg smtpPort "${{ secrets.SMTP_PORT }}" \
-            --arg smtpUser "${{ secrets.SMTP_USER }}" \
+            --arg smtpHost "${{ vars.SMTP_HOST }}" \
+            --arg smtpPort "${{ vars.SMTP_PORT }}" \
+            --arg smtpUser "${{ vars.SMTP_USER }}" \
             "$jq_filter" \
             wrangler.jsonc > wrangler.local.jsonc
 
