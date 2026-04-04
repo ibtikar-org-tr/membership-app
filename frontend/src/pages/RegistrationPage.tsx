@@ -20,7 +20,16 @@ function SectionLoadingCard() {
 }
 
 export function RegistrationPage() {
-  const { formData, isAutosaveEnabled, updateField, handleSubmit, toggleAutosave } = useRegistrationForm()
+  const {
+    formData,
+    isSubmitting,
+    submitError,
+    submitSuccessMessage,
+    isAutosaveEnabled,
+    updateField,
+    handleSubmit,
+    toggleAutosave,
+  } = useRegistrationForm()
 
   return (
     <main className="min-h-screen bg-linear-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
@@ -84,9 +93,10 @@ export function RegistrationPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <button
                 type="submit"
-                className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 md:w-auto"
+                disabled={isSubmitting}
+                className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400 md:w-auto"
               >
-                إرسال التسجيل
+                {isSubmitting ? 'جارٍ إرسال التسجيل...' : 'إرسال التسجيل'}
               </button>
 
               <div className="flex w-full flex-col items-start gap-2 md:w-auto md:items-end">
@@ -116,6 +126,18 @@ export function RegistrationPage() {
                 )}
               </div>
             </div>
+
+            {submitError && (
+              <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                {submitError}
+              </p>
+            )}
+
+            {submitSuccessMessage && (
+              <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                {submitSuccessMessage}
+              </p>
+            )}
           </div>
         </form>
       </div>
