@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Country, State, City } from 'react-country-state-city/dist/esm/types'
-import { SectionCard } from '../components/SectionCard'
-import { TextField } from '../components/TextField'
-import { PhoneNumberField } from '../components/PhoneNumberField'
-import { EmailField } from '../components/EmailField'
-import { BirthDateField } from '../components/BirthDateField'
-import { SearchableSelectField } from '../components/SearchableSelectField'
-import syriaModernFlag from '../../../assets/flags/syria-modern.svg'
-import type { RegistrationFormData } from '../types/registration'
+import { SectionCard } from '../SectionCard'
+import { TextField } from '../TextField'
+import { PhoneNumberField } from '../PhoneNumberField'
+import { EmailField } from '../EmailField'
+import { BirthDateField } from '../BirthDateField'
+import { SearchableSelectField } from '../SearchableSelectField'
+import syriaModernFlag from '@assets/flags/syria-modern.svg'
+import type { RegistrationFormData } from '../../../types/registration'
 
 const countryStateCityModulePromise = import('react-country-state-city')
 

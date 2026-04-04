@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { SearchableTagsField } from '../components/SearchableTagsField'
-import { SelectField } from '../components/SelectField'
-import { SectionCard } from '../components/SectionCard'
-import { TextAreaField } from '../components/TextAreaField'
-import { whereHeardAboutUsOptions, volunteeringInterestOptions, bloodTypeOptions } from '../config/registrationOptions'
-import type { RegistrationFormData } from '../types/registration'
+import { SearchableTagsField } from '../SearchableTagsField'
+import { SelectField } from '../SelectField'
+import { SectionCard } from '../SectionCard'
+import { TextAreaField } from '../TextAreaField'
+import { whereHeardAboutUsOptions, volunteeringInterestOptions, bloodTypeOptions } from '../../../config/registrationOptions'
+import type { RegistrationFormData } from '../../../types/registration'
 
 const gsapModulePromise = import('gsap')
 const confettiModulePromise = import('canvas-confetti')

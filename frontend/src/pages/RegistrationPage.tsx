@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom'
 import { useRegistrationForm } from '../hooks/useRegistrationForm'
 
 const PersonalInfoSection = lazy(() =>
-  import('../sections/PersonalInfoSection').then((module) => ({ default: module.PersonalInfoSection })),
+  import('../components/registration/sections/PersonalInfoSection').then((module) => ({ default: module.PersonalInfoSection })),
 )
 const EducationSection = lazy(() =>
-  import('../sections/EducationSection').then((module) => ({ default: module.EducationSection })),
+  import('../components/registration/sections/EducationSection').then((module) => ({ default: module.EducationSection })),
 )
 const ProfileSection = lazy(() =>
-  import('../sections/ProfileSection').then((module) => ({ default: module.ProfileSection })),
+  import('../components/registration/sections/ProfileSection').then((module) => ({ default: module.ProfileSection })),
 )
 const RegistrationInfoSection = lazy(() =>
-  import('../sections/RegistrationInfoSection').then((module) => ({ default: module.RegistrationInfoSection })),
+  import('../components/registration/sections/RegistrationInfoSection').then((module) => ({ default: module.RegistrationInfoSection })),
 )
 
 function SectionLoadingCard() {

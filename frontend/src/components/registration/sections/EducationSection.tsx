@@ -1,8 +1,8 @@
-import { SectionCard } from '../components/SectionCard'
-import { SearchableSelectField } from '../components/SearchableSelectField'
-import { SelectField } from '../components/SelectField'
-import { TextField } from '../components/TextField'
-import type { RegistrationFormData } from '../types/registration'
+import { SectionCard } from '../SectionCard'
+import { SearchableSelectField } from '../SearchableSelectField'
+import { SelectField } from '../SelectField'
+import { TextField } from '../TextField'
+import type { RegistrationFormData } from '../../../types/registration'
 
 type EducationSectionProps = {
   data: RegistrationFormData

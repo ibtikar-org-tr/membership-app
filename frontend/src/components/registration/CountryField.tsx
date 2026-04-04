@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultCountries, parseCountry } from 'react-international-phone'
 import type { CountryIso2 } from 'react-international-phone'
-import syriaModernFlag from '../../../assets/flags/syria-modern.svg'
+import syriaModernFlag from '@assets/flags/syria-modern.svg'
 
 type CountryFieldProps = {
   id: string

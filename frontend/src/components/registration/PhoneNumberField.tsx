@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { PhoneInput, defaultCountries, parseCountry } from 'react-international-phone'
 import 'react-international-phone/style.css'
 import type { CountryIso2, PhoneInputRefType } from 'react-international-phone'
-import syriaModernFlag from '../../../assets/flags/syria-modern.svg'
+import syriaModernFlag from '@assets/flags/syria-modern.svg'
 
 type PhoneNumberFieldProps = {
   value: string

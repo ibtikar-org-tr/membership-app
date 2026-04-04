@@ -1,5 +1,5 @@
 import iso from 'iso-countries-languages'
-import type { SearchableTagOption } from '../components/SearchableTagsField'
+import type { SearchableTagOption } from '../components/registration/SearchableTagsField'
 
 const languagesAr = iso.getLanguages('ar') as Record<string, string>
 const languagesEn = iso.getLanguages('en') as Record<string, string>

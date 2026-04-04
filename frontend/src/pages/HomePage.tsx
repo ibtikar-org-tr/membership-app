@@ -1,18 +1,18 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
-import { HomeHeroSection } from './components/HomeHeroSection'
-import { LazyReveal } from './components/LazyReveal'
+import { HomeHeroSection } from '../components/main-page/HomeHeroSection'
+import { LazyReveal } from '../components/main-page/LazyReveal'
 
 const MembersOverviewCard = lazy(() =>
-  import('./components/MembersOverviewCard').then((module) => ({ default: module.MembersOverviewCard })),
+  import('../components/main-page/MembersOverviewCard').then((module) => ({ default: module.MembersOverviewCard })),
 )
 const GenderDistributionCard = lazy(() =>
-  import('./components/GenderDistributionCard').then((module) => ({ default: module.GenderDistributionCard })),
+  import('../components/main-page/GenderDistributionCard').then((module) => ({ default: module.GenderDistributionCard })),
 )
 const AgeAnalyticsCard = lazy(() =>
-  import('./components/AgeAnalyticsCard').then((module) => ({ default: module.AgeAnalyticsCard })),
+  import('../components/main-page/AgeAnalyticsCard').then((module) => ({ default: module.AgeAnalyticsCard })),
 )
 const YourMessagesFloating = lazy(() =>
-  import('./components/YourMessagesFloating').then((module) => ({ default: module.YourMessagesFloating })),
+  import('../components/main-page/YourMessagesFloating').then((module) => ({ default: module.YourMessagesFloating })),
 )
 
 function StatsCardFallback() {

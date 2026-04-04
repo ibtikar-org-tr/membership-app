@@ -13,7 +13,7 @@ const router = createBrowserRouter([
     path: '/registration',
     hydrateFallbackElement: <div />,
     lazy: async () => {
-      const { RegistrationPage } = await import('../features/registration/pages/RegistrationPage')
+      const { RegistrationPage } = await import('../pages/RegistrationPage')
       return { Component: RegistrationPage }
     },
   },
