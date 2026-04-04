@@ -22,7 +22,7 @@ function VolunteersCardFallback() {
 
 export function HomeHeroSection() {
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 md:flex md:h-full md:flex-col md:justify-between md:space-y-0">
       <div className="my-12 space-y-4 sm:my-0 sm:space-y-6">
         <p className="inline-block rounded-full bg-teal-100 px-3 py-1 text-xs font-semibold text-teal-700 sm:px-4 sm:text-sm">
           #جيلٌ_يبتكر
