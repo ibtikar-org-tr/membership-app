@@ -24,6 +24,7 @@ import secrets
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 
@@ -304,6 +305,22 @@ def read_csv_rows(csv_path: str) -> list[dict[str, str]]:
     raise RuntimeError(f"Unable to read CSV file: {csv_path}") from last_error
 
 
+def load_env_file(env_path: str) -> None:
+    path = Path(env_path)
+    if not path.exists():
+        return
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
 def sql_literal(value: Any) -> str:
     if value is None:
         return "NULL"
@@ -516,25 +533,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--csv", required=True, help="Path to source CSV file")
     parser.add_argument("--out", required=True, help="Path to output SQL file")
     parser.add_argument(
+        "--env-file",
+        default="old-data/.env",
+        help="Path to .env file for DeepSeek settings",
+    )
+    parser.add_argument(
         "--deepseek-api-key",
-        default=os.getenv("DEEPSEEK_API_KEY"),
-        help="DeepSeek API key (defaults to DEEPSEEK_API_KEY env var)",
+        default=None,
+        help="DeepSeek API key (overrides env)",
     )
     parser.add_argument(
         "--deepseek-model",
-        default="deepseek-chat",
-        help="DeepSeek model name",
+        default=None,
+        help="DeepSeek model name (overrides env)",
     )
     parser.add_argument(
         "--deepseek-base-url",
-        default="https://api.deepseek.com",
-        help="DeepSeek base URL",
+        default=None,
+        help="DeepSeek base URL (overrides env)",
     )
     parser.add_argument(
         "--deepseek-timeout",
         type=int,
-        default=30,
-        help="DeepSeek request timeout in seconds",
+        default=None,
+        help="DeepSeek request timeout in seconds (overrides env)",
     )
     parser.add_argument(
         "--dry-run",
@@ -546,6 +568,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+
+    load_env_file(args.env_file)
+
+    deepseek_api_key = args.deepseek_api_key or os.getenv("DEEPSEEK_API_KEY")
+    deepseek_model = args.deepseek_model or "deepseek-chat"
+    deepseek_base_url = args.deepseek_base_url or "https://api.deepseek.com"
+    deepseek_timeout = args.deepseek_timeout
+    if deepseek_timeout is None:
+        timeout_raw = "30"
+        deepseek_timeout = int(timeout_raw)
+
     csv_path = os.path.abspath(args.csv)
     out_path = os.path.abspath(args.out)
 
@@ -559,14 +592,14 @@ def main() -> int:
         csv_path=csv_path,
         out_path=out_path,
         dry_run=args.dry_run,
-        deepseek_api_key=args.deepseek_api_key,
-        deepseek_model=args.deepseek_model,
-        deepseek_base_url=args.deepseek_base_url,
-        deepseek_timeout_seconds=args.deepseek_timeout,
+        deepseek_api_key=deepseek_api_key,
+        deepseek_model=deepseek_model,
+        deepseek_base_url=deepseek_base_url,
+        deepseek_timeout_seconds=deepseek_timeout,
     )
     mode = "DRY RUN" if args.dry_run else "COMMIT"
     print(f"Mode: {mode}")
-    print(f"DeepSeek:     {'enabled' if args.deepseek_api_key else 'disabled (heuristic fallback)'}")
+    print(f"DeepSeek:     {'enabled' if deepseek_api_key else 'disabled (heuristic fallback)'}")
     print(f"Output SQL:   {out_path}")
     print(f"Total rows:   {stats.total_rows}")
     print(f"Generated:    {stats.imported_rows}")

@@ -3,3 +3,4 @@
 *.sql
 __pycache__/
 *.ods
+.env
