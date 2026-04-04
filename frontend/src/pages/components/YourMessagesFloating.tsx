@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 
 const messageItems = [
@@ -27,11 +27,14 @@ const messageItems = [
     timestamp: '2025-08-15',
     text: 'تجمّع إبتكار هو المكان الذي يجمع بين الشغف والابتكار والتعاون',
   },
-]
+] as const
+
+const loginPromptMessage = 'لترك رسالتك قم بتسجيل الدخول وانتقل إلى قسم المجتمع ثمّ رسائلكم'
 
 export function YourMessagesFloating() {
   const rootRef = useRef<HTMLDivElement | null>(null)
-  const cardRefs = useRef<Array<HTMLDivElement | null>>([])
+  const cardRefs = useRef<Array<HTMLElement | null>>([])
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
   useEffect(() => {
     const root = rootRef.current
@@ -40,7 +43,7 @@ export function YourMessagesFloating() {
     }
 
     const ctx = gsap.context(() => {
-      const cards = cardRefs.current.filter((card): card is HTMLDivElement => card !== null)
+      const cards = cardRefs.current.filter((card): card is HTMLElement => card !== null)
       if (cards.length === 0) {
         return
       }
@@ -94,6 +97,29 @@ export function YourMessagesFloating() {
           <p className="mt-2 text-sm leading-6 text-slate-700">{item.text}</p>
         </div>
       ))}
+
+      <button
+        type="button"
+        onClick={() => setShowLoginPrompt((current) => !current)}
+        ref={(element) => {
+          cardRefs.current[messageItems.length] = element
+        }}
+        className="pointer-events-auto rounded-2xl border border-dashed border-teal-300 bg-teal-50/95 p-4 text-right shadow-xl backdrop-blur transition hover:border-teal-400 hover:bg-teal-100"
+        aria-label="إضافة رسالتك"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold text-teal-700">قم بإضافة رسالتك</p>
+          <p className="text-[10px] font-medium text-slate-400">اليوم</p>
+        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-700"> أنت أيضاً يمكنك ترك رسالة</p>
+        <div
+          className={`overflow-hidden transition-all duration-500 ease-out ${showLoginPrompt ? 'mt-3 max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}
+        >
+          <p className="rounded-xl bg-white/80 px-3 py-2 text-sm leading-6 text-slate-700 shadow-sm">
+            {loginPromptMessage}
+          </p>
+        </div>
+      </button>
     </div>
   )
 }
