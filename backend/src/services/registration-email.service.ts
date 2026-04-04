@@ -41,7 +41,7 @@ export async function sendRegistrationCredentialsEmail(
 
   try {
     await mailer.send({
-      from: bindings.REGISTRATION_EMAIL_FROM_ADDRESS || bindings.SMTP_USER,
+      from: bindings.SMTP_USER,
       to: params.recipientEmail,
       subject: 'Your Membership Account Credentials',
       text,

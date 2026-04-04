@@ -18,6 +18,4 @@ export interface AppBindings {
   SMTP_PORT: string | number
   SMTP_USER: string
   SMTP_PASS: string
-  REGISTRATION_EMAIL_FROM_NAME: string
-  REGISTRATION_EMAIL_FROM_ADDRESS: string
 }
