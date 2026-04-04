@@ -1,5 +1,5 @@
 import type { D1DatabaseLike } from '../types/bindings'
-import { CreateUserInfoParams } from '../schemas/user.schemas'
+import type { CreateUserInfoParams } from '../schemas/user.schemas'
 
 export async function createUserInfo(db: D1DatabaseLike, params: CreateUserInfoParams): Promise<void> {
   await db
@@ -56,4 +56,8 @@ export async function createUserInfo(db: D1DatabaseLike, params: CreateUserInfoP
       params.languages,
     )
     .run()
+}
+
+export async function deleteUserInfoByMembershipNumber(db: D1DatabaseLike, membershipNumber: string): Promise<void> {
+  await db.prepare('DELETE FROM user_info WHERE membership_number = ?').bind(membershipNumber).run()
 }

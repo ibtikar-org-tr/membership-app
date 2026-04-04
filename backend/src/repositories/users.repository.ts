@@ -1,5 +1,5 @@
 import type { D1DatabaseLike } from '../types/bindings'
-import { CreateUserParams } from '../schemas/user.schemas'
+import type { CreateUserParams } from '../schemas/user.schemas'
 
 export async function getLatestMembershipNumber(db: D1DatabaseLike): Promise<string | null> {
   const row = await db
