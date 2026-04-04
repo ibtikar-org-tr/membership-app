@@ -36,4 +36,4 @@ lerna-debug.log*
 samples/
 *.md
 !README.md
-
+wrangler.local.jsonc
