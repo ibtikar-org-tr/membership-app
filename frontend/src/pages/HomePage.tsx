@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { AgeAnalyticsCard } from './components/AgeAnalyticsCard'
+import { VolunteersStatsCard } from './components/VolunteersStatsCard'
 
 export function HomePage() {
   return (
@@ -92,6 +93,7 @@ export function HomePage() {
             </div>
 
             <AgeAnalyticsCard />
+            <VolunteersStatsCard />
           </div>
         </section>
       </div>
