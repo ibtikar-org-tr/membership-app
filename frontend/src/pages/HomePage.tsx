@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { HomeHeroSection } from './components/HomeHeroSection'
 import { LazyReveal } from './components/LazyReveal'
 
@@ -26,10 +26,42 @@ function StatsCardFallback() {
 }
 
 export function HomePage() {
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const [sectionHeight, setSectionHeight] = useState<number | null>(null)
+
+  useEffect(() => {
+    const sectionElement = sectionRef.current
+    if (!sectionElement) {
+      return
+    }
+
+    const updateHeight = () => {
+      setSectionHeight(sectionElement.scrollHeight)
+    }
+
+    updateHeight()
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateHeight()
+    })
+
+    resizeObserver.observe(sectionElement)
+    window.addEventListener('resize', updateHeight)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', updateHeight)
+    }
+  }, [])
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-amber-50 via-teal-50 to-sky-100 px-6 py-10 text-slate-800" dir="rtl">
       <div className="mx-auto flex min-h-[80vh] w-full max-w-6xl items-center">
-        <section className="grid w-full gap-8 rounded-3xl border border-white/60 bg-white/70 p-8 shadow-2xl backdrop-blur md:grid-cols-2 md:p-12">
+        <section
+          ref={sectionRef}
+          className="grid w-full gap-8 overflow-hidden rounded-3xl border border-white/60 bg-white/70 p-8 shadow-2xl backdrop-blur transition-[height] duration-1000 ease-out md:grid-cols-2 md:p-12"
+          style={sectionHeight === null ? undefined : { height: `${sectionHeight}px` }}
+        >
           <HomeHeroSection />
 
           <div className="grid gap-4">
