@@ -2,6 +2,7 @@ import { useCountUp } from './useCountUp'
 
 export function VolunteersStatsCard() {
   const volunteersCount = useCountUp(326)
+  const growthPercent = useCountUp(9)
   const activeCount = useCountUp(214)
   const eventsCount = useCountUp(27)
   const hoursCount = useCountUp(1940)
@@ -14,7 +15,7 @@ export function VolunteersStatsCard() {
           <p className="mt-2 text-3xl font-black text-slate-900">{volunteersCount.toLocaleString('en-US')}</p>
         </div>
         <div className="rounded-2xl bg-sky-100 px-4 py-2 text-right">
-          <p className="text-xs font-semibold text-sky-700">+9% هذا الشهر</p>
+          <p className="text-xs font-semibold text-sky-700">+{growthPercent}% هذا الشهر</p>
           <p className="mt-1 text-sm text-sky-900">نشاط متزايد</p>
         </div>
       </div>
