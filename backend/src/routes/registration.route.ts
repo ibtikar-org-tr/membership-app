@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { EmailAlreadyExistsError } from '../errors/registration.errors'
+import { EmailAlreadyExistsError, RegistrationEmailError } from '../errors/registration.errors'
 import { registrationSchema } from '../schemas/registration'
 import { registerUser } from '../services/registration.service'
 import type { AppBindings } from '../types/bindings'
@@ -39,6 +39,12 @@ registrationRoute.post(
       if (error instanceof EmailAlreadyExistsError) {
         return c.json({ error: error.message }, 409)
       }
+
+      if (error instanceof RegistrationEmailError) {
+        return c.json({ error: error.message }, 503)
+      }
+
+      console.error('Registration failed with unexpected error', error)
 
       return c.json({ error: 'Could not complete registration.' }, 500)
     }

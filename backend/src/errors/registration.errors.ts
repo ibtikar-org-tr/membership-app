@@ -4,3 +4,14 @@ export class EmailAlreadyExistsError extends Error {
     this.name = 'EmailAlreadyExistsError'
   }
 }
+
+export class RegistrationEmailError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message)
+    this.name = 'RegistrationEmailError'
+
+    if (options?.cause !== undefined) {
+      ;(this as Error & { cause?: unknown }).cause = options.cause
+    }
+  }
+}

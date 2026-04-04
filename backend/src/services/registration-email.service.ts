@@ -1,5 +1,6 @@
 import type { AppBindings } from '../types/bindings'
 import { WorkerMailer } from 'worker-mailer'
+import { RegistrationEmailError } from '../errors/registration.errors'
 
 interface SendRegistrationCredentialsEmailParams {
   recipientEmail: string
@@ -12,12 +13,14 @@ export async function sendRegistrationCredentialsEmail(
   params: SendRegistrationCredentialsEmailParams,
 ): Promise<void> {
   if (!bindings.SMTP_HOST || !bindings.SMTP_USER || !bindings.SMTP_PASS) {
-    throw new Error('SMTP configuration is incomplete. Please configure SMTP_HOST, SMTP_USER, and SMTP_PASS.')
+    throw new RegistrationEmailError(
+      'SMTP configuration is incomplete. Please configure SMTP_HOST, SMTP_USER, and SMTP_PASS.',
+    )
   }
 
   const smtpPort = Number.parseInt(String(bindings.SMTP_PORT ?? '587'), 10)
   if (!Number.isFinite(smtpPort) || smtpPort <= 0) {
-    throw new Error('SMTP_PORT must be a valid positive number.')
+    throw new RegistrationEmailError('SMTP_PORT must be a valid positive number.')
   }
 
   const text = [
@@ -27,19 +30,21 @@ export async function sendRegistrationCredentialsEmail(
     'Please log in and change your password immediately.',
   ].join('\n')
 
-  const mailer = await WorkerMailer.connect({
-    host: bindings.SMTP_HOST,
-    port: smtpPort,
-    secure: false,
-    startTls: true,
-    credentials: {
-      username: bindings.SMTP_USER,
-      password: bindings.SMTP_PASS,
-    },
-    authType: 'plain',
-  })
+  let mailer: Awaited<ReturnType<typeof WorkerMailer.connect>> | null = null
 
   try {
+    mailer = await WorkerMailer.connect({
+      host: bindings.SMTP_HOST,
+      port: smtpPort,
+      secure: false,
+      startTls: true,
+      credentials: {
+        username: bindings.SMTP_USER,
+        password: bindings.SMTP_PASS,
+      },
+      authType: 'plain',
+    })
+
     await mailer.send({
       from: bindings.SMTP_USER,
       to: params.recipientEmail,
@@ -47,7 +52,11 @@ export async function sendRegistrationCredentialsEmail(
       text,
       html: text,
     })
+  } catch (error) {
+    throw new RegistrationEmailError('Unable to send registration credentials email at this time.', { cause: error })
   } finally {
-    await mailer.close()
+    if (mailer) {
+      await mailer.close()
+    }
   }
 }
