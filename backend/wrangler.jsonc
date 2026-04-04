@@ -20,7 +20,13 @@
     }
   ],
   "vars": {
-    "MEMBERSHIP_NUMBER_PREFIX": "2501"
+    "MEMBERSHIP_NUMBER_PREFIX": "2501",
+    "SMTP_HOST": "",
+    "SMTP_PORT": "587",
+    "SMTP_USER": "",
+    "SMTP_PASS": "",
+    "REGISTRATION_EMAIL_FROM_NAME": "Ibtikar",
+    "REGISTRATION_EMAIL_FROM_ADDRESS": "noreply@ibtikar.org.tr"
   },
   "observability": {
     "enabled": true,
