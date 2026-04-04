@@ -64,6 +64,30 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: 'community',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardCommunityPage } = await import('../pages/dashboard/DashboardCommunityPage')
+          return { Component: DashboardCommunityPage }
+        },
+      },
+      {
+        path: 'projects',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardProjectsPage } = await import('../pages/dashboard/DashboardProjectsPage')
+          return { Component: DashboardProjectsPage }
+        },
+      },
+      {
+        path: 'events',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardEventsPage } = await import('../pages/dashboard/DashboardEventsPage')
+          return { Component: DashboardEventsPage }
+        },
+      },
+      {
         path: 'settings',
         hydrateFallbackElement: <div />,
         lazy: async () => {

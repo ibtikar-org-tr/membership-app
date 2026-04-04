@@ -9,6 +9,9 @@ interface SidebarItem {
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
   { to: '/dashboard', label: 'الرئيسية', helper: 'الإحصائيات والأخبار', end: true },
+  { to: '/dashboard/community', label: 'المجتمع', helper: 'قنوات ومجموعات الأعضاء' },
+  { to: '/dashboard/projects', label: 'المشاريع', helper: 'متابعة المبادرات النشطة' },
+  { to: '/dashboard/events', label: 'الفعاليات', helper: 'اللقاءات والورش القادمة' },
   { to: '/dashboard/profile', label: 'الملف الشخصي', helper: 'بياناتك الشخصية' },
   { to: '/dashboard/settings', label: 'الإعدادات', helper: 'تفضيلات الحساب' },
 ]
