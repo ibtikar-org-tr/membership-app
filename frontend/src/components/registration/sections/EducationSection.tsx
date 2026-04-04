@@ -52,6 +52,7 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
         <SearchableSelectField
           id="education-level"
           label="مستوى التعليم"
+          required
           placeholder="اختر مستوى التعليم"
           defaultAdornment={null}
           dropdownZIndex={1600}
@@ -65,6 +66,7 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
           value={data.school}
           onChange={(value) => onFieldChange('school', value)}
           helperText={schoolOrUniversityHelperText}
+          required
         />
         <SelectField
           id="graduation-year"
@@ -74,6 +76,7 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
           options={graduationYearOptions}
           value={data.graduationYear}
           onChange={(value) => onFieldChange('graduationYear', value)}
+          required
         />
         <TextField
           id="field-of-study"
@@ -81,6 +84,7 @@ export function EducationSection({ data, onFieldChange }: EducationSectionProps)
           value={data.fieldOfStudy}
           onChange={(value) => onFieldChange('fieldOfStudy', value)}
           helperText={fieldOfStudyHelperText}
+          required
         />
       </div>
     </SectionCard>

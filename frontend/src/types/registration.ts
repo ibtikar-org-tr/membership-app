@@ -6,6 +6,7 @@ export type RegistrationFormData = {
   sex: string
   dateOfBirth: string
   country: string
+  region: string
   city: string
   address: string
   educationLevel: string
@@ -34,6 +35,7 @@ export const initialRegistrationFormData: RegistrationFormData = {
   sex: '',
   dateOfBirth: '',
   country: '',
+  region: '',
   city: '',
   address: '',
   educationLevel: '',

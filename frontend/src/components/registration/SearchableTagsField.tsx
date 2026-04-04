@@ -10,6 +10,7 @@ export type SearchableTagOption = {
 type SearchableTagsFieldProps = {
   id: string
   label: string
+  required?: boolean
   value: string
   onChange: (value: string) => void
   options: Array<string | SearchableTagOption>
@@ -44,6 +45,7 @@ function dedupe(values: string[]) {
 export function SearchableTagsField({
   id,
   label,
+  required = false,
   value,
   onChange,
   options,
@@ -217,7 +219,19 @@ export function SearchableTagsField({
 
   return (
     <div ref={containerRef} className="relative flex flex-col gap-2 text-sm font-medium text-slate-700">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>
+        {label}
+        {required && <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>}
+      </label>
+
+      <input
+        tabIndex={-1}
+        aria-hidden="true"
+        value={selected.join(', ')}
+        onChange={() => undefined}
+        required={required}
+        className="sr-only"
+      />
 
       <div
         ref={triggerRef}

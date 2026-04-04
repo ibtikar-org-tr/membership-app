@@ -80,6 +80,22 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   }, [selectedCountryId])
 
   useEffect(() => {
+    if (selectedStateId > 0) {
+      return
+    }
+
+    const regionName = data.region.trim().toLowerCase()
+    if (!regionName || states.length === 0) {
+      return
+    }
+
+    const matchedState = states.find((state) => state.name.trim().toLowerCase() === regionName)
+    if (matchedState) {
+      setSelectedStateId(matchedState.id)
+    }
+  }, [data.region, selectedStateId, states])
+
+  useEffect(() => {
     let isActive = true
 
     if (!selectedCountryId || !selectedStateId) {
@@ -103,6 +119,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
     onFieldChange('country', value)
     if (value !== data.country) {
       setShowAddressField(false)
+      onFieldChange('region', '')
       onFieldChange('city', '')
       onFieldChange('address', '')
     }
@@ -117,6 +134,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
   const handleStateSelect = (state: State) => {
     setSelectedStateId(state.id)
     setShowAddressField(false)
+    onFieldChange('region', state.name)
     onFieldChange('city', '')
     onFieldChange('address', '')
   }
@@ -221,7 +239,18 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           onChange={(value) => onFieldChange('phoneNumber', value)}
         />
         <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-          <span>الجنس</span>
+          <span>
+            الجنس
+            <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>
+          </span>
+          <input
+            tabIndex={-1}
+            aria-hidden="true"
+            value={data.sex}
+            onChange={() => undefined}
+            required
+            className="sr-only"
+          />
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -272,7 +301,6 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
           label="تاريخ الميلاد"
           value={data.dateOfBirth}
           onChange={(value) => onFieldChange('dateOfBirth', value)}
-          required
         />
         <div className="min-w-0 space-y-4 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 md:col-span-2 md:p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">تفاصيل الموقع</p>
@@ -281,6 +309,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
             <SearchableSelectField
               id="country"
               label="الدولة"
+              required
               placeholder="ابحث واختر دولتك"
               value={selectedCountry ? String(selectedCountry.id) : ''}
               options={countryOptions}
@@ -303,12 +332,14 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
               <SearchableSelectField
                 id="state"
                 label="الولاية / المحافظة"
+                required
                 placeholder="ابحث واختر الولاية / المحافظة"
                 value={selectedStateId ? String(selectedStateId) : ''}
                 options={stateOptions}
                 onChange={(nextValue) => {
                   if (!nextValue) {
                     setSelectedStateId(0)
+                    onFieldChange('region', '')
                     onFieldChange('city', '')
                     onFieldChange('address', '')
                     return

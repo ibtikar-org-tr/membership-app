@@ -34,6 +34,7 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
         <SearchableTagsField
           id="interests"
           label="الاهتمامات (التي تودّ تعلّمها)"
+          required
           value={data.interests}
           options={POPULAR_SKILLS}
           initialSuggestions={POPULAR_SKILLS_INITIAL_SUGGESTIONS}

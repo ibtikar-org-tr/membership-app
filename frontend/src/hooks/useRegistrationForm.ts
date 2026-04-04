@@ -108,6 +108,7 @@ function toRegistrationPayload(formData: RegistrationFormData) {
     sex: ALLOWED_SEX_VALUES.has(normalizedSex) ? normalizedSex : undefined,
     dateOfBirth: toOptionalTrimmedString(formData.dateOfBirth),
     country: toOptionalTrimmedString(formData.country)?.toUpperCase(),
+    region: toOptionalTrimmedString(formData.region),
     city: toOptionalTrimmedString(formData.city),
     address: toOptionalTrimmedString(formData.address),
     educationLevel: toOptionalTrimmedString(formData.educationLevel),
@@ -126,6 +127,22 @@ function toRegistrationPayload(formData: RegistrationFormData) {
     interestInVolunteering: toOptionalTrimmedString(formData.interestInVolunteering),
     previousExperience: toOptionalTrimmedString(formData.previousExperience),
   }
+}
+
+function validateRequiredFields(formData: RegistrationFormData) {
+  if (!formData.email.trim()) return 'يرجى إدخال البريد الإلكتروني.'
+  if (!formData.arName.trim()) return 'يرجى إدخال الاسم بالعربية.'
+  if (!formData.enName.trim()) return 'يرجى إدخال الاسم بالإنكليزية أو التركية.'
+  if (!ALLOWED_SEX_VALUES.has(formData.sex.trim())) return 'يرجى اختيار الجنس.'
+  if (!formData.country.trim()) return 'يرجى اختيار الدولة.'
+  if (!formData.region.trim()) return 'يرجى اختيار الولاية / المحافظة.'
+  if (!formData.educationLevel.trim()) return 'يرجى اختيار مستوى التعليم.'
+  if (!formData.school.trim()) return 'يرجى إدخال اسم المدرسة أو الجامعة.'
+  if (!formData.fieldOfStudy.trim()) return 'يرجى إدخال الفرع الدراسي.'
+  if (!formData.graduationYear.trim()) return 'يرجى اختيار سنة التخرج.'
+  if (!toOptionalStringArray(formData.interests)) return 'يرجى إضافة اهتمام واحد على الأقل.'
+
+  return null
 }
 
 export function useRegistrationForm() {
@@ -191,6 +208,13 @@ export function useRegistrationForm() {
 
     setSubmitError(null)
     setSubmitSuccessMessage(null)
+
+    const requiredFieldError = validateRequiredFields(formData)
+    if (requiredFieldError) {
+      setSubmitError(requiredFieldError)
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
