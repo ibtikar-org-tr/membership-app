@@ -9,7 +9,10 @@ function randomDigits(length: number): string {
 }
 
 export async function generateUniqueMembershipNumber(db: D1DatabaseLike, prefix: string): Promise<string> {
-  const effectivePrefix = prefix?.trim() || '2501'
+  const effectivePrefix = prefix?.trim()
+  if (!effectivePrefix) {
+    throw new Error('Membership number prefix is required. Please contact the administrator.')
+  }
 
   for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt += 1) {
     const candidate = `${effectivePrefix}${randomDigits(RANDOM_DIGIT_LENGTH)}`
@@ -24,5 +27,5 @@ export async function generateUniqueMembershipNumber(db: D1DatabaseLike, prefix:
     }
   }
 
-  throw new Error('Unable to generate a unique membership number.')
+  throw new Error('Unable to generate a unique membership number. Please contact the administrator.')
 }
