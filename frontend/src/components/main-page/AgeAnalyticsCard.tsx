@@ -23,20 +23,20 @@ export function AgeAnalyticsCard({ ageDistribution }: AgeAnalyticsCardProps) {
   const ageChartRef = useRef<HTMLCanvasElement | null>(null)
   const ageChartInstanceRef = useRef<Chart<'line'> | null>(null)
   const chartData = useMemo(() => {
-    const sorted = [...(ageDistribution ?? [])]
-      .filter((item) => Number.isFinite(item.age) && Number.isFinite(item.count))
-      .sort((a, b) => a.age - b.age)
+    const grouped = [...(ageDistribution ?? [])].filter(
+      (item) => typeof item.group === 'string' && item.group.trim().length > 0 && Number.isFinite(item.count),
+    )
 
-    if (sorted.length === 0) {
+    if (grouped.length === 0) {
       return {
-        labels: ['0'],
+        labels: ['15-18'],
         values: [0],
       }
     }
 
     return {
-      labels: sorted.map((item) => String(item.age)),
-      values: sorted.map((item) => item.count),
+      labels: grouped.map((item) => item.group),
+      values: grouped.map((item) => item.count),
     }
   }, [ageDistribution])
 

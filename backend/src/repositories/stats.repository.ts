@@ -15,7 +15,7 @@ interface AgeDistributionRow {
 }
 
 export interface AgeDistributionItem {
-  age: number
+  group: string
   count: number
 }
 
@@ -59,10 +59,10 @@ function parseAgeDistribution(raw: string | null): AgeDistributionItem[] {
 
     return parsed
       .map((item) => ({
-        age: typeof item.age === 'number' ? item.age : Number(item.age),
+        group: typeof item.group === 'string' ? item.group : '',
         count: typeof item.count === 'number' ? item.count : Number(item.count),
       }))
-      .filter((item) => Number.isFinite(item.age) && Number.isFinite(item.count) && item.age >= 0 && item.count >= 0)
+      .filter((item) => item.group.length > 0 && Number.isFinite(item.count) && item.count >= 0)
   } catch {
     return []
   }
@@ -84,21 +84,46 @@ export async function getMemberStats(db: D1DatabaseLike, membershipNumberPrefix:
 
   const ageDistributionRow = await db
     .prepare(
-      `WITH age_counts AS (
-        SELECT
-          CAST((julianday('now') - julianday(date_of_birth)) / 365.2425 AS INTEGER) AS age,
-          COUNT(*) AS member_count
+      `WITH member_ages AS (
+        SELECT CAST((julianday('now') - julianday(date_of_birth)) / 365.2425 AS INTEGER) AS age
         FROM user_info
         WHERE
           date_of_birth IS NOT NULL
           AND TRIM(date_of_birth) <> ''
           AND julianday(date_of_birth) IS NOT NULL
           AND julianday(date_of_birth) <= julianday('now')
-        GROUP BY age
-        ORDER BY age
+      ),
+      grouped AS (
+        SELECT
+          CASE
+            WHEN age BETWEEN 15 AND 18 THEN '15-18'
+            WHEN age BETWEEN 19 AND 22 THEN '19-22'
+            WHEN age BETWEEN 23 AND 26 THEN '23-26'
+            WHEN age BETWEEN 27 AND 30 THEN '27-30'
+            WHEN age BETWEEN 31 AND 35 THEN '31-35'
+            WHEN age > 35 THEN '36+'
+            ELSE NULL
+          END AS age_group,
+          COUNT(*) AS member_count
+        FROM member_ages
+        GROUP BY age_group
+      ),
+      ordered_groups AS (
+        SELECT age_group, member_count
+        FROM grouped
+        WHERE age_group IS NOT NULL
+        ORDER BY CASE age_group
+          WHEN '15-18' THEN 1
+          WHEN '19-22' THEN 2
+          WHEN '23-26' THEN 3
+          WHEN '27-30' THEN 4
+          WHEN '31-35' THEN 5
+          WHEN '36+' THEN 6
+          ELSE 99
+        END
       )
-      SELECT COALESCE(json_group_array(json_object('age', age, 'count', member_count)), '[]') AS age_distribution
-      FROM age_counts`
+      SELECT COALESCE(json_group_array(json_object('group', age_group, 'count', member_count)), '[]') AS age_distribution
+      FROM ordered_groups`
     )
     .bind()
     .first<AgeDistributionRow>()

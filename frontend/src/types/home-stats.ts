@@ -15,7 +15,7 @@ export interface HomeStatsGenderDistribution {
 }
 
 export interface HomeStatsAgeDistributionItem {
-  age: number
+  group: string
   count: number
 }
 

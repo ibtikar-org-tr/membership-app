@@ -36,16 +36,16 @@ function parseStatsResponse(payload: unknown): HomeStatsResponse | null {
       }
 
       const ageItem = item as Record<string, unknown>
-      if (!isFiniteNumber(ageItem.age) || !isFiniteNumber(ageItem.count)) {
+      if (typeof ageItem.group !== 'string' || !ageItem.group.trim() || !isFiniteNumber(ageItem.count)) {
         return null
       }
 
       return {
-        age: ageItem.age,
+        group: ageItem.group,
         count: ageItem.count,
       }
     })
-    .filter((item): item is { age: number; count: number } => item !== null)
+    .filter((item): item is { group: string; count: number } => item !== null)
 
   return {
     overview: {
