@@ -1,13 +1,5 @@
 import type { D1DatabaseLike } from '../types/bindings'
-
-export interface CreateUserRegistrationInfoParams {
-  membershipNumber: string
-  whereHeardAboutUs: string | null
-  motivationLetter: string | null
-  friendsOnPlatform: string | null
-  interestInVolunteering: string | null
-  previousExperience: string | null
-}
+import { CreateUserRegistrationInfoParams } from '../schemas/user.schemas'
 
 export async function createUserRegistrationInfo(
   db: D1DatabaseLike,

@@ -1,30 +1,5 @@
 import type { D1DatabaseLike } from '../types/bindings'
-
-export interface CreateUserInfoParams {
-  membershipNumber: string
-  enName: string
-  arName: string
-  phoneNumber: string | null
-  sex: string | null
-  dateOfBirth: string | null
-  country: string | null
-  region: string | null
-  city: string | null
-  address: string | null
-  educationLevel: string | null
-  school: string | null
-  fieldOfStudy: string | null
-  graduationYear: number | null
-  bloodType: string | null
-  telegramId: string | null
-  telegramUsername: string | null
-  socialMediaLinks: string | null
-  profilePictureUrl: string | null
-  biography: string | null
-  interests: string | null
-  skills: string | null
-  languages: string | null
-}
+import { CreateUserInfoParams } from '../schemas/user.schemas'
 
 export async function createUserInfo(db: D1DatabaseLike, params: CreateUserInfoParams): Promise<void> {
   await db
