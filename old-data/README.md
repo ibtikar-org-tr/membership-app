@@ -69,7 +69,19 @@ python3 old-data/import_old_csv.py \
   --dry-run
 ```
 
-### C) Use a custom env file path
+### C) Test with only first N rows
+
+Use this to run quickly on a small sample (data rows only, header excluded):
+
+```bash
+python3 old-data/import_old_csv.py \
+  --csv old-data/old.csv \
+  --out old-data/import_old.sample.sql \
+  --limit 10 \
+  --dry-run
+```
+
+### D) Use a custom env file path
 
 ```bash
 python3 old-data/import_old_csv.py \
@@ -78,7 +90,7 @@ python3 old-data/import_old_csv.py \
   --env-file old-data/.env
 ```
 
-### D) Override DeepSeek settings from CLI
+### E) Override DeepSeek settings from CLI
 
 ```bash
 python3 old-data/import_old_csv.py \

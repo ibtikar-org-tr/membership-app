@@ -477,6 +477,7 @@ def generate_sql_file(
     csv_path: str,
     out_path: str,
     dry_run: bool,
+    row_limit: int | None,
     *,
     deepseek_api_key: str | None,
     deepseek_model: str,
@@ -485,7 +486,8 @@ def generate_sql_file(
 ) -> ImportStats:
     stats = ImportStats()
 
-    rows = read_csv_rows(csv_path)
+    all_rows = read_csv_rows(csv_path)
+    rows = all_rows if row_limit is None else all_rows[:row_limit]
     stats.total_rows = len(rows)
 
     sql_lines: list[str] = [
@@ -533,6 +535,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--csv", required=True, help="Path to source CSV file")
     parser.add_argument("--out", required=True, help="Path to output SQL file")
     parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Process only the first N data rows from CSV (for testing)",
+    )
+    parser.add_argument(
         "--env-file",
         default="old-data/.env",
         help="Path to .env file for DeepSeek settings",
@@ -579,6 +587,10 @@ def main() -> int:
     csv_path = os.path.abspath(args.csv)
     out_path = os.path.abspath(args.out)
 
+    if args.limit is not None and args.limit <= 0:
+        print("--limit must be a positive integer")
+        return 2
+
     if not os.path.exists(csv_path):
         print(f"CSV file not found: {csv_path}")
         return 2
@@ -589,6 +601,7 @@ def main() -> int:
         csv_path=csv_path,
         out_path=out_path,
         dry_run=args.dry_run,
+        row_limit=args.limit,
         deepseek_api_key=deepseek_api_key,
         deepseek_model=deepseek_model,
         deepseek_base_url=deepseek_base_url,
