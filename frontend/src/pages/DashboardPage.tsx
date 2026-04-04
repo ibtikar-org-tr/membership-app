@@ -206,7 +206,7 @@ export function DashboardPage() {
   return (
     <main className="min-h-screen w-full bg-linear-to-br from-slate-100 via-cyan-50 to-sky-100 text-slate-800" dir="rtl">
       <div className="flex min-h-screen w-full flex-col lg:flex-row-reverse">
-        <aside className="w-full border-b border-slate-200 bg-white p-4 shadow-sm lg:h-screen lg:w-80 lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-l">
+        <aside className="w-full border-b border-slate-200 bg-white p-4 shadow-sm lg:fixed lg:inset-y-0 lg:right-0 lg:w-80 lg:overflow-y-auto lg:border-b-0 lg:border-l">
           <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">لوحة التحكم</p>
           <h1 className="mt-2 text-xl font-black text-slate-900">مرحباً أحمد</h1>
           <p className="mt-1 text-sm text-slate-500">صفحة تجريبية بدون ربط خلفي</p>
@@ -240,7 +240,7 @@ export function DashboardPage() {
           </Link>
         </aside>
 
-        <section className="w-full flex-1 p-4 md:p-6 lg:p-8">{renderedSection}</section>
+        <section className="w-full flex-1 p-4 md:p-6 lg:pr-[22rem] lg:pl-8 lg:py-8">{renderedSection}</section>
       </div>
     </main>
   )
