@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
+import { FiBookOpen, FiFileText } from 'react-icons/fi'
 import { useRegistrationForm } from '../hooks/useRegistrationForm'
 import type { RegistrationFormData } from '../types/registration'
 
@@ -83,17 +84,19 @@ export function RegistrationPage() {
                 href="https://data.ibtikar.org.tr/documents/ar/intro.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-auto self-start rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:px-4 sm:py-2 sm:text-sm"
+                className="inline-flex w-auto self-start items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:px-4 sm:py-2 sm:text-sm"
               >
-                📄 الملف التّعريفي
+                <FiFileText aria-hidden="true" className="text-sm" />
+                <span>الملف التّعريفي</span>
               </a>
               <a
                 href="https://github.com/ibtikar-org-tr/bylaws"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-auto self-start rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:px-4 sm:py-2 sm:text-sm"
+                className="inline-flex w-auto self-start items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:px-4 sm:py-2 sm:text-sm"
               >
-                📋 النظام الداخلي
+                <FiBookOpen aria-hidden="true" className="text-sm" />
+                <span>النظام الداخلي</span>
               </a>
             </div>
             <Link

@@ -1,4 +1,5 @@
 import { TextField } from '../TextField'
+import { FiExternalLink } from 'react-icons/fi'
 
 type BylawsAcknowledgementSectionProps = {
   value: string
@@ -39,7 +40,7 @@ export function BylawsAcknowledgementSection({ value, onChange }: BylawsAcknowle
           className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
         >
           ملف النظام الداخلي
-          <span aria-hidden="true">↗</span>
+          <FiExternalLink aria-hidden="true" className="text-sm" />
         </a>
         <a
           href="https://data.ibtikar.org.tr/documents/ar/intro.pdf"
@@ -48,7 +49,7 @@ export function BylawsAcknowledgementSection({ value, onChange }: BylawsAcknowle
           className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:border-slate-500 hover:text-slate-900"
         >
           الملف التّعريفي
-          <span aria-hidden="true">↗</span>
+          <FiExternalLink aria-hidden="true" className="text-sm" />
         </a>
       </div>
       <div className="mt-4">
