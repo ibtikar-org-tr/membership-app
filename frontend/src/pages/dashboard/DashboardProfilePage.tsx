@@ -22,21 +22,21 @@ export function DashboardProfilePage() {
   ]
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-black text-slate-900 sm:text-xl">الملف الشخصي</h2>
+          <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">الملف الشخصي</h2>
           <p className="mt-1 text-sm text-slate-500">بيانات مطابقة تقريباً لحقول نموذج التسجيل.</p>
         </div>
-        <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">
+        <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
           حالة الحساب: مكتمل
         </span>
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-2">
         {profileRows.map((row) => (
-          <div key={row.label} className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3">
-            <p className="text-xs font-semibold text-slate-500">{row.label}</p>
-            <p className="mt-1 text-sm font-bold text-slate-800">{row.value}</p>
+          <div key={row.label} className="rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3">
+            <p className="text-xs font-medium text-slate-500">{row.label}</p>
+            <p className="mt-1 text-sm font-semibold text-slate-800">{row.value}</p>
           </div>
         ))}
       </div>

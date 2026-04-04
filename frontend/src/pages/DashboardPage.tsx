@@ -15,13 +15,13 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 
 export function DashboardPage() {
   return (
-    <main className="min-h-screen w-full bg-slate-100 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
+    <main className="min-h-screen w-full bg-[#f7f7f5] text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
       <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
-        <aside className="w-full border-b border-slate-200 bg-white p-4 shadow-sm lg:fixed lg:inset-y-0 lg:right-0 lg:flex lg:w-80 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-l">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">لوحة التحكم</p>
-            <h1 className="mt-2 text-xl font-black text-slate-900">مرحباً أحمد</h1>
-            <p className="mt-1 text-sm text-slate-500">صفحة تجريبية بدون ربط خلفي</p>
+        <aside className="w-full border-b border-slate-200/80 bg-[#fbfbfa] p-4 lg:fixed lg:inset-y-0 lg:right-0 lg:flex lg:w-80 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-l">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">لوحة التحكم</p>
+            <h1 className="mt-2 text-lg font-semibold text-slate-900">مرحباً أحمد</h1>
+            <p className="mt-1 text-sm text-slate-500">نظرة عامة على حسابك ومحتوى المجتمع</p>
           </div>
 
           <nav className="mt-5 space-y-2">
@@ -32,19 +32,19 @@ export function DashboardPage() {
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `block w-full rounded-xl border px-4 py-3 text-right transition ${
+                    `block w-full rounded-lg border px-4 py-3 text-right transition ${
                       isActive
-                        ? 'border-cyan-200 bg-cyan-50 text-cyan-900 shadow-xs'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                        ? 'border-slate-300 bg-white text-slate-900'
+                        : 'border-transparent bg-transparent text-slate-600 hover:border-slate-200 hover:bg-white/80'
                     }`
                   }
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-black">{item.label}</p>
+                      <p className="text-sm font-semibold">{item.label}</p>
                       <p className="mt-0.5 text-xs text-slate-500">{item.helper}</p>
                     </div>
-                    <span className="mt-1 inline-block h-2 w-2 rounded-full bg-current opacity-70" />
+                    <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-current opacity-60" />
                   </div>
                 </NavLink>
               )
@@ -53,22 +53,22 @@ export function DashboardPage() {
 
           <Link
             to="/"
-            className="mt-5 inline-flex w-full items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
             العودة إلى الرئيسية
           </Link>
 
           <div className="mt-6 space-y-3 border-t border-slate-200 pt-4 lg:mt-auto">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
               <p className="text-xs font-semibold text-slate-500">المستخدم الحالي</p>
-              <p className="mt-1 text-sm font-black text-slate-900">أحمد سالم</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">أحمد سالم</p>
               <p className="mt-1 text-xs text-slate-600">ahmad.salem@example.com</p>
-              <p className="mt-2 text-[11px] font-medium text-cyan-700"># العضوية: IBT-2026-0137</p>
+              <p className="mt-2 text-[11px] font-medium text-slate-500"># العضوية: IBT-2026-0137</p>
             </div>
 
             <Link
               to="/login"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100"
+              className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               تسجيل الخروج
             </Link>
