@@ -114,7 +114,7 @@ export function RegistrationPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400 md:w-auto"
+                  className="w-full rounded-xl bg-teal-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400 md:w-auto hover:cursor-pointer"
                 >
                   {isSubmitting ? 'جارٍ إرسال التسجيل...' : 'إرسال التسجيل'}
                 </button>
