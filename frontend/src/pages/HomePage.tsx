@@ -27,30 +27,38 @@ function StatsCardFallback() {
 
 export function HomePage() {
   const sectionRef = useRef<HTMLElement | null>(null)
+  const contentRef = useRef<HTMLDivElement | null>(null)
   const [sectionHeight, setSectionHeight] = useState<number | null>(null)
 
   useEffect(() => {
     const sectionElement = sectionRef.current
-    if (!sectionElement) {
+    const contentElement = contentRef.current
+    if (!sectionElement || !contentElement) {
       return
     }
 
     const updateHeight = () => {
-      setSectionHeight(sectionElement.scrollHeight)
+      setSectionHeight(contentElement.scrollHeight)
     }
 
     updateHeight()
+    const t1 = window.setTimeout(updateHeight, 50)
+    const t2 = window.setTimeout(updateHeight, 250)
+    const t3 = window.setTimeout(updateHeight, 800)
 
     const resizeObserver = new ResizeObserver(() => {
       updateHeight()
     })
 
-    resizeObserver.observe(sectionElement)
+    resizeObserver.observe(contentElement)
     window.addEventListener('resize', updateHeight)
 
     return () => {
       resizeObserver.disconnect()
       window.removeEventListener('resize', updateHeight)
+      window.clearTimeout(t1)
+      window.clearTimeout(t2)
+      window.clearTimeout(t3)
     }
   }, [])
 
@@ -59,27 +67,29 @@ export function HomePage() {
       <div className="mx-auto flex min-h-[80vh] w-full max-w-6xl items-center">
         <section
           ref={sectionRef}
-          className="grid w-full gap-8 overflow-hidden rounded-3xl border border-white/60 bg-white/70 p-8 shadow-2xl backdrop-blur transition-[height] duration-1000 ease-out md:grid-cols-2 md:p-12"
+          className="w-full overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-2xl backdrop-blur transition-[height] duration-1000 ease-out"
           style={sectionHeight === null ? undefined : { height: `${sectionHeight}px` }}
         >
-          <HomeHeroSection />
+          <div ref={contentRef} className="grid gap-8 p-8 md:grid-cols-2 md:p-12">
+            <HomeHeroSection />
 
-          <div className="grid gap-4">
-            <Suspense fallback={<StatsCardFallback />}>
-              <LazyReveal delayMs={0}>
-                <MembersOverviewCard />
-              </LazyReveal>
-            </Suspense>
-            <Suspense fallback={<StatsCardFallback />}>
-              <LazyReveal delayMs={90}>
-                <GenderDistributionCard />
-              </LazyReveal>
-            </Suspense>
-            <Suspense fallback={<StatsCardFallback />}>
-              <LazyReveal delayMs={170}>
-                <AgeAnalyticsCard />
-              </LazyReveal>
-            </Suspense>
+            <div className="grid gap-4">
+              <Suspense fallback={<StatsCardFallback />}>
+                <LazyReveal delayMs={0}>
+                  <MembersOverviewCard />
+                </LazyReveal>
+              </Suspense>
+              <Suspense fallback={<StatsCardFallback />}>
+                <LazyReveal delayMs={90}>
+                  <GenderDistributionCard />
+                </LazyReveal>
+              </Suspense>
+              <Suspense fallback={<StatsCardFallback />}>
+                <LazyReveal delayMs={170}>
+                  <AgeAnalyticsCard />
+                </LazyReveal>
+              </Suspense>
+            </div>
           </div>
         </section>
       </div>
