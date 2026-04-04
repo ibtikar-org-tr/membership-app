@@ -6,15 +6,16 @@
   "d1_databases": [
     {
       "binding": "MY_DB",
-      "database_name": "membership-app-database",
-      "database_id": "",
-      "remote": true
+      "database_name": "membership-app-database-dev",
+      "database_id": "bb86e7a4-11e2-4d80-88b8-c376a19994dd",
+      "remote": true,
+      "migrations_dir": "../database"
     }
   ],
   "r2_buckets": [
     {
       "binding": "MY_BUCKET",
-      "bucket_name": "membership-app-bucket",
+      "bucket_name": "membership-app-bucket-dev",
       "remote": true
     }
   ],
