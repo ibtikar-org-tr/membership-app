@@ -302,14 +302,30 @@ def heuristic_normalize_friends(raw_value: str | None) -> str | None:
     if lowered in none_tokens:
         return None
 
+    invitation_markers = (
+        "تمت دعوتي",
+        "دعوتي",
+        "invited",
+        "via",
+        "عبر العضو",
+        "عن طريق",
+    )
+
     normalized = value.replace("\n", ", ").replace(";", ",").replace("،", ",")
     parts = [clean(part) for part in normalized.split(",")]
     parts = [part for part in parts if part]
 
+    filtered_parts: list[str] = []
+    for part in parts:
+        part_lower = part.casefold()
+        if any(marker in part_lower for marker in invitation_markers):
+            continue
+        filtered_parts.append(part)
+
     # Deduplicate while preserving order.
     seen: set[str] = set()
     deduped: list[str] = []
-    for part in parts:
+    for part in filtered_parts:
         key = part.casefold()
         if key not in seen:
             seen.add(key)
