@@ -38,10 +38,10 @@ cd /home/msi/0volume/coding/ibtikar/VMS/membership-app
 Create local env file (optional but recommended for DeepSeek):
 
 ```bash
-cp old-data/.env.example old-data/.env
+cp .env.example .env
 ```
 
-Then edit `old-data/.env` and set your key:
+Then edit `.env` and set your key:
 
 ```env
 DEEPSEEK_API_KEY=your_real_key_here
@@ -55,17 +55,17 @@ DEEPSEEK_TIMEOUT=30
 ### A) Generate SQL (normal run)
 
 ```bash
-python3 old-data/import_old_csv.py \
-  --csv old-data/old.csv \
-  --out old-data/import_old.sql
+python3 import_old_csv.py \
+  --csv old.csv \
+  --out import_old.sql
 ```
 
 ### B) Dry run (build SQL but end with ROLLBACK)
 
 ```bash
-python3 old-data/import_old_csv.py \
-  --csv old-data/old.csv \
-  --out old-data/import_old.sql \
+python3 import_old_csv.py \
+  --csv old.csv \
+  --out import_old.sql \
   --dry-run
 ```
 
@@ -74,9 +74,9 @@ python3 old-data/import_old_csv.py \
 Use this to run quickly on a small sample (data rows only, header excluded):
 
 ```bash
-python3 old-data/import_old_csv.py \
-  --csv old-data/old.csv \
-  --out old-data/import_old.sample.sql \
+python3 import_old_csv.py \
+  --csv old.csv \
+  --out import_old.sample.sql \
   --limit 10 \
   --dry-run
 ```
@@ -84,18 +84,18 @@ python3 old-data/import_old_csv.py \
 ### D) Use a custom env file path
 
 ```bash
-python3 old-data/import_old_csv.py \
-  --csv old-data/old.csv \
-  --out old-data/import_old.sql \
-  --env-file old-data/.env
+python3 import_old_csv.py \
+  --csv old.csv \
+  --out import_old.sql \
+  --env-file .env
 ```
 
 ### E) Override DeepSeek settings from CLI
 
 ```bash
-python3 old-data/import_old_csv.py \
-  --csv old-data/old.csv \
-  --out old-data/import_old.sql \
+python3 import_old_csv.py \
+  --csv old.csv \
+  --out import_old.sql \
   --deepseek-api-key "..." \
   --deepseek-model deepseek-chat \
   --deepseek-base-url https://api.deepseek.com \
@@ -106,7 +106,7 @@ python3 old-data/import_old_csv.py \
 
 For DeepSeek settings, priority is:
 1. CLI arguments (`--deepseek-*`)
-2. Environment variables from `--env-file` (default: `old-data/.env`)
+2. Environment variables from `--env-file` (default: `.env`)
 3. Built-in defaults
 
 If no API key is present, script automatically uses heuristic fallback.
