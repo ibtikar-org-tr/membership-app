@@ -160,3 +160,88 @@ export const MOCK_PROJECTS: MockProject[] = [
     ],
   },
 ]
+
+export interface MockEventAgendaItem {
+  time: string
+  topic: string
+}
+
+export interface MockEvent {
+  id: string
+  title: string
+  date: string
+  time: string
+  location: string
+  host: string
+  attendees: number
+  summary: string
+  tags: string[]
+  agenda: MockEventAgendaItem[]
+}
+
+export const MOCK_EVENTS: MockEvent[] = [
+  {
+    id: 'react-workshop-beginners',
+    title: 'ورشة React للمبتدئين',
+    date: '10 نيسان 2026',
+    time: '18:00',
+    location: 'أونلاين',
+    host: 'فريق الواجهة الأمامية',
+    attendees: 95,
+    summary: 'ورشة عملية للبدء في React تشمل المفاهيم الأساسية وبناء صفحة تفاعلية.',
+    tags: ['React', 'Frontend', 'Workshop'],
+    agenda: [
+      { time: '18:00', topic: 'مقدمة سريعة وأهداف الورشة' },
+      { time: '18:30', topic: 'شرح المكوّنات وإدارة الحالة' },
+      { time: '19:20', topic: 'تطبيق عملي وأسئلة مباشرة' },
+    ],
+  },
+  {
+    id: 'projects-demo-session',
+    title: 'جلسة عرض المشاريع',
+    date: '15 نيسان 2026',
+    time: '19:30',
+    location: 'مركز إبتكار',
+    host: 'فريق المشاريع',
+    attendees: 60,
+    summary: 'جلسة شهرية لعرض تقدم المشاريع ومشاركة التحديات والحلول بين الفرق.',
+    tags: ['Projects', 'Demo'],
+    agenda: [
+      { time: '19:30', topic: 'افتتاح وتحديثات سريعة' },
+      { time: '19:45', topic: 'عروض الفرق المشاركة' },
+      { time: '20:30', topic: 'نقاش وخطة الدورة القادمة' },
+    ],
+  },
+  {
+    id: 'data-community-meetup',
+    title: 'لقاء مجتمع البيانات',
+    date: '21 نيسان 2026',
+    time: '17:00',
+    location: 'أونلاين',
+    host: 'فريق البيانات',
+    attendees: 72,
+    summary: 'لقاء متخصص لمناقشة أدوات التحليل وبناء لوحات البيانات للمجتمع.',
+    tags: ['Data', 'Analytics'],
+    agenda: [
+      { time: '17:00', topic: 'عرض حالات استخدام' },
+      { time: '17:25', topic: 'نصائح بناء المؤشرات' },
+      { time: '18:00', topic: 'جلسة أسئلة وإجابات' },
+    ],
+  },
+  {
+    id: 'team-building-day',
+    title: 'فعالية بناء الفرق',
+    date: '28 نيسان 2026',
+    time: '16:00',
+    location: 'قاعة الشباب',
+    host: 'فريق الموارد البشرية',
+    attendees: 50,
+    summary: 'نشاط تفاعلي لتعزيز التعاون والتواصل بين أعضاء الفرق المختلفة.',
+    tags: ['Teamwork', 'Community'],
+    agenda: [
+      { time: '16:00', topic: 'تمارين تعارف سريعة' },
+      { time: '16:40', topic: 'أنشطة جماعية موجهة' },
+      { time: '17:30', topic: 'جلسة استخلاص الدروس' },
+    ],
+  },
+]
