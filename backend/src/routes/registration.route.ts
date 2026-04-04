@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { EmailAlreadyExistsError, RegistrationEmailError } from '../errors/registration.errors'
+import { EmailAlreadyExistsError, PhoneNumberAlreadyExistsError, RegistrationEmailError } from '../errors/registration.errors'
 import { registrationSchema } from '../schemas/registration'
 import { registerUser } from '../services/registration.service'
 import type { AppBindings } from '../types/bindings'
@@ -37,6 +37,10 @@ registrationRoute.post(
       )
     } catch (error) {
       if (error instanceof EmailAlreadyExistsError) {
+        return c.json({ error: error.message }, 409)
+      }
+
+      if (error instanceof PhoneNumberAlreadyExistsError) {
         return c.json({ error: error.message }, 409)
       }
 
