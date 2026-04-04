@@ -1,7 +1,19 @@
-import { AgeAnalyticsCard } from './components/AgeAnalyticsCard'
-import { GenderDistributionCard } from './components/GenderDistributionCard'
+import { Suspense, lazy } from 'react'
 import { HomeHeroSection } from './components/HomeHeroSection'
-import { MembersOverviewCard } from './components/MembersOverviewCard'
+
+const MembersOverviewCard = lazy(() =>
+  import('./components/MembersOverviewCard').then((module) => ({ default: module.MembersOverviewCard })),
+)
+const GenderDistributionCard = lazy(() =>
+  import('./components/GenderDistributionCard').then((module) => ({ default: module.GenderDistributionCard })),
+)
+const AgeAnalyticsCard = lazy(() =>
+  import('./components/AgeAnalyticsCard').then((module) => ({ default: module.AgeAnalyticsCard })),
+)
+
+function StatsCardFallback() {
+  return <div className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white/70 shadow-lg" />
+}
 
 export function HomePage() {
   return (
@@ -11,10 +23,15 @@ export function HomePage() {
           <HomeHeroSection />
 
           <div className="grid gap-4">
-            <MembersOverviewCard />
-            <GenderDistributionCard />
-
-            <AgeAnalyticsCard />
+            <Suspense fallback={<StatsCardFallback />}>
+              <MembersOverviewCard />
+            </Suspense>
+            <Suspense fallback={<StatsCardFallback />}>
+              <GenderDistributionCard />
+            </Suspense>
+            <Suspense fallback={<StatsCardFallback />}>
+              <AgeAnalyticsCard />
+            </Suspense>
           </div>
         </section>
       </div>

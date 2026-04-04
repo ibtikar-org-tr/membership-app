@@ -1,5 +1,13 @@
+import { Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
-import { VolunteersStatsCard } from './VolunteersStatsCard'
+
+const VolunteersStatsCard = lazy(() =>
+  import('./VolunteersStatsCard').then((module) => ({ default: module.VolunteersStatsCard })),
+)
+
+function VolunteersCardFallback() {
+  return <div className="h-56 animate-pulse rounded-2xl border border-slate-200 bg-white/70 shadow-lg" />
+}
 
 export function HomeHeroSection() {
   return (
@@ -30,8 +38,9 @@ export function HomeHeroSection() {
           نسيت معلوماتي
         </Link>
       </div>
-
-      <VolunteersStatsCard />
+      <Suspense fallback={<VolunteersCardFallback />}>
+        <VolunteersStatsCard />
+      </Suspense>
     </div>
   )
 }
