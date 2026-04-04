@@ -40,7 +40,6 @@ jobs:
           | .vars.SMTP_HOST = $smtpHost
           | .vars.SMTP_PORT = $smtpPort
           | .vars.SMTP_USER = $smtpUser
-          | .vars.SMTP_PASS = $smtpPass'
 
           jq \
             --arg dbid "${{ vars.D1_DATABASE_ID }}" \
@@ -50,7 +49,6 @@ jobs:
             --arg smtpHost "${{ secrets.SMTP_HOST }}" \
             --arg smtpPort "${{ secrets.SMTP_PORT }}" \
             --arg smtpUser "${{ secrets.SMTP_USER }}" \
-            --arg smtpPass "${{ secrets.SMTP_PASS }}" \
             "$jq_filter" \
             wrangler.jsonc > wrangler.local.jsonc
 
