@@ -77,8 +77,7 @@ export async function getMemberStats(db: D1DatabaseLike, membershipNumberPrefix:
         (SELECT COUNT(*) FROM user_info WHERE telegram_id IS NOT NULL AND TRIM(telegram_id) <> '') AS telegram_active,
         (SELECT COUNT(DISTINCT country) FROM user_info WHERE country IS NOT NULL AND TRIM(country) <> '') AS total_countries,
         (SELECT COUNT(DISTINCT school) FROM user_info WHERE school IS NOT NULL AND TRIM(school) <> '') AS total_universities,
-        (SELECT COUNT(*) FROM user_info WHERE sex = 'male') AS male_count,
-        (SELECT COUNT(*) FROM user_info WHERE sex = 'female') AS female_count`
+        (SELECT COUNT(*) FROM user_info WHERE sex = 'male') AS male_count`
     )
     .bind(`${membershipNumberPrefix}%`)
     .first<MemberStatsBaseRow>()
@@ -110,8 +109,7 @@ export async function getMemberStats(db: D1DatabaseLike, membershipNumberPrefix:
   const countriesCount = toSafeNumber(baseRow?.total_countries)
   const universitiesCount = toSafeNumber(baseRow?.total_universities)
   const maleCount = toSafeNumber(baseRow?.male_count)
-  const femaleCount = toSafeNumber(baseRow?.female_count)
-  const totalGenderMembers = maleCount + femaleCount
+  const femaleCount = totalMembers - maleCount
 
   return {
     totalMembers,
@@ -122,8 +120,8 @@ export async function getMemberStats(db: D1DatabaseLike, membershipNumberPrefix:
     universitiesCount,
     maleCount,
     femaleCount,
-    malePercentage: totalGenderMembers === 0 ? 0 : toRoundedPercentage((maleCount / totalGenderMembers) * 100),
-    femalePercentage: totalGenderMembers === 0 ? 0 : toRoundedPercentage((femaleCount / totalGenderMembers) * 100),
+    malePercentage: totalMembers === 0 ? 0 : toRoundedPercentage((maleCount / totalMembers) * 100),
+    femalePercentage: totalMembers === 0 ? 0 : toRoundedPercentage((femaleCount / totalMembers) * 100),
     ageDistribution: parseAgeDistribution(ageDistributionRow?.age_distribution ?? null),
   }
 }
