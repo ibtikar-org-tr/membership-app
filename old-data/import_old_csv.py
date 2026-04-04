@@ -18,8 +18,11 @@ import argparse
 import base64
 import csv
 import hashlib
+import json
 import os
 import secrets
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
@@ -150,6 +153,134 @@ def parse_graduation_year(value: str | None) -> int | None:
     return None
 
 
+def heuristic_education_mapping(
+    university_raw: str | None,
+    major_raw: str | None,
+    year_raw: str | None,
+) -> dict[str, Any]:
+    year_value = clean(year_raw)
+    graduation_year = parse_graduation_year(year_value)
+
+    education_level = None
+    if year_value and graduation_year is None:
+        lowered = year_value.lower()
+        if lowered in {"متخرج", "خريج", "graduated", "graduate"}:
+            education_level = "graduated"
+        elif lowered in {"دراسات عليا", "masters", "master", "yüksek lisans"}:
+            education_level = "master"
+        elif lowered in {"phd", "doctorate", "دكتوراه"}:
+            education_level = "phd"
+        else:
+            education_level = year_value
+
+    return {
+        "school": clean(university_raw),
+        "field_of_study": clean(major_raw),
+        "education_level": education_level,
+        "graduation_year": graduation_year,
+    }
+
+
+def extract_json_object(text: str) -> dict[str, Any] | None:
+    text = text.strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    try:
+        parsed = json.loads(text[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def infer_education_with_deepseek(
+    university_raw: str | None,
+    major_raw: str | None,
+    year_raw: str | None,
+    *,
+    api_key: str | None,
+    model: str,
+    base_url: str,
+    timeout_seconds: int,
+    cache: dict[tuple[str | None, str | None, str | None], dict[str, Any]],
+) -> dict[str, Any]:
+    cache_key = (clean(university_raw), clean(major_raw), clean(year_raw))
+    if cache_key in cache:
+        return cache[cache_key]
+
+    fallback = heuristic_education_mapping(university_raw, major_raw, year_raw)
+    if not api_key:
+        cache[cache_key] = fallback
+        return fallback
+
+    prompt = {
+        "school_raw": clean(university_raw),
+        "field_raw": clean(major_raw),
+        "year_raw": clean(year_raw),
+        "task": "Normalize education fields.",
+        "rules": {
+            "education_level": "One of: high_school, diploma, bachelor, master, phd, graduated, other, or null",
+            "graduation_year": "4-digit integer if this is graduation year, otherwise null",
+            "school": "Normalized institution name or null",
+            "field_of_study": "Normalized major/field or null",
+        },
+        "output": "Return ONLY JSON with keys: education_level, graduation_year, school, field_of_study",
+    }
+
+    body = {
+        "model": model,
+        "temperature": 0,
+        "messages": [
+            {
+                "role": "system",
+                "content": "You normalize education-related form values. Return strict JSON only.",
+            },
+            {
+                "role": "user",
+                "content": json.dumps(prompt, ensure_ascii=False),
+            },
+        ],
+    }
+
+    try:
+        endpoint = base_url.rstrip("/") + "/chat/completions"
+        request = urllib.request.Request(
+            endpoint,
+            data=json.dumps(body).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+
+        content = (
+            payload.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "")
+        )
+        parsed = extract_json_object(content) or {}
+
+        result = {
+            "school": clean(parsed.get("school")) or fallback["school"],
+            "field_of_study": clean(parsed.get("field_of_study")) or fallback["field_of_study"],
+            "education_level": clean(parsed.get("education_level")) or fallback["education_level"],
+            "graduation_year": parsed.get("graduation_year"),
+        }
+
+        if not isinstance(result["graduation_year"], int):
+            result["graduation_year"] = fallback["graduation_year"]
+
+        cache[cache_key] = result
+        return result
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, KeyError, IndexError):
+        cache[cache_key] = fallback
+        return fallback
+
+
 def map_volunteering(value: str | None) -> str | None:
     value = clean(value)
     if value is None:
@@ -182,7 +313,15 @@ def sql_literal(value: Any) -> str:
     return f"'{text}'"
 
 
-def render_upsert_sql(row: dict[str, str]) -> list[str]:
+def render_upsert_sql(
+    row: dict[str, str],
+    *,
+    deepseek_api_key: str | None,
+    deepseek_model: str,
+    deepseek_base_url: str,
+    deepseek_timeout_seconds: int,
+    education_cache: dict[tuple[str | None, str | None, str | None], dict[str, Any]],
+) -> list[str]:
     membership_number = get_value(row, "رقم العضوية")
     email = get_value(row, "البريد الإلكتروني")
     password_plain = get_value(row, "password")
@@ -201,12 +340,22 @@ def render_upsert_sql(row: dict[str, str]) -> list[str]:
     sex = normalize_sex(get_value(row, "الجنس"))
     date_of_birth = get_value(row, "تاريخ الميلاد")
     country = normalize_country(get_value(row, "هل أنت؟"))
-    city = get_value(row, "منطقة الإقامة")
-    region = get_value(row, "مدينة الإقامة")
-    education_level = get_value(row, "السنة")
-    school = get_value(row, "الجامعة")
-    field_of_study = get_value(row, "الفرع")
-    graduation_year = parse_graduation_year(get_value(row, "السنة"))
+    region = get_value(row, "منطقة الإقامة")
+    city = get_value(row, "مدينة الإقامة")
+    education = infer_education_with_deepseek(
+        get_value(row, "الجامعة"),
+        get_value(row, "الفرع"),
+        get_value(row, "السنة"),
+        api_key=deepseek_api_key,
+        model=deepseek_model,
+        base_url=deepseek_base_url,
+        timeout_seconds=deepseek_timeout_seconds,
+        cache=education_cache,
+    )
+    education_level = education["education_level"]
+    school = education["school"]
+    field_of_study = education["field_of_study"]
+    graduation_year = education["graduation_year"]
     blood_type = normalize_blood_type(get_value(row, "زمرة الدم"))
     telegram_id = get_value(row, "telegram_id")
     telegram_username = get_value(row, "telegram_username")
@@ -307,7 +456,16 @@ def render_upsert_sql(row: dict[str, str]) -> list[str]:
     return [user_sql, user_info_sql, registration_sql]
 
 
-def generate_sql_file(csv_path: str, out_path: str, dry_run: bool) -> ImportStats:
+def generate_sql_file(
+    csv_path: str,
+    out_path: str,
+    dry_run: bool,
+    *,
+    deepseek_api_key: str | None,
+    deepseek_model: str,
+    deepseek_base_url: str,
+    deepseek_timeout_seconds: int,
+) -> ImportStats:
     stats = ImportStats()
 
     rows = read_csv_rows(csv_path)
@@ -317,10 +475,18 @@ def generate_sql_file(csv_path: str, out_path: str, dry_run: bool) -> ImportStat
         "-- Generated by old-data/import_old_csv.py",
         "BEGIN TRANSACTION;",
     ]
+    education_cache: dict[tuple[str | None, str | None, str | None], dict[str, Any]] = {}
 
     for index, row in enumerate(rows, start=1):
         try:
-            statements = render_upsert_sql(row)
+            statements = render_upsert_sql(
+                row,
+                deepseek_api_key=deepseek_api_key,
+                deepseek_model=deepseek_model,
+                deepseek_base_url=deepseek_base_url,
+                deepseek_timeout_seconds=deepseek_timeout_seconds,
+                education_cache=education_cache,
+            )
             sql_lines.extend(statements)
             stats.imported_rows += 1
         except Exception as exc:
@@ -350,6 +516,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--csv", required=True, help="Path to source CSV file")
     parser.add_argument("--out", required=True, help="Path to output SQL file")
     parser.add_argument(
+        "--deepseek-api-key",
+        default=os.getenv("DEEPSEEK_API_KEY"),
+        help="DeepSeek API key (defaults to DEEPSEEK_API_KEY env var)",
+    )
+    parser.add_argument(
+        "--deepseek-model",
+        default="deepseek-chat",
+        help="DeepSeek model name",
+    )
+    parser.add_argument(
+        "--deepseek-base-url",
+        default="https://api.deepseek.com",
+        help="DeepSeek base URL",
+    )
+    parser.add_argument(
+        "--deepseek-timeout",
+        type=int,
+        default=30,
+        help="DeepSeek request timeout in seconds",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Generate SQL but end it with ROLLBACK instead of COMMIT",
@@ -368,9 +555,18 @@ def main() -> int:
 
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
 
-    stats = generate_sql_file(csv_path=csv_path, out_path=out_path, dry_run=args.dry_run)
+    stats = generate_sql_file(
+        csv_path=csv_path,
+        out_path=out_path,
+        dry_run=args.dry_run,
+        deepseek_api_key=args.deepseek_api_key,
+        deepseek_model=args.deepseek_model,
+        deepseek_base_url=args.deepseek_base_url,
+        deepseek_timeout_seconds=args.deepseek_timeout,
+    )
     mode = "DRY RUN" if args.dry_run else "COMMIT"
     print(f"Mode: {mode}")
+    print(f"DeepSeek:     {'enabled' if args.deepseek_api_key else 'disabled (heuristic fallback)'}")
     print(f"Output SQL:   {out_path}")
     print(f"Total rows:   {stats.total_rows}")
     print(f"Generated:    {stats.imported_rows}")
