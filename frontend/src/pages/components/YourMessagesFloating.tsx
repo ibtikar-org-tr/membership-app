@@ -67,7 +67,7 @@ export function YourMessagesFloating() {
   return (
     <div
       ref={rootRef}
-      className="pointer-events-none absolute -left-24 top-1/2 z-0 hidden w-64 -translate-y-1/2 space-y-4 xl:block"
+      className="pointer-events-none absolute left-0 top-1/2 z-0 hidden w-64 -translate-x-[120%] -translate-y-1/2 space-y-4 xl:block"
       aria-hidden="true"
     >
       {messageItems.map((item, index) => (
