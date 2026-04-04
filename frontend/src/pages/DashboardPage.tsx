@@ -15,12 +15,14 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 
 export function DashboardPage() {
   return (
-    <main className="min-h-screen w-full bg-linear-to-br from-slate-100 via-cyan-50 to-sky-100 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
+    <main className="min-h-screen w-full bg-slate-100 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
       <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
         <aside className="w-full border-b border-slate-200 bg-white p-4 shadow-sm lg:fixed lg:inset-y-0 lg:right-0 lg:flex lg:w-80 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-l">
-          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">لوحة التحكم</p>
-          <h1 className="mt-2 text-xl font-black text-slate-900">مرحباً أحمد</h1>
-          <p className="mt-1 text-sm text-slate-500">صفحة تجريبية بدون ربط خلفي</p>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">لوحة التحكم</p>
+            <h1 className="mt-2 text-xl font-black text-slate-900">مرحباً أحمد</h1>
+            <p className="mt-1 text-sm text-slate-500">صفحة تجريبية بدون ربط خلفي</p>
+          </div>
 
           <nav className="mt-5 space-y-2">
             {SIDEBAR_ITEMS.map((item) => {
@@ -30,15 +32,20 @@ export function DashboardPage() {
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `block w-full rounded-xl border px-4 py-3 text-right transition hover:cursor-pointer ${
+                    `block w-full rounded-xl border px-4 py-3 text-right transition ${
                       isActive
-                        ? 'border-cyan-200 bg-cyan-50 text-cyan-900'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50/60'
+                        ? 'border-cyan-200 bg-cyan-50 text-cyan-900 shadow-xs'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`
                   }
                 >
-                  <p className="text-sm font-black">{item.label}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{item.helper}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-black">{item.label}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{item.helper}</p>
+                    </div>
+                    <span className="mt-1 inline-block h-2 w-2 rounded-full bg-current opacity-70" />
+                  </div>
                 </NavLink>
               )
             })}
@@ -69,7 +76,9 @@ export function DashboardPage() {
         </aside>
 
         <section className="w-full flex-1 p-4 md:p-6 lg:h-screen lg:overflow-y-auto lg:pr-[22rem] lg:pl-8 lg:py-8">
-          <Outlet />
+          <div className="mx-auto w-full max-w-6xl">
+            <Outlet />
+          </div>
         </section>
       </div>
     </main>

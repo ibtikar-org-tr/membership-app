@@ -11,12 +11,19 @@ export function DashboardSettingsPage() {
   ]
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <h2 className="text-lg font-black text-slate-900 sm:text-xl">الإعدادات</h2>
-      <p className="mt-1 text-sm text-slate-500">تفضيلات الحساب الحالية مع عرض توضيحي قابل للتطوير لاحقاً.</p>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-black text-slate-900 sm:text-xl">الإعدادات</h2>
+          <p className="mt-1 text-sm text-slate-500">تفضيلات الحساب الحالية مع عرض توضيحي قابل للتطوير لاحقاً.</p>
+        </div>
+        <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+          الملف الشخصي محمي
+        </span>
+      </div>
       <div className="mt-5 space-y-3">
         {settingsRows.map((item) => (
-          <div key={item.label} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+          <div key={item.label} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3">
             <span className="text-sm font-semibold text-slate-600">{item.label}</span>
             <span className="text-sm font-black text-slate-900">{item.value}</span>
           </div>
