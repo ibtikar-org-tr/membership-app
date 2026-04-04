@@ -221,8 +221,8 @@ def infer_education_with_deepseek(
         "year_raw": clean(year_raw),
         "task": "Normalize education fields.",
         "rules": {
-            "education_level": "One of: high_school, diploma, bachelor, master, phd, graduated, other, or null",
-            "graduation_year": "4-digit integer if this is graduation year, otherwise null",
+            "education_level": "One of: high_school, diploma, bachelor, master, phd, other, or null",
+            "graduation_year": "4-digit integer that is graduation year, calculate it if necessary, or null if unknown",
             "school": "Normalized institution name or null",
             "field_of_study": "Normalized major/field or null",
         },
@@ -574,10 +574,7 @@ def main() -> int:
     deepseek_api_key = args.deepseek_api_key or os.getenv("DEEPSEEK_API_KEY")
     deepseek_model = args.deepseek_model or "deepseek-chat"
     deepseek_base_url = args.deepseek_base_url or "https://api.deepseek.com"
-    deepseek_timeout = args.deepseek_timeout
-    if deepseek_timeout is None:
-        timeout_raw = "30"
-        deepseek_timeout = int(timeout_raw)
+    deepseek_timeout = args.deepseek_timeout or 30
 
     csv_path = os.path.abspath(args.csv)
     out_path = os.path.abspath(args.out)
