@@ -109,7 +109,7 @@ export function AgeAnalyticsCard() {
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-lg sm:p-5">
-      <p className="text-xs font-semibold text-slate-500 sm:text-sm">العمر</p>
+      <p className="text-xs font-semibold text-slate-500 sm:text-sm">توزيع الأعضاء حسب العمر</p>
       <div className="mt-3 h-36 rounded-2xl bg-slate-50 p-2.5 sm:mt-4 sm:h-48 sm:p-4">
         <canvas ref={ageChartRef} aria-label="منحنى توزيع الأعمار" role="img" />
       </div>
