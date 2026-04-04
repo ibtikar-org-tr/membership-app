@@ -4,12 +4,18 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:migrate:local": "wrangler d1 migrations apply youth-affairs-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply youth-affairs-db --remote"
   },
   "dependencies": {
-    "hono": "^4.12.9"
+    "@hono/zod-validator": "^0.7.6",
+    "hono": "^4.12.9",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260404.1",
+    "typescript": "^6.0.2",
     "wrangler": "^4.4.0"
   }
 }
