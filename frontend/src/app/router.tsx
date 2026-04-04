@@ -34,6 +34,14 @@ const router = createBrowserRouter([
     },
   },
   {
+    path: '/dashboard',
+    hydrateFallbackElement: <div />,
+    lazy: async () => {
+      const { DashboardPage } = await import('../pages/DashboardPage')
+      return { Component: DashboardPage }
+    },
+  },
+  {
     path: '*',
     hydrateFallbackElement: <div />,
     element: <Navigate to="/" replace />,
