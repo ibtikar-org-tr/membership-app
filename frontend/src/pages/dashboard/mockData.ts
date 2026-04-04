@@ -70,3 +70,93 @@ export const MOCK_SETTINGS = {
   weeklyDigest: false,
   profileVisibility: 'للأعضاء فقط',
 }
+
+export interface MockProjectMilestone {
+  title: string
+  status: 'done' | 'in-progress' | 'todo'
+}
+
+export interface MockProject {
+  id: string
+  name: string
+  owner: string
+  progress: number
+  phase: string
+  description: string
+  teamSize: number
+  startedAt: string
+  deadline: string
+  tags: string[]
+  milestones: MockProjectMilestone[]
+}
+
+export const MOCK_PROJECTS: MockProject[] = [
+  {
+    id: 'training-portal',
+    name: 'بوابة التدريب الداخلية',
+    owner: 'فريق الويب',
+    progress: 72,
+    phase: 'تطوير',
+    description: 'منصة موحدة لعرض الدورات وإدارة تقدم الأعضاء داخل البرامج التدريبية.',
+    teamSize: 6,
+    startedAt: '2026-01-08',
+    deadline: '2026-05-20',
+    tags: ['Web', 'LMS', 'React'],
+    milestones: [
+      { title: 'تصميم تجربة المستخدم', status: 'done' },
+      { title: 'تطوير لوحة المشرف', status: 'in-progress' },
+      { title: 'تكامل نظام الإشعارات', status: 'todo' },
+    ],
+  },
+  {
+    id: 'student-guidance',
+    name: 'منصة توجيه الطلاب',
+    owner: 'فريق المنتج',
+    progress: 45,
+    phase: 'تصميم',
+    description: 'مساحة تفاعلية لربط الطلاب بالمرشدين وتتبع الأهداف التعليمية لكل عضو.',
+    teamSize: 4,
+    startedAt: '2026-02-02',
+    deadline: '2026-06-10',
+    tags: ['Mentorship', 'Product'],
+    milestones: [
+      { title: 'جمع المتطلبات', status: 'done' },
+      { title: 'النماذج الأولية', status: 'in-progress' },
+      { title: 'اختبار المستخدمين', status: 'todo' },
+    ],
+  },
+  {
+    id: 'community-analytics',
+    name: 'لوحة تحليلات المجتمع',
+    owner: 'فريق البيانات',
+    progress: 61,
+    phase: 'تنفيذ',
+    description: 'لوحة متابعة لمؤشرات المجتمع ومعدلات النشاط والمشاركة الشهرية.',
+    teamSize: 5,
+    startedAt: '2025-12-20',
+    deadline: '2026-04-30',
+    tags: ['Analytics', 'Dashboard'],
+    milestones: [
+      { title: 'نمذجة البيانات', status: 'done' },
+      { title: 'بناء واجهة التحليلات', status: 'in-progress' },
+      { title: 'توثيق المقاييس', status: 'todo' },
+    ],
+  },
+  {
+    id: 'events-archive',
+    name: 'أرشيف الفعاليات',
+    owner: 'فريق المحتوى',
+    progress: 88,
+    phase: 'مراجعة',
+    description: 'أرشفة الفعاليات السابقة مع المحتوى المصاحب وإتاحتها للبحث والتصفح.',
+    teamSize: 3,
+    startedAt: '2025-11-14',
+    deadline: '2026-04-12',
+    tags: ['Content', 'Knowledge Base'],
+    milestones: [
+      { title: 'نقل السجلات القديمة', status: 'done' },
+      { title: 'مراجعة الجودة', status: 'in-progress' },
+      { title: 'الإطلاق الرسمي', status: 'todo' },
+    ],
+  },
+]
