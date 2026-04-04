@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    role TEXT NOT NULL DEFAULT 'member',
-)
+    role TEXT NOT NULL DEFAULT 'member'
+);
 
 CREATE TABLE IF NOT EXISTS user_info (
     membership_number TEXT PRIMARY KEY,
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS user_info (
     biography TEXT,
     interests TEXT, -- comma-separated list of interests or hobbies
     skills TEXT, -- comma-separated list of skills or expertise
-    languages TEXT, -- comma-separated list of languages spoken
+    languages TEXT -- comma-separated list of languages spoken
 );
 
 CREATE TABLE IF NOT EXISTS user_registration_info (
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS user_registration_info (
     motivation_letter TEXT, -- user's motivation for joining the platform
     friends_on_platform TEXT, -- friends the user knows on the platform (comma-separated list of membership numbers or names),
     interest_in_volunteering TEXT, -- user's interest in volunteering for the platform (e.g., "yes", "no", "maybe")
-    previous_experience TEXT, -- user's previous experience related to the platform's mission or activities
+    previous_experience TEXT -- user's previous experience related to the platform's mission or activities
 );
 
 
