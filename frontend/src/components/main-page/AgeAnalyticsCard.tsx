@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   CategoryScale,
   Chart,
@@ -11,12 +11,34 @@ import {
   type ChartConfiguration,
   type TooltipItem,
 } from 'chart.js'
+import type { HomeStatsAgeDistributionItem } from '../../types/home-stats'
 
 Chart.register(CategoryScale, LinearScale, PointElement, LineController, LineElement, Filler, Tooltip)
 
-export function AgeAnalyticsCard() {
+interface AgeAnalyticsCardProps {
+  ageDistribution?: HomeStatsAgeDistributionItem[]
+}
+
+export function AgeAnalyticsCard({ ageDistribution }: AgeAnalyticsCardProps) {
   const ageChartRef = useRef<HTMLCanvasElement | null>(null)
   const ageChartInstanceRef = useRef<Chart<'line'> | null>(null)
+  const chartData = useMemo(() => {
+    const sorted = [...(ageDistribution ?? [])]
+      .filter((item) => Number.isFinite(item.age) && Number.isFinite(item.count))
+      .sort((a, b) => a.age - b.age)
+
+    if (sorted.length === 0) {
+      return {
+        labels: ['0'],
+        values: [0],
+      }
+    }
+
+    return {
+      labels: sorted.map((item) => String(item.age)),
+      values: sorted.map((item) => item.count),
+    }
+  }, [ageDistribution])
 
   useEffect(() => {
     const canvas = ageChartRef.current
@@ -37,14 +59,20 @@ export function AgeAnalyticsCard() {
     const config: ChartConfiguration<'line'> = {
       type: 'line',
       data: {
-        labels: ['15', '19', '21', '23', '34'],
+        labels: chartData.labels,
         datasets: [
           {
             label: 'عدد الأعضاء',
-            data: [18, 396, 430, 340, 100],
+            data: chartData.values,
             borderColor: '#0f766e',
             backgroundColor: 'rgba(15, 118, 110, 0.14)',
-            pointBackgroundColor: ['#0f766e', '#06b6d4', '#06b6d4', '#f59e0b', '#f59e0b'],
+            pointBackgroundColor: chartData.values.map((_, index) => {
+              if (index === 0) {
+                return '#0f766e'
+              }
+
+              return index % 2 === 0 ? '#06b6d4' : '#f59e0b'
+            }),
             pointBorderColor: '#ffffff',
             pointBorderWidth: 2,
             pointRadius: 5,
@@ -105,7 +133,7 @@ export function AgeAnalyticsCard() {
       chart?.destroy()
       ageChartInstanceRef.current = null
     }
-  }, [])
+  }, [chartData.labels, chartData.values])
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-lg sm:p-5">

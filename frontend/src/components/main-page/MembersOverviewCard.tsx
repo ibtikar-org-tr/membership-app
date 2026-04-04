@@ -1,12 +1,17 @@
 import { useCountUp } from './useCountUp'
+import type { HomeStatsOverview } from '../../types/home-stats'
 
-export function MembersOverviewCard() {
-  const totalMembers = useCountUp(1284)
-  const monthlyGrowth = useCountUp(12)
-  const telegramActive = useCountUp(742)
-  const newMembers = useCountUp(38)
-  const countriesCount = useCountUp(2)
-  const universitiesCount = useCountUp(62)
+interface MembersOverviewCardProps {
+  overview?: HomeStatsOverview
+}
+
+export function MembersOverviewCard({ overview }: MembersOverviewCardProps) {
+  const totalMembers = useCountUp(overview?.totalMembers ?? 0)
+  const monthlyGrowth = useCountUp(overview?.cycleGrowthPercentage ?? 0)
+  const telegramActive = useCountUp(overview?.telegramActive ?? 0)
+  const newMembers = useCountUp(overview?.newMembers ?? 0)
+  const countriesCount = useCountUp(overview?.countriesCount ?? 0)
+  const universitiesCount = useCountUp(overview?.universitiesCount ?? 0)
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-lg sm:p-5">

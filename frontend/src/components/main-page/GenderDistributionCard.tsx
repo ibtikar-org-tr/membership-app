@@ -1,8 +1,13 @@
 import { useCountUp } from './useCountUp'
+import type { HomeStatsGenderDistribution } from '../../types/home-stats'
 
-export function GenderDistributionCard() {
-  const maleRatio = useCountUp(56)
-  const femaleRatio = useCountUp(44)
+interface GenderDistributionCardProps {
+  genderDistribution?: HomeStatsGenderDistribution
+}
+
+export function GenderDistributionCard({ genderDistribution }: GenderDistributionCardProps) {
+  const maleRatio = useCountUp(genderDistribution?.malePercentage ?? 0)
+  const femaleRatio = useCountUp(genderDistribution?.femalePercentage ?? 0)
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-800 shadow-lg sm:p-5">

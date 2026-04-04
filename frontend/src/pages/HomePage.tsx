@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { HomeHeroSection } from '../components/main-page/HomeHeroSection'
 import { LazyReveal } from '../components/main-page/LazyReveal'
+import { useHomeStats } from '../hooks/useHomeStats'
 
 const MembersOverviewCard = lazy(() =>
   import('../components/main-page/MembersOverviewCard').then((module) => ({ default: module.MembersOverviewCard })),
@@ -32,6 +33,7 @@ export function HomePage() {
   const sectionRef = useRef<HTMLElement | null>(null)
   const contentRef = useRef<HTMLDivElement | null>(null)
   const [sectionHeight, setSectionHeight] = useState<number | null>(null)
+  const { stats } = useHomeStats()
 
   useEffect(() => {
     const sectionElement = sectionRef.current
@@ -82,17 +84,17 @@ export function HomePage() {
             <div className="grid gap-4">
               <Suspense fallback={<StatsCardFallback />}>
                 <LazyReveal delayMs={0}>
-                  <MembersOverviewCard />
+                  <MembersOverviewCard overview={stats?.overview} />
                 </LazyReveal>
               </Suspense>
               <Suspense fallback={<StatsCardFallback />}>
                 <LazyReveal delayMs={90}>
-                  <GenderDistributionCard />
+                  <GenderDistributionCard genderDistribution={stats?.genderDistribution} />
                 </LazyReveal>
               </Suspense>
               <Suspense fallback={<StatsCardFallback />}>
                 <LazyReveal delayMs={170}>
-                  <AgeAnalyticsCard />
+                  <AgeAnalyticsCard ageDistribution={stats?.ageDistribution} />
                 </LazyReveal>
               </Suspense>
             </div>
