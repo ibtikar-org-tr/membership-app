@@ -1,8 +1,18 @@
 import { Link } from 'react-router-dom'
 import { AgeAnalyticsCard } from './components/AgeAnalyticsCard'
 import { VolunteersStatsCard } from './components/VolunteersStatsCard'
+import { useCountUp } from './components/useCountUp'
 
 export function HomePage() {
+  const totalMembers = useCountUp(1284)
+  const monthlyGrowth = useCountUp(12)
+  const telegramActive = useCountUp(742)
+  const newMembers = useCountUp(38)
+  const countriesCount = useCountUp(2)
+  const universitiesCount = useCountUp(62)
+  const maleRatio = useCountUp(56)
+  const femaleRatio = useCountUp(44)
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-amber-50 via-teal-50 to-sky-100 px-6 py-10 text-slate-800" dir="rtl">
       <div className="mx-auto flex min-h-[80vh] w-full max-w-6xl items-center">
@@ -43,29 +53,29 @@ export function HomePage() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-semibold text-slate-500">إجمالي الأعضاء</p>
-                  <p className="mt-2 text-3xl font-black text-slate-900">1,284</p>
+                  <p className="mt-2 text-3xl font-black text-slate-900">{totalMembers.toLocaleString('en-US')}</p>
                 </div>
                 <div className="rounded-2xl bg-emerald-100 px-4 py-2 text-right">
-                  <p className="text-xs font-semibold text-emerald-700">+12% هذه الدورة</p>
+                  <p className="text-xs font-semibold text-emerald-700">+{monthlyGrowth}% هذه الدورة</p>
                   <p className="mt-1 text-sm text-emerald-900">نمو مستمر</p>
                 </div>
               </div>
               <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-slate-500">نشطون على التلغرام</p>
-                  <p className="mt-1 text-xl font-bold text-slate-900">742</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">{telegramActive.toLocaleString('en-US')}</p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-slate-500">منتسبين جدد</p>
-                  <p className="mt-1 text-xl font-bold text-slate-900">38</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">{newMembers.toLocaleString('en-US')}</p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-slate-500">الدول</p>
-                  <p className="mt-1 text-xl font-bold text-slate-900">2</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">{countriesCount.toLocaleString('en-US')}</p>
                 </div>
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-slate-500">الجامعات</p>
-                  <p className="mt-1 text-xl font-bold text-slate-900">62</p>
+                  <p className="mt-1 text-xl font-bold text-slate-900">{universitiesCount.toLocaleString('en-US')}</p>
                 </div>
               </div>
             </div>
@@ -76,19 +86,19 @@ export function HomePage() {
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm">
                     <span>الذكور</span>
-                    <span>56%</span>
+                    <span>{maleRatio}%</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/15">
-                    <div className="h-2 w-[56%] rounded-full bg-emerald-400" />
+                    <div className="h-2 rounded-full bg-emerald-400 transition-[width] duration-200" style={{ width: `${maleRatio}%` }} />
                   </div>
                 </div>
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm">
                     <span>الإناث</span>
-                    <span>44%</span>
+                    <span>{femaleRatio}%</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/15">
-                    <div className="h-2 w-[44%] rounded-full bg-cyan-400" />
+                    <div className="h-2 rounded-full bg-cyan-400 transition-[width] duration-200" style={{ width: `${femaleRatio}%` }} />
                   </div>
                 </div>
               </div>
