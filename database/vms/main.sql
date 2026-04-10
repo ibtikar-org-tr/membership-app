@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS projects (
     description TEXT,
     parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL ON UPDATE CASCADE,
     owner TEXT NOT NULL, -- membership_number of the user who owns the project (only one owner per project, but managers can be multiple)
-    status TEXT NOT NULL, -- "active", "completed", "archived"
+    status TEXT NOT NULL -- "active", "completed", "archived"
 );
 
 CREATE TABLE IF NOT EXISTS project_members (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS points_transactions (
     membership_number TEXT NOT NULL, -- membership_number of the user whose points are being changed
     task_id TEXT, -- task_id associated with the points change (can be NULL for non-task-related transactions)
     amount INTEGER NOT NULL,
-    type TEXT NOT NULL, -- "task_reward", "purchase", "event_attendance", "other"
+    type TEXT NOT NULL -- "task_reward", "purchase", "event_attendance", "other"
 );
 
 CREATE TABLE IF NOT EXISTS events (
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS events (
     start_time TEXT NOT NULL, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     end_time TEXT NOT NULL, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     location TEXT,
-    created_by TEXT NOT NULL -- membership_number of the user who created the event
+    created_by TEXT NOT NULL, -- membership_number of the user who created the event
     project_id TEXT REFERENCES projects(id), -- optional association with a project
     required_skills TEXT, -- comma-separated list of skills required for the event (e.g., "python,project_management,design")
     recommended_skills TEXT, -- comma-separated list of skills recommended for the event (e.g., "python,project_management,design")
