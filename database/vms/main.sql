@@ -9,10 +9,11 @@ CREATE TABLE IF NOT EXISTS projects (
     status TEXT NOT NULL -- "active", "completed", "archived"
 );
 
-CREATE TRIGGER IF NOT EXISTS update_project_updated_at AFTER UPDATE ON projects
-BEGIN
-    UPDATE projects SET updated_at = datetime('now') WHERE id = NEW.id;
-END;
+-- This will be handled in the backend to avoid sql looping
+-- CREATE TRIGGER IF NOT EXISTS update_project_updated_at AFTER UPDATE ON projects
+-- BEGIN
+--     UPDATE projects SET updated_at = datetime('now') WHERE id = NEW.id;
+-- END;
 
 CREATE TABLE IF NOT EXISTS project_members (
     project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
