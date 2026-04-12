@@ -12,7 +12,7 @@ export interface D1DatabaseLike {
 }
 
 export interface AppBindings {
-  MY_DB: D1DatabaseLike
+  MEMBERS_DB: D1DatabaseLike
   MEMBERSHIP_NUMBER_PREFIX: string
   SMTP_HOST: string
   SMTP_PORT: string | number

@@ -42,8 +42,8 @@ jobs:
           | .vars.SMTP_USER = $smtpUser'
 
           jq \
-            --arg dbid "${{ vars.D1_DATABASE_ID }}" \
-            --arg dbname "${{ vars.D1_DATABASE_NAME }}" \
+            --arg dbid "${{ vars.MEMBERS_DB_ID }}" \
+            --arg dbname "${{ vars.MEMBERS_DB_NAME }}" \
             --arg bucketname "${{ vars.BUCKET_NAME }}" \
             --arg mprefix "${{ vars.MEMBERSHIP_NUMBER_PREFIX }}" \
             --arg smtpHost "${{ vars.SMTP_HOST }}" \

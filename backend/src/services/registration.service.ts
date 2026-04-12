@@ -32,7 +32,7 @@ function toJsonOrNull(value?: Record<string, string>): string | null {
 }
 
 export async function registerUser(bindings: AppBindings, input: RegistrationInput): Promise<RegistrationResult> {
-  const db = bindings.MY_DB
+  const db = bindings.MEMBERS_DB
   const lastMembershipNumber = await getLatestMembershipNumber(db)
   const membershipNumber = generateNextMembershipNumber(lastMembershipNumber, bindings.MEMBERSHIP_NUMBER_PREFIX)
   const temporaryPassword = generateTemporaryPassword()

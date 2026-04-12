@@ -6,7 +6,7 @@ export const statsRoute = new Hono<{ Bindings: AppBindings }>()
 
 statsRoute.get('/stats', async (c) => {
   try {
-    const stats = await getMemberStats(c.env.MY_DB, c.env.MEMBERSHIP_NUMBER_PREFIX)
+    const stats = await getMemberStats(c.env.MEMBERS_DB, c.env.MEMBERSHIP_NUMBER_PREFIX)
 
     return c.json({
       overview: {
