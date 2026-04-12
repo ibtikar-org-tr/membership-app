@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     completed_by TEXT, -- membership_number of the user who marked the task as completed
     completed_at TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     -- completion_approval_status TEXT NOT NULL DEFAULT 'pending' -- "pending", "approved", "rejected" (removed for simplicity, now the task completion depends on the completion_approval_by field)
-    completion_approval_by TEXT -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
+    completion_approval_by TEXT, -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
+    skills TEXT -- JSON array of skill names required/recommended/aquired for the event (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
 );
 
 CREATE TRIGGER IF NOT EXISTS update_task_updated_at AFTER UPDATE ON tasks
@@ -74,7 +75,7 @@ CREATE TABLE IF NOT EXISTS events (
     -- required_skills TEXT, -- comma-separated list of skills required for the event (e.g., "python,project_management,design")
     -- recommended_skills TEXT, -- comma-separated list of skills recommended for the event (e.g., "python,project_management,design")
     -- aquired_skills TEXT, -- comma-separated list of skills that participants can acquire or improve by attending the event (e.g., "python,project_management,design")
-    skills TEXT -- JSON array of skill names required/recommended/aquired for the event (e.g., ["python": "required", "project_management": "recommended", "design": "aquired"]
+    skills TEXT -- JSON array of skill names required/recommended/aquired for the event (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_updated_at AFTER UPDATE ON events
