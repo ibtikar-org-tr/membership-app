@@ -1,5 +1,6 @@
 export interface D1PreparedStatementResultLike {
   first<T = Record<string, unknown>>(): Promise<T | null>
+  all<T = Record<string, unknown>>(): Promise<{ results: T[] }>
   run(): Promise<unknown>
 }
 
@@ -13,6 +14,7 @@ export interface D1DatabaseLike {
 
 export interface AppBindings {
   MEMBERS_DB: D1DatabaseLike
+  VMS_DB: D1DatabaseLike
   MEMBERSHIP_NUMBER_PREFIX: string
   SMTP_HOST: string
   SMTP_PORT: string | number
