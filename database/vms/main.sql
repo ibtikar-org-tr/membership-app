@@ -1,16 +1,16 @@
 CREATE TABLE IF NOT EXISTS projects (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')) ON UPDATE CASCADE,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     name TEXT NOT NULL,
     description TEXT,
-    parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
     owner TEXT NOT NULL, -- membership_number of the user who owns the project (only one owner per project, but managers can be multiple)
     status TEXT NOT NULL -- "active", "completed", "archived"
 );
 
 CREATE TABLE IF NOT EXISTS project_members (
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     membership_number TEXT NOT NULL,
     role TEXT NOT NULL, -- "member", "manager", "observer"
     PRIMARY KEY (project_id, membership_number)
@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS project_members (
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')) ON UPDATE CASCADE,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
     created_by TEXT NOT NULL, -- membership_number of the user who created the task
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE TABLE IF NOT EXISTS points_transactions (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')) ON UPDATE CASCADE,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     membership_number TEXT NOT NULL, -- membership_number of the user whose points are being changed
     task_id TEXT, -- task_id associated with the points change (can be NULL for non-task-related transactions)
     amount INTEGER NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS points_transactions (
 CREATE TABLE IF NOT EXISTS events (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')) ON UPDATE CASCADE,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     name TEXT NOT NULL,
     description TEXT,
     start_time TEXT NOT NULL, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
@@ -63,8 +63,8 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS event_tickets ( -- the available tickets for the events, 
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')) ON UPDATE CASCADE,
-    event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
     point_price INTEGER NOT NULL, -- price in points (can be 0 for free tickets, negative for rewarding points to participants, and positive for charging points from participants)
@@ -75,10 +75,10 @@ CREATE TABLE IF NOT EXISTS event_tickets ( -- the available tickets for the even
 CREATE TABLE IF NOT EXISTS event_registrations ( -- the registrations of users to the events, each registration is for one ticket
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')) ON UPDATE CASCADE,
-    event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     membership_number TEXT NOT NULL, -- membership_number of the user who registered for the event
-    ticket_id TEXT NOT NULL REFERENCES event_tickets(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    ticket_id TEXT NOT NULL REFERENCES event_tickets(id) ON DELETE CASCADE,
     status TEXT NOT NULL, -- "registered", "attended", "cancelled", "no_show"
     approved_by TEXT -- membership_number of the user who approved the status (e.g., marking as attended, marking as no_show etc.)
 );
