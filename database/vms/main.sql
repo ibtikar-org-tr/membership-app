@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS projects (
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     name TEXT NOT NULL,
     description TEXT,
-    parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+    parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL, -- allows for nesting projects, technically the whole application can be one big project with multiple levels of sub-projects
     owner TEXT NOT NULL, -- membership_number of the user who owns the project (only one owner per project, but managers can be multiple)
     status TEXT NOT NULL -- "active", "completed", "archived"
 );
