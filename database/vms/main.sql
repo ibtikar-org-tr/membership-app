@@ -131,3 +131,6 @@ CREATE TRIGGER IF NOT EXISTS update_skill_updated_at AFTER UPDATE ON skills
 BEGIN
     UPDATE skills SET updated_at = datetime('now') WHERE name = NEW.name;
 END;
+
+CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id);
