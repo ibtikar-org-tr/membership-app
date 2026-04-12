@@ -9,6 +9,11 @@ CREATE TABLE IF NOT EXISTS projects (
     status TEXT NOT NULL -- "active", "completed", "archived"
 );
 
+CREATE TRIGGER IF NOT EXISTS update_project_updated_at AFTER UPDATE ON projects
+BEGIN
+    UPDATE projects SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
 CREATE TABLE IF NOT EXISTS project_members (
     project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     membership_number TEXT NOT NULL,
@@ -34,6 +39,11 @@ CREATE TABLE IF NOT EXISTS tasks (
     completion_approval_by TEXT -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
 );
 
+CREATE TRIGGER IF NOT EXISTS update_task_updated_at AFTER UPDATE ON tasks
+BEGIN
+    UPDATE tasks SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
 CREATE TABLE IF NOT EXISTS points_transactions (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -43,6 +53,11 @@ CREATE TABLE IF NOT EXISTS points_transactions (
     amount INTEGER NOT NULL,
     type TEXT NOT NULL -- "task_reward", "purchase", "event_attendance", "other"
 );
+
+CREATE TRIGGER IF NOT EXISTS update_points_transaction_updated_at AFTER UPDATE ON points_transactions
+BEGIN
+    UPDATE points_transactions SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
 
 CREATE TABLE IF NOT EXISTS events (
     id TEXT PRIMARY KEY,
@@ -60,6 +75,11 @@ CREATE TABLE IF NOT EXISTS events (
     aquired_skills TEXT -- comma-separated list of skills that participants can acquire or improve by attending the event (e.g., "python,project_management,design")
 );
 
+CREATE TRIGGER IF NOT EXISTS update_event_updated_at AFTER UPDATE ON events
+BEGIN
+    UPDATE events SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
 CREATE TABLE IF NOT EXISTS event_tickets ( -- the available tickets for the events, 
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -72,6 +92,11 @@ CREATE TABLE IF NOT EXISTS event_tickets ( -- the available tickets for the even
     quantity INTEGER NOT NULL -- total quantity of this ticket type available for the event
 );
 
+CREATE TRIGGER IF NOT EXISTS update_event_ticket_updated_at AFTER UPDATE ON event_tickets
+BEGIN
+    UPDATE event_tickets SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
 CREATE TABLE IF NOT EXISTS event_registrations ( -- the registrations of users to the events, each registration is for one ticket
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -82,4 +107,10 @@ CREATE TABLE IF NOT EXISTS event_registrations ( -- the registrations of users t
     status TEXT NOT NULL, -- "registered", "attended", "cancelled", "no_show"
     approved_by TEXT -- membership_number of the user who approved the status (e.g., marking as attended, marking as no_show etc.)
 );
+
+CREATE TRIGGER IF NOT EXISTS update_event_registration_updated_at AFTER UPDATE ON event_registrations
+BEGIN
+    UPDATE event_registrations SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
 
