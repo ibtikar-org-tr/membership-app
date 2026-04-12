@@ -10,6 +10,13 @@
       "database_id": "bb86e7a4-11e2-4d80-88b8-c376a19994dd",
       "remote": true,
       "migrations_dir": "../members/database"
+    },
+    {
+      "binding": "VMS_DB",
+      "database_name": "vms-database",
+      "database_id": "bbd89415-677e-4991-bb11-ea1be7e2d095",
+      "remote": true,
+      "migrations_dir": "../vms/database"
     }
   ],
   "r2_buckets": [
