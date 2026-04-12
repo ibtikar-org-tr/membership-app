@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     assigned_to TEXT, -- membership_number of the user assigned to the task
     completed_by TEXT, -- membership_number of the user who marked the task as completed
     completed_at TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
-    -- completion_approval_status TEXT NOT NULL DEFAULT 'pending' -- "pending", "approved", "rejected"
+    -- completion_approval_status TEXT NOT NULL DEFAULT 'pending' -- "pending", "approved", "rejected" (removed for simplicity, now the task completion depends on the completion_approval_by field)
     completion_approval_by TEXT -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
 );
 
@@ -70,9 +70,10 @@ CREATE TABLE IF NOT EXISTS events (
     location TEXT,
     created_by TEXT NOT NULL, -- membership_number of the user who created the event
     project_id TEXT REFERENCES projects(id), -- optional association with a project
-    required_skills TEXT, -- comma-separated list of skills required for the event (e.g., "python,project_management,design")
-    recommended_skills TEXT, -- comma-separated list of skills recommended for the event (e.g., "python,project_management,design")
-    aquired_skills TEXT -- comma-separated list of skills that participants can acquire or improve by attending the event (e.g., "python,project_management,design")
+    -- required_skills TEXT, -- comma-separated list of skills required for the event (e.g., "python,project_management,design")
+    -- recommended_skills TEXT, -- comma-separated list of skills recommended for the event (e.g., "python,project_management,design")
+    -- aquired_skills TEXT, -- comma-separated list of skills that participants can acquire or improve by attending the event (e.g., "python,project_management,design")
+    skills TEXT -- JSON array of skill names required/recommended/aquired for the event (e.g., ["python": "required", "project_management": "recommended", "design": "aquired"]
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_updated_at AFTER UPDATE ON events
@@ -114,3 +115,17 @@ BEGIN
 END;
 
 
+CREATE TABLE IF NOT EXISTS skills (
+    name TEXT NOT NULL UNIQUE, -- skill name, must be lowercase, without spaces and latin characters only (e.g., "python", "project_management", "design")
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    description TEXT,
+    members INT, -- number of members who have this skill
+    events INT, -- number of events that require or recommend this skill
+    tasks INT -- number of tasks that require this skill
+);
+
+CREATE TRIGGER IF NOT EXISTS update_skill_updated_at AFTER UPDATE ON skills
+BEGIN
+    UPDATE skills SET updated_at = datetime('now') WHERE name = NEW.name;
+END;
