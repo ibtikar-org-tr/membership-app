@@ -7,6 +7,13 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT NOT NULL DEFAULT 'member'
 );
 
+CREATE TRIGGER IF NOT EXISTS update_user_updated_at AFTER UPDATE ON users
+BEGIN
+    UPDATE users SET updated_at = datetime('now') WHERE membership_number = NEW.membership_number;
+END;
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
 CREATE TABLE IF NOT EXISTS user_info (
     membership_number TEXT PRIMARY KEY REFERENCES users(membership_number) ON DELETE CASCADE ON UPDATE CASCADE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -35,6 +42,11 @@ CREATE TABLE IF NOT EXISTS user_info (
     languages TEXT -- comma-separated list of languages spoken
 );
 
+CREATE TRIGGER IF NOT EXISTS update_user_info_updated_at AFTER UPDATE ON user_info
+BEGIN
+    UPDATE user_info SET updated_at = datetime('now') WHERE membership_number = NEW.membership_number;
+END;
+
 CREATE TABLE IF NOT EXISTS user_registration_info (
     membership_number TEXT PRIMARY KEY REFERENCES users(membership_number) ON DELETE CASCADE ON UPDATE CASCADE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -46,5 +58,7 @@ CREATE TABLE IF NOT EXISTS user_registration_info (
     previous_experience TEXT -- user's previous experience related to the platform's mission or activities
 );
 
-
-
+CREATE TRIGGER IF NOT EXISTS update_user_registration_info_updated_at AFTER UPDATE ON user_registration_info
+BEGIN
+    UPDATE user_registration_info SET updated_at = datetime('now') WHERE membership_number = NEW.membership_number;
+END;
