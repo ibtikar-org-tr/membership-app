@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS projects (
     description TEXT,
     parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL, -- allows for nesting projects, technically the whole application can be one big project with multiple levels of sub-projects
     owner TEXT NOT NULL, -- membership_number of the user who owns the project (only one owner per project, but managers can be multiple)
+    telegram_group_id TEXT UNIQUE, -- unique Telegram group ID associated with the project for communication and updates (e.g., "-123456789"), this will be stored and used by the bot
     status TEXT NOT NULL -- "active", "completed", "archived"
 );
 
@@ -75,7 +76,8 @@ CREATE TABLE IF NOT EXISTS events (
     -- required_skills TEXT, -- comma-separated list of skills required for the event (e.g., "python,project_management,design")
     -- recommended_skills TEXT, -- comma-separated list of skills recommended for the event (e.g., "python,project_management,design")
     -- aquired_skills TEXT, -- comma-separated list of skills that participants can acquire or improve by attending the event (e.g., "python,project_management,design")
-    skills TEXT -- JSON array of skill names required/recommended/aquired for the event (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
+    skills TEXT, -- JSON array of skill names required/recommended/aquired for the event (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
+    telegram_group_id TEXT UNIQUE, -- unique Telegram group ID associated with the event for communication and updates (e.g., "-123456789"), this will be stored and used by the bot
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_updated_at AFTER UPDATE ON events
