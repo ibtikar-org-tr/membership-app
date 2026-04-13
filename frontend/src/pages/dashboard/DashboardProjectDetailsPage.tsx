@@ -1,7 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiSettings } from 'react-icons/fi'
+import { FiCalendar, FiSettings, FiTarget, FiUser } from 'react-icons/fi'
 import { createProjectMember, createTask, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
@@ -543,9 +543,18 @@ export function DashboardProjectDetailsPage() {
                     </div>
 
                     <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-                      <p className="rounded-lg bg-slate-50 px-2.5 py-1.5">النقاط: {task.points}</p>
-                      <p className="rounded-lg bg-slate-50 px-2.5 py-1.5">الموعد: {formatDueDate(task.dueDate)}</p>
-                      <p className="rounded-lg bg-slate-50 px-2.5 py-1.5 sm:col-span-2">التكليف: {formatAssignee(task.assignedTo)}</p>
+                      <p className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5" title="النقاط">
+                        <FiTarget className="h-3.5 w-3.5 text-slate-500" />
+                        <span>{task.points}</span>
+                      </p>
+                      <p className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5" title="الموعد">
+                        <FiCalendar className="h-3.5 w-3.5 text-slate-500" />
+                        <span>{formatDueDate(task.dueDate)}</span>
+                      </p>
+                      <p className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 sm:col-span-2" title="التكليف">
+                        <FiUser className="h-3.5 w-3.5 text-slate-500" />
+                        <span>{formatAssignee(task.assignedTo)}</span>
+                      </p>
                     </div>
 
                     <div className="mt-2 flex items-center justify-end">
