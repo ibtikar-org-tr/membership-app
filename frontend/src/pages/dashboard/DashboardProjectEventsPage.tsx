@@ -109,10 +109,41 @@ export function DashboardProjectEventsPage() {
     const startTime = String(formData.get('startTime') ?? '').trim()
     const endTime = String(formData.get('endTime') ?? '').trim()
     const location = String(formData.get('location') ?? '').trim()
+    const imageUrlsRaw = String(formData.get('imageUrls') ?? '').trim()
+    const associatedUrlsRaw = String(formData.get('associatedUrls') ?? '').trim()
 
     if (!name) {
       setCreateError('يرجى إدخال اسم الفعالية.')
       return
+    }
+
+    let imageUrls: Record<string, unknown> | undefined
+    let associatedUrls: Record<string, unknown> | undefined
+
+    if (imageUrlsRaw) {
+      try {
+        imageUrls = JSON.parse(imageUrlsRaw)
+        if (typeof imageUrls !== 'object' || Array.isArray(imageUrls)) {
+          setCreateError('صيغة روابط الصور غير صحيحة. يجب أن تكون كائن JSON.')
+          return
+        }
+      } catch {
+        setCreateError('صيغة روابط الصور غير صحيحة. يجب أن تكون JSON صحيح.')
+        return
+      }
+    }
+
+    if (associatedUrlsRaw) {
+      try {
+        associatedUrls = JSON.parse(associatedUrlsRaw)
+        if (typeof associatedUrls !== 'object' || Array.isArray(associatedUrls)) {
+          setCreateError('صيغة الروابط المرتبطة غير صحيحة. يجب أن تكون كائن JSON.')
+          return
+        }
+      } catch {
+        setCreateError('صيغة الروابط المرتبطة غير صحيحة. يجب أن تكون JSON صحيح.')
+        return
+      }
     }
 
     setIsCreating(true)
@@ -124,6 +155,8 @@ export function DashboardProjectEventsPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         location: location || undefined,
+        ...(imageUrls ? { imageUrls } : {}),
+        ...(associatedUrls ? { associatedUrls } : {}),
         createdBy: user.membershipNumber,
         projectId: projectID,
       })
@@ -216,6 +249,18 @@ export function DashboardProjectEventsPage() {
           <textarea
             name="description"
             placeholder="وصف الفعالية"
+            className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            rows={2}
+          />
+          <textarea
+            name="imageUrls"
+            placeholder={'روابط الصور (JSON، مثال: {"banner": "https://...", "gallery": ["https://...", "https://..."]}'}
+            className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            rows={2}
+          />
+          <textarea
+            name="associatedUrls"
+            placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
             className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
             rows={2}
           />

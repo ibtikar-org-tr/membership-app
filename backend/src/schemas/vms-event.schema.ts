@@ -3,6 +3,7 @@ import { z } from 'zod'
 const requiredTrimmedString = z.string().trim().min(1)
 const optionalTrimmedString = z.string().trim().min(1).optional()
 const eventSkillsSchema = z.record(z.string().trim().min(1), z.string().trim().min(1)).optional()
+const eventUrlsSchema = z.record(z.unknown()).optional()
 
 export const createEventSchema = z.object({
   name: requiredTrimmedString.max(160),
@@ -10,6 +11,8 @@ export const createEventSchema = z.object({
   startTime: optionalTrimmedString,
   endTime: optionalTrimmedString,
   location: optionalTrimmedString,
+  imageUrls: eventUrlsSchema,
+  associatedUrls: eventUrlsSchema,
   createdBy: requiredTrimmedString,
   projectId: requiredTrimmedString,
   skills: eventSkillsSchema,

@@ -208,10 +208,41 @@ export function DashboardEventDetailsPage() {
     const startTime = String(formData.get('startTime') ?? '').trim()
     const endTime = String(formData.get('endTime') ?? '').trim()
     const location = String(formData.get('location') ?? '').trim()
+    const imageUrlsRaw = String(formData.get('imageUrls') ?? '').trim()
+    const associatedUrlsRaw = String(formData.get('associatedUrls') ?? '').trim()
 
     if (!name) {
       setSaveError('يرجى إدخال اسم الفعالية.')
       return
+    }
+
+    let imageUrls: Record<string, unknown> | undefined
+    let associatedUrls: Record<string, unknown> | undefined
+
+    if (imageUrlsRaw) {
+      try {
+        imageUrls = JSON.parse(imageUrlsRaw)
+        if (typeof imageUrls !== 'object' || Array.isArray(imageUrls)) {
+          setSaveError('صيغة روابط الصور غير صحيحة. يجب أن تكون كائن JSON.')
+          return
+        }
+      } catch {
+        setSaveError('صيغة روابط الصور غير صحيحة. يجب أن تكون JSON صحيح.')
+        return
+      }
+    }
+
+    if (associatedUrlsRaw) {
+      try {
+        associatedUrls = JSON.parse(associatedUrlsRaw)
+        if (typeof associatedUrls !== 'object' || Array.isArray(associatedUrls)) {
+          setSaveError('صيغة الروابط المرتبطة غير صحيحة. يجب أن تكون كائن JSON.')
+          return
+        }
+      } catch {
+        setSaveError('صيغة الروابط المرتبطة غير صحيحة. يجب أن تكون JSON صحيح.')
+        return
+      }
     }
 
     setIsSaving(true)
@@ -223,6 +254,8 @@ export function DashboardEventDetailsPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         ...(location ? { location } : {}),
+        ...(imageUrls ? { imageUrls } : {}),
+        ...(associatedUrls ? { associatedUrls } : {}),
       })
 
       setEventItem(payload.event)
@@ -422,6 +455,20 @@ export function DashboardEventDetailsPage() {
               className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
               rows={2}
             />
+            <textarea
+              name="imageUrls"
+              defaultValue={eventItem.imageUrls ? JSON.stringify(eventItem.imageUrls, null, 2) : ''}
+              placeholder={'روابط الصور (JSON، مثال: {"banner": "https://...", "gallery": ["https://...", "https://..."]}'}
+              className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              rows={2}
+            />
+            <textarea
+              name="associatedUrls"
+              defaultValue={eventItem.associatedUrls ? JSON.stringify(eventItem.associatedUrls, null, 2) : ''}
+              placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
+              className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              rows={2}
+            />
           </form>
           {saveError ? <p className="mt-2 text-sm text-red-600">{saveError}</p> : null}
         </article>
@@ -476,6 +523,54 @@ export function DashboardEventDetailsPage() {
           ))}
         </div>
       </article>
+
+      {eventItem.imageUrls && Object.keys(eventItem.imageUrls).length > 0 ? (
+        <article className="rounded-xl border border-slate-200 bg-white p-5">
+          <p className="text-sm font-semibold text-slate-900">روابط الصور</p>
+          <div className="mt-3 space-y-2 text-sm text-slate-600">
+            {Object.entries(eventItem.imageUrls).map(([key, value]) => (
+              <div key={key} className="flex gap-2">
+                <span className="font-medium text-slate-900">{key}:</span>
+                {typeof value === 'string' ? (
+                  <a href={value} target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline">
+                    {value}
+                  </a>
+                ) : Array.isArray(value) ? (
+                  <div className="flex flex-col gap-1">
+                    {value.map((url, idx) => (
+                      <a key={idx} href={String(url)} target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline">
+                        {String(url)}
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <span>{String(value)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </article>
+      ) : null}
+
+      {eventItem.associatedUrls && Object.keys(eventItem.associatedUrls).length > 0 ? (
+        <article className="rounded-xl border border-slate-200 bg-white p-5">
+          <p className="text-sm font-semibold text-slate-900">الروابط المرتبطة</p>
+          <div className="mt-3 space-y-2 text-sm text-slate-600">
+            {Object.entries(eventItem.associatedUrls).map(([key, value]) => (
+              <div key={key} className="flex gap-2">
+                <span className="font-medium text-slate-900">{key}:</span>
+                {typeof value === 'string' ? (
+                  <a href={value} target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline">
+                    {value}
+                  </a>
+                ) : (
+                  <span>{String(value)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </article>
+      ) : null}
 
       <article className="rounded-xl border border-slate-200 bg-white p-5">
         <p className="text-sm font-semibold text-slate-900">التذاكر والتسجيلات</p>
