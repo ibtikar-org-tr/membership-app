@@ -21,18 +21,6 @@ function statusLabel(status: string) {
   return status
 }
 
-function statusProgress(status: string) {
-  if (status === 'completed') {
-    return 100
-  }
-
-  if (status === 'archived') {
-    return 25
-  }
-
-  return 60
-}
-
 export function DashboardProjectsPage() {
   const [projects, setProjects] = useState<VmsProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -186,8 +174,6 @@ export function DashboardProjectsPage() {
         {!isLoading &&
           !hasError &&
           projects.map((project) => {
-            const progress = statusProgress(project.status)
-
             return (
           <article key={project.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -203,10 +189,6 @@ export function DashboardProjectsPage() {
                 عرض المشروع
               </Link>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-              <div className="h-full rounded-full bg-slate-500" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="mt-2 text-xs font-medium text-slate-600">تقدير الإنجاز: {progress}%</p>
           </article>
             )
           })}
