@@ -70,6 +70,7 @@ export function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
+                dir="ltr"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
                 placeholder="example@domain.com"
               />
@@ -85,6 +86,7 @@ export function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
+                dir="ltr"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
                 placeholder="********"
               />
