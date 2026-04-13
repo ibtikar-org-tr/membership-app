@@ -143,7 +143,7 @@ export function DashboardProjectDetailsPage() {
     () => projectTasks.filter((task) => task.status === 'completed').length,
     [projectTasks],
   )
-  const memberOptions = useMemo(() => projectMembers.map((member) => member.membershipNumber), [projectMembers])
+  const memberOptions = useMemo(() => projectMembers, [projectMembers])
   const memberCount = projectMembers.length
   const openTasksCount = useMemo(() => projectTasks.filter((task) => task.status === 'open').length, [projectTasks])
   const inProgressTasksCount = useMemo(
@@ -554,8 +554,8 @@ export function DashboardProjectDetailsPage() {
                 required
               />
               <datalist id="project-member-assignee-options">
-                {memberOptions.map((membershipNumber) => (
-                  <option key={membershipNumber} value={membershipNumber} />
+                {memberOptions.map((member) => (
+                  <option key={member.membershipNumber} value={member.membershipNumber} label={member.displayName} />
                 ))}
               </datalist>
               <select
@@ -585,7 +585,7 @@ export function DashboardProjectDetailsPage() {
                   className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700"
                 >
                   <span className="h-2 w-2 rounded-full bg-cyan-500" />
-                  {member.membershipNumber} • {member.role}
+                  {member.displayName} • {member.role}
                 </span>
               ))}
             </div>
@@ -633,12 +633,18 @@ export function DashboardProjectDetailsPage() {
                   placeholder="النقاط"
                   className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
                 />
-                <input
+                <select
                   name="assignedTo"
-                  list="project-task-assignee-options"
-                  placeholder="المكلّف من أعضاء المشروع"
+                  defaultValue=""
                   className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                />
+                >
+                  <option value="">غير مسند</option>
+                  {memberOptions.map((member) => (
+                    <option key={member.membershipNumber} value={member.membershipNumber}>
+                      {member.displayName}
+                    </option>
+                  ))}
+                </select>
               </div>
               <button
                 type="submit"
@@ -657,8 +663,8 @@ export function DashboardProjectDetailsPage() {
               {projectMembers.length === 0 ? <p className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</p> : null}
               {projectMembers.map((member) => (
                 <div key={`member-${member.projectId}-${member.membershipNumber}`} className="min-w-[7rem] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                  <p className="font-semibold text-slate-900">{member.membershipNumber}</p>
-                  <p className="mt-1 uppercase tracking-wide text-slate-500">{member.role}</p>
+                      <p className="font-semibold text-slate-900">{member.displayName}</p>
+                      <p className="mt-1 uppercase tracking-wide text-slate-500">{member.role} • {member.membershipNumber}</p>
                 </div>
               ))}
             </div>

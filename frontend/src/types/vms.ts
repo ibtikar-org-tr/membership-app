@@ -80,6 +80,7 @@ export interface VmsProjectMember {
   projectId: string
   membershipNumber: string
   role: 'member' | 'manager' | 'observer' | string
+  displayName: string
 }
 
 export interface VmsPointTransaction {

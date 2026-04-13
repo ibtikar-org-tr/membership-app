@@ -5,6 +5,7 @@ interface ProjectMemberRow {
   project_id: string
   membership_number: string
   role: string
+  display_name: string | null
 }
 
 function mapProjectMemberRow(row: ProjectMemberRow) {
@@ -12,13 +13,31 @@ function mapProjectMemberRow(row: ProjectMemberRow) {
     projectId: row.project_id,
     membershipNumber: row.membership_number,
     role: row.role,
+    displayName: row.display_name ?? row.membership_number,
   }
 }
 
 export async function listProjectMembers(db: D1DatabaseLike, projectId?: string) {
   const query = projectId
-    ? 'SELECT project_id, membership_number, role FROM project_members WHERE project_id = ? ORDER BY membership_number ASC'
-    : 'SELECT project_id, membership_number, role FROM project_members ORDER BY project_id ASC, membership_number ASC'
+    ? `SELECT
+        pm.project_id,
+        pm.membership_number,
+        pm.role,
+        COALESCE(NULLIF(TRIM(ui.en_name), ''), NULLIF(TRIM(ui.ar_name), ''), u.email, pm.membership_number) AS display_name
+      FROM project_members pm
+      LEFT JOIN users u ON u.membership_number = pm.membership_number
+      LEFT JOIN user_info ui ON ui.membership_number = pm.membership_number
+      WHERE pm.project_id = ?
+      ORDER BY pm.membership_number ASC`
+    : `SELECT
+        pm.project_id,
+        pm.membership_number,
+        pm.role,
+        COALESCE(NULLIF(TRIM(ui.en_name), ''), NULLIF(TRIM(ui.ar_name), ''), u.email, pm.membership_number) AS display_name
+      FROM project_members pm
+      LEFT JOIN users u ON u.membership_number = pm.membership_number
+      LEFT JOIN user_info ui ON ui.membership_number = pm.membership_number
+      ORDER BY pm.project_id ASC, pm.membership_number ASC`
 
   const statement = db.prepare(query)
   const result = projectId ? await statement.bind(projectId).all<ProjectMemberRow>() : await statement.bind().all<ProjectMemberRow>()
@@ -28,7 +47,17 @@ export async function listProjectMembers(db: D1DatabaseLike, projectId?: string)
 
 export async function getProjectMember(db: D1DatabaseLike, projectId: string, membershipNumber: string) {
   const row = await db
-    .prepare('SELECT project_id, membership_number, role FROM project_members WHERE project_id = ? AND membership_number = ?')
+    .prepare(
+      `SELECT
+        pm.project_id,
+        pm.membership_number,
+        pm.role,
+        COALESCE(NULLIF(TRIM(ui.en_name), ''), NULLIF(TRIM(ui.ar_name), ''), u.email, pm.membership_number) AS display_name
+      FROM project_members pm
+      LEFT JOIN users u ON u.membership_number = pm.membership_number
+      LEFT JOIN user_info ui ON ui.membership_number = pm.membership_number
+      WHERE pm.project_id = ? AND pm.membership_number = ?`
+    )
     .bind(projectId, membershipNumber)
     .first<ProjectMemberRow>()
 
