@@ -323,6 +323,7 @@ export function DashboardProjectDetailsPage() {
 
       setProjectTasks((previous) => [payload.task, ...previous])
       form.reset()
+      setIsAddTaskOpen(false)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setTaskError(requestError.message)
@@ -372,6 +373,7 @@ export function DashboardProjectDetailsPage() {
       }
 
       form.reset()
+      setIsAddMemberOpen(false)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setMemberError(requestError.message)
