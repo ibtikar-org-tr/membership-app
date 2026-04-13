@@ -1,7 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiCalendar, FiSettings, FiTarget, FiUser } from 'react-icons/fi'
+import { FiCalendar, FiEdit3, FiSettings, FiTarget, FiUser } from 'react-icons/fi'
 import { createProjectMember, createTask, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
@@ -159,6 +159,7 @@ export function DashboardProjectDetailsPage() {
   const [memberError, setMemberError] = useState<string | null>(null)
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isTaskEditMode, setIsTaskEditMode] = useState(false)
   const [isUpdatingTask, setIsUpdatingTask] = useState(false)
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
@@ -447,6 +448,7 @@ export function DashboardProjectDetailsPage() {
       })
 
       setProjectTasks((previous) => previous.map((task) => (task.id === payload.task.id ? payload.task : task)))
+      setIsTaskEditMode(false)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setTaskUpdateError(requestError.message)
@@ -679,6 +681,7 @@ export function DashboardProjectDetailsPage() {
         <div
           className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4"
           onClick={() => {
+            setIsTaskEditMode(false)
             setTaskUpdateError(null)
             setSelectedTaskId(null)
           }}
@@ -686,20 +689,36 @@ export function DashboardProjectDetailsPage() {
           <article className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between gap-3">
               <p className="text-base font-semibold text-slate-950">تفاصيل المهمة</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setTaskUpdateError(null)
-                  setSelectedTaskId(null)
-                }}
-                className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600"
-              >
-                إغلاق
-              </button>
+              <div className="flex items-center gap-2">
+                {canEditSelectedTask ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTaskUpdateError(null)
+                      setIsTaskEditMode((previous) => !previous)
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 transition hover:bg-slate-50"
+                    title={isTaskEditMode ? 'إنهاء التعديل' : 'تعديل المهمة'}
+                  >
+                    <FiEdit3 className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTaskEditMode(false)
+                    setTaskUpdateError(null)
+                    setSelectedTaskId(null)
+                  }}
+                  className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600"
+                >
+                  إغلاق
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 space-y-4">
-              {canEditSelectedTask ? (
+              {canEditSelectedTask && isTaskEditMode ? (
                 <form onSubmit={handleUpdateTask} className="space-y-3">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -766,6 +785,16 @@ export function DashboardProjectDetailsPage() {
                   >
                     {isUpdatingTask ? 'جار حفظ التعديلات...' : 'حفظ التعديلات'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTaskUpdateError(null)
+                      setIsTaskEditMode(false)
+                    }}
+                    className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    إلغاء التعديل
+                  </button>
                 </form>
               ) : (
                 <>
@@ -787,9 +816,15 @@ export function DashboardProjectDetailsPage() {
                     <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">تاريخ الإنشاء: {formatDateEnCA(selectedTask.createdAt)}</p>
                     <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">آخر تحديث: {formatDateEnCA(selectedTask.updatedAt)}</p>
                   </div>
-                  <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                    يمكنك تعديل المهمة إذا كانت مسندة لك أو كنت مديراً للمشروع أو مالك المشروع.
-                  </p>
+                  {canEditSelectedTask ? (
+                    <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      لديك صلاحية تعديل هذه المهمة. اضغط زر القلم لبدء التعديل.
+                    </p>
+                  ) : (
+                    <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                      يمكنك تعديل المهمة إذا كانت مسندة لك أو كنت مديراً للمشروع أو مالك المشروع.
+                    </p>
+                  )}
                 </>
               )}
               {taskUpdateError ? <p className="text-sm text-red-600">{taskUpdateError}</p> : null}
