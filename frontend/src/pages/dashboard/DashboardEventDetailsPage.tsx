@@ -2,20 +2,22 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
-  ArrowRight,
-  Calendar,
   CheckCircle,
   Clock,
-  ExternalLink,
+  MapPin,
+  Calendar,
+  PencilLine,
   ImageIcon,
   Link2,
-  MapPin,
-  Pencil,
-  PencilLine,
   Sparkles,
   Ticket,
   Trash2,
   Users,
+  ArrowRight,
+  Pencil,
+  ExternalLink,
+  Plus,
+  X,
 } from 'lucide-react'
 import {
   approveRegistration,
@@ -87,6 +89,9 @@ export function DashboardEventDetailsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [associatedUrls, setAssociatedUrls] = useState<{ label: string; url: string }[]>([])
+  const [newUrlLabel, setNewUrlLabel] = useState('')
+  const [newUrlValue, setNewUrlValue] = useState('')
   const [updatingRegistrationId, setUpdatingRegistrationId] = useState<string | null>(null)
   const [registrationUpdateError, setRegistrationUpdateError] = useState<string | null>(null)
   const [approvingRegistrationId, setApprovingRegistrationId] = useState<string | null>(null)
@@ -203,8 +208,14 @@ export function DashboardEventDetailsPage() {
     if (!isEditing) {
       setSelectedBannerFile(null)
       setUploadError(null)
+    } else if (eventItem) {
+      const urls = Object.entries(eventItem.associatedUrls ?? {}).map(([label, url]) => ({
+        label,
+        url: String(url),
+      }))
+      setAssociatedUrls(urls)
     }
-  }, [isEditing])
+  }, [isEditing, eventItem])
 
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
   const hasUserRegistered = useMemo(() => {
@@ -247,27 +258,16 @@ export function DashboardEventDetailsPage() {
     const startTime = String(formData.get('startTime') ?? '').trim()
     const endTime = String(formData.get('endTime') ?? '').trim()
     const location = String(formData.get('location') ?? '').trim()
-    const associatedUrlsRaw = String(formData.get('associatedUrls') ?? '').trim()
 
     if (!name) {
       setSaveError('يرجى إدخال اسم الفعالية.')
       return
     }
 
-    let associatedUrls: Record<string, unknown> | undefined
-
-    if (associatedUrlsRaw) {
-      try {
-        associatedUrls = JSON.parse(associatedUrlsRaw)
-        if (typeof associatedUrls !== 'object' || Array.isArray(associatedUrls)) {
-          setSaveError('صيغة الروابط المرتبطة غير صحيحة. يجب أن تكون كائن JSON.')
-          return
-        }
-      } catch {
-        setSaveError('صيغة الروابط المرتبطة غير صحيحة. يجب أن تكون JSON صحيح.')
-        return
-      }
-    }
+    const validUrls = associatedUrls.filter((u) => u.label.trim() && u.url.trim())
+    const associatedUrlsObject = validUrls.length > 0
+      ? Object.fromEntries(validUrls.map((u) => [u.label.trim(), u.url.trim()]))
+      : undefined
 
     setIsSaving(true)
 
@@ -278,7 +278,7 @@ export function DashboardEventDetailsPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         ...(location ? { location } : {}),
-        ...(associatedUrls ? { associatedUrls } : {}),
+        ...(associatedUrlsObject ? { associatedUrls: associatedUrlsObject } : {}),
       })
 
       let updatedEvent = payload.event
@@ -300,6 +300,25 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleAddUrl = () => {
+    if (newUrlLabel.trim() && newUrlValue.trim()) {
+      setAssociatedUrls((prev) => [...prev, { label: newUrlLabel.trim(), url: newUrlValue.trim() }])
+      setNewUrlLabel('')
+      setNewUrlValue('')
+    }
+  }
+
+  const handleRemoveUrl = (index: number) => {
+    setAssociatedUrls((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      handleAddUrl()
     }
   }
 
@@ -689,16 +708,70 @@ export function DashboardEventDetailsPage() {
                 </div>
               )}
             </div>
-            <label className="md:col-span-4 space-y-1">
-              <span className="text-xs font-medium text-slate-700">الروابط المرتبطة (JSON)</span>
-              <textarea
-                name="associatedUrls"
-                defaultValue={eventItem.associatedUrls ? JSON.stringify(eventItem.associatedUrls, null, 2) : ''}
-                placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 font-mono text-xs text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 sm:text-sm"
-                rows={3}
-              />
-            </label>
+            <div className="md:col-span-4 space-y-3">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                <Link2 className="h-4 w-4 text-slate-500" />
+                الروابط المرتبطة
+              </h3>
+              {associatedUrls.length > 0 && (
+                <ul className="space-y-2">
+                  {associatedUrls.map((url, index) => (
+                    <li
+                      key={index}
+                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                    >
+                      <span className="min-w-0 flex-1 text-sm">
+                        <span className="font-medium text-slate-700">{url.label}:</span>{' '}
+                        <a
+                          href={url.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate text-cyan-600 hover:underline"
+                        >
+                          {url.url}
+                        </a>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveUrl(index)}
+                        className="shrink-0 rounded-lg p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newUrlLabel}
+                  onChange={(e) => setNewUrlLabel(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="العنوان (مثال: موقع إلكتروني)"
+                  className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                />
+                <input
+                  type="url"
+                  value={newUrlValue}
+                  onChange={(e) => setNewUrlValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="الرابط"
+                  className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddUrl}
+                  disabled={!newUrlLabel.trim() || !newUrlValue.trim()}
+                  className="shrink-0 rounded-lg border border-cyan-200 bg-cyan-50 p-2 text-cyan-700 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500">
+                اضغط Enter أو زر + لإضافة رابط. سيتم الحفظ عند تحديث الفعالية.
+              </p>
+            </div>
           </form>
           {saveError ? <p className="mt-3 text-sm text-red-600">{saveError}</p> : null}
           {uploadError ? <p className="mt-3 text-sm text-red-600">{uploadError}</p> : null}
