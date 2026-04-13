@@ -97,7 +97,7 @@ export async function createTask(db: D1DatabaseLike, id: string, input: CreateTa
       input.createdBy,
       input.status,
       input.dueDate ?? null,
-      input.points ?? 0,
+      input.points ?? 1,
       input.assignedTo ?? null,
       input.completedBy ?? null,
       input.completedAt ?? null,

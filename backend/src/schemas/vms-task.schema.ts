@@ -14,7 +14,7 @@ export const createTaskSchema = z.object({
   createdBy: requiredTrimmedString,
   status: taskStatusSchema.default('open'),
   dueDate: optionalTrimmedString,
-  points: z.number().int().min(0).optional(),
+  points: z.number().int().min(1).optional(),
   assignedTo: optionalTrimmedString,
   completedBy: optionalTrimmedString,
   completedAt: optionalTrimmedString,

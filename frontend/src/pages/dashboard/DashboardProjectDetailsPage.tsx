@@ -260,7 +260,8 @@ export function DashboardProjectDetailsPage() {
     const status =
       statusRaw === 'in_progress' || statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'open'
     const dueDateRaw = String(formData.get('dueDate') ?? '').trim()
-    const pointsRaw = Number(formData.get('points') ?? 0)
+    const pointsRawValue = String(formData.get('points') ?? '').trim()
+    const pointsRaw = pointsRawValue === '' ? 1 : Number(pointsRawValue)
     const assignedTo = String(formData.get('assignedTo') ?? '').trim()
 
     if (!name) {
@@ -268,8 +269,8 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
-    if (Number.isNaN(pointsRaw) || pointsRaw < 0) {
-      setTaskError('يرجى إدخال قيمة صحيحة للنقاط.')
+    if (Number.isNaN(pointsRaw) || pointsRaw < 1) {
+      setTaskError('يجب أن تكون النقاط 1 على الأقل.')
       return
     }
 
@@ -283,7 +284,7 @@ export function DashboardProjectDetailsPage() {
         createdBy: user.membershipNumber,
         status,
         dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : undefined,
-        points: Math.trunc(pointsRaw),
+        points: Math.max(1, Math.trunc(pointsRaw)),
         assignedTo: assignedTo || undefined,
       })
 
@@ -627,8 +628,8 @@ export function DashboardProjectDetailsPage() {
                 <input
                   name="points"
                   type="number"
-                  min={0}
-                  defaultValue={0}
+                  min={1}
+                  defaultValue={1}
                   placeholder="نقاط"
                   className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
                 />
