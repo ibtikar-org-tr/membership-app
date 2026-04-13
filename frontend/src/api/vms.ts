@@ -113,6 +113,28 @@ async function putJson<TResponse, TPayload>(path: string, payload: TPayload): Pr
   return (await response.json()) as TResponse
 }
 
+async function deleteJson(path: string): Promise<void> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+  })
+
+  if (!response.ok) {
+    const fallbackMessage = `Request failed (${response.status})`
+    let message = fallbackMessage
+
+    try {
+      const body = (await response.json()) as { error?: unknown }
+      if (typeof body.error === 'string' && body.error.trim()) {
+        message = body.error
+      }
+    } catch {
+      // Ignore JSON parsing errors and keep fallback message.
+    }
+
+    throw new Error(message)
+  }
+}
+
 export function login(payload: { identifier: string; password: string }) {
   return postJson<LoginResponse, { identifier: string; password: string }>('/login', payload)
 }
@@ -256,6 +278,24 @@ export function createEventTicket(payload: {
   quantity: number
 }) {
   return postJson<{ eventTicket: VmsEventTicket }, typeof payload>('/event-tickets', payload)
+}
+
+export function updateEventTicket(
+  ticketId: string,
+  payload: Partial<{
+    eventId: string
+    name: string
+    description: string
+    pointPrice: number
+    currencyPrice: string
+    quantity: number
+  }>,
+) {
+  return putJson<{ eventTicket: VmsEventTicket }, typeof payload>(`/event-tickets/${encodeURIComponent(ticketId)}`, payload)
+}
+
+export function deleteEventTicket(ticketId: string) {
+  return deleteJson(`/event-tickets/${encodeURIComponent(ticketId)}`)
 }
 
 export function fetchEventRegistrations(eventId?: string) {

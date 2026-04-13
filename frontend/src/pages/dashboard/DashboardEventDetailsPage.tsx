@@ -9,19 +9,23 @@ import {
   ImageIcon,
   Link2,
   MapPin,
+  Pencil,
   PencilLine,
   Sparkles,
   Ticket,
+  Trash2,
   Users,
 } from 'lucide-react'
 import {
   createEventRegistration,
   createEventTicket,
+  deleteEventTicket,
   fetchEventById,
   fetchEventRegistrations,
   fetchEventTickets,
   fetchProjectById,
   fetchProjectMembers,
+  updateEventTicket,
   uploadEventBanner,
   updateEvent,
 } from '../../api/vms'
@@ -68,6 +72,9 @@ export function DashboardEventDetailsPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
   const [ticketError, setTicketError] = useState<string | null>(null)
+  const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
+  const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null)
+  const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null)
   const [isApplying, setIsApplying] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<string | null>(null)
@@ -388,6 +395,75 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setIsCreatingTicket(false)
+    }
+  }
+
+  const handleUpdateTicket = async (event: FormEvent<HTMLFormElement>, ticketId: string) => {
+    event.preventDefault()
+    setTicketError(null)
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const pointPriceRaw = Number(formData.get('pointPrice') ?? 0)
+    const currencyPrice = String(formData.get('currencyPrice') ?? '').trim()
+    const quantityRaw = Number(formData.get('quantity') ?? 0)
+
+    if (!name || !currencyPrice || Number.isNaN(pointPriceRaw) || Number.isNaN(quantityRaw)) {
+      setTicketError('يرجى إدخال جميع حقول التذكرة المطلوبة بشكل صحيح.')
+      return
+    }
+
+    if (pointPriceRaw < 0 || quantityRaw < 0) {
+      setTicketError('يجب أن تكون قيمة النقاط والكمية أرقاماً غير سالبة.')
+      return
+    }
+
+    setUpdatingTicketId(ticketId)
+
+    try {
+      const payload = await updateEventTicket(ticketId, {
+        name,
+        description: description || undefined,
+        pointPrice: Math.trunc(pointPriceRaw),
+        currencyPrice,
+        quantity: Math.trunc(quantityRaw),
+      })
+
+      setTickets((previous) => previous.map((ticket) => (ticket.id === ticketId ? payload.eventTicket : ticket)))
+      setEditingTicketId(null)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTicketError(requestError.message)
+      } else {
+        setTicketError('تعذر تحديث التذكرة.')
+      }
+    } finally {
+      setUpdatingTicketId(null)
+    }
+  }
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذه التذكرة؟ لا يمكن التراجع عن هذا الإجراء.')) {
+      return
+    }
+
+    setTicketError(null)
+    setDeletingTicketId(ticketId)
+
+    try {
+      await deleteEventTicket(ticketId)
+      setTickets((previous) => previous.filter((ticket) => ticket.id !== ticketId))
+      setEditingTicketId((current) => (current === ticketId ? null : current))
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTicketError(requestError.message)
+      } else {
+        setTicketError('تعذر حذف التذكرة.')
+      }
+    } finally {
+      setDeletingTicketId(null)
     }
   }
 
@@ -777,13 +853,115 @@ export function DashboardEventDetailsPage() {
                     key={ticket.id}
                     className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-slate-900">{ticket.name}</p>
-                      <span className="shrink-0 rounded-lg bg-slate-900 px-2 py-0.5 text-xs font-medium text-white">{ticket.currencyPrice}</span>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-600">
-                      الكمية: {ticket.quantity} • النقاط: {ticket.pointPrice}
-                    </p>
+                    {canEditEvent && editingTicketId === ticket.id ? (
+                      <form
+                        onSubmit={(e) => void handleUpdateTicket(e, ticket.id)}
+                        className="grid gap-3 sm:grid-cols-2"
+                      >
+                        <label className="space-y-1 sm:col-span-2">
+                          <span className="text-xs font-medium text-slate-600">اسم التذكرة</span>
+                          <input
+                            name="name"
+                            defaultValue={ticket.name}
+                            required
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                          />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-xs font-medium text-slate-600">السعر النقدي</span>
+                          <input
+                            name="currencyPrice"
+                            defaultValue={ticket.currencyPrice}
+                            required
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                          />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-xs font-medium text-slate-600">النقاط</span>
+                          <input
+                            name="pointPrice"
+                            type="number"
+                            min={0}
+                            defaultValue={ticket.pointPrice}
+                            required
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                          />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-xs font-medium text-slate-600">الكمية</span>
+                          <input
+                            name="quantity"
+                            type="number"
+                            min={0}
+                            defaultValue={ticket.quantity}
+                            required
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                          />
+                        </label>
+                        <label className="space-y-1 sm:col-span-2">
+                          <span className="text-xs font-medium text-slate-600">الوصف (اختياري)</span>
+                          <input
+                            name="description"
+                            defaultValue={ticket.description ?? ''}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                          />
+                        </label>
+                        <div className="flex flex-wrap gap-2 sm:col-span-2">
+                          <button
+                            type="submit"
+                            disabled={updatingTicketId === ticket.id}
+                            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {updatingTicketId === ticket.id ? 'جار الحفظ...' : 'حفظ التعديلات'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingTicketId(null)}
+                            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                          >
+                            إلغاء
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-slate-900">{ticket.name}</p>
+                            {ticket.description ? (
+                              <p className="mt-1 text-xs text-slate-500 line-clamp-2">{ticket.description}</p>
+                            ) : null}
+                          </div>
+                          <span className="shrink-0 rounded-lg bg-slate-900 px-2 py-0.5 text-xs font-medium text-white">
+                            {ticket.currencyPrice}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs text-slate-600">
+                          الكمية: {ticket.quantity} • النقاط: {ticket.pointPrice}
+                        </p>
+                        {canEditEvent ? (
+                          <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                            <button
+                              type="button"
+                              onClick={() => setEditingTicketId(ticket.id)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              تعديل
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteTicket(ticket.id)}
+                              disabled={deletingTicketId === ticket.id}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              {deletingTicketId === ticket.id ? 'جار الحذف...' : 'حذف'}
+                            </button>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
