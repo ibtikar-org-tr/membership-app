@@ -5,25 +5,27 @@ import { getStoredUser } from '../../utils/auth'
 import { formatDateEnCA } from '../../utils/date-format'
 
 export function DashboardProfilePage() {
-  const user = getStoredUser()
+  const membershipNumber = getStoredUser()?.membershipNumber ?? null
   const [profile, setProfile] = useState<MemberProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
-    if (!user) {
+    if (!membershipNumber) {
       setHasError(true)
       setIsLoading(false)
       return
     }
 
-    const membershipNumber = user.membershipNumber
+    const currentMembershipNumber = membershipNumber
+
+    setIsLoading(true)
 
     const controller = new AbortController()
 
     async function loadProfile() {
       try {
-        const payload = await fetchProfile(membershipNumber)
+        const payload = await fetchProfile(currentMembershipNumber)
 
         if (!controller.signal.aborted) {
           setProfile(payload.profile)
@@ -45,7 +47,7 @@ export function DashboardProfilePage() {
     return () => {
       controller.abort()
     }
-  }, [user])
+  }, [membershipNumber])
 
   const profileRows = useMemo(() => {
     const fallback = '-'
