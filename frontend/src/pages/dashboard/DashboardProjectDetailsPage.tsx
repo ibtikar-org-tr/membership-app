@@ -104,17 +104,19 @@ function laneStyle(status: string) {
 }
 
 function memberInitials(displayName: string, membershipNumber: string) {
+  const nonJoining = (value: string) => value.split('').join('\u200C')
+
   const value = displayName.trim()
   if (!value) {
-    return membershipNumber.slice(-2).toUpperCase()
+    return nonJoining(membershipNumber.slice(-2).toUpperCase())
   }
 
   const segments = value.split(/\s+/).filter(Boolean)
   if (segments.length === 1) {
-    return segments[0].slice(0, 2).toUpperCase()
+    return nonJoining(segments[0].slice(0, 2).toUpperCase())
   }
 
-  return `${segments[0][0] ?? ''}${segments[1][0] ?? ''}`.toUpperCase()
+  return nonJoining(`${segments[0][0] ?? ''}${segments[1][0] ?? ''}`.toUpperCase())
 }
 
 function memberAvatarTone(membershipNumber: string) {
