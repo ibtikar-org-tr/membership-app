@@ -2,6 +2,19 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  ExternalLink,
+  ImageIcon,
+  Link2,
+  MapPin,
+  PencilLine,
+  Sparkles,
+  Ticket,
+  Users,
+} from 'lucide-react'
+import {
   createEventRegistration,
   createEventTicket,
   fetchEventById,
@@ -382,52 +395,90 @@ export function DashboardEventDetailsPage() {
 
   if (isLoading || !eventItem) {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-        <p className="text-sm text-slate-500">جار تحميل تفاصيل الفعالية...</p>
+      <section className="mx-auto max-w-5xl space-y-4 px-1 sm:px-0">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+          <div className="h-40 animate-pulse bg-linear-to-br from-slate-100 to-slate-200 sm:h-48" />
+          <div className="space-y-3 p-6">
+            <div className="h-4 w-3/4 max-w-xs animate-pulse rounded bg-slate-200" />
+            <div className="h-8 w-2/3 max-w-md animate-pulse rounded bg-slate-200" />
+            <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
+          </div>
+        </div>
+        <p className="text-center text-sm text-slate-500">جار تحميل تفاصيل الفعالية...</p>
       </section>
     )
   }
 
   return (
-    <section className="space-y-5">
-      <header className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">تفاصيل الفعالية</p>
-            <h2 className="mt-1 text-xl font-semibold text-slate-900">{eventItem.name}</h2>
-            <p className="mt-2 text-sm text-slate-600">{eventItem.description ?? 'لا يوجد وصف متاح للفعالية.'}</p>
+    <section className="mx-auto max-w-5xl space-y-6 pb-10">
+      {/* Hero: banner + title */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
+        {eventItem.imageUrl ? (
+          <div className="relative h-44 sm:h-52 md:h-60">
+            <img
+              src={eventItem.imageUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-linear-to-t from-slate-900/50 via-slate-900/10 to-transparent" />
           </div>
-          <div className="flex items-center gap-2">
+        ) : (
+          <div className="relative flex h-36 items-center justify-center bg-linear-to-br from-slate-100 via-slate-50 to-cyan-50/40 sm:h-44">
+            <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
+              <Calendar className="h-10 w-10 text-slate-400" strokeWidth={1.25} />
+            </div>
+          </div>
+        )}
+        <div className="flex flex-col gap-4 border-t border-slate-100 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6 md:p-8">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-cyan-700/90">تفاصيل الفعالية</p>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{eventItem.name}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+              {eventItem.description ?? 'لا يوجد وصف متاح للفعالية.'}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch sm:gap-2 lg:flex-row">
             {canEditEvent ? (
               <button
                 type="button"
                 onClick={() => setIsEditing((previous) => !previous)}
-                className="inline-flex items-center rounded-md border border-slate-300 bg-slate-950 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
               >
-                {isEditing ? 'إلغاء التعديل' : 'تعديل الفعالية'}
+                {isEditing ? (
+                  'إلغاء التعديل'
+                ) : (
+                  <>
+                    <PencilLine className="h-4 w-4" />
+                    تعديل الفعالية
+                  </>
+                )}
               </button>
             ) : null}
             <Link
               to="/dashboard/events"
-              className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
+              <ArrowLeft className="h-4 w-4" />
               العودة للفعاليات
             </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {isEditing && canEditEvent ? (
-        <article className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-sm font-semibold text-slate-900">تعديل الفعالية</p>
-          <form onSubmit={handleUpdateEvent} className="mt-4 grid gap-3 md:grid-cols-4">
+        <article className="rounded-2xl border border-cyan-200/60 bg-linear-to-br from-white to-cyan-50/30 p-5 shadow-sm ring-1 ring-cyan-900/5 sm:p-6">
+          <div className="mb-4 flex items-center gap-2 border-b border-cyan-100 pb-3">
+            <PencilLine className="h-5 w-5 text-cyan-700" />
+            <p className="text-base font-semibold text-slate-900">تعديل الفعالية</p>
+          </div>
+          <form onSubmit={handleUpdateEvent} className="mt-4 grid gap-4 md:grid-cols-4">
             <label className="space-y-1">
               <span className="text-xs font-medium text-slate-700">اسم الفعالية</span>
               <input
                 name="name"
                 defaultValue={eventItem.name}
                 placeholder="اسم الفعالية"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                 required
               />
             </label>
@@ -437,7 +488,7 @@ export function DashboardEventDetailsPage() {
                 name="startTime"
                 type="datetime-local"
                 defaultValue={toDateTimeLocal(eventItem.startTime)}
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
               />
             </label>
             <label className="space-y-1">
@@ -446,13 +497,13 @@ export function DashboardEventDetailsPage() {
                 name="endTime"
                 type="datetime-local"
                 defaultValue={toDateTimeLocal(eventItem.endTime)}
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
               />
             </label>
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+              className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
             </button>
@@ -462,7 +513,7 @@ export function DashboardEventDetailsPage() {
                 name="location"
                 defaultValue={eventItem.location ?? ''}
                 placeholder="الموقع"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
               />
             </label>
             <label className="md:col-span-4 space-y-1">
@@ -471,20 +522,20 @@ export function DashboardEventDetailsPage() {
                 name="description"
                 defaultValue={eventItem.description ?? ''}
                 placeholder="وصف الفعالية"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                 rows={2}
               />
             </label>
             <div className="md:col-span-4">
-              <h3 className="mb-2 text-sm font-medium text-slate-700">صور الفعالية</h3>
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                <ImageIcon className="h-4 w-4 text-slate-500" />
+                صورة البانر
+              </h3>
               {eventItem.imageUrl ? (
-                <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3">
-                  <p className="mb-2 text-xs font-medium text-slate-700">الصور الحالية</p>
-                  <div className="mb-2">
-                    <p className="mb-1 text-xs text-slate-600">صورة البانر الحالية</p>
-                    <img src={eventItem.imageUrl} alt="Current banner" className="h-36 w-full rounded-md border border-slate-200 object-cover" />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500">رفع صورة جديدة سيستبدل صورة البانر الحالية.</p>
+                <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                  <p className="mb-2 text-xs font-medium text-slate-600">الصورة الحالية</p>
+                  <img src={eventItem.imageUrl} alt="" className="h-36 w-full max-w-md rounded-lg border border-slate-200 object-cover shadow-inner" />
+                  <p className="mt-2 text-xs text-slate-500">صورة جديدة تستبدل الحالية عند الحفظ.</p>
                 </div>
               ) : null}
               <ImageUploader
@@ -497,8 +548,8 @@ export function DashboardEventDetailsPage() {
                 }}
               />
               {selectedBannerFile && (
-                <div className="mt-2 rounded-md bg-green-50 p-2">
-                  <p className="text-xs font-medium text-green-800">تم اختيار صورة بانر جديدة. سيتم رفعها عند حفظ التعديلات.</p>
+                <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2">
+                  <p className="text-xs font-medium text-emerald-900">تم اختيار صورة جديدة — تُرفع عند حفظ التعديلات.</p>
                 </div>
               )}
             </div>
@@ -508,192 +559,253 @@ export function DashboardEventDetailsPage() {
                 name="associatedUrls"
                 defaultValue={eventItem.associatedUrls ? JSON.stringify(eventItem.associatedUrls, null, 2) : ''}
                 placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-                rows={2}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 font-mono text-xs text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 sm:text-sm"
+                rows={3}
               />
             </label>
           </form>
-          {saveError ? <p className="mt-2 text-sm text-red-600">{saveError}</p> : null}
-          {uploadError ? <p className="mt-2 text-sm text-red-600">{uploadError}</p> : null}
+          {saveError ? <p className="mt-3 text-sm text-red-600">{saveError}</p> : null}
+          {uploadError ? <p className="mt-3 text-sm text-red-600">{uploadError}</p> : null}
         </article>
       ) : null}
       {!isEditing && canEditEvent ? (
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          يمكنك الضغط على زر "تعديل الفعالية" لتعديل تفاصيل الفعالية.
-        </article>
+        <div className="rounded-xl border border-dashed border-slate-300/80 bg-slate-50/50 px-4 py-3 text-center text-sm text-slate-600">
+          يمكنك تعديل تفاصيل الفعالية من زر <span className="font-medium text-slate-800">تعديل الفعالية</span> أعلاه.
+        </div>
       ) : null}
       {!canEditEvent ? (
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          هذه الصفحة تعرض جميع المعلومات المتاحة للأعضاء. يمكن لمالك المشروع ومديريه تعديل الفعالية.
-        </article>
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-center text-sm text-slate-600">
+          عرض للأعضاء. يمكن لمالك المشروع ومديريه تعديل الفعالية.
+        </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <article className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs text-slate-500">البداية</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">{formatDateTimeEnCA(eventItem.startTime)}</p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs text-slate-500">النهاية</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">{formatDateTimeEnCA(eventItem.endTime)}</p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs text-slate-500">المكان</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">{eventItem.location ?? 'غير محدد'}</p>
-        </article>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="group flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-cyan-200/80 hover:shadow-md">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
+            <Calendar className="h-5 w-5" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-500">البداية</p>
+            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{formatDateTimeEnCA(eventItem.startTime)}</p>
+          </div>
+        </div>
+        <div className="group flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-cyan-200/80 hover:shadow-md">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+            <Clock className="h-5 w-5" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-500">النهاية</p>
+            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{formatDateTimeEnCA(eventItem.endTime)}</p>
+          </div>
+        </div>
+        <div className="group flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-cyan-200/80 hover:shadow-md sm:col-span-1">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-800">
+            <MapPin className="h-5 w-5" strokeWidth={1.75} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-500">المكان</p>
+            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{eventItem.location ?? 'غير محدد'}</p>
+          </div>
+        </div>
       </div>
 
-      <article className="rounded-xl border border-slate-200 bg-white p-5">
-        <p className="text-sm font-semibold text-slate-900">معلومات الفعالية</p>
-        <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
-          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">المنشئ: {eventItem.createdBy}</p>
-          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">سعة التذاكر: {totalTicketCapacity} مقعد</p>
-          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">المشروع: {project?.name ?? (eventItem.projectId ? 'جار التحميل...' : 'غير مرتبط بمشروع')}</p>
-          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">الموقع: {eventItem.location ?? 'غير محدد'}</p>
+      <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 sm:p-6">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <Users className="h-5 w-5 text-slate-500" strokeWidth={1.5} />
+          <h2 className="text-base font-semibold text-slate-900">معلومات إضافية</h2>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm">
+            <span className="text-slate-500">المنشئ</span>
+            <p className="mt-1 font-mono text-sm font-medium text-slate-900">{eventItem.createdBy}</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm">
+            <span className="text-slate-500">سعة التذاكر</span>
+            <p className="mt-1 font-semibold text-slate-900">{totalTicketCapacity} مقعد</p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm sm:col-span-2">
+            <span className="text-slate-500">المشروع</span>
+            <p className="mt-1 font-medium text-slate-900">{project?.name ?? (eventItem.projectId ? 'جار التحميل...' : 'غير مرتبط بمشروع')}</p>
+          </div>
         </div>
         {projectLoadError ? <p className="mt-3 text-sm text-red-600">تعذر تحميل معلومات المشروع المرتبط بهذه الفعالية.</p> : null}
       </article>
 
-      <article className="rounded-xl border border-slate-200 bg-white p-5">
-        <p className="text-sm font-semibold text-slate-900">المهارات المطلوبة أو المقترحة</p>
-        <div className="mt-3 flex flex-wrap gap-2">
+      <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 sm:p-6">
+        <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+          <Sparkles className="h-5 w-5 text-amber-500" strokeWidth={1.5} />
+          <h2 className="text-base font-semibold text-slate-900">المهارات</h2>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
           {Object.keys(eventItem.skills ?? {}).length === 0 ? (
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">لا توجد مهارات مرتبطة</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">لا توجد مهارات مرتبطة</span>
           ) : null}
           {Object.entries(eventItem.skills ?? {}).map(([skillName, skillType]) => (
-            <span key={skillName} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-              {skillName} ({skillType})
+            <span
+              key={skillName}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-linear-to-br from-white to-slate-50 px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm"
+            >
+              {skillName}
+              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-600">{skillType}</span>
             </span>
           ))}
         </div>
       </article>
 
-      {eventItem.imageUrl ? (
-        <article className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-sm font-semibold text-slate-900 mb-4">صور الفعالية</p>
-          <p className="text-xs font-medium text-slate-700 mb-2">الصورة الرئيسية</p>
-          <div className="rounded-lg overflow-hidden border border-slate-200">
-            <img src={eventItem.imageUrl} alt="Banner" className="w-full h-64 object-cover" />
-          </div>
-        </article>
-      ) : null}
-
       {eventItem.associatedUrls && Object.keys(eventItem.associatedUrls).length > 0 ? (
-        <article className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-sm font-semibold text-slate-900">الروابط المرتبطة</p>
-          <div className="mt-3 space-y-2 text-sm text-slate-600">
+        <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 sm:p-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Link2 className="h-5 w-5 text-cyan-600" strokeWidth={1.5} />
+            <h2 className="text-base font-semibold text-slate-900">الروابط المرتبطة</h2>
+          </div>
+          <ul className="mt-4 space-y-2">
             {Object.entries(eventItem.associatedUrls).map(([key, value]) => (
-              <div key={key} className="flex gap-2">
-                <span className="font-medium text-slate-900">{key}:</span>
+              <li
+                key={key}
+                className="flex flex-col gap-1 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <span className="text-sm font-medium text-slate-800">{key}</span>
                 {typeof value === 'string' ? (
-                  <a href={value} target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline">
+                  <a
+                    href={value}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 break-all text-sm text-cyan-700 hover:text-cyan-800 hover:underline"
+                  >
                     {value}
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
                   </a>
                 ) : (
-                  <span>{String(value)}</span>
+                  <span className="text-sm text-slate-600">{String(value)}</span>
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </article>
       ) : null}
 
-      <article className="rounded-xl border border-slate-200 bg-white p-5">
-        <p className="text-sm font-semibold text-slate-900">التذاكر والتسجيلات</p>
-        {canEditEvent ? (
-          <form onSubmit={handleCreateTicket} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
-            <input
-              name="name"
-              placeholder="اسم التذكرة"
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+      <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
+        <div className="border-b border-slate-100 bg-linear-to-l from-slate-50 to-white px-5 py-4 sm:px-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <Ticket className="h-5 w-5 text-slate-700" strokeWidth={1.5} />
+            <h2 className="text-base font-semibold text-slate-900">التذاكر والتسجيلات</h2>
+          </div>
+        </div>
+        <div className="p-5 sm:p-6">
+          {canEditEvent ? (
+            <form onSubmit={handleCreateTicket} className="grid gap-3 rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 md:grid-cols-5">
+              <input
+                name="name"
+                placeholder="اسم التذكرة"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                required
+              />
+              <input
+                name="currencyPrice"
+                placeholder="السعر النقدي (مثال: 10 USD)"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                required
+              />
+              <input
+                name="pointPrice"
+                type="number"
+                min={0}
+                placeholder="النقاط"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                required
+              />
+              <input
+                name="quantity"
+                type="number"
+                min={0}
+                placeholder="الكمية"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                required
+              />
+              <button
+                type="submit"
+                disabled={isCreatingTicket}
+                className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isCreatingTicket ? 'جار الإضافة...' : 'إضافة تذكرة'}
+              </button>
+              <input
+                name="description"
+                placeholder="وصف التذكرة (اختياري)"
+                className="md:col-span-5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+              />
+            </form>
+          ) : (
+            <p className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">إدارة التذاكر متاحة لمالك المشروع ومديريه.</p>
+          )}
+          {ticketError ? <p className="mt-3 text-sm text-red-600">{ticketError}</p> : null}
+
+          <form onSubmit={handleApplyToEvent} className="mt-5 grid gap-3 rounded-xl border border-cyan-100 bg-cyan-50/30 p-4 md:grid-cols-4">
+            <select
+              name="ticketId"
+              defaultValue=""
+              className="md:col-span-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+              disabled={isApplying || tickets.length === 0 || hasUserRegistered}
               required
-            />
-            <input
-              name="currencyPrice"
-              placeholder="السعر النقدي (مثال: 10 USD)"
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              required
-            />
-            <input
-              name="pointPrice"
-              type="number"
-              min={0}
-              placeholder="النقاط"
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              required
-            />
-            <input
-              name="quantity"
-              type="number"
-              min={0}
-              placeholder="الكمية"
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              required
-            />
+            >
+              <option value="">اختر نوع التذكرة</option>
+              {tickets.map((ticket) => (
+                <option key={ticket.id} value={ticket.id}>
+                  {ticket.name} — {ticket.quantity} مقعد — {ticket.pointPrice} نقطة
+                </option>
+              ))}
+            </select>
             <button
               type="submit"
-              disabled={isCreatingTicket}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+              disabled={isApplying || tickets.length === 0 || hasUserRegistered}
+              className="rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
-              {isCreatingTicket ? 'جار إضافة التذكرة...' : 'إضافة تذكرة'}
+              {hasUserRegistered ? 'مسجّل مسبقاً' : isApplying ? 'جار الإرسال...' : 'التقديم'}
             </button>
-            <input
-              name="description"
-              placeholder="وصف التذكرة (اختياري)"
-              className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            />
           </form>
-        ) : (
-          <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            إدارة التذاكر مقصورة على مالك المشروع ومديريه.
-          </p>
-        )}
-        {ticketError ? <p className="mt-2 text-sm text-red-600">{ticketError}</p> : null}
+          {applyError ? <p className="mt-3 text-sm text-red-600">{applyError}</p> : null}
+          {applySuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{applySuccess}</p> : null}
 
-        <form onSubmit={handleApplyToEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-4">
-          <select
-            name="ticketId"
-            defaultValue=""
-            className="md:col-span-3 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            disabled={isApplying || tickets.length === 0 || hasUserRegistered}
-            required
-          >
-            <option value="">اختر نوع التذكرة</option>
-            {tickets.map((ticket) => (
-              <option key={ticket.id} value={ticket.id}>
-                {ticket.name} - {ticket.quantity} مقعد - {ticket.pointPrice} نقطة
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={isApplying || tickets.length === 0 || hasUserRegistered}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
-          >
-            {hasUserRegistered ? 'تم التسجيل مسبقاً' : isApplying ? 'جار الإرسال...' : 'التقديم على الفعالية'}
-          </button>
-        </form>
-        {applyError ? <p className="mt-2 text-sm text-red-600">{applyError}</p> : null}
-        {applySuccess ? <p className="mt-2 text-sm text-green-700">{applySuccess}</p> : null}
-
-        <div className="mt-4 space-y-2">
-          {tickets.map((ticket) => (
-            <div key={ticket.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-sm font-semibold text-slate-700">{ticket.name}</p>
-              <p className="mt-1 text-xs text-slate-600">
-                العدد: {ticket.quantity} • النقاط: {ticket.pointPrice} • السعر: {ticket.currencyPrice}
-              </p>
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">أنواع التذاكر</h3>
+              <ul className="space-y-2">
+                {tickets.map((ticket) => (
+                  <li
+                    key={ticket.id}
+                    className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-slate-900">{ticket.name}</p>
+                      <span className="shrink-0 rounded-lg bg-slate-900 px-2 py-0.5 text-xs font-medium text-white">{ticket.currencyPrice}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-600">
+                      الكمية: {ticket.quantity} • النقاط: {ticket.pointPrice}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
-          {registrations.map((registration) => (
-            <div key={registration.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
-              <span className="text-sm text-slate-700">{registration.membershipNumber}</span>
-              <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-600">
-                {registrationStatusLabel(registration.status)}
-              </span>
+            <div>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">المسجّلون</h3>
+              <ul className="space-y-2">
+                {registrations.map((registration) => (
+                  <li
+                    key={registration.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3"
+                  >
+                    <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
+                    <span className="shrink-0 rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200">
+                      {registrationStatusLabel(registration.status)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
-          {tickets.length === 0 && registrations.length === 0 ? <p className="text-sm text-slate-500">لا توجد بيانات تذاكر أو تسجيلات لهذه الفعالية.</p> : null}
+          </div>
+          {tickets.length === 0 && registrations.length === 0 ? (
+            <p className="mt-6 text-center text-sm text-slate-500">لا توجد تذاكر أو تسجيلات لهذه الفعالية بعد.</p>
+          ) : null}
         </div>
       </article>
     </section>
