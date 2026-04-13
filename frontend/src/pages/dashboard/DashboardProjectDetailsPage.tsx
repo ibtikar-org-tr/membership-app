@@ -1,9 +1,10 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { fetchProjectById, fetchTasks, updateProject } from '../../api/vms'
+import { createTask, fetchProjectById, fetchTasks, updateProject } from '../../api/vms'
 import type { VmsProject, VmsTask } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
+import { getStoredUser } from '../../utils/auth'
 
 function statusLabel(status: string) {
   if (status === 'completed') {
@@ -43,12 +44,15 @@ function taskStatusLabel(status: string) {
 
 export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
+  const user = getStoredUser()
   const [project, setProject] = useState<VmsProject | null>(null)
   const [projectTasks, setProjectTasks] = useState<VmsTask[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [isCreatingTask, setIsCreatingTask] = useState(false)
+  const [taskError, setTaskError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!projectID) {
@@ -128,6 +132,66 @@ export function DashboardProjectDetailsPage() {
       }
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleCreateTask = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setTaskError(null)
+
+    if (!projectID) {
+      return
+    }
+
+    if (!user) {
+      setTaskError('يجب تسجيل الدخول لإضافة مهمة.')
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const statusRaw = String(formData.get('status') ?? 'open').trim()
+    const status =
+      statusRaw === 'in_progress' || statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'open'
+    const dueDateRaw = String(formData.get('dueDate') ?? '').trim()
+    const pointsRaw = Number(formData.get('points') ?? 0)
+    const assignedTo = String(formData.get('assignedTo') ?? '').trim()
+
+    if (!name) {
+      setTaskError('يرجى إدخال اسم المهمة.')
+      return
+    }
+
+    if (Number.isNaN(pointsRaw) || pointsRaw < 0) {
+      setTaskError('يرجى إدخال قيمة صحيحة للنقاط.')
+      return
+    }
+
+    setIsCreatingTask(true)
+
+    try {
+      const payload = await createTask({
+        projectId: projectID,
+        name,
+        description: description || undefined,
+        createdBy: user.membershipNumber,
+        status,
+        dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : undefined,
+        points: Math.trunc(pointsRaw),
+        assignedTo: assignedTo || undefined,
+      })
+
+      setProjectTasks((previous) => [payload.task, ...previous])
+      event.currentTarget.reset()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTaskError(requestError.message)
+      } else {
+        setTaskError('تعذر إنشاء المهمة.')
+      }
+    } finally {
+      setIsCreatingTask(false)
     }
   }
 
@@ -242,6 +306,59 @@ export function DashboardProjectDetailsPage() {
             {project.telegramGroupId ? `مجموعة تلغرام: ${project.telegramGroupId}` : 'لا توجد مجموعة تلغرام'}
           </span>
         </div>
+      </article>
+
+      <article className="rounded-xl border border-slate-200 bg-white p-5">
+        <p className="text-sm font-semibold text-slate-900">إضافة مهمة جديدة</p>
+        <form onSubmit={handleCreateTask} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
+          <input
+            name="name"
+            placeholder="اسم المهمة"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <select
+            name="status"
+            defaultValue="open"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          >
+            <option value="open">مفتوحة</option>
+            <option value="in_progress">قيد التنفيذ</option>
+            <option value="completed">مكتملة</option>
+            <option value="archived">مؤرشفة</option>
+          </select>
+          <input
+            name="dueDate"
+            type="date"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          />
+          <input
+            name="points"
+            type="number"
+            min={0}
+            defaultValue={0}
+            placeholder="النقاط"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          />
+          <button
+            type="submit"
+            disabled={isCreatingTask}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+          >
+            {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
+          </button>
+          <input
+            name="assignedTo"
+            placeholder="رقم العضوية للمكلّف (اختياري)"
+            className="md:col-span-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          />
+          <input
+            name="description"
+            placeholder="وصف المهمة (اختياري)"
+            className="md:col-span-3 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          />
+        </form>
+        {taskError ? <p className="mt-2 text-sm text-red-600">{taskError}</p> : null}
       </article>
 
       <article className="rounded-xl border border-slate-200 bg-white p-5">

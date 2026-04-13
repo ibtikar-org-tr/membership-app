@@ -158,6 +158,20 @@ export function fetchTasks() {
   return fetchJson<{ tasks: VmsTask[] }>('/tasks')
 }
 
+export function createTask(payload: {
+  projectId: string
+  name: string
+  description?: string
+  createdBy: string
+  status?: 'open' | 'in_progress' | 'completed' | 'archived'
+  dueDate?: string
+  points?: number
+  assignedTo?: string
+  skills?: Record<string, string>
+}) {
+  return postJson<{ task: VmsTask }, typeof payload>('/tasks', payload)
+}
+
 export function fetchEvents() {
   return fetchJson<{ events: VmsEvent[] }>('/events')
 }
