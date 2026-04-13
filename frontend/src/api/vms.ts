@@ -274,7 +274,7 @@ export function createEventTicket(payload: {
   name: string
   description?: string
   pointPrice: number
-  currencyPrice: string
+  currencyPrice?: string
   quantity: number
 }) {
   return postJson<{ eventTicket: VmsEventTicket }, typeof payload>('/event-tickets', payload)
@@ -296,6 +296,13 @@ export function updateEventTicket(
 
 export function deleteEventTicket(ticketId: string) {
   return deleteJson(`/event-tickets/${encodeURIComponent(ticketId)}`)
+}
+
+export function approveEventTicket(ticketId: string, approverMembershipNumber: string) {
+  return postJson<{ eventTicket: VmsEventTicket }, unknown>(
+    `/event-tickets/${encodeURIComponent(ticketId)}/approve?approver=${encodeURIComponent(approverMembershipNumber)}`,
+    {},
+  )
 }
 
 export function fetchEventRegistrations(eventId?: string) {

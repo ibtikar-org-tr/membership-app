@@ -53,7 +53,8 @@ export interface VmsEventTicket {
   name: string
   description: string | null
   pointPrice: number
-  currencyPrice: string
+  currencyPrice: string | null
+  paymentApprovedBy: string | null
   quantity: number
 }
 

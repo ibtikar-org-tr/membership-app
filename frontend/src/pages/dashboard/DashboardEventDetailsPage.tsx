@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 import {
   ArrowRight,
   Calendar,
+  CheckCircle,
   Clock,
   ExternalLink,
   ImageIcon,
@@ -17,6 +18,7 @@ import {
   Users,
 } from 'lucide-react'
 import {
+  approveEventTicket,
   createEventRegistration,
   createEventTicket,
   deleteEventTicket,
@@ -84,6 +86,9 @@ export function DashboardEventDetailsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [approvingTicketId, setApprovingTicketId] = useState<string | null>(null)
+  const [approvalError, setApprovalError] = useState<string | null>(null)
+  const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventID) {
@@ -359,10 +364,10 @@ export function DashboardEventDetailsPage() {
     const name = String(formData.get('name') ?? '').trim()
     const description = String(formData.get('description') ?? '').trim()
     const pointPriceRaw = Number(formData.get('pointPrice') ?? 0)
-    const currencyPrice = String(formData.get('currencyPrice') ?? '').trim()
+    const currencyPriceRaw = String(formData.get('currencyPrice') ?? '').trim()
     const quantityRaw = Number(formData.get('quantity') ?? 0)
 
-    if (!name || !currencyPrice || Number.isNaN(pointPriceRaw) || Number.isNaN(quantityRaw)) {
+    if (!name || Number.isNaN(pointPriceRaw) || Number.isNaN(quantityRaw)) {
       setTicketError('يرجى إدخال جميع حقول التذكرة المطلوبة بشكل صحيح.')
       return
     }
@@ -381,7 +386,7 @@ export function DashboardEventDetailsPage() {
         name,
         description: description || undefined,
         pointPrice: Math.trunc(pointPriceRaw),
-        currencyPrice,
+        currencyPrice: currencyPriceRaw || undefined,
         quantity: Math.trunc(quantityRaw),
       })
 
@@ -464,6 +469,31 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setDeletingTicketId(null)
+    }
+  }
+
+  const handleApproveTicket = async (ticketId: string) => {
+    if (!user) {
+      setApprovalError('يجب تسجيل الدخول.')
+      return
+    }
+
+    setApprovalError(null)
+    setApprovalSuccess(null)
+    setApprovingTicketId(ticketId)
+
+    try {
+      const payload = await approveEventTicket(ticketId, user.membershipNumber)
+      setTickets((previous) => previous.map((ticket) => (ticket.id === ticketId ? payload.eventTicket : ticket)))
+      setApprovalSuccess('تمت الموافقة على الدفع بنجاح.')
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApprovalError(requestError.message)
+      } else {
+        setApprovalError('تعذر الموافقة على الدفع.')
+      }
+    } finally {
+      setApprovingTicketId(null)
     }
   }
 
@@ -780,9 +810,8 @@ export function DashboardEventDetailsPage() {
               />
               <input
                 name="currencyPrice"
-                placeholder="السعر النقدي (مثال: 10 USD)"
+                placeholder="السعر النقدي (اختياري)"
                 className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                required
               />
               <input
                 name="pointPrice"
@@ -817,6 +846,8 @@ export function DashboardEventDetailsPage() {
             <p className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">إدارة التذاكر متاحة لمالك المشروع ومديريه.</p>
           )}
           {ticketError ? <p className="mt-3 text-sm text-red-600">{ticketError}</p> : null}
+          {approvalError ? <p className="mt-3 text-sm text-red-600">{approvalError}</p> : null}
+          {approvalSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{approvalSuccess}</p> : null}
 
           <form onSubmit={handleApplyToEvent} className="mt-5 grid gap-3 rounded-xl border border-cyan-100 bg-cyan-50/30 p-4 md:grid-cols-4">
             <select
@@ -827,11 +858,15 @@ export function DashboardEventDetailsPage() {
               required
             >
               <option value="">اختر نوع التذكرة</option>
-              {tickets.map((ticket) => (
-                <option key={ticket.id} value={ticket.id}>
-                  {ticket.name} — {ticket.quantity} مقعد — {ticket.pointPrice} نقطة
-                </option>
-              ))}
+              {tickets.map((ticket) => {
+                const isPaidAndNotApproved = ticket.currencyPrice && !ticket.paymentApprovedBy
+                return (
+                  <option key={ticket.id} value={ticket.id} disabled={isPaidAndNotApproved}>
+                    {ticket.name} — {ticket.quantity} مقعد — {ticket.pointPrice} نقطة
+                    {!ticket.currencyPrice ? ' (مجاني)' : isPaidAndNotApproved ? ' (بانتظار الموافقة)' : ` (${ticket.currencyPrice})`}
+                  </option>
+                )
+              })}
             </select>
             <button
               type="submit"
@@ -868,11 +903,11 @@ export function DashboardEventDetailsPage() {
                           />
                         </label>
                         <label className="space-y-1">
-                          <span className="text-xs font-medium text-slate-600">السعر النقدي</span>
+                          <span className="text-xs font-medium text-slate-600">السعر النقدي (اختياري)</span>
                           <input
                             name="currencyPrice"
-                            defaultValue={ticket.currencyPrice}
-                            required
+                            defaultValue={ticket.currencyPrice ?? ''}
+                            placeholder="اتركه فارغاً للتذكرة المجانية"
                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                           />
                         </label>
@@ -923,7 +958,7 @@ export function DashboardEventDetailsPage() {
                           </button>
                         </div>
                       </form>
-                    ) : (
+                      ) : (
                       <>
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
@@ -932,14 +967,85 @@ export function DashboardEventDetailsPage() {
                               <p className="mt-1 text-xs text-slate-500 line-clamp-2">{ticket.description}</p>
                             ) : null}
                           </div>
-                          <span className="shrink-0 rounded-lg bg-slate-900 px-2 py-0.5 text-xs font-medium text-white">
-                            {ticket.currencyPrice}
-                          </span>
+                          {ticket.currencyPrice ? (
+                            <span className="shrink-0 rounded-lg bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                              {ticket.currencyPrice}
+                            </span>
+                          ) : (
+                            <span className="shrink-0 rounded-lg bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                              مجاني
+                            </span>
+                          )}
                         </div>
                         <p className="mt-2 text-xs text-slate-600">
                           الكمية: {ticket.quantity} • النقاط: {ticket.pointPrice}
                         </p>
-                        {canEditEvent ? (
+                        {ticket.currencyPrice && !ticket.paymentApprovedBy && canEditEvent ? (
+                          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void handleApproveTicket(ticket.id)}
+                                disabled={approvingTicketId === ticket.id}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800 shadow-sm transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                {approvingTicketId === ticket.id ? 'جار الموافقة...' : 'موافقة على الدفع'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingTicketId(ticket.id)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                تعديل
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteTicket(ticket.id)}
+                                disabled={deletingTicketId === ticket.id}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                {deletingTicketId === ticket.id ? 'جار الحذف...' : 'حذف'}
+                              </button>
+                            </div>
+                            <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                              بانتظار الموافقة على الدفع
+                            </span>
+                          </div>
+                        ) : ticket.currencyPrice && ticket.paymentApprovedBy ? (
+                          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                              <CheckCircle className="mr-1 inline h-3 w-3" />
+                              تم الموافقة على الدفع
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              ({ticket.paymentApprovedBy})
+                            </span>
+                            {canEditEvent ? (
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTicketId(ticket.id)}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                  تعديل
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteTicket(ticket.id)}
+                                  disabled={deletingTicketId === ticket.id}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  {deletingTicketId === ticket.id ? 'جار الحذف...' : 'حذف'}
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : canEditEvent ? (
                           <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                             <button
                               type="button"

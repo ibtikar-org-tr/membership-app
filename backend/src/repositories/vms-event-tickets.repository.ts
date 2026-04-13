@@ -9,7 +9,8 @@ interface EventTicketRow {
   name: string
   description: string | null
   point_price: number
-  currency_price: string
+  currency_price: string | null
+  payment_approved_by: string | null
   quantity: number
 }
 
@@ -23,14 +24,15 @@ function mapEventTicketRow(row: EventTicketRow) {
     description: row.description,
     pointPrice: row.point_price,
     currencyPrice: row.currency_price,
+    paymentApprovedBy: row.payment_approved_by,
     quantity: row.quantity,
   }
 }
 
 export async function listEventTickets(db: D1DatabaseLike, eventId?: string) {
   const query = eventId
-    ? 'SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, quantity FROM event_tickets WHERE event_id = ? ORDER BY created_at DESC'
-    : 'SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, quantity FROM event_tickets ORDER BY created_at DESC'
+    ? 'SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, payment_approved_by, quantity FROM event_tickets WHERE event_id = ? ORDER BY created_at DESC'
+    : 'SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, payment_approved_by, quantity FROM event_tickets ORDER BY created_at DESC'
 
   const statement = db.prepare(query)
   const result = eventId ? await statement.bind(eventId).all<EventTicketRow>() : await statement.bind().all<EventTicketRow>()
@@ -40,7 +42,7 @@ export async function listEventTickets(db: D1DatabaseLike, eventId?: string) {
 
 export async function getEventTicketById(db: D1DatabaseLike, id: string) {
   const row = await db
-    .prepare('SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, quantity FROM event_tickets WHERE id = ?')
+    .prepare('SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, payment_approved_by, quantity FROM event_tickets WHERE id = ?')
     .bind(id)
     .first<EventTicketRow>()
 
@@ -50,7 +52,7 @@ export async function getEventTicketById(db: D1DatabaseLike, id: string) {
 export async function createEventTicket(db: D1DatabaseLike, id: string, input: CreateEventTicketInput) {
   await db
     .prepare('INSERT INTO event_tickets (id, event_id, name, description, point_price, currency_price, quantity) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .bind(id, input.eventId, input.name, input.description ?? null, input.pointPrice, input.currencyPrice, input.quantity)
+    .bind(id, input.eventId, input.name, input.description ?? null, input.pointPrice, input.currencyPrice ?? null, input.quantity)
     .run()
 
   return getEventTicketById(db, id)
@@ -113,4 +115,31 @@ export async function deleteEventTicketById(db: D1DatabaseLike, id: string) {
 
   await db.prepare('DELETE FROM event_tickets WHERE id = ?').bind(id).run()
   return true
+}
+
+export async function approveTicketPayment(
+  db: D1DatabaseLike,
+  id: string,
+  approverMembershipNumber: string,
+): Promise<ReturnType<typeof getEventTicketById>> {
+  await db
+    .prepare('UPDATE event_tickets SET payment_approved_by = ?, updated_at = datetime("now") WHERE id = ?')
+    .bind(approverMembershipNumber, id)
+    .run()
+
+  return getEventTicketById(db, id)
+}
+
+export async function getTicketWithEventInfo(db: D1DatabaseLike, ticketId: string) {
+  interface TicketWithEventRow {
+    event_id: string
+    project_id: string | null
+  }
+
+  const row = await db
+    .prepare('SELECT e.id as event_id, e.project_id FROM event_tickets t JOIN events e ON t.event_id = e.id WHERE t.id = ?')
+    .bind(ticketId)
+    .first<TicketWithEventRow>()
+
+  return row ? { eventId: row.event_id, projectId: row.project_id } : null
 }

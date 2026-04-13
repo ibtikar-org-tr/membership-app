@@ -8,7 +8,7 @@ export const createEventTicketSchema = z.object({
   name: requiredTrimmedString.max(160),
   description: optionalTrimmedString,
   pointPrice: z.number().int(),
-  currencyPrice: requiredTrimmedString,
+  currencyPrice: optionalTrimmedString,
   quantity: z.number().int().min(0),
 })
 
@@ -18,6 +18,15 @@ export const updateEventTicketSchema = createEventTicketSchema
 
 export const eventTicketParamsSchema = z.object({
   id: requiredTrimmedString,
+})
+
+export const approveEventTicketSchema = z.object({
+  ticketId: requiredTrimmedString,
+})
+
+export const eventTicketParamsWithApproverSchema = z.object({
+  id: requiredTrimmedString,
+  approver: requiredTrimmedString,
 })
 
 export type CreateEventTicketInput = z.infer<typeof createEventTicketSchema>
