@@ -518,7 +518,10 @@ export function DashboardProjectDetailsPage() {
                   </div>
                 ) : null}
 
-                {column.items.map((task) => (
+                {column.items.map((task) => {
+                  const isUnassigned = !task.assignedTo?.trim()
+
+                  return (
                   <article
                     key={task.id}
                     role="button"
@@ -530,11 +533,20 @@ export function DashboardProjectDetailsPage() {
                         setSelectedTaskId(task.id)
                       }
                     }}
-                    className="group cursor-pointer rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                    className={`group cursor-pointer rounded-xl border bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500/50 ${
+                      isUnassigned
+                        ? 'border-amber-300/90 ring-1 ring-amber-200/80 hover:border-amber-400'
+                        : 'border-slate-200/80 hover:border-slate-300'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-slate-900">{task.name}</p>
+                        {isUnassigned ? (
+                          <span className="mt-1 inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                            متاحة للتكليف
+                          </span>
+                        ) : null}
                         <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-500">
                           {task.description ?? 'لا يوجد وصف للمهمة.'}
                         </p>
@@ -553,8 +565,13 @@ export function DashboardProjectDetailsPage() {
                         <FiCalendar className="h-3.5 w-3.5 text-slate-500" />
                         <span>{formatDueDate(task.dueDate)}</span>
                       </p>
-                      <p className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 sm:col-span-2" title="التكليف">
-                        <FiUser className="h-3.5 w-3.5 text-slate-500" />
+                      <p
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 sm:col-span-2 ${
+                          isUnassigned ? 'bg-amber-50 text-amber-800' : 'bg-slate-50'
+                        }`}
+                        title="التكليف"
+                      >
+                        <FiUser className={`h-3.5 w-3.5 ${isUnassigned ? 'text-amber-700' : 'text-slate-500'}`} />
                         <span>{formatAssignee(task.assignedTo)}</span>
                       </p>
                     </div>
@@ -563,7 +580,7 @@ export function DashboardProjectDetailsPage() {
                       <span className={`h-2 w-2 rounded-full transition ${priorityTone(task.status)} group-hover:scale-110`} />
                     </div>
                   </article>
-                ))}
+                )})}
               </div>
             </section>
           )})}
