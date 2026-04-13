@@ -1,4 +1,5 @@
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Navigate, Outlet } from 'react-router-dom'
+import { clearStoredUser, getStoredUser } from '../utils/auth'
 
 interface SidebarItem {
   to: string
@@ -17,6 +18,16 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 ]
 
 export function DashboardPage() {
+  const user = getStoredUser()
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  const handleLogout = () => {
+    clearStoredUser()
+  }
+
   return (
     <main className="min-h-screen w-full bg-[#f7f7f5] text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
       <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
@@ -64,13 +75,14 @@ export function DashboardPage() {
           <div className="mt-6 space-y-3 border-t border-slate-200 pt-4 lg:mt-auto">
             <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
               <p className="text-xs font-semibold text-slate-500">المستخدم الحالي</p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">أحمد سالم</p>
-              <p className="mt-1 text-xs text-slate-600">ahmad.salem@example.com</p>
-              <p className="mt-2 text-[11px] font-medium text-slate-500"># العضوية: IBT-2026-0137</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{user.role}</p>
+              <p className="mt-1 text-xs text-slate-600">{user.email}</p>
+              <p className="mt-2 text-[11px] font-medium text-slate-500"># العضوية: {user.membershipNumber}</p>
             </div>
 
             <Link
               to="/login"
+              onClick={handleLogout}
               className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               تسجيل الخروج

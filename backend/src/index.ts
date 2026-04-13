@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { authRoute } from './routes/auth.route'
 import { registrationRoute } from './routes/registration.route'
 import { statsRoute } from './routes/stats.route'
 import { vmsEventRegistrationsRoute } from './routes/vms-event-registrations.route'
@@ -39,6 +40,7 @@ app.get('/ms/membership-app/health', (c) => {
 
 app.route('/ms/membership-app/api', registrationRoute)
 app.route('/ms/membership-app/api', statsRoute)
+app.route('/ms/membership-app/api', authRoute)
 app.route('/ms/membership-app/api', vmsProjectsRoute)
 app.route('/ms/membership-app/api', vmsTasksRoute)
 app.route('/ms/membership-app/api', vmsProjectMembersRoute)

@@ -1,12 +1,41 @@
 import { type FormEvent, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { login } from '../api/vms'
+import { setStoredUser } from '../utils/auth'
 
 export function LoginPage() {
-  const [submitted, setSubmitted] = useState(false)
+  const navigate = useNavigate()
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSubmitted(true)
+    setError(null)
+
+    const formData = new FormData(event.currentTarget)
+    const email = String(formData.get('email') ?? '').trim()
+    const password = String(formData.get('password') ?? '')
+
+    if (!email || !password) {
+      setError('يرجى إدخال البريد الإلكتروني وكلمة المرور.')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const payload = await login({ email, password })
+      setStoredUser(payload.user)
+      navigate('/dashboard', { replace: true })
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setError(requestError.message)
+      } else {
+        setError('تعذر تسجيل الدخول.')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -74,16 +103,13 @@ export function LoginPage() {
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-700"
             >
-              تسجيل الدخول
+              {isSubmitting ? 'جار تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
 
-            {submitted ? (
-              <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                تم إرسال بيانات الدخول بنجاح (واجهة فقط حاليًا).
-              </p>
-            ) : null}
+            {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
 
             <p className="text-center text-sm text-slate-600">
               <Link to="/" className="font-semibold text-slate-800 underline-offset-4 hover:underline">

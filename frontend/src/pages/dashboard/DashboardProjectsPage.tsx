@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchProjects } from '../../api/vms'
+import type { FormEvent } from 'react'
+import { createProject, fetchProjects } from '../../api/vms'
 import type { VmsProject } from '../../types/vms'
+import { getStoredUser } from '../../utils/auth'
 
 function statusLabel(status: string) {
   if (status === 'active') {
@@ -35,6 +37,10 @@ export function DashboardProjectsPage() {
   const [projects, setProjects] = useState<VmsProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+
+  const user = getStoredUser()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -67,6 +73,49 @@ export function DashboardProjectsPage() {
 
   const activeCount = useMemo(() => projects.filter((project) => project.status === 'active').length, [projects])
 
+  const handleCreateProject = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setCreateError(null)
+
+    if (!user) {
+      setCreateError('يجب تسجيل الدخول أولاً.')
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const statusRaw = String(formData.get('status') ?? 'active').trim()
+    const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
+
+    if (!name) {
+      setCreateError('يرجى إدخال اسم المشروع.')
+      return
+    }
+
+    setIsCreating(true)
+
+    try {
+      const payload = await createProject({
+        name,
+        description: description || undefined,
+        owner: user.membershipNumber,
+        status,
+      })
+
+      setProjects((previous) => [payload.project, ...previous])
+      event.currentTarget.reset()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setCreateError(requestError.message)
+      } else {
+        setCreateError('تعذر إنشاء المشروع.')
+      }
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -78,6 +127,38 @@ export function DashboardProjectsPage() {
           {activeCount} مشاريع نشطة
         </span>
       </div>
+
+      <form onSubmit={handleCreateProject} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-4">
+        <input
+          name="name"
+          placeholder="اسم المشروع"
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          required
+        />
+        <input
+          name="description"
+          placeholder="وصف مختصر"
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+        />
+        <select
+          name="status"
+          defaultValue="active"
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+        >
+          <option value="active">نشط</option>
+          <option value="completed">مكتمل</option>
+          <option value="archived">مؤرشف</option>
+        </select>
+        <button
+          type="submit"
+          disabled={isCreating}
+          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+        >
+          {isCreating ? 'جار الإضافة...' : 'إضافة مشروع'}
+        </button>
+      </form>
+
+      {createError ? <p className="mt-2 text-sm text-red-600">{createError}</p> : null}
 
       <div className="mt-5 space-y-3">
         {isLoading ? <p className="text-sm text-slate-500">جار تحميل المشاريع...</p> : null}

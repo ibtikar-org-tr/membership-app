@@ -10,6 +10,17 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary)
 }
 
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+
+  return bytes
+}
+
 function randomChar(charset: string): string {
   const randomIndex = crypto.getRandomValues(new Uint32Array(1))[0] % charset.length
   return charset[randomIndex]
@@ -59,4 +70,47 @@ export async function hashPassword(password: string): Promise<string> {
 
   const hashBytes = new Uint8Array(hashBuffer)
   return `pbkdf2_sha256$${PBKDF2_ITERATIONS}$${bytesToBase64(salt)}$${bytesToBase64(hashBytes)}`
+}
+
+export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  const [algorithm, iterationsRaw, saltBase64, hashBase64] = storedHash.split('$')
+
+  if (algorithm !== 'pbkdf2_sha256' || !iterationsRaw || !saltBase64 || !hashBase64) {
+    return false
+  }
+
+  const iterations = Number(iterationsRaw)
+  if (!Number.isFinite(iterations) || iterations <= 0) {
+    return false
+  }
+
+  const salt = base64ToBytes(saltBase64)
+  const expectedHash = base64ToBytes(hashBase64)
+  const normalizedSalt = new Uint8Array(salt.length)
+  normalizedSalt.set(salt)
+
+  const encoder = new TextEncoder()
+  const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits'])
+  const hashBuffer = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      hash: 'SHA-256',
+      salt: normalizedSalt,
+      iterations,
+    },
+    keyMaterial,
+    expectedHash.length * 8,
+  )
+
+  const computedHash = new Uint8Array(hashBuffer)
+  if (computedHash.length !== expectedHash.length) {
+    return false
+  }
+
+  let diff = 0
+  for (let index = 0; index < computedHash.length; index += 1) {
+    diff |= computedHash[index] ^ expectedHash[index]
+  }
+
+  return diff === 0
 }
