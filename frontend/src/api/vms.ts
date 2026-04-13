@@ -251,6 +251,14 @@ export function fetchProjectMembers(projectId?: string) {
   return fetchJson<{ projectMembers: VmsProjectMember[] }>(`/project-members${query}`)
 }
 
+export function createProjectMember(payload: {
+  projectId: string
+  membershipNumber: string
+  role: 'member' | 'manager' | 'observer'
+}) {
+  return postJson<{ projectMember: VmsProjectMember }, typeof payload>('/project-members', payload)
+}
+
 export function fetchPointTransactions(membershipNumber?: string) {
   const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)

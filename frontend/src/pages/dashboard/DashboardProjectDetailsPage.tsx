@@ -1,8 +1,8 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { createTask, fetchProjectById, fetchTasks, updateProject } from '../../api/vms'
-import type { VmsProject, VmsTask } from '../../types/vms'
+import { createProjectMember, createTask, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject } from '../../api/vms'
+import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser } from '../../utils/auth'
 
@@ -47,12 +47,15 @@ export function DashboardProjectDetailsPage() {
   const user = getStoredUser()
   const [project, setProject] = useState<VmsProject | null>(null)
   const [projectTasks, setProjectTasks] = useState<VmsTask[]>([])
+  const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [isCreatingTask, setIsCreatingTask] = useState(false)
   const [taskError, setTaskError] = useState<string | null>(null)
+  const [isAddingMember, setIsAddingMember] = useState(false)
+  const [memberError, setMemberError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!projectID) {
@@ -65,7 +68,11 @@ export function DashboardProjectDetailsPage() {
 
     async function loadProjectData() {
       try {
-        const [projectPayload, tasksPayload] = await Promise.all([fetchProjectById(currentProjectId), fetchTasks()])
+        const [projectPayload, tasksPayload, membersPayload] = await Promise.all([
+          fetchProjectById(currentProjectId),
+          fetchTasks(),
+          fetchProjectMembers(currentProjectId),
+        ])
 
         if (controller.signal.aborted) {
           return
@@ -73,6 +80,7 @@ export function DashboardProjectDetailsPage() {
 
         setProject(projectPayload.project)
         setProjectTasks(tasksPayload.tasks.filter((task) => task.projectId === currentProjectId))
+        setProjectMembers(membersPayload.projectMembers)
       } catch {
         if (!controller.signal.aborted) {
           setNotFound(true)
@@ -95,6 +103,7 @@ export function DashboardProjectDetailsPage() {
     () => projectTasks.filter((task) => task.status === 'completed').length,
     [projectTasks],
   )
+  const memberOptions = useMemo(() => projectMembers.map((member) => member.membershipNumber), [projectMembers])
 
   const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -192,6 +201,54 @@ export function DashboardProjectDetailsPage() {
       }
     } finally {
       setIsCreatingTask(false)
+    }
+  }
+
+  const handleAddMember = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setMemberError(null)
+
+    if (!projectID) {
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const membershipNumber = String(formData.get('membershipNumber') ?? '').trim()
+    const roleRaw = String(formData.get('role') ?? 'member').trim()
+    const role = roleRaw === 'manager' || roleRaw === 'observer' ? roleRaw : 'member'
+
+    if (!membershipNumber) {
+      setMemberError('يرجى إدخال رقم العضوية.')
+      return
+    }
+
+    if (projectMembers.some((member) => member.membershipNumber === membershipNumber)) {
+      setMemberError('هذا العضو مضاف بالفعل إلى المشروع.')
+      return
+    }
+
+    setIsAddingMember(true)
+
+    try {
+      const payload = await createProjectMember({
+        projectId: projectID,
+        membershipNumber,
+        role,
+      })
+
+      if (payload.projectMember) {
+        setProjectMembers((previous) => [payload.projectMember, ...previous])
+      }
+
+      event.currentTarget.reset()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setMemberError(requestError.message)
+      } else {
+        setMemberError('تعذر إضافة العضو.')
+      }
+    } finally {
+      setIsAddingMember(false)
     }
   }
 
@@ -309,6 +366,49 @@ export function DashboardProjectDetailsPage() {
       </article>
 
       <article className="rounded-xl border border-slate-200 bg-white p-5">
+        <p className="text-sm font-semibold text-slate-900">إضافة عضو إلى المشروع</p>
+        <form onSubmit={handleAddMember} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-4">
+          <input
+            name="membershipNumber"
+            list="project-member-assignee-options"
+            placeholder="رقم العضوية"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <datalist id="project-member-assignee-options">
+            {memberOptions.map((membershipNumber) => (
+              <option key={membershipNumber} value={membershipNumber} />
+            ))}
+          </datalist>
+          <select
+            name="role"
+            defaultValue="member"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          >
+            <option value="member">عضو</option>
+            <option value="manager">مدير</option>
+            <option value="observer">مراقب</option>
+          </select>
+          <button
+            type="submit"
+            disabled={isAddingMember}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+          >
+            {isAddingMember ? 'جار الإضافة...' : 'إضافة العضو'}
+          </button>
+        </form>
+        {memberError ? <p className="mt-2 text-sm text-red-600">{memberError}</p> : null}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {projectMembers.length === 0 ? <span className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</span> : null}
+          {projectMembers.map((member) => (
+            <span key={`${member.projectId}-${member.membershipNumber}`} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+              {member.membershipNumber} • {member.role}
+            </span>
+          ))}
+        </div>
+      </article>
+
+      <article className="rounded-xl border border-slate-200 bg-white p-5">
         <p className="text-sm font-semibold text-slate-900">إضافة مهمة جديدة</p>
         <form onSubmit={handleCreateTask} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
           <input
@@ -349,9 +449,15 @@ export function DashboardProjectDetailsPage() {
           </button>
           <input
             name="assignedTo"
+            list="project-task-assignee-options"
             placeholder="رقم العضوية للمكلّف (اختياري)"
             className="md:col-span-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
           />
+          <datalist id="project-task-assignee-options">
+            {memberOptions.map((membershipNumber) => (
+              <option key={membershipNumber} value={membershipNumber} />
+            ))}
+          </datalist>
           <input
             name="description"
             placeholder="وصف المهمة (اختياري)"
