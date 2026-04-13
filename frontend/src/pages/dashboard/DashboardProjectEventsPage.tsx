@@ -213,27 +213,39 @@ export function DashboardProjectEventsPage() {
 
       {canCreateEvents && isCreateEventOpen ? (
         <form onSubmit={handleCreateEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
-          <input
-            name="name"
-            placeholder="اسم الفعالية"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
-          />
-          <input
-            name="startTime"
-            type="datetime-local"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          />
-          <input
-            name="endTime"
-            type="datetime-local"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          />
-          <input
-            name="location"
-            placeholder="الموقع"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          />
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-slate-700">اسم الفعالية</span>
+            <input
+              name="name"
+              placeholder="اسم الفعالية"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-slate-700">وقت البداية</span>
+            <input
+              name="startTime"
+              type="datetime-local"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-slate-700">وقت النهاية</span>
+            <input
+              name="endTime"
+              type="datetime-local"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-slate-700">الموقع</span>
+            <input
+              name="location"
+              placeholder="الموقع"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+          </label>
           <button
             type="submit"
             disabled={isCreating}
@@ -241,12 +253,15 @@ export function DashboardProjectEventsPage() {
           >
             {isCreating ? 'جار الإضافة...' : 'إضافة فعالية'}
           </button>
-          <textarea
-            name="description"
-            placeholder="وصف الفعالية"
-            className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            rows={2}
-          />
+          <label className="md:col-span-5 space-y-1">
+            <span className="text-xs font-medium text-slate-700">وصف الفعالية</span>
+            <textarea
+              name="description"
+              placeholder="وصف الفعالية"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              rows={2}
+            />
+          </label>
           <div className="md:col-span-5">
             <h3 className="mb-2 text-sm font-medium text-slate-700">صور الفعالية</h3>
             <ImageUploader
@@ -266,12 +281,15 @@ export function DashboardProjectEventsPage() {
               </div>
             )}
           </div>
-          <textarea
-            name="associatedUrls"
-            placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
-            className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            rows={2}
-          />
+          <label className="md:col-span-5 space-y-1">
+            <span className="text-xs font-medium text-slate-700">الروابط المرتبطة (JSON)</span>
+            <textarea
+              name="associatedUrls"
+              placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              rows={2}
+            />
+          </label>
         </form>
       ) : canCreateEvents ? (
         <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">

@@ -419,25 +419,34 @@ export function DashboardEventDetailsPage() {
         <article className="rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-sm font-semibold text-slate-900">تعديل الفعالية</p>
           <form onSubmit={handleUpdateEvent} className="mt-4 grid gap-3 md:grid-cols-4">
-            <input
-              name="name"
-              defaultValue={eventItem.name}
-              placeholder="اسم الفعالية"
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              required
-            />
-            <input
-              name="startTime"
-              type="datetime-local"
-              defaultValue={toDateTimeLocal(eventItem.startTime)}
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            />
-            <input
-              name="endTime"
-              type="datetime-local"
-              defaultValue={toDateTimeLocal(eventItem.endTime)}
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            />
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-700">اسم الفعالية</span>
+              <input
+                name="name"
+                defaultValue={eventItem.name}
+                placeholder="اسم الفعالية"
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                required
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-700">وقت البداية</span>
+              <input
+                name="startTime"
+                type="datetime-local"
+                defaultValue={toDateTimeLocal(eventItem.startTime)}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-700">وقت النهاية</span>
+              <input
+                name="endTime"
+                type="datetime-local"
+                defaultValue={toDateTimeLocal(eventItem.endTime)}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              />
+            </label>
             <button
               type="submit"
               disabled={isSaving}
@@ -445,19 +454,25 @@ export function DashboardEventDetailsPage() {
             >
               {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
             </button>
-            <input
-              name="location"
-              defaultValue={eventItem.location ?? ''}
-              placeholder="الموقع"
-              className="md:col-span-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            />
-            <textarea
-              name="description"
-              defaultValue={eventItem.description ?? ''}
-              placeholder="وصف الفعالية"
-              className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              rows={2}
-            />
+            <label className="md:col-span-2 space-y-1">
+              <span className="text-xs font-medium text-slate-700">الموقع</span>
+              <input
+                name="location"
+                defaultValue={eventItem.location ?? ''}
+                placeholder="الموقع"
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              />
+            </label>
+            <label className="md:col-span-4 space-y-1">
+              <span className="text-xs font-medium text-slate-700">وصف الفعالية</span>
+              <textarea
+                name="description"
+                defaultValue={eventItem.description ?? ''}
+                placeholder="وصف الفعالية"
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                rows={2}
+              />
+            </label>
             <div className="md:col-span-4">
               <h3 className="mb-2 text-sm font-medium text-slate-700">صور الفعالية</h3>
               {eventItem.imageUrl ? (
@@ -487,13 +502,16 @@ export function DashboardEventDetailsPage() {
                 </div>
               )}
             </div>
-            <textarea
-              name="associatedUrls"
-              defaultValue={eventItem.associatedUrls ? JSON.stringify(eventItem.associatedUrls, null, 2) : ''}
-              placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
-              className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              rows={2}
-            />
+            <label className="md:col-span-4 space-y-1">
+              <span className="text-xs font-medium text-slate-700">الروابط المرتبطة (JSON)</span>
+              <textarea
+                name="associatedUrls"
+                defaultValue={eventItem.associatedUrls ? JSON.stringify(eventItem.associatedUrls, null, 2) : ''}
+                placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                rows={2}
+              />
+            </label>
           </form>
           {saveError ? <p className="mt-2 text-sm text-red-600">{saveError}</p> : null}
           {uploadError ? <p className="mt-2 text-sm text-red-600">{uploadError}</p> : null}

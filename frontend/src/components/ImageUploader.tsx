@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import { XIcon } from 'lucide-react'
 import { uploadImages } from '../api/vms'
 
@@ -28,17 +28,18 @@ export function ImageUploader({
   maxFileSize = 5 * 1024 * 1024, // 5MB default
   acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
 }: ImageUploaderProps) {
+  const inputId = useId()
   const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState<number>(0)
 
   const handleFileSelect = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || [])
 
       // Validate file count
       if (files.length + selectedFiles.length > maxFiles) {
         onError(`Maximum ${maxFiles} files allowed`)
+        event.target.value = ''
         return
       }
 
@@ -70,58 +71,38 @@ export function ImageUploader({
         })
       }
 
+      if (validFiles.length === 0) {
+        event.target.value = ''
+        return
+      }
+
       setSelectedFiles((prev) => [...prev, ...validFiles])
-
-      // Reset input
       event.target.value = ''
-    },
-    [selectedFiles.length, maxFiles, maxFileSize, acceptedTypes, onError]
-  )
 
-  const handleRemoveFile = useCallback((index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
-  }, [])
+      setIsUploading(true)
 
-  const handleNameChange = useCallback((index: number, newName: string) => {
-    setSelectedFiles((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, name: newName, isBanner: newName === 'banner' } : item
-      )
-    )
-  }, [])
+      try {
+        const data = await uploadImages(validFiles.map((f) => f.file))
 
-  const handleUpload = useCallback(async () => {
-    if (selectedFiles.length === 0) {
-      onError('No files selected')
-      return
-    }
+        if (!data.images || !Array.isArray(data.images)) {
+          throw new Error('Invalid response format from server')
+        }
 
-    setIsUploading(true)
-    setUploadProgress(0)
-
-    try {
-      const data = await uploadImages(selectedFiles.map(f => f.file))
-
-      // Process uploaded images - data.images is the key
-      if (data.images && Array.isArray(data.images)) {
-        const uploadedImages: UploadedImage[] = selectedFiles.map((fileItem, index) => ({
+        const uploadedImages: UploadedImage[] = validFiles.map((fileItem, index) => ({
           name: fileItem.name,
           url: data.images[index],
         }))
 
         onUpload(uploadedImages)
         setSelectedFiles([])
-        setUploadProgress(0)
-      } else {
-        throw new Error('Invalid response format from server')
+      } catch (error) {
+        onError(error instanceof Error ? error.message : 'Upload failed')
+      } finally {
+        setIsUploading(false)
       }
-    } catch (error) {
-      onError(error instanceof Error ? error.message : 'Upload failed')
-      setUploadProgress(0)
-    } finally {
-      setIsUploading(false)
-    }
-  }, [selectedFiles, onUpload, onError])
+    },
+    [acceptedTypes, maxFileSize, maxFiles, onError, onUpload, selectedFiles]
+  )
 
   return (
     <div className="space-y-4">
@@ -134,11 +115,11 @@ export function ImageUploader({
           onChange={handleFileSelect}
           disabled={isUploading}
           className="hidden"
-          id="image-input"
+          id={inputId}
         />
-        <label htmlFor="image-input" className="cursor-pointer block">
+        <label htmlFor={inputId} className="cursor-pointer block">
           <div className="text-sm text-gray-600">
-            <p className="font-medium">Click to select images or drag and drop</p>
+            <p className="font-medium">Click to select image and upload automatically</p>
             <p className="text-xs mt-1">
               Max {maxFiles} files, {(maxFileSize / 1024 / 1024).toFixed(1)}MB each
             </p>
@@ -149,14 +130,14 @@ export function ImageUploader({
       {/* Selected Files List */}
       {selectedFiles.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Selected Images:</h4>
+          <h4 className="text-sm font-medium text-gray-700">{isUploading ? 'Uploading...' : 'Selected Images:'}</h4>
           <div className="space-y-2">
             {selectedFiles.map((fileItem, index) => (
               <div
                 key={`${fileItem.file.name}-${index}`}
                 className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg"
               >
-                <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden shrink-0">
                   <img
                     src={URL.createObjectURL(fileItem.file)}
                     alt={fileItem.name}
@@ -165,14 +146,7 @@ export function ImageUploader({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <input
-                      type="text"
-                      value={fileItem.name}
-                      onChange={(e) => handleNameChange(index, e.target.value)}
-                      disabled={isUploading}
-                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 disabled:bg-gray-100"
-                      placeholder="Image name"
-                    />
+                    <p className="flex-1 truncate text-sm text-gray-700">{fileItem.name}</p>
                     {fileItem.isBanner && (
                       <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                         Banner
@@ -183,47 +157,11 @@ export function ImageUploader({
                     {(fileItem.file.size / 1024 / 1024).toFixed(2)}MB • {fileItem.file.type}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(index)}
-                  disabled={isUploading}
-                  className="p-1 text-gray-500 hover:text-red-500 disabled:opacity-50 flex-shrink-0"
-                  aria-label="Remove image"
-                >
-                  <XIcon size={16} />
-                </button>
+                {!isUploading ? <XIcon size={16} className="text-gray-400 shrink-0" /> : null}
               </div>
             ))}
           </div>
         </div>
-      )}
-
-      {/* Upload Progress */}
-      {isUploading && uploadProgress > 0 && (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Uploading...</span>
-            <span className="text-gray-600">{uploadProgress}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
-              style={{ width: `${uploadProgress}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Upload Button */}
-      {selectedFiles.length > 0 && (
-        <button
-          type="button"
-          onClick={handleUpload}
-          disabled={isUploading}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-        >
-          {isUploading ? `Uploading ${selectedFiles.length} file(s)...` : `Upload ${selectedFiles.length} File(s)`}
-        </button>
       )}
     </div>
   )
