@@ -9,6 +9,7 @@ export const createEventRegistrationSchema = z.object({
   membershipNumber: requiredTrimmedString,
   ticketId: requiredTrimmedString,
   status: eventRegistrationStatusSchema,
+  paymentApprovedBy: requiredTrimmedString.optional(),
   attendanceApprovedBy: requiredTrimmedString.optional(),
 })
 

@@ -54,7 +54,6 @@ export interface VmsEventTicket {
   description: string | null
   pointPrice: number
   currencyPrice: string | null
-  paymentApprovedBy: string | null
   quantity: number
 }
 
@@ -66,6 +65,7 @@ export interface VmsEventRegistration {
   membershipNumber: string
   ticketId: string
   status: 'registered' | 'attended' | 'cancelled' | 'no_show' | string
+  paymentApprovedBy: string | null
   attendanceApprovedBy: string | null
 }
 

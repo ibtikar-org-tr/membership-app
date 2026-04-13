@@ -18,8 +18,7 @@ import {
   Users,
 } from 'lucide-react'
 import {
-  approveAttendance,
-  approveEventTicket,
+  approveRegistration,
   createEventRegistration,
   createEventTicket,
   deleteEventTicket,
@@ -88,14 +87,11 @@ export function DashboardEventDetailsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
-  const [approvingTicketId, setApprovingTicketId] = useState<string | null>(null)
-  const [approvalError, setApprovalError] = useState<string | null>(null)
-  const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null)
-  const [approvingAttendanceId, setApprovingAttendanceId] = useState<string | null>(null)
-  const [attendanceApprovalError, setAttendanceApprovalError] = useState<string | null>(null)
-  const [attendanceApprovalSuccess, setAttendanceApprovalSuccess] = useState<string | null>(null)
   const [updatingRegistrationId, setUpdatingRegistrationId] = useState<string | null>(null)
   const [registrationUpdateError, setRegistrationUpdateError] = useState<string | null>(null)
+  const [approvingRegistrationId, setApprovingRegistrationId] = useState<string | null>(null)
+  const [registrationApprovalError, setRegistrationApprovalError] = useState<string | null>(null)
+  const [registrationApprovalSuccess, setRegistrationApprovalSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventID) {
@@ -479,31 +475,6 @@ export function DashboardEventDetailsPage() {
     }
   }
 
-  const handleApproveTicket = async (ticketId: string) => {
-    if (!user) {
-      setApprovalError('يجب تسجيل الدخول.')
-      return
-    }
-
-    setApprovalError(null)
-    setApprovalSuccess(null)
-    setApprovingTicketId(ticketId)
-
-    try {
-      const payload = await approveEventTicket(ticketId, user.membershipNumber)
-      setTickets((previous) => previous.map((ticket) => (ticket.id === ticketId ? payload.eventTicket : ticket)))
-      setApprovalSuccess('تمت الموافقة على الدفع بنجاح.')
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setApprovalError(requestError.message)
-      } else {
-        setApprovalError('تعذر الموافقة على الدفع.')
-      }
-    } finally {
-      setApprovingTicketId(null)
-    }
-  }
-
   const handleUpdateRegistrationStatus = async (registrationId: string, newStatus: 'attended' | 'no_show' | 'cancelled') => {
     if (!user) {
       setRegistrationUpdateError('يجب تسجيل الدخول.')
@@ -516,7 +487,6 @@ export function DashboardEventDetailsPage() {
     try {
       const payload = await updateEventRegistration(registrationId, {
         status: newStatus,
-        attendanceApprovedBy: user.membershipNumber,
       })
       setRegistrations((previous) => previous.map((reg) => (reg.id === registrationId ? payload.eventRegistration : reg)))
     } catch (requestError) {
@@ -530,28 +500,28 @@ export function DashboardEventDetailsPage() {
     }
   }
 
-  const handleApproveAttendance = async (registrationId: string) => {
+  const handleApproveRegistration = async (registrationId: string, type: 'payment' | 'attendance') => {
     if (!user) {
-      setAttendanceApprovalError('يجب تسجيل الدخول.')
+      setRegistrationApprovalError('يجب تسجيل الدخول.')
       return
     }
 
-    setAttendanceApprovalError(null)
-    setAttendanceApprovalSuccess(null)
-    setApprovingAttendanceId(registrationId)
+    setRegistrationApprovalError(null)
+    setRegistrationApprovalSuccess(null)
+    setApprovingRegistrationId(registrationId)
 
     try {
-      const payload = await approveAttendance(registrationId, user.membershipNumber)
+      const payload = await approveRegistration(registrationId, user.membershipNumber, type)
       setRegistrations((previous) => previous.map((reg) => (reg.id === registrationId ? payload.eventRegistration : reg)))
-      setAttendanceApprovalSuccess('تمت الموافقة على الحضور بنجاح.')
+      setRegistrationApprovalSuccess(type === 'payment' ? 'تمت الموافقة على الدفع بنجاح.' : 'تمت الموافقة على الحضور بنجاح.')
     } catch (requestError) {
       if (requestError instanceof Error) {
-        setAttendanceApprovalError(requestError.message)
+        setRegistrationApprovalError(requestError.message)
       } else {
-        setAttendanceApprovalError('تعذر الموافقة على الحضور.')
+        setRegistrationApprovalError('تعذر الموافقة.')
       }
     } finally {
-      setApprovingAttendanceId(null)
+      setApprovingRegistrationId(null)
     }
   }
 
@@ -904,8 +874,6 @@ export function DashboardEventDetailsPage() {
             <p className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">إدارة التذاكر متاحة لمالك المشروع ومديريه.</p>
           )}
           {ticketError ? <p className="mt-3 text-sm text-red-600">{ticketError}</p> : null}
-          {approvalError ? <p className="mt-3 text-sm text-red-600">{approvalError}</p> : null}
-          {approvalSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{approvalSuccess}</p> : null}
 
           <form onSubmit={handleApplyToEvent} className="mt-5 grid gap-3 rounded-xl border border-cyan-100 bg-cyan-50/30 p-4 md:grid-cols-4">
             <select
@@ -916,15 +884,12 @@ export function DashboardEventDetailsPage() {
               required
             >
               <option value="">اختر نوع التذكرة</option>
-              {tickets.map((ticket) => {
-                const isPaidAndNotApproved = ticket.currencyPrice && !ticket.paymentApprovedBy
-                return (
-                  <option key={ticket.id} value={ticket.id} disabled={isPaidAndNotApproved}>
-                    {ticket.name} — {ticket.quantity} مقعد — {ticket.pointPrice} نقطة
-                    {!ticket.currencyPrice ? ' (مجاني)' : isPaidAndNotApproved ? ' (بانتظار الموافقة)' : ` (${ticket.currencyPrice})`}
-                  </option>
-                )
-              })}
+              {tickets.map((ticket) => (
+                <option key={ticket.id} value={ticket.id}>
+                  {ticket.name} — {ticket.quantity} مقعد — {ticket.pointPrice} نقطة
+                  {!ticket.currencyPrice ? ' (مجاني)' : ` (${ticket.currencyPrice})`}
+                </option>
+              ))}
             </select>
             <button
               type="submit"
@@ -1038,72 +1003,7 @@ export function DashboardEventDetailsPage() {
                         <p className="mt-2 text-xs text-slate-600">
                           الكمية: {ticket.quantity} • النقاط: {ticket.pointPrice}
                         </p>
-                        {ticket.currencyPrice && !ticket.paymentApprovedBy && canEditEvent ? (
-                          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => void handleApproveTicket(ticket.id)}
-                                disabled={approvingTicketId === ticket.id}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800 shadow-sm transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                <CheckCircle className="h-3.5 w-3.5" />
-                                {approvingTicketId === ticket.id ? 'جار الموافقة...' : 'موافقة على الدفع'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingTicketId(ticket.id)}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                                تعديل
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleDeleteTicket(ticket.id)}
-                                disabled={deletingTicketId === ticket.id}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                                {deletingTicketId === ticket.id ? 'جار الحذف...' : 'حذف'}
-                              </button>
-                            </div>
-                            <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-                              بانتظار الموافقة على الدفع
-                            </span>
-                          </div>
-                        ) : ticket.currencyPrice && ticket.paymentApprovedBy ? (
-                          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-                            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                              <CheckCircle className="mr-1 inline h-3 w-3" />
-                              تم الموافقة على الدفع
-                            </span>
-                            <span className="text-[10px] text-slate-500">
-                              ({ticket.paymentApprovedBy})
-                            </span>
-                            {canEditEvent ? (
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingTicketId(ticket.id)}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                  تعديل
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleDeleteTicket(ticket.id)}
-                                  disabled={deletingTicketId === ticket.id}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                  {deletingTicketId === ticket.id ? 'جار الحذف...' : 'حذف'}
-                                </button>
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : canEditEvent ? (
+                        {canEditEvent ? (
                           <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                             <button
                               type="button"
@@ -1153,16 +1053,35 @@ export function DashboardEventDetailsPage() {
                           {registrationStatusLabel(registration.status)}
                         </span>
                       </div>
-                      {registration.attendanceApprovedBy ? (
-                        <span className="text-[10px] text-slate-500">
-                          وافق على الحضور: {registration.attendanceApprovedBy}
-                        </span>
-                      ) : null}
+                      <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
+                        {registration.paymentApprovedBy && (
+                          <span>الدفع: {registration.paymentApprovedBy}</span>
+                        )}
+                        {registration.attendanceApprovedBy && (
+                          <span>الحضور: {registration.attendanceApprovedBy}</span>
+                        )}
+                      </div>
                     </div>
                     {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
                       <div className="flex flex-wrap gap-1.5 sm:shrink-0">
                         {registration.status === 'registered' ? (
                           <>
+                            {!registration.paymentApprovedBy ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleApproveRegistration(registration.id, 'payment')}
+                                disabled={approvingRegistrationId === registration.id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الدفع'}
+                              </button>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800">
+                                <CheckCircle className="h-3 w-3" />
+                                تم الدفع
+                              </span>
+                            )}
                             <button
                               type="button"
                               onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
@@ -1195,12 +1114,12 @@ export function DashboardEventDetailsPage() {
                             {!registration.attendanceApprovedBy ? (
                               <button
                                 type="button"
-                                onClick={() => void handleApproveAttendance(registration.id)}
-                                disabled={approvingAttendanceId === registration.id}
+                                onClick={() => void handleApproveRegistration(registration.id, 'attendance')}
+                                disabled={approvingRegistrationId === registration.id}
                                 className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 <CheckCircle className="h-3 w-3" />
-                                {approvingAttendanceId === registration.id ? 'جار...' : 'موافقة'}
+                                {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الحضور'}
                               </button>
                             ) : (
                               <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
@@ -1224,8 +1143,8 @@ export function DashboardEventDetailsPage() {
                 ))}
               </ul>
               {registrationUpdateError ? <p className="mt-3 text-sm text-red-600">{registrationUpdateError}</p> : null}
-              {attendanceApprovalError ? <p className="mt-3 text-sm text-red-600">{attendanceApprovalError}</p> : null}
-              {attendanceApprovalSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{attendanceApprovalSuccess}</p> : null}
+              {registrationApprovalError ? <p className="mt-3 text-sm text-red-600">{registrationApprovalError}</p> : null}
+              {registrationApprovalSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{registrationApprovalSuccess}</p> : null}
             </div>
           </div>
           {tickets.length === 0 && registrations.length === 0 ? (

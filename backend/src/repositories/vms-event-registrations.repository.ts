@@ -9,6 +9,7 @@ interface EventRegistrationRow {
   membership_number: string
   ticket_id: string
   status: string
+  payment_approved_by: string | null
   attendance_approved_by: string | null
 }
 
@@ -21,14 +22,15 @@ function mapEventRegistrationRow(row: EventRegistrationRow) {
     membershipNumber: row.membership_number,
     ticketId: row.ticket_id,
     status: row.status,
+    paymentApprovedBy: row.payment_approved_by,
     attendanceApprovedBy: row.attendance_approved_by,
   }
 }
 
 export async function listEventRegistrations(db: D1DatabaseLike, eventId?: string) {
   const query = eventId
-    ? 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, attendance_approved_by FROM event_registrations WHERE event_id = ? ORDER BY created_at DESC'
-    : 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, attendance_approved_by FROM event_registrations ORDER BY created_at DESC'
+    ? 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations WHERE event_id = ? ORDER BY created_at DESC'
+    : 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations ORDER BY created_at DESC'
 
   const statement = db.prepare(query)
   const result = eventId ? await statement.bind(eventId).all<EventRegistrationRow>() : await statement.bind().all<EventRegistrationRow>()
@@ -38,7 +40,7 @@ export async function listEventRegistrations(db: D1DatabaseLike, eventId?: strin
 
 export async function getEventRegistrationById(db: D1DatabaseLike, id: string) {
   const row = await db
-    .prepare('SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, attendance_approved_by FROM event_registrations WHERE id = ?')
+    .prepare('SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations WHERE id = ?')
     .bind(id)
     .first<EventRegistrationRow>()
 
@@ -76,6 +78,11 @@ export async function updateEventRegistrationById(db: D1DatabaseLike, id: string
   if (input.status !== undefined) {
     updates.push('status = ?')
     values.push(input.status)
+  }
+
+  if (input.paymentApprovedBy !== undefined) {
+    updates.push('payment_approved_by = ?')
+    values.push(input.paymentApprovedBy)
   }
 
   if (input.attendanceApprovedBy !== undefined) {

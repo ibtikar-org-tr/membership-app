@@ -10,7 +10,6 @@ interface EventTicketRow {
   description: string | null
   point_price: number
   currency_price: string | null
-  payment_approved_by: string | null
   quantity: number
 }
 
@@ -24,15 +23,14 @@ function mapEventTicketRow(row: EventTicketRow) {
     description: row.description,
     pointPrice: row.point_price,
     currencyPrice: row.currency_price,
-    paymentApprovedBy: row.payment_approved_by,
     quantity: row.quantity,
   }
 }
 
 export async function listEventTickets(db: D1DatabaseLike, eventId?: string) {
   const query = eventId
-    ? 'SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, payment_approved_by, quantity FROM event_tickets WHERE event_id = ? ORDER BY created_at DESC'
-    : 'SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, payment_approved_by, quantity FROM event_tickets ORDER BY created_at DESC'
+    ? 'SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, quantity FROM event_tickets WHERE event_id = ? ORDER BY created_at DESC'
+    : 'SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, quantity FROM event_tickets ORDER BY created_at DESC'
 
   const statement = db.prepare(query)
   const result = eventId ? await statement.bind(eventId).all<EventTicketRow>() : await statement.bind().all<EventTicketRow>()
@@ -42,7 +40,7 @@ export async function listEventTickets(db: D1DatabaseLike, eventId?: string) {
 
 export async function getEventTicketById(db: D1DatabaseLike, id: string) {
   const row = await db
-    .prepare('SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, payment_approved_by, quantity FROM event_tickets WHERE id = ?')
+    .prepare('SELECT id, created_at, updated_at, event_id, name, description, point_price, currency_price, quantity FROM event_tickets WHERE id = ?')
     .bind(id)
     .first<EventTicketRow>()
 
@@ -115,19 +113,6 @@ export async function deleteEventTicketById(db: D1DatabaseLike, id: string) {
 
   await db.prepare('DELETE FROM event_tickets WHERE id = ?').bind(id).run()
   return true
-}
-
-export async function approveTicketPayment(
-  db: D1DatabaseLike,
-  id: string,
-  approverMembershipNumber: string,
-): Promise<ReturnType<typeof getEventTicketById>> {
-  await db
-    .prepare('UPDATE event_tickets SET payment_approved_by = ?, updated_at = datetime("now") WHERE id = ?')
-    .bind(approverMembershipNumber, id)
-    .run()
-
-  return getEventTicketById(db, id)
 }
 
 export async function getTicketWithEventInfo(db: D1DatabaseLike, ticketId: string) {

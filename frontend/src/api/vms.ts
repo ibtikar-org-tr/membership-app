@@ -298,13 +298,6 @@ export function deleteEventTicket(ticketId: string) {
   return deleteJson(`/event-tickets/${encodeURIComponent(ticketId)}`)
 }
 
-export function approveEventTicket(ticketId: string, approverMembershipNumber: string) {
-  return postJson<{ eventTicket: VmsEventTicket }, unknown>(
-    `/event-tickets/${encodeURIComponent(ticketId)}/approve?approver=${encodeURIComponent(approverMembershipNumber)}`,
-    {},
-  )
-}
-
 export function fetchEventRegistrations(eventId?: string) {
   const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''
   return fetchJson<{ eventRegistrations: VmsEventRegistration[] }>(`/event-registrations${query}`)
@@ -315,6 +308,7 @@ export function createEventRegistration(payload: {
   membershipNumber: string
   ticketId: string
   status: 'registered' | 'attended' | 'cancelled' | 'no_show'
+  paymentApprovedBy?: string
   attendanceApprovedBy?: string
 }) {
   return postJson<{ eventRegistration: VmsEventRegistration }, typeof payload>('/event-registrations', payload)
@@ -327,6 +321,7 @@ export function updateEventRegistration(
     membershipNumber: string
     ticketId: string
     status: 'registered' | 'attended' | 'cancelled' | 'no_show'
+    paymentApprovedBy: string
     attendanceApprovedBy: string
   }>,
 ) {
@@ -336,9 +331,9 @@ export function updateEventRegistration(
   )
 }
 
-export function approveAttendance(registrationId: string, approverMembershipNumber: string) {
+export function approveRegistration(registrationId: string, approverMembershipNumber: string, type: 'payment' | 'attendance') {
   return postJson<{ eventRegistration: VmsEventRegistration }, unknown>(
-    `/event-registrations/${encodeURIComponent(registrationId)}/approve?approver=${encodeURIComponent(approverMembershipNumber)}`,
+    `/event-registrations/${encodeURIComponent(registrationId)}/approve?approver=${encodeURIComponent(approverMembershipNumber)}&type=${type}`,
     {},
   )
 }

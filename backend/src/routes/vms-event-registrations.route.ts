@@ -106,6 +106,7 @@ vmsEventRegistrationsRoute.post(
     try {
       const { id } = c.req.valid('param')
       const approver = c.req.query('approver')
+      const type = c.req.query('type')
 
       if (!approver) {
         return c.json({ error: 'Approver membership number is required.' }, 400)
@@ -116,14 +117,22 @@ vmsEventRegistrationsRoute.post(
         return c.json({ error: 'Event registration not found.' }, 404)
       }
 
-      const eventRegistration = await updateEventRegistrationById(c.env.VMS_DB, id, {
-        attendanceApprovedBy: approver,
-      })
+      const updateData: { paymentApprovedBy?: string; attendanceApprovedBy?: string } = {}
+
+      if (type === 'payment') {
+        updateData.paymentApprovedBy = approver
+      } else if (type === 'attendance') {
+        updateData.attendanceApprovedBy = approver
+      } else {
+        return c.json({ error: 'Invalid approval type. Use "payment" or "attendance".' }, 400)
+      }
+
+      const eventRegistration = await updateEventRegistrationById(c.env.VMS_DB, id, updateData)
 
       return c.json({ eventRegistration })
     } catch (error) {
-      console.error('Failed to approve attendance', error)
-      return c.json({ error: 'Could not approve attendance.' }, 500)
+      console.error('Failed to approve', error)
+      return c.json({ error: 'Could not approve.' }, 500)
     }
   },
 )
