@@ -66,7 +66,7 @@ export interface VmsEventRegistration {
   membershipNumber: string
   ticketId: string
   status: 'registered' | 'attended' | 'cancelled' | 'no_show' | string
-  approvedBy: string | null
+  attendanceApprovedBy: string | null
 }
 
 export interface VmsSkill {

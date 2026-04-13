@@ -9,7 +9,7 @@ export const createEventRegistrationSchema = z.object({
   membershipNumber: requiredTrimmedString,
   ticketId: requiredTrimmedString,
   status: eventRegistrationStatusSchema,
-  approvedBy: requiredTrimmedString.optional(),
+  attendanceApprovedBy: requiredTrimmedString.optional(),
 })
 
 export const updateEventRegistrationSchema = createEventRegistrationSchema

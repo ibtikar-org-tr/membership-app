@@ -9,7 +9,7 @@ interface EventRegistrationRow {
   membership_number: string
   ticket_id: string
   status: string
-  approved_by: string | null
+  attendance_approved_by: string | null
 }
 
 function mapEventRegistrationRow(row: EventRegistrationRow) {
@@ -21,14 +21,14 @@ function mapEventRegistrationRow(row: EventRegistrationRow) {
     membershipNumber: row.membership_number,
     ticketId: row.ticket_id,
     status: row.status,
-    approvedBy: row.approved_by,
+    attendanceApprovedBy: row.attendance_approved_by,
   }
 }
 
 export async function listEventRegistrations(db: D1DatabaseLike, eventId?: string) {
   const query = eventId
-    ? 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, approved_by FROM event_registrations WHERE event_id = ? ORDER BY created_at DESC'
-    : 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, approved_by FROM event_registrations ORDER BY created_at DESC'
+    ? 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, attendance_approved_by FROM event_registrations WHERE event_id = ? ORDER BY created_at DESC'
+    : 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, attendance_approved_by FROM event_registrations ORDER BY created_at DESC'
 
   const statement = db.prepare(query)
   const result = eventId ? await statement.bind(eventId).all<EventRegistrationRow>() : await statement.bind().all<EventRegistrationRow>()
@@ -38,7 +38,7 @@ export async function listEventRegistrations(db: D1DatabaseLike, eventId?: strin
 
 export async function getEventRegistrationById(db: D1DatabaseLike, id: string) {
   const row = await db
-    .prepare('SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, approved_by FROM event_registrations WHERE id = ?')
+    .prepare('SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, attendance_approved_by FROM event_registrations WHERE id = ?')
     .bind(id)
     .first<EventRegistrationRow>()
 
@@ -47,8 +47,8 @@ export async function getEventRegistrationById(db: D1DatabaseLike, id: string) {
 
 export async function createEventRegistration(db: D1DatabaseLike, id: string, input: CreateEventRegistrationInput) {
   await db
-    .prepare('INSERT INTO event_registrations (id, event_id, membership_number, ticket_id, status, approved_by) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(id, input.eventId, input.membershipNumber, input.ticketId, input.status, input.approvedBy ?? null)
+    .prepare('INSERT INTO event_registrations (id, event_id, membership_number, ticket_id, status, attendance_approved_by) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(id, input.eventId, input.membershipNumber, input.ticketId, input.status, input.attendanceApprovedBy ?? null)
     .run()
 
   return getEventRegistrationById(db, id)
@@ -78,9 +78,9 @@ export async function updateEventRegistrationById(db: D1DatabaseLike, id: string
     values.push(input.status)
   }
 
-  if (input.approvedBy !== undefined) {
-    updates.push('approved_by = ?')
-    values.push(input.approvedBy)
+  if (input.attendanceApprovedBy !== undefined) {
+    updates.push('attendance_approved_by = ?')
+    values.push(input.attendanceApprovedBy)
   }
 
   if (updates.length === 0) {

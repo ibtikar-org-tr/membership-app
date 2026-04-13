@@ -18,6 +18,7 @@ import {
   Users,
 } from 'lucide-react'
 import {
+  approveAttendance,
   approveEventTicket,
   createEventRegistration,
   createEventTicket,
@@ -27,6 +28,7 @@ import {
   fetchEventTickets,
   fetchProjectById,
   fetchProjectMembers,
+  updateEventRegistration,
   updateEventTicket,
   uploadEventBanner,
   updateEvent,
@@ -89,6 +91,11 @@ export function DashboardEventDetailsPage() {
   const [approvingTicketId, setApprovingTicketId] = useState<string | null>(null)
   const [approvalError, setApprovalError] = useState<string | null>(null)
   const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null)
+  const [approvingAttendanceId, setApprovingAttendanceId] = useState<string | null>(null)
+  const [attendanceApprovalError, setAttendanceApprovalError] = useState<string | null>(null)
+  const [attendanceApprovalSuccess, setAttendanceApprovalSuccess] = useState<string | null>(null)
+  const [updatingRegistrationId, setUpdatingRegistrationId] = useState<string | null>(null)
+  const [registrationUpdateError, setRegistrationUpdateError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventID) {
@@ -494,6 +501,57 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setApprovingTicketId(null)
+    }
+  }
+
+  const handleUpdateRegistrationStatus = async (registrationId: string, newStatus: 'attended' | 'no_show' | 'cancelled') => {
+    if (!user) {
+      setRegistrationUpdateError('يجب تسجيل الدخول.')
+      return
+    }
+
+    setRegistrationUpdateError(null)
+    setUpdatingRegistrationId(registrationId)
+
+    try {
+      const payload = await updateEventRegistration(registrationId, {
+        status: newStatus,
+        attendanceApprovedBy: user.membershipNumber,
+      })
+      setRegistrations((previous) => previous.map((reg) => (reg.id === registrationId ? payload.eventRegistration : reg)))
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setRegistrationUpdateError(requestError.message)
+      } else {
+        setRegistrationUpdateError('تعذر تحديث حالة التسجيل.')
+      }
+    } finally {
+      setUpdatingRegistrationId(null)
+    }
+  }
+
+  const handleApproveAttendance = async (registrationId: string) => {
+    if (!user) {
+      setAttendanceApprovalError('يجب تسجيل الدخول.')
+      return
+    }
+
+    setAttendanceApprovalError(null)
+    setAttendanceApprovalSuccess(null)
+    setApprovingAttendanceId(registrationId)
+
+    try {
+      const payload = await approveAttendance(registrationId, user.membershipNumber)
+      setRegistrations((previous) => previous.map((reg) => (reg.id === registrationId ? payload.eventRegistration : reg)))
+      setAttendanceApprovalSuccess('تمت الموافقة على الحضور بنجاح.')
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setAttendanceApprovalError(requestError.message)
+      } else {
+        setAttendanceApprovalError('تعذر الموافقة على الحضور.')
+      }
+    } finally {
+      setApprovingAttendanceId(null)
     }
   }
 
@@ -1078,15 +1136,96 @@ export function DashboardEventDetailsPage() {
                 {registrations.map((registration) => (
                   <li
                     key={registration.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3"
+                    className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
-                    <span className="shrink-0 rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200">
-                      {registrationStatusLabel(registration.status)}
-                    </span>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
+                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
+                          registration.status === 'attended'
+                            ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                            : registration.status === 'cancelled'
+                            ? 'bg-red-100 text-red-800 ring-red-200'
+                            : registration.status === 'no_show'
+                            ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                            : 'bg-white text-slate-700 ring-slate-200'
+                        }`}>
+                          {registrationStatusLabel(registration.status)}
+                        </span>
+                      </div>
+                      {registration.attendanceApprovedBy ? (
+                        <span className="text-[10px] text-slate-500">
+                          وافق على الحضور: {registration.attendanceApprovedBy}
+                        </span>
+                      ) : null}
+                    </div>
+                    {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
+                      <div className="flex flex-wrap gap-1.5 sm:shrink-0">
+                        {registration.status === 'registered' ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
+                              disabled={updatingRegistrationId === registration.id}
+                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                              {updatingRegistrationId === registration.id ? 'جار...' : 'حضر'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleUpdateRegistrationStatus(registration.id, 'no_show')}
+                              disabled={updatingRegistrationId === registration.id}
+                              className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Clock className="h-3 w-3" />
+                              {updatingRegistrationId === registration.id ? 'جار...' : 'لم يحضر'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
+                              disabled={updatingRegistrationId === registration.id}
+                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              إلغاء
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {!registration.attendanceApprovedBy ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleApproveAttendance(registration.id)}
+                                disabled={approvingAttendanceId === registration.id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <CheckCircle className="h-3 w-3" />
+                                {approvingAttendanceId === registration.id ? 'جار...' : 'موافقة'}
+                              </button>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
+                                <CheckCircle className="h-3 w-3" />
+                                تمت الموافقة
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
+                              disabled={updatingRegistrationId === registration.id}
+                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              إلغاء
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : null}
                   </li>
                 ))}
               </ul>
+              {registrationUpdateError ? <p className="mt-3 text-sm text-red-600">{registrationUpdateError}</p> : null}
+              {attendanceApprovalError ? <p className="mt-3 text-sm text-red-600">{attendanceApprovalError}</p> : null}
+              {attendanceApprovalSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{attendanceApprovalSuccess}</p> : null}
             </div>
           </div>
           {tickets.length === 0 && registrations.length === 0 ? (

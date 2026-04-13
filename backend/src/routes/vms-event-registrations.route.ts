@@ -98,3 +98,32 @@ vmsEventRegistrationsRoute.delete('/event-registrations/:id', zValidator('param'
     return c.json({ error: 'Could not delete event registration.' }, 500)
   }
 })
+
+vmsEventRegistrationsRoute.post(
+  '/event-registrations/:id/approve',
+  zValidator('param', eventRegistrationParamsSchema),
+  async (c) => {
+    try {
+      const { id } = c.req.valid('param')
+      const approver = c.req.query('approver')
+
+      if (!approver) {
+        return c.json({ error: 'Approver membership number is required.' }, 400)
+      }
+
+      const existing = await getEventRegistrationById(c.env.VMS_DB, id)
+      if (!existing) {
+        return c.json({ error: 'Event registration not found.' }, 404)
+      }
+
+      const eventRegistration = await updateEventRegistrationById(c.env.VMS_DB, id, {
+        attendanceApprovedBy: approver,
+      })
+
+      return c.json({ eventRegistration })
+    } catch (error) {
+      console.error('Failed to approve attendance', error)
+      return c.json({ error: 'Could not approve attendance.' }, 500)
+    }
+  },
+)

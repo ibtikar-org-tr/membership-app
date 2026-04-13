@@ -315,9 +315,32 @@ export function createEventRegistration(payload: {
   membershipNumber: string
   ticketId: string
   status: 'registered' | 'attended' | 'cancelled' | 'no_show'
-  approvedBy?: string
+  attendanceApprovedBy?: string
 }) {
   return postJson<{ eventRegistration: VmsEventRegistration }, typeof payload>('/event-registrations', payload)
+}
+
+export function updateEventRegistration(
+  registrationId: string,
+  payload: Partial<{
+    eventId: string
+    membershipNumber: string
+    ticketId: string
+    status: 'registered' | 'attended' | 'cancelled' | 'no_show'
+    attendanceApprovedBy: string
+  }>,
+) {
+  return putJson<{ eventRegistration: VmsEventRegistration }, typeof payload>(
+    `/event-registrations/${encodeURIComponent(registrationId)}`,
+    payload,
+  )
+}
+
+export function approveAttendance(registrationId: string, approverMembershipNumber: string) {
+  return postJson<{ eventRegistration: VmsEventRegistration }, unknown>(
+    `/event-registrations/${encodeURIComponent(registrationId)}/approve?approver=${encodeURIComponent(approverMembershipNumber)}`,
+    {},
+  )
 }
 
 export function fetchSkills() {
