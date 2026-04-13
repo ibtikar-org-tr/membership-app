@@ -127,8 +127,8 @@ function getVisibleProjectIds(projects: ProjectRecord[], directVisibleIds: Set<s
     }
   }
 
-  const queue = [...visibleIds]
-  const visitedDescendantIds = new Set<string>(visibleIds)
+  const queue = [...directVisibleIds]
+  const visitedDescendantIds = new Set<string>(directVisibleIds)
 
   while (queue.length > 0) {
     const currentProjectId = queue.shift()
