@@ -2,7 +2,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { FiCalendar, FiEdit3, FiSettings, FiTarget, FiUser } from 'react-icons/fi'
-import { createProjectMember, createTask, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
+import { createProjectMember, createTask, fetchProfile, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser } from '../../utils/auth'
@@ -147,6 +147,7 @@ export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
   const user = getStoredUser()
   const [project, setProject] = useState<VmsProject | null>(null)
+  const [ownerDisplayName, setOwnerDisplayName] = useState<string | null>(null)
   const [projectTasks, setProjectTasks] = useState<VmsTask[]>([])
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -207,6 +208,43 @@ export function DashboardProjectDetailsPage() {
       controller.abort()
     }
   }, [projectID])
+
+  useEffect(() => {
+    if (!project?.owner) {
+      setOwnerDisplayName(null)
+      return
+    }
+
+    const ownerMembershipNumber = project.owner
+
+    let isActive = true
+
+    async function loadOwnerDisplayName() {
+      try {
+        const payload = await fetchProfile(ownerMembershipNumber)
+        if (!isActive) {
+          return
+        }
+
+        const displayName =
+          payload.profile.arName?.trim() ||
+          payload.profile.enName?.trim() ||
+          payload.profile.membershipNumber
+
+        setOwnerDisplayName(displayName)
+      } catch {
+        if (isActive) {
+          setOwnerDisplayName(null)
+        }
+      }
+    }
+
+    loadOwnerDisplayName()
+
+    return () => {
+      isActive = false
+    }
+  }, [project?.owner])
 
   const memberOptions = useMemo(() => projectMembers, [projectMembers])
   const memberNameByMembership = useMemo(
@@ -506,7 +544,7 @@ export function DashboardProjectDetailsPage() {
               </Link>
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 backdrop-blur-sm">
                 <p className="text-xs text-cyan-100/80">المسؤول</p>
-                <p className="mt-1 text-sm font-semibold text-white">{project.owner}</p>
+                <p className="mt-1 text-sm font-semibold text-white">{ownerDisplayName ?? formatAssignee(project.owner)}</p>
                 <p className="mt-1 text-xs text-slate-200">{project.telegramGroupId ?? 'لا توجد مجموعة تلغرام مرتبطة'}</p>
               </div>
             </div>
