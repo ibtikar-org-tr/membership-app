@@ -7,6 +7,12 @@ export interface UploadedImage {
   url: string
 }
 
+interface ImageFile {
+  file: File
+  name: string
+  isBanner: boolean
+}
+
 interface ImageUploaderProps {
   onUpload: (images: UploadedImage[]) => void
   onError: (error: string) => void
@@ -22,7 +28,7 @@ export function ImageUploader({
   maxFileSize = 5 * 1024 * 1024, // 5MB default
   acceptedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
 }: ImageUploaderProps) {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number>(0)
 
@@ -37,7 +43,7 @@ export function ImageUploader({
       }
 
       // Validate each file
-      const validFiles: File[] = []
+      const validFiles: ImageFile[] = []
       for (const file of files) {
         if (!acceptedTypes.includes(file.type)) {
           onError(
@@ -53,7 +59,15 @@ export function ImageUploader({
           continue
         }
 
-        validFiles.push(file)
+        // Check if we already have a banner
+        const hasBanner = selectedFiles.some(f => f.isBanner)
+        const isBanner = !hasBanner && validFiles.length === 0 // First valid file becomes banner by default
+
+        validFiles.push({
+          file,
+          name: isBanner ? 'banner' : file.name,
+          isBanner
+        })
       }
 
       setSelectedFiles((prev) => [...prev, ...validFiles])
@@ -68,6 +82,14 @@ export function ImageUploader({
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
   }, [])
 
+  const handleNameChange = useCallback((index: number, newName: string) => {
+    setSelectedFiles((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, name: newName, isBanner: newName === 'banner' } : item
+      )
+    )
+  }, [])
+
   const handleUpload = useCallback(async () => {
     if (selectedFiles.length === 0) {
       onError('No files selected')
@@ -78,13 +100,13 @@ export function ImageUploader({
     setUploadProgress(0)
 
     try {
-      const data = await uploadImages(selectedFiles)
+      const data = await uploadImages(selectedFiles.map(f => f.file))
 
       // Process uploaded images - data.images is the key
       if (data.images && Array.isArray(data.images)) {
-        const uploadedImages: UploadedImage[] = data.images.map((url: string) => ({
-          name: url.split('/').pop() || 'image',
-          url,
+        const uploadedImages: UploadedImage[] = selectedFiles.map((fileItem, index) => ({
+          name: fileItem.name,
+          url: data.images[index],
         }))
 
         onUpload(uploadedImages)
@@ -127,31 +149,52 @@ export function ImageUploader({
       {/* Selected Files List */}
       {selectedFiles.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Selected Files:</h4>
-          <ul className="space-y-1">
-            {selectedFiles.map((file, index) => (
-              <li
-                key={`${file.name}-${index}`}
-                className="flex items-center justify-between bg-gray-50 p-2 rounded"
+          <h4 className="text-sm font-medium text-gray-700">Selected Images:</h4>
+          <div className="space-y-2">
+            {selectedFiles.map((fileItem, index) => (
+              <div
+                key={`${fileItem.file.name}-${index}`}
+                className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg"
               >
+                <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
+                  <img
+                    src={URL.createObjectURL(fileItem.file)}
+                    alt={fileItem.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700 truncate">{file.name}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <input
+                      type="text"
+                      value={fileItem.name}
+                      onChange={(e) => handleNameChange(index, e.target.value)}
+                      disabled={isUploading}
+                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500 disabled:bg-gray-100"
+                      placeholder="Image name"
+                    />
+                    {fileItem.isBanner && (
+                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                        Banner
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500">
-                    {(file.size / 1024 / 1024).toFixed(2)}MB
+                    {(fileItem.file.size / 1024 / 1024).toFixed(2)}MB • {fileItem.file.type}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleRemoveFile(index)}
                   disabled={isUploading}
-                  className="ml-2 p-1 text-gray-500 hover:text-red-500 disabled:opacity-50"
-                  aria-label="Remove file"
+                  className="p-1 text-gray-500 hover:text-red-500 disabled:opacity-50 flex-shrink-0"
+                  aria-label="Remove image"
                 >
                   <XIcon size={16} />
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 

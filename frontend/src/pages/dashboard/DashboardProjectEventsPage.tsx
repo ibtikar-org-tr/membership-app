@@ -22,7 +22,7 @@ export function DashboardProjectEventsPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false)
-  const [uploadedImageUrls, setUploadedImageUrls] = useState<Record<string, string>>({})
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -119,7 +119,7 @@ export function DashboardProjectEventsPage() {
       return
     }
 
-    let imageUrls: Record<string, unknown> | undefined = uploadedImageUrls && Object.keys(uploadedImageUrls).length > 0 ? uploadedImageUrls : undefined
+    let imageUrl: string | undefined
     let associatedUrls: Record<string, unknown> | undefined
 
     if (associatedUrlsRaw) {
@@ -135,6 +135,10 @@ export function DashboardProjectEventsPage() {
       }
     }
 
+    if (uploadedImageUrl) {
+      imageUrl = uploadedImageUrl
+    }
+
     setIsCreating(true)
 
     try {
@@ -144,7 +148,7 @@ export function DashboardProjectEventsPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         location: location || undefined,
-        ...(imageUrls ? { imageUrls } : {}),
+        ...(imageUrl ? { imageUrl } : {}),
         ...(associatedUrls ? { associatedUrls } : {}),
         createdBy: user.membershipNumber,
         projectId: projectID,
@@ -152,7 +156,7 @@ export function DashboardProjectEventsPage() {
 
       setEvents((previous) => [payload.event, ...previous])
       form.reset()
-      setUploadedImageUrls({})
+      setUploadedImageUrl(null)
       setUploadError(null)
       setIsCreateEventOpen(false)
     } catch (requestError) {
@@ -246,21 +250,19 @@ export function DashboardProjectEventsPage() {
           <div className="md:col-span-5">
             <h3 className="mb-2 text-sm font-medium text-slate-700">صور الفعالية</h3>
             <ImageUploader
+              maxFiles={1}
               onUpload={async (images) => {
-                const urlMap = images.reduce((acc, img) => {
-                  acc[img.name] = img.url
-                  return acc
-                }, {} as Record<string, string>)
-                setUploadedImageUrls(urlMap)
+                const firstImage = images[0]
+                setUploadedImageUrl(firstImage?.url ?? null)
                 setUploadError(null)
               }}
               onError={(error) => {
                 setUploadError(error)
               }}
             />
-            {Object.keys(uploadedImageUrls).length > 0 && (
+            {uploadedImageUrl && (
               <div className="mt-2 rounded-md bg-green-50 p-2">
-                <p className="text-xs font-medium text-green-800">تم رفع {Object.keys(uploadedImageUrls).length} صورة</p>
+                <p className="text-xs font-medium text-green-800">تم رفع صورة البانر بنجاح</p>
               </div>
             )}
           </div>

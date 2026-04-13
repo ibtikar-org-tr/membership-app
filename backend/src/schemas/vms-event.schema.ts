@@ -11,7 +11,7 @@ export const createEventSchema = z.object({
   startTime: optionalTrimmedString,
   endTime: optionalTrimmedString,
   location: optionalTrimmedString,
-  imageUrls: eventUrlsSchema,
+  imageUrl: optionalTrimmedString,
   associatedUrls: eventUrlsSchema,
   createdBy: requiredTrimmedString,
   projectId: requiredTrimmedString,

@@ -61,7 +61,7 @@ export function DashboardEventDetailsPage() {
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
   const [projectLoadError, setProjectLoadError] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [uploadedImageUrls, setUploadedImageUrls] = useState<Record<string, string>>({})
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -170,6 +170,13 @@ export function DashboardEventDetailsPage() {
     }
   }, [canEditEvent])
 
+  useEffect(() => {
+    if (!isEditing) {
+      setUploadedImageUrl(null)
+      setUploadError(null)
+    }
+  }, [isEditing])
+
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
   const hasUserRegistered = useMemo(() => {
     if (!user) {
@@ -218,7 +225,7 @@ export function DashboardEventDetailsPage() {
       return
     }
 
-    let imageUrls: Record<string, unknown> | undefined = uploadedImageUrls && Object.keys(uploadedImageUrls).length > 0 ? uploadedImageUrls : undefined
+    let imageUrl: string | undefined
     let associatedUrls: Record<string, unknown> | undefined
 
     if (associatedUrlsRaw) {
@@ -234,6 +241,10 @@ export function DashboardEventDetailsPage() {
       }
     }
 
+    if (uploadedImageUrl) {
+      imageUrl = uploadedImageUrl
+    }
+
     setIsSaving(true)
 
     try {
@@ -243,12 +254,12 @@ export function DashboardEventDetailsPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         ...(location ? { location } : {}),
-        ...(imageUrls ? { imageUrls } : {}),
+        ...(imageUrl ? { imageUrl } : {}),
         ...(associatedUrls ? { associatedUrls } : {}),
       })
 
       setEventItem(payload.event)
-      setUploadedImageUrls({})
+      setUploadedImageUrl(null)
       setUploadError(null)
       setIsEditing(false)
     } catch (requestError) {
@@ -449,22 +460,30 @@ export function DashboardEventDetailsPage() {
             />
             <div className="md:col-span-4">
               <h3 className="mb-2 text-sm font-medium text-slate-700">صور الفعالية</h3>
+              {eventItem.imageUrl ? (
+                <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-2 text-xs font-medium text-slate-700">الصور الحالية</p>
+                  <div className="mb-2">
+                    <p className="mb-1 text-xs text-slate-600">صورة البانر الحالية</p>
+                    <img src={eventItem.imageUrl} alt="Current banner" className="h-36 w-full rounded-md border border-slate-200 object-cover" />
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">رفع صورة جديدة سيستبدل صورة البانر الحالية.</p>
+                </div>
+              ) : null}
               <ImageUploader
+                maxFiles={1}
                 onUpload={async (images) => {
-                  const urlMap = images.reduce((acc, img) => {
-                    acc[img.name] = img.url
-                    return acc
-                  }, {} as Record<string, string>)
-                  setUploadedImageUrls(urlMap)
+                  const firstImage = images[0]
+                  setUploadedImageUrl(firstImage?.url ?? null)
                   setUploadError(null)
                 }}
                 onError={(error) => {
                   setUploadError(error)
                 }}
               />
-              {Object.keys(uploadedImageUrls).length > 0 && (
+              {uploadedImageUrl && (
                 <div className="mt-2 rounded-md bg-green-50 p-2">
-                  <p className="text-xs font-medium text-green-800">تم رفع {Object.keys(uploadedImageUrls).length} صورة</p>
+                  <p className="text-xs font-medium text-green-800">تم رفع صورة البانر بنجاح</p>
                 </div>
               )}
             </div>
@@ -531,30 +550,12 @@ export function DashboardEventDetailsPage() {
         </div>
       </article>
 
-      {eventItem.imageUrls && Object.keys(eventItem.imageUrls).length > 0 ? (
+      {eventItem.imageUrl ? (
         <article className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-sm font-semibold text-slate-900">روابط الصور</p>
-          <div className="mt-3 space-y-2 text-sm text-slate-600">
-            {Object.entries(eventItem.imageUrls).map(([key, value]) => (
-              <div key={key} className="flex gap-2">
-                <span className="font-medium text-slate-900">{key}:</span>
-                {typeof value === 'string' ? (
-                  <a href={value} target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline">
-                    {value}
-                  </a>
-                ) : Array.isArray(value) ? (
-                  <div className="flex flex-col gap-1">
-                    {value.map((url, idx) => (
-                      <a key={idx} href={String(url)} target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline">
-                        {String(url)}
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <span>{String(value)}</span>
-                )}
-              </div>
-            ))}
+          <p className="text-sm font-semibold text-slate-900 mb-4">صور الفعالية</p>
+          <p className="text-xs font-medium text-slate-700 mb-2">الصورة الرئيسية</p>
+          <div className="rounded-lg overflow-hidden border border-slate-200">
+            <img src={eventItem.imageUrl} alt="Banner" className="w-full h-64 object-cover" />
           </div>
         </article>
       ) : null}

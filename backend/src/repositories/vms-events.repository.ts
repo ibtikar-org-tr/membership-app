@@ -10,7 +10,7 @@ interface EventRow {
   start_time: string | null
   end_time: string | null
   location: string | null
-  image_urls: string | null
+  image_url: string | null
   associated_urls: string | null
   created_by: string
   project_id: string | null
@@ -69,7 +69,7 @@ function mapEventRow(row: EventRow) {
     startTime: row.start_time,
     endTime: row.end_time,
     location: row.location,
-    imageUrls: parseJsonObject(row.image_urls),
+    imageUrl: row.image_url,
     associatedUrls: parseJsonObject(row.associated_urls),
     createdBy: row.created_by,
     projectId: row.project_id,
@@ -81,7 +81,7 @@ function mapEventRow(row: EventRow) {
 export async function listEvents(db: D1DatabaseLike) {
   const result = await db
     .prepare(
-      'SELECT id, created_at, updated_at, name, description, start_time, end_time, location, image_urls, associated_urls, created_by, project_id, skills, telegram_group_id FROM events ORDER BY created_at DESC',
+      'SELECT id, created_at, updated_at, name, description, start_time, end_time, location, image_url, associated_urls, created_by, project_id, skills, telegram_group_id FROM events ORDER BY created_at DESC',
     )
     .bind()
     .all<EventRow>()
@@ -92,7 +92,7 @@ export async function listEvents(db: D1DatabaseLike) {
 export async function getEventById(db: D1DatabaseLike, id: string) {
   const row = await db
     .prepare(
-      'SELECT id, created_at, updated_at, name, description, start_time, end_time, location, image_urls, associated_urls, created_by, project_id, skills, telegram_group_id FROM events WHERE id = ?',
+      'SELECT id, created_at, updated_at, name, description, start_time, end_time, location, image_url, associated_urls, created_by, project_id, skills, telegram_group_id FROM events WHERE id = ?',
     )
     .bind(id)
     .first<EventRow>()
@@ -103,7 +103,7 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
 export async function createEvent(db: D1DatabaseLike, id: string, input: CreateEventInput) {
   await db
     .prepare(
-      'INSERT INTO events (id, name, description, start_time, end_time, location, image_urls, associated_urls, created_by, project_id, skills, telegram_group_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO events (id, name, description, start_time, end_time, location, image_url, associated_urls, created_by, project_id, skills, telegram_group_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -112,7 +112,7 @@ export async function createEvent(db: D1DatabaseLike, id: string, input: CreateE
       input.startTime ?? null,
       input.endTime ?? null,
       input.location ?? null,
-      input.imageUrls ? JSON.stringify(input.imageUrls) : null,
+      input.imageUrl ?? null,
       input.associatedUrls ? JSON.stringify(input.associatedUrls) : null,
       input.createdBy,
       input.projectId ?? null,
@@ -153,9 +153,9 @@ export async function updateEventById(db: D1DatabaseLike, id: string, input: Upd
     values.push(input.location)
   }
 
-  if (input.imageUrls !== undefined) {
-    updates.push('image_urls = ?')
-    values.push(input.imageUrls ? JSON.stringify(input.imageUrls) : null)
+  if (input.imageUrl !== undefined) {
+    updates.push('image_url = ?')
+    values.push(input.imageUrl ?? null)
   }
 
   if (input.associatedUrls !== undefined) {

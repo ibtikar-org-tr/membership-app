@@ -37,7 +37,7 @@ export interface VmsEvent {
   startTime: string | null
   endTime: string | null
   location: string | null
-  imageUrls: Record<string, unknown> | null
+  imageUrl: string | null
   associatedUrls: Record<string, unknown> | null
   createdBy: string
   projectId: string | null
