@@ -73,6 +73,7 @@ export function DashboardEventDetailsPage() {
   const [notFound, setNotFound] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
   const [ticketError, setTicketError] = useState<string | null>(null)
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
@@ -327,10 +328,7 @@ export function DashboardEventDetailsPage() {
       return
     }
 
-    const formData = new FormData(event.currentTarget)
-    const ticketId = String(formData.get('ticketId') ?? '').trim()
-
-    if (!ticketId) {
+    if (!selectedTicketId) {
       setApplyError('يرجى اختيار تذكرة للتسجيل.')
       return
     }
@@ -342,12 +340,13 @@ export function DashboardEventDetailsPage() {
       const payload = await createEventRegistration({
         eventId: eventID,
         membershipNumber: user.membershipNumber,
-        ticketId,
+        ticketId: selectedTicketId,
         status: 'registered',
       })
 
       setRegistrations((previous) => [payload.eventRegistration, ...previous])
       setApplySuccess('تم إرسال طلب التسجيل بنجاح.')
+      setSelectedTicketId(null)
       applyForm.reset()
     } catch (requestError) {
       if (requestError instanceof Error) {
@@ -912,30 +911,80 @@ export function DashboardEventDetailsPage() {
           )}
           {ticketError ? <p className="mt-3 text-sm text-red-600">{ticketError}</p> : null}
 
-          <form onSubmit={handleApplyToEvent} className="mt-5 grid gap-3 rounded-xl border border-cyan-100 bg-cyan-50/30 p-4 md:grid-cols-4">
-            <select
-              name="ticketId"
-              defaultValue=""
-              className="md:col-span-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-              disabled={isApplying || tickets.length === 0 || hasUserRegistered}
-              required
-            >
-              <option value="">اختر نوع التذكرة</option>
-              {tickets.map((ticket) => (
-                <option key={ticket.id} value={ticket.id}>
-                  {ticket.name} — {ticket.quantity} مقعد — {ticket.pointPrice} نقطة
-                  {!ticket.currencyPrice ? ' (مجاني)' : ` (${ticket.currencyPrice})`}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={isApplying || tickets.length === 0 || hasUserRegistered}
-              className="rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {hasUserRegistered ? 'مسجّل مسبقاً' : isApplying ? 'جار الإرسال...' : 'التقديم'}
-            </button>
-          </form>
+          {tickets.length > 0 && !hasUserRegistered ? (
+            <div className="mt-5">
+              <p className="mb-3 text-sm font-medium text-slate-700">اختر تذكرة للتقديم:</p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {tickets.map((ticket) => {
+                  const isSelected = selectedTicketId === ticket.id
+                  const isDisabled = isApplying || tickets.length === 0
+                  return (
+                    <button
+                      key={ticket.id}
+                      type="button"
+                      onClick={() => !isDisabled && setSelectedTicketId(isSelected ? null : ticket.id)}
+                      disabled={isDisabled}
+                      className={`rounded-xl border-2 p-4 text-left shadow-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
+                        isSelected
+                          ? 'border-cyan-600 bg-cyan-50 shadow-cyan-100'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-slate-900">{ticket.name}</p>
+                          {ticket.description ? (
+                            <p className="mt-1 text-xs text-slate-500 line-clamp-2">{ticket.description}</p>
+                          ) : null}
+                        </div>
+                        {isSelected && (
+                          <svg className="h-5 w-5 shrink-0 text-cyan-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="mt-3 flex items-center gap-2 text-xs">
+                        <span className="rounded-lg bg-slate-100 px-2 py-1 text-slate-700">
+                          {ticket.quantity} مقعد
+                        </span>
+                        <span className="rounded-lg bg-cyan-100 px-2 py-1 font-medium text-cyan-800">
+                          {ticket.pointPrice} نقطة
+                        </span>
+                        {ticket.currencyPrice ? (
+                          <span className="rounded-lg bg-amber-100 px-2 py-1 font-medium text-amber-800">
+                            {ticket.currencyPrice}
+                          </span>
+                        ) : (
+                          <span className="rounded-lg bg-emerald-100 px-2 py-1 font-medium text-emerald-800">
+                            مجاني
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              {selectedTicketId && (
+                <form onSubmit={handleApplyToEvent} className="mt-4">
+                  <button
+                    type="submit"
+                    disabled={isApplying || !selectedTicketId}
+                    className="w-full rounded-lg bg-cyan-700 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {isApplying ? 'جار الإرسال...' : 'تقديم الطلب'}
+                  </button>
+                </form>
+              )}
+            </div>
+          ) : null}
+          {hasUserRegistered ? (
+            <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+              <p className="text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
+            </div>
+          ) : null}
+          {tickets.length === 0 ? (
+            <p className="mt-5 text-center text-sm text-slate-500">لا توجد تذاكر متاحة لهذه الفعالية بعد.</p>
+          ) : null}
           {applyError ? <p className="mt-3 text-sm text-red-600">{applyError}</p> : null}
           {applySuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{applySuccess}</p> : null}
 
