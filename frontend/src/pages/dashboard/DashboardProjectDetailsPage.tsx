@@ -2,7 +2,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { FiCalendar, FiSettings, FiTarget, FiUser } from 'react-icons/fi'
-import { createProjectMember, createTask, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject } from '../../api/vms'
+import { createProjectMember, createTask, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser } from '../../utils/auth'
@@ -159,6 +159,8 @@ export function DashboardProjectDetailsPage() {
   const [memberError, setMemberError] = useState<string | null>(null)
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isUpdatingTask, setIsUpdatingTask] = useState(false)
+  const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
@@ -224,6 +226,22 @@ export function DashboardProjectDetailsPage() {
     () => (selectedTaskId ? projectTasks.find((task) => task.id === selectedTaskId) ?? null : null),
     [projectTasks, selectedTaskId],
   )
+  const projectManagerMembershipNumbers = useMemo(
+    () => new Set(projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber)),
+    [projectMembers],
+  )
+  const canEditSelectedTask = useMemo(() => {
+    if (!selectedTask || !project || !user) {
+      return false
+    }
+
+    const currentMembershipNumber = user.membershipNumber
+    return (
+      selectedTask.assignedTo === currentMembershipNumber ||
+      project.owner === currentMembershipNumber ||
+      projectManagerMembershipNumbers.has(currentMembershipNumber)
+    )
+  }, [project, projectManagerMembershipNumbers, selectedTask, user])
   const previewMembers = useMemo(() => projectMembers.slice(0, 4), [projectMembers])
   const hiddenMembersCount = Math.max(0, projectMembers.length - previewMembers.length)
 
@@ -384,6 +402,59 @@ export function DashboardProjectDetailsPage() {
       }
     } finally {
       setIsAddingMember(false)
+    }
+  }
+
+  const handleUpdateTask = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setTaskUpdateError(null)
+
+    if (!selectedTask || !canEditSelectedTask) {
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const statusRaw = String(formData.get('status') ?? selectedTask.status).trim()
+    const status =
+      statusRaw === 'in_progress' || statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'open'
+    const dueDateRaw = String(formData.get('dueDate') ?? '').trim()
+    const pointsRawValue = String(formData.get('points') ?? '').trim()
+    const pointsRaw = pointsRawValue === '' ? selectedTask.points : Number(pointsRawValue)
+    const assignedTo = String(formData.get('assignedTo') ?? '').trim()
+
+    if (!name) {
+      setTaskUpdateError('يرجى إدخال اسم المهمة.')
+      return
+    }
+
+    if (Number.isNaN(pointsRaw) || pointsRaw < 1) {
+      setTaskUpdateError('يجب أن تكون النقاط 1 على الأقل.')
+      return
+    }
+
+    setIsUpdatingTask(true)
+
+    try {
+      const payload = await updateTask(selectedTask.id, {
+        name,
+        description: description || undefined,
+        status,
+        dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : selectedTask.dueDate ?? undefined,
+        points: Math.max(1, Math.trunc(pointsRaw)),
+        assignedTo: assignedTo || undefined,
+      })
+
+      setProjectTasks((previous) => previous.map((task) => (task.id === payload.task.id ? payload.task : task)))
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTaskUpdateError(requestError.message)
+      } else {
+        setTaskUpdateError('تعذر تحديث المهمة.')
+      }
+    } finally {
+      setIsUpdatingTask(false)
     }
   }
 
@@ -605,32 +676,123 @@ export function DashboardProjectDetailsPage() {
       </div>
 
       {selectedTask ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setSelectedTaskId(null)}>
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4"
+          onClick={() => {
+            setTaskUpdateError(null)
+            setSelectedTaskId(null)
+          }}
+        >
           <article className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between gap-3">
               <p className="text-base font-semibold text-slate-950">تفاصيل المهمة</p>
-              <button type="button" onClick={() => setSelectedTaskId(null)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTaskUpdateError(null)
+                  setSelectedTaskId(null)
+                }}
+                className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600"
+              >
+                إغلاق
+              </button>
             </div>
 
             <div className="mt-4 space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-950">{selectedTask.name}</p>
-                  <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(selectedTask.status)}`}>
-                    {taskStatusLabel(selectedTask.status)}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-slate-600">{selectedTask.description ?? 'لا يوجد وصف للمهمة.'}</p>
-              </div>
+              {canEditSelectedTask ? (
+                <form onSubmit={handleUpdateTask} className="space-y-3">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <input
+                        name="name"
+                        defaultValue={selectedTask.name}
+                        placeholder="عنوان المهمة"
+                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                        required
+                      />
+                      <select
+                        name="status"
+                        defaultValue={selectedTask.status}
+                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                      >
+                        <option value="open">مفتوحة</option>
+                        <option value="in_progress">قيد التنفيذ</option>
+                        <option value="completed">مكتملة</option>
+                        <option value="archived">مؤرشفة</option>
+                      </select>
+                      <input
+                        name="points"
+                        type="number"
+                        min={1}
+                        defaultValue={selectedTask.points}
+                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                      />
+                      <input
+                        name="dueDate"
+                        type="date"
+                        defaultValue={selectedTask.dueDate ? formatDateEnCA(selectedTask.dueDate) : ''}
+                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                      />
+                      <select
+                        name="assignedTo"
+                        defaultValue={selectedTask.assignedTo ?? ''}
+                        className="sm:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                      >
+                        <option value="">غير مسند</option>
+                        {memberOptions.map((member) => (
+                          <option key={`task-edit-member-${member.membershipNumber}`} value={member.membershipNumber}>
+                            {member.displayName}
+                          </option>
+                        ))}
+                      </select>
+                      <textarea
+                        name="description"
+                        defaultValue={selectedTask.description ?? ''}
+                        placeholder="تفاصيل المهمة"
+                        className="sm:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">أنشئت بواسطة: {formatAssignee(selectedTask.createdBy)}</p>
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">تاريخ الإنشاء: {formatDateEnCA(selectedTask.createdAt)}</p>
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2 sm:col-span-2">آخر تحديث: {formatDateEnCA(selectedTask.updatedAt)}</p>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isUpdatingTask}
+                    className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {isUpdatingTask ? 'جار حفظ التعديلات...' : 'حفظ التعديلات'}
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-950">{selectedTask.name}</p>
+                      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(selectedTask.status)}`}>
+                        {taskStatusLabel(selectedTask.status)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">{selectedTask.description ?? 'لا يوجد وصف للمهمة.'}</p>
+                  </div>
 
-              <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
-                <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">المكلّف: {formatAssignee(selectedTask.assignedTo)}</p>
-                <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">النقاط: {selectedTask.points}</p>
-                <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">الموعد: {formatDueDate(selectedTask.dueDate)}</p>
-                <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">أنشئت بواسطة: {formatAssignee(selectedTask.createdBy)}</p>
-                <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">تاريخ الإنشاء: {formatDateEnCA(selectedTask.createdAt)}</p>
-                <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">آخر تحديث: {formatDateEnCA(selectedTask.updatedAt)}</p>
-              </div>
+                  <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">المكلّف: {formatAssignee(selectedTask.assignedTo)}</p>
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">النقاط: {selectedTask.points}</p>
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">الموعد: {formatDueDate(selectedTask.dueDate)}</p>
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">أنشئت بواسطة: {formatAssignee(selectedTask.createdBy)}</p>
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">تاريخ الإنشاء: {formatDateEnCA(selectedTask.createdAt)}</p>
+                    <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">آخر تحديث: {formatDateEnCA(selectedTask.updatedAt)}</p>
+                  </div>
+                  <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    يمكنك تعديل المهمة إذا كانت مسندة لك أو كنت مديراً للمشروع أو مالك المشروع.
+                  </p>
+                </>
+              )}
+              {taskUpdateError ? <p className="text-sm text-red-600">{taskUpdateError}</p> : null}
             </div>
           </article>
         </div>

@@ -172,6 +172,26 @@ export function createTask(payload: {
   return postJson<{ task: VmsTask }, typeof payload>('/tasks', payload)
 }
 
+export function updateTask(
+  taskId: string,
+  payload: Partial<{
+    projectId: string
+    name: string
+    description: string
+    createdBy: string
+    status: 'open' | 'in_progress' | 'completed' | 'archived'
+    dueDate: string
+    points: number
+    assignedTo: string
+    completedBy: string
+    completedAt: string
+    approvedBy: string
+    skills: Record<string, string>
+  }>,
+) {
+  return putJson<{ task: VmsTask }, typeof payload>(`/tasks/${encodeURIComponent(taskId)}`, payload)
+}
+
 export function fetchEvents() {
   return fetchJson<{ events: VmsEvent[] }>('/events')
 }
