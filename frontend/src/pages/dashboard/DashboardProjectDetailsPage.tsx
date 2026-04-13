@@ -144,22 +144,12 @@ export function DashboardProjectDetailsPage() {
     }
   }, [projectID])
 
-  const completedTasksCount = useMemo(
-    () => projectTasks.filter((task) => task.status === 'completed').length,
-    [projectTasks],
-  )
   const memberOptions = useMemo(() => projectMembers, [projectMembers])
   const memberNameByMembership = useMemo(
     () => new Map(projectMembers.map((member) => [member.membershipNumber, member.displayName])),
     [projectMembers],
   )
   const memberCount = projectMembers.length
-  const openTasksCount = useMemo(() => projectTasks.filter((task) => task.status === 'open').length, [projectTasks])
-  const inProgressTasksCount = useMemo(
-    () => projectTasks.filter((task) => task.status === 'in_progress').length,
-    [projectTasks],
-  )
-  const completedRatio = projectTasks.length > 0 ? Math.round((completedTasksCount / projectTasks.length) * 100) : 0
   const boardColumns = useMemo(
     () => [
       { key: 'open', label: 'مفتوحة', items: projectTasks.filter((task) => task.status === 'open') },
@@ -380,29 +370,6 @@ export function DashboardProjectDetailsPage() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="grid gap-2 border-t border-slate-200/70 bg-white p-3 sm:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 shadow-sm">
-            <p className="text-xs font-medium text-slate-500">إجمالي المهام</p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">{projectTasks.length}</p>
-            <p className="mt-1 text-xs text-slate-500">كل المهام المرتبطة بالمشروع</p>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 shadow-sm">
-            <p className="text-xs font-medium text-slate-500">قيد التنفيذ</p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">{inProgressTasksCount}</p>
-            <p className="mt-1 text-xs text-slate-500">المهام المتحركة حالياً</p>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 shadow-sm">
-            <p className="text-xs font-medium text-slate-500">مكتملة</p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">{completedTasksCount}</p>
-            <p className="mt-1 text-xs text-slate-500">نسبة الإنجاز {completedRatio}%</p>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 shadow-sm">
-            <p className="text-xs font-medium text-slate-500">مفتوحة</p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">{openTasksCount}</p>
-            <p className="mt-1 text-xs text-slate-500">جاهزة للتنفيذ</p>
-          </article>
         </div>
       </header>
 
