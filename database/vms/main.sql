@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS events (
     -- recommended_skills TEXT, -- comma-separated list of skills recommended for the event (e.g., "python,project_management,design")
     -- aquired_skills TEXT, -- comma-separated list of skills that participants can acquire or improve by attending the event (e.g., "python,project_management,design")
     skills TEXT, -- JSON array of skill names required/recommended/aquired for the event (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
-    telegram_group_id TEXT UNIQUE, -- unique Telegram group ID associated with the event for communication and updates (e.g., "-123456789"), this will be stored and used by the bot
+    telegram_group_id TEXT UNIQUE -- unique Telegram group ID associated with the event for communication and updates (e.g., "-123456789"), this will be stored and used by the bot
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_updated_at AFTER UPDATE ON events
