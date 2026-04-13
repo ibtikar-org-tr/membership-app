@@ -113,8 +113,8 @@ async function putJson<TResponse, TPayload>(path: string, payload: TPayload): Pr
   return (await response.json()) as TResponse
 }
 
-export function login(payload: { email: string; password: string }) {
-  return postJson<LoginResponse, { email: string; password: string }>('/login', payload)
+export function login(payload: { identifier: string; password: string }) {
+  return postJson<LoginResponse, { identifier: string; password: string }>('/login', payload)
 }
 
 export function fetchProfile(membershipNumber: string) {

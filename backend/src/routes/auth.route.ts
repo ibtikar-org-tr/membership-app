@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { getUserByEmail } from '../repositories/users.repository'
+import { getUserByEmail, getUserByMembershipNumber } from '../repositories/users.repository'
 import { loginSchema } from '../schemas/auth.schema'
 import type { AppBindings } from '../types/bindings'
 import { verifyPassword } from '../utils/password'
@@ -10,8 +10,13 @@ export const authRoute = new Hono<{ Bindings: AppBindings }>()
 authRoute.post('/login', zValidator('json', loginSchema), async (c) => {
   try {
     const payload = c.req.valid('json')
+    const identifier = payload.identifier.trim()
+    const isEmailIdentifier = identifier.includes('@')
 
-    const user = await getUserByEmail(c.env.MEMBERS_DB, payload.email)
+    const user = isEmailIdentifier
+      ? await getUserByEmail(c.env.MEMBERS_DB, identifier)
+      : await getUserByMembershipNumber(c.env.MEMBERS_DB, identifier)
+
     if (!user) {
       return c.json({ error: 'Invalid email or password.' }, 401)
     }

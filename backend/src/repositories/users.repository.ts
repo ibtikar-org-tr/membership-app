@@ -33,6 +33,18 @@ export async function getUserByEmail(db: D1DatabaseLike, email: string): Promise
     .first<UserAuthRow>()
 }
 
+export async function getUserByMembershipNumber(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+): Promise<UserAuthRow | null> {
+  const normalizedMembershipNumber = membershipNumber.trim()
+
+  return db
+    .prepare('SELECT membership_number, email, password_hash, role FROM users WHERE membership_number = ? LIMIT 1')
+    .bind(normalizedMembershipNumber)
+    .first<UserAuthRow>()
+}
+
 export async function deleteUserByMembershipNumber(db: D1DatabaseLike, membershipNumber: string): Promise<void> {
   await db.prepare('DELETE FROM users WHERE membership_number = ?').bind(membershipNumber).run()
 }

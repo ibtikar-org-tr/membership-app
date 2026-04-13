@@ -13,18 +13,18 @@ export function LoginPage() {
     setError(null)
 
     const formData = new FormData(event.currentTarget)
-    const email = String(formData.get('email') ?? '').trim()
+    const identifier = String(formData.get('identifier') ?? '').trim()
     const password = String(formData.get('password') ?? '')
 
-    if (!email || !password) {
-      setError('يرجى إدخال البريد الإلكتروني وكلمة المرور.')
+    if (!identifier || !password) {
+      setError('يرجى إدخال البريد الإلكتروني أو رقم العضوية وكلمة المرور.')
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      const payload = await login({ email, password })
+      const payload = await login({ identifier, password })
       setStoredUser(payload.user)
       navigate('/dashboard', { replace: true })
     } catch (requestError) {
@@ -61,18 +61,18 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5 p-8 md:p-10" noValidate>
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-700">
-                البريد الإلكتروني
+              <label htmlFor="identifier" className="mb-2 block text-sm font-semibold text-slate-700">
+                البريد الإلكتروني أو رقم العضوية
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="identifier"
+                name="identifier"
+                type="text"
+                autoComplete="username"
                 required
                 dir="ltr"
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
-                placeholder="example@domain.com"
+                placeholder="example@domain.com / 2503017"
               />
             </div>
 
