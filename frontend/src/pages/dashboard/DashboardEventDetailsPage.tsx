@@ -714,29 +714,24 @@ export function DashboardEventDetailsPage() {
                 الروابط المرتبطة
               </h3>
               {associatedUrls.length > 0 && (
-                <ul className="space-y-2">
+                <ul className="flex flex-wrap gap-2">
                   {associatedUrls.map((url, index) => (
-                    <li
-                      key={index}
-                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                    >
-                      <span className="min-w-0 flex-1 text-sm">
-                        <span className="font-medium text-slate-700">{url.label}:</span>{' '}
-                        <a
-                          href={url.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="truncate text-cyan-600 hover:underline"
-                        >
-                          {url.url}
-                        </a>
-                      </span>
+                    <li key={index}>
+                      <a
+                        href={url.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-medium text-cyan-700 transition hover:bg-cyan-100 hover:text-cyan-800"
+                      >
+                        {url.label}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
                       <button
                         type="button"
                         onClick={() => handleRemoveUrl(index)}
-                        className="shrink-0 rounded-lg p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                        className="ml-1 inline-flex items-center rounded-full p-0.5 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3 w-3" />
                       </button>
                     </li>
                   ))}
@@ -867,29 +862,20 @@ export function DashboardEventDetailsPage() {
             <Link2 className="h-5 w-5 text-cyan-600" strokeWidth={1.5} />
             <h2 className="text-base font-semibold text-slate-900">الروابط المرتبطة</h2>
           </div>
-          <ul className="mt-4 space-y-2">
-            {Object.entries(eventItem.associatedUrls).map(([key, value]) => (
-              <li
-                key={key}
-                className="flex flex-col gap-1 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          <div className="mt-4 flex flex-wrap gap-2">
+            {Object.entries(eventItem.associatedUrls).map(([label, url]) => (
+              <a
+                key={label}
+                href={typeof url === 'string' ? url : String(url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-medium text-cyan-700 transition hover:bg-cyan-100 hover:text-cyan-800"
               >
-                <span className="text-sm font-medium text-slate-800">{key}</span>
-                {typeof value === 'string' ? (
-                  <a
-                    href={value}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 break-all text-sm text-cyan-700 hover:text-cyan-800 hover:underline"
-                  >
-                    {value}
-                    <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
-                  </a>
-                ) : (
-                  <span className="text-sm text-slate-600">{String(value)}</span>
-                )}
-              </li>
+                {label}
+                <ExternalLink className="h-3 w-3" />
+              </a>
             ))}
-          </ul>
+          </div>
         </article>
       ) : null}
 
