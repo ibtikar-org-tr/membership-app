@@ -20,6 +20,7 @@ import type {
 } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
+import { ImageUploader } from '../../components/ImageUploader'
 
 function registrationStatusLabel(status: string) {
   if (status === 'registered') {
@@ -60,6 +61,8 @@ export function DashboardEventDetailsPage() {
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
   const [projectLoadError, setProjectLoadError] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<Record<string, string>>({})
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventID) {
@@ -208,7 +211,6 @@ export function DashboardEventDetailsPage() {
     const startTime = String(formData.get('startTime') ?? '').trim()
     const endTime = String(formData.get('endTime') ?? '').trim()
     const location = String(formData.get('location') ?? '').trim()
-    const imageUrlsRaw = String(formData.get('imageUrls') ?? '').trim()
     const associatedUrlsRaw = String(formData.get('associatedUrls') ?? '').trim()
 
     if (!name) {
@@ -216,21 +218,8 @@ export function DashboardEventDetailsPage() {
       return
     }
 
-    let imageUrls: Record<string, unknown> | undefined
+    let imageUrls: Record<string, unknown> | undefined = uploadedImageUrls && Object.keys(uploadedImageUrls).length > 0 ? uploadedImageUrls : undefined
     let associatedUrls: Record<string, unknown> | undefined
-
-    if (imageUrlsRaw) {
-      try {
-        imageUrls = JSON.parse(imageUrlsRaw)
-        if (typeof imageUrls !== 'object' || Array.isArray(imageUrls)) {
-          setSaveError('صيغة روابط الصور غير صحيحة. يجب أن تكون كائن JSON.')
-          return
-        }
-      } catch {
-        setSaveError('صيغة روابط الصور غير صحيحة. يجب أن تكون JSON صحيح.')
-        return
-      }
-    }
 
     if (associatedUrlsRaw) {
       try {
@@ -259,6 +248,9 @@ export function DashboardEventDetailsPage() {
       })
 
       setEventItem(payload.event)
+      setUploadedImageUrls({})
+      setUploadError(null)
+      setIsEditing(false)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setSaveError(requestError.message)
@@ -455,13 +447,27 @@ export function DashboardEventDetailsPage() {
               className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
               rows={2}
             />
-            <textarea
-              name="imageUrls"
-              defaultValue={eventItem.imageUrls ? JSON.stringify(eventItem.imageUrls, null, 2) : ''}
-              placeholder={'روابط الصور (JSON، مثال: {"banner": "https://...", "gallery": ["https://...", "https://..."]}'}
-              className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              rows={2}
-            />
+            <div className="md:col-span-4">
+              <h3 className="mb-2 text-sm font-medium text-slate-700">صور الفعالية</h3>
+              <ImageUploader
+                onUpload={async (images) => {
+                  const urlMap = images.reduce((acc, img) => {
+                    acc[img.name] = img.url
+                    return acc
+                  }, {} as Record<string, string>)
+                  setUploadedImageUrls(urlMap)
+                  setUploadError(null)
+                }}
+                onError={(error) => {
+                  setUploadError(error)
+                }}
+              />
+              {Object.keys(uploadedImageUrls).length > 0 && (
+                <div className="mt-2 rounded-md bg-green-50 p-2">
+                  <p className="text-xs font-medium text-green-800">تم رفع {Object.keys(uploadedImageUrls).length} صورة</p>
+                </div>
+              )}
+            </div>
             <textarea
               name="associatedUrls"
               defaultValue={eventItem.associatedUrls ? JSON.stringify(eventItem.associatedUrls, null, 2) : ''}
@@ -471,6 +477,7 @@ export function DashboardEventDetailsPage() {
             />
           </form>
           {saveError ? <p className="mt-2 text-sm text-red-600">{saveError}</p> : null}
+          {uploadError ? <p className="mt-2 text-sm text-red-600">{uploadError}</p> : null}
         </article>
       ) : null}
       {!isEditing && canEditEvent ? (

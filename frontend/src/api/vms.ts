@@ -290,3 +290,34 @@ export function fetchPointTransactions(membershipNumber?: string) {
   const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)
 }
+
+export async function uploadImages(files: File[]): Promise<{ images: string[] }> {
+  const formData = new FormData()
+
+  for (const file of files) {
+    formData.append('images', file)
+  }
+
+  const response = await fetch(`${API_BASE}/images/upload`, {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const fallbackMessage = `Upload failed (${response.status})`
+    let message = fallbackMessage
+
+    try {
+      const body = (await response.json()) as { error?: unknown }
+      if (typeof body.error === 'string' && body.error.trim()) {
+        message = body.error
+      }
+    } catch {
+      // Ignore JSON parsing errors and keep fallback message.
+    }
+
+    throw new Error(message)
+  }
+
+  return (await response.json()) as { images: string[] }
+}
