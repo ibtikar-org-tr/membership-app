@@ -8,6 +8,57 @@ import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser } from '../../utils/auth'
 import { priorityTone, statusBadgeClass, statusLabel } from './project-details/helpers'
 
+function buildChildrenByParentId(projects: VmsProject[]): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+
+  for (const project of projects) {
+    if (!project.parentProjectId) {
+      continue
+    }
+
+    const list = map.get(project.parentProjectId) ?? []
+    list.push(project.id)
+    map.set(project.parentProjectId, list)
+  }
+
+  return map
+}
+
+function collectDescendantIds(rootId: string, childrenByParentId: Map<string, string[]>): Set<string> {
+  const out = new Set<string>()
+  const queue = [...(childrenByParentId.get(rootId) ?? [])]
+
+  while (queue.length > 0) {
+    const id = queue.shift()
+    if (!id || out.has(id)) {
+      continue
+    }
+
+    out.add(id)
+
+    for (const childId of childrenByParentId.get(id) ?? []) {
+      queue.push(childId)
+    }
+  }
+
+  return out
+}
+
+function depthFromAncestor(projectId: string, ancestorId: string, projectById: Map<string, VmsProject>): number {
+  let depth = 0
+  let current: VmsProject | undefined = projectById.get(projectId)
+
+  while (current && current.id !== ancestorId) {
+    depth++
+    if (!current.parentProjectId) {
+      break
+    }
+    current = projectById.get(current.parentProjectId)
+  }
+
+  return depth
+}
+
 export function DashboardProjectSubProjectsPage() {
   const { projectID } = useParams()
   const user = useMemo(() => getStoredUser(), [])
@@ -63,15 +114,47 @@ export function DashboardProjectSubProjectsPage() {
     }
   }, [projectID, user?.membershipNumber])
 
-  const childProjects = useMemo(() => {
+  const descendantRows = useMemo(() => {
     if (!projectID) {
       return []
     }
 
-    return allProjects
-      .filter((project) => project.parentProjectId === projectID)
-      .sort((left, right) => left.name.localeCompare(right.name, 'ar'))
+    const projectById = new Map(allProjects.map((project) => [project.id, project]))
+    const childrenByParentId = buildChildrenByParentId(allProjects)
+    const descendantIds = collectDescendantIds(projectID, childrenByParentId)
+
+    const rows = [...descendantIds]
+      .map((id) => {
+        const project = projectById.get(id)
+        if (!project) {
+          return null
+        }
+
+        return {
+          project,
+          depth: depthFromAncestor(id, projectID, projectById),
+        }
+      })
+      .filter((row): row is { project: VmsProject; depth: number } => row !== null)
+
+    rows.sort((left, right) => {
+      if (left.depth !== right.depth) {
+        return left.depth - right.depth
+      }
+
+      return left.project.name.localeCompare(right.project.name, 'ar')
+    })
+
+    return rows
   }, [allProjects, projectID])
+
+  const projectNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const project of allProjects) {
+      map.set(project.id, project.name)
+    }
+    return map
+  }, [allProjects])
 
   const canManageSubProjects = useMemo(() => {
     if (!user || !parentProject) {
@@ -113,6 +196,8 @@ export function DashboardProjectSubProjectsPage() {
 
     setIsCreating(true)
 
+    const form = event.currentTarget
+
     try {
       const payload = await createProject(
         {
@@ -126,7 +211,7 @@ export function DashboardProjectSubProjectsPage() {
       )
 
       setAllProjects((previous) => [payload.project, ...previous])
-      event.currentTarget.reset()
+      form.reset()
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -168,7 +253,7 @@ export function DashboardProjectSubProjectsPage() {
                 <div>
                   <h1 className="text-xl font-semibold sm:text-2xl">{parentProject.name}</h1>
                   <p className="mt-1.5 text-sm leading-relaxed text-slate-200">
-                    المشاريع التابعة لهذا المشروع. يمكن لمالك المشروع أو المدراء إضافة مشاريع فرعية جديدة.
+                    شجرة المشاريع الفرعية (كل المستويات). يمكن لمالك المشروع أو المدراء إضافة مشروع فرعي جديد يظهر تحت هذا المشروع مباشرة.
                   </p>
                 </div>
               </div>
@@ -260,59 +345,80 @@ export function DashboardProjectSubProjectsPage() {
               <FiFolder className="h-4 w-4" aria-hidden />
             </span>
             <div>
-              <h2 className="text-base font-semibold text-slate-900 sm:text-lg">المشاريع الفرعية</h2>
-              <p className="mt-0.5 text-sm text-slate-500">كل المشاريع التي يكون مشروعك الحالي أباً لها.</p>
+              <h2 className="text-base font-semibold text-slate-900 sm:text-lg">شجرة المشاريع الفرعية</h2>
+              <p className="mt-0.5 text-sm text-slate-500">
+                كل المشاريع تحت هذا المشروع مباشرة أو ضمن مستويات أعمق (أب، جد، …).
+              </p>
             </div>
           </div>
           <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-            {childProjects.length} مشروع
+            {descendantRows.length} مشروع
           </span>
         </div>
 
         <div className="mt-5">
-          {childProjects.length === 0 ? (
+          {descendantRows.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-12 text-center">
               <p className="text-sm font-medium text-slate-700">لا توجد مشاريع فرعية بعد</p>
               <p className="mt-1 max-w-md text-xs text-slate-500">
                 {canManageSubProjects
                   ? 'استخدم النموذج أعلاه لإضافة أول مشروع فرعي.'
-                  : 'سيظهر هنا أي مشروع فرعي يضيفه المالك أو المدراء.'}
+                  : 'سيظهر هنا أي مشروع فرعي يضيفه المالك أو المدراء، بما في ذلك المستويات الأعمق.'}
               </p>
             </div>
           ) : (
-            <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
-              {childProjects.map((project) => (
-                <li key={project.id}>
-                  <article className="group flex h-full min-h-46 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:border-cyan-200/80 hover:shadow-md">
-                    <div className={`w-1 shrink-0 ${priorityTone(project.status)}`} aria-hidden />
-                    <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-                      <span className={`inline-flex w-fit rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusBadgeClass(project.status)}`}>
-                        {statusLabel(project.status)}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-semibold leading-snug text-slate-900">{project.name}</h3>
-                        {project.description ? (
-                          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600">{project.description}</p>
-                        ) : (
-                          <p className="mt-1 text-xs italic text-slate-400">لا يوجد وصف</p>
-                        )}
+            <ul className="grid list-none grid-cols-1 gap-4 p-0 lg:max-w-4xl">
+              {descendantRows.map(({ project, depth }) => {
+                const parentName = project.parentProjectId ? projectNameById.get(project.parentProjectId) : null
+
+                return (
+                  <li
+                    key={project.id}
+                    style={{
+                      paddingInlineStart: `${Math.min((depth - 1) * 12, 72)}px`,
+                    }}
+                  >
+                    <article className="group flex h-full min-h-46 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:border-cyan-200/80 hover:shadow-md">
+                      <div className={`w-1 shrink-0 ${priorityTone(project.status)}`} aria-hidden />
+                      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`inline-flex w-fit rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusBadgeClass(project.status)}`}>
+                            {statusLabel(project.status)}
+                          </span>
+                          <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                            المستوى {depth}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-semibold leading-snug text-slate-900">{project.name}</h3>
+                          {parentName ? (
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              تحت: <span className="font-medium text-slate-700">{parentName}</span>
+                            </p>
+                          ) : null}
+                          {project.description ? (
+                            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600">{project.description}</p>
+                          ) : (
+                            <p className="mt-1 text-xs italic text-slate-400">لا يوجد وصف</p>
+                          )}
+                        </div>
+                        <div className="mt-auto flex flex-wrap items-end justify-between gap-2 border-t border-slate-100 pt-3 text-[11px] text-slate-500">
+                          <p>
+                            <span className="text-slate-400">آخر تحديث:</span> {formatDateEnCA(project.updatedAt)}
+                          </p>
+                          <Link
+                            to={`/dashboard/projects/${project.id}`}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:border-cyan-300 group-hover:bg-cyan-50/80"
+                          >
+                            التفاصيل
+                            <FiChevronLeft className="h-3.5 w-3.5" aria-hidden />
+                          </Link>
+                        </div>
                       </div>
-                      <div className="mt-auto flex flex-wrap items-end justify-between gap-2 border-t border-slate-100 pt-3 text-[11px] text-slate-500">
-                        <p>
-                          <span className="text-slate-400">آخر تحديث:</span> {formatDateEnCA(project.updatedAt)}
-                        </p>
-                        <Link
-                          to={`/dashboard/projects/${project.id}`}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:border-cyan-300 group-hover:bg-cyan-50/80"
-                        >
-                          التفاصيل
-                          <FiChevronLeft className="h-3.5 w-3.5" aria-hidden />
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
-                </li>
-              ))}
+                    </article>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

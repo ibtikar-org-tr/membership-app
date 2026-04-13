@@ -93,6 +93,8 @@ export function DashboardProjectsPage() {
 
     setIsCreating(true)
 
+    const form = event.currentTarget
+
     try {
       const payload = await createProject(
         {
@@ -106,7 +108,7 @@ export function DashboardProjectsPage() {
       )
 
       setProjects((previous) => [payload.project, ...previous])
-      event.currentTarget.reset()
+      form.reset()
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
