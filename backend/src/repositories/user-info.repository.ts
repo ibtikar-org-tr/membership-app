@@ -29,6 +29,13 @@ interface UserProfileRow {
   languages: string | null
 }
 
+interface UserDisplayNameRow {
+  membership_number: string
+  email: string | null
+  en_name: string | null
+  ar_name: string | null
+}
+
 export async function createUserInfo(db: D1DatabaseLike, params: CreateUserInfoParams): Promise<void> {
   await db
     .prepare(
@@ -137,4 +144,41 @@ export async function getUserProfileByMembershipNumber(
     )
     .bind(membershipNumber)
     .first<UserProfileRow>()
+}
+
+export async function getUserDisplayNamesByMembershipNumbers(
+  db: D1DatabaseLike,
+  membershipNumbers: string[],
+): Promise<Map<string, string>> {
+  const uniqueMembershipNumbers = [...new Set(membershipNumbers.map((value) => value.trim()).filter(Boolean))]
+
+  if (uniqueMembershipNumbers.length === 0) {
+    return new Map()
+  }
+
+  const placeholders = uniqueMembershipNumbers.map(() => '?').join(', ')
+  const rows = await db
+    .prepare(
+      `SELECT
+        u.membership_number,
+        u.email,
+        ui.en_name,
+        ui.ar_name
+      FROM users u
+      LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
+      WHERE u.membership_number IN (${placeholders})`
+    )
+    .bind(...uniqueMembershipNumbers)
+    .all<UserDisplayNameRow>()
+
+  const displayNameMap = new Map<string, string>()
+
+  for (const row of rows.results) {
+    const displayName =
+      row.en_name?.trim() || row.ar_name?.trim() || row.email?.trim() || row.membership_number
+
+    displayNameMap.set(row.membership_number, displayName)
+  }
+
+  return displayNameMap
 }
