@@ -12,8 +12,7 @@ function escapeMermaidLabel(value: string) {
 }
 
 function projectLabel(project: VmsProject) {
-  const statusLabel = project.status === 'active' ? 'نشط' : project.status === 'completed' ? 'مكتمل' : 'مؤرشف'
-  return `${project.name} (${statusLabel})`
+  return project.name
 }
 
 export function ProjectHierarchyTree() {

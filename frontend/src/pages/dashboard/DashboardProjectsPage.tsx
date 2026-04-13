@@ -6,22 +6,6 @@ import type { VmsProject } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { ProjectHierarchyTree } from './ProjectHierarchyTree'
 
-function statusLabel(status: string) {
-  if (status === 'active') {
-    return 'نشط'
-  }
-
-  if (status === 'completed') {
-    return 'مكتمل'
-  }
-
-  if (status === 'archived') {
-    return 'مؤرشف'
-  }
-
-  return status
-}
-
 export function DashboardProjectsPage() {
   const [projects, setProjects] = useState<VmsProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -60,7 +44,6 @@ export function DashboardProjectsPage() {
     }
   }, [])
 
-  const activeCount = useMemo(() => projects.filter((project) => project.status === 'active').length, [projects])
   const topLevelCount = useMemo(() => projects.filter((project) => !project.parentProjectId).length, [projects])
 
   const handleCreateProject = async (event: FormEvent<HTMLFormElement>) => {
@@ -115,9 +98,6 @@ export function DashboardProjectsPage() {
           <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">المشاريع</h2>
           <p className="mt-1 text-sm text-slate-500">عرض مختصر للمشاريع الحالية من قاعدة البيانات.</p>
         </div>
-        <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-          {activeCount} مشاريع نشطة
-        </span>
         <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
           {projects.length - topLevelCount} مشاريع فرعية
         </span>
@@ -180,7 +160,7 @@ export function DashboardProjectsPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">{project.name}</p>
-                <p className="mt-1 text-xs text-slate-600">{project.owner} • الحالة {statusLabel(project.status)}</p>
+                <p className="mt-1 text-xs text-slate-600">{project.owner}</p>
                 {project.parentProjectId ? <p className="mt-1 text-xs text-slate-500">مشروع فرعي</p> : null}
               </div>
               <Link

@@ -25,6 +25,17 @@ export interface ProjectRecord {
   status: string
 }
 
+export interface PublicProjectRecord {
+  id: string
+  createdAt: string
+  updatedAt: string
+  name: string
+  description: string | null
+  parentProjectId: string | null
+  owner: string
+  telegramGroupId: string | null
+}
+
 function mapProjectRow(row: ProjectRow): ProjectRecord {
   return {
     id: row.id,
@@ -36,6 +47,19 @@ function mapProjectRow(row: ProjectRow): ProjectRecord {
     owner: row.owner,
     telegramGroupId: row.telegram_group_id,
     status: row.status,
+  }
+}
+
+function toPublicProjectRecord(project: ProjectRecord): PublicProjectRecord {
+  return {
+    id: project.id,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
+    name: project.name,
+    description: project.description,
+    parentProjectId: project.parentProjectId,
+    owner: project.owner,
+    telegramGroupId: project.telegramGroupId,
   }
 }
 
@@ -125,8 +149,7 @@ export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber
     )
     .bind(normalizedMembershipNumber, normalizedMembershipNumber)
     .all<ProjectRow>()
-
-  return result.results.map(mapProjectRow)
+  return result.results.map(mapProjectRow).map(toPublicProjectRecord)
 }
 
 export async function listProjectsForMemberWithRedactedNames(db: D1DatabaseLike, membershipNumber: string) {
@@ -134,7 +157,7 @@ export async function listProjectsForMemberWithRedactedNames(db: D1DatabaseLike,
   const directVisibleIds = await getDirectVisibleProjectIds(db, membershipNumber)
   const visibleIds = getVisibleProjectIds(projects, directVisibleIds)
 
-  return redactProjectNames(projects, visibleIds)
+  return redactProjectNames(projects, visibleIds).map(toPublicProjectRecord)
 }
 
 export async function getProjectById(db: D1DatabaseLike, id: string) {
