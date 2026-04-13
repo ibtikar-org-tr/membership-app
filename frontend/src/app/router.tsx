@@ -88,6 +88,14 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: 'projects/:projectID/events',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardProjectEventsPage } = await import('../pages/dashboard/DashboardProjectEventsPage')
+          return { Component: DashboardProjectEventsPage }
+        },
+      },
+      {
         path: 'events',
         hydrateFallbackElement: <div />,
         lazy: async () => {

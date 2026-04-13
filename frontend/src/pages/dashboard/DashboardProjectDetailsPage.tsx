@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
-import { createEvent, createProjectMember, createTask, fetchEvents, fetchProfile, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
-import type { VmsEvent, VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
+import { createProjectMember, createTask, fetchProfile, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
+import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
-import { AddMemberModal, AddTaskModal, MembersModal, ProjectEventsModal, ProjectSettingsModal, TaskDetailsModal } from './project-details/ProjectDetailsModals'
+import { AddMemberModal, AddTaskModal, MembersModal, ProjectSettingsModal, TaskDetailsModal } from './project-details/ProjectDetailsModals'
 import { ProjectHeader } from './project-details/ProjectHeader'
 import { TaskBoard } from './project-details/TaskBoard'
 
@@ -36,12 +36,6 @@ export function DashboardProjectDetailsPage() {
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
-  const [isProjectEventsOpen, setIsProjectEventsOpen] = useState(false)
-  const [projectEvents, setProjectEvents] = useState<VmsEvent[]>([])
-  const [isLoadingProjectEvents, setIsLoadingProjectEvents] = useState(false)
-  const [projectEventsError, setProjectEventsError] = useState(false)
-  const [isCreatingEvent, setIsCreatingEvent] = useState(false)
-  const [eventCreateError, setEventCreateError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!projectID) {
@@ -193,15 +187,6 @@ export function DashboardProjectDetailsPage() {
     )
   }, [project, projectManagerMembershipNumbers, selectedTask, user])
 
-  const canManageProjectEvents = useMemo(() => {
-    if (!project || !user) {
-      return false
-    }
-
-    const currentMembershipNumber = user.membershipNumber
-    return project.owner === currentMembershipNumber || projectManagerMembershipNumbers.has(currentMembershipNumber)
-  }, [project, projectManagerMembershipNumbers, user])
-
   const formatAssignee = (membershipNumber: string | null) => {
     if (!membershipNumber) {
       return 'غير مسند'
@@ -214,79 +199,6 @@ export function DashboardProjectDetailsPage() {
     setIsTaskEditMode(false)
     setTaskUpdateError(null)
     setSelectedTaskId(null)
-  }
-
-  const openProjectEventsModal = async () => {
-    if (!projectID) {
-      return
-    }
-
-    setIsProjectEventsOpen(true)
-    setProjectEventsError(false)
-    setEventCreateError(null)
-    setIsLoadingProjectEvents(true)
-
-    try {
-      const payload = await fetchEvents()
-      setProjectEvents(payload.events.filter((eventItem) => eventItem.projectId === projectID))
-    } catch {
-      setProjectEventsError(true)
-    } finally {
-      setIsLoadingProjectEvents(false)
-    }
-  }
-
-  const handleCreateEventForProject = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setEventCreateError(null)
-
-    if (!user || !projectID) {
-      setEventCreateError('يجب تسجيل الدخول أولاً.')
-      return
-    }
-
-    if (!canManageProjectEvents) {
-      setEventCreateError('إنشاء الفعالية متاح فقط لمالك المشروع ومديري المشروع.')
-      return
-    }
-
-    const form = event.currentTarget
-    const formData = new FormData(form)
-    const name = String(formData.get('name') ?? '').trim()
-    const description = String(formData.get('description') ?? '').trim()
-    const startTime = String(formData.get('startTime') ?? '').trim()
-    const endTime = String(formData.get('endTime') ?? '').trim()
-    const location = String(formData.get('location') ?? '').trim()
-
-    if (!name || !startTime || !endTime) {
-      setEventCreateError('يرجى إدخال الاسم ووقت البداية ووقت النهاية.')
-      return
-    }
-
-    setIsCreatingEvent(true)
-
-    try {
-      const payload = await createEvent({
-        name,
-        description: description || undefined,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
-        location: location || undefined,
-        createdBy: user.membershipNumber,
-        projectId: projectID,
-      })
-
-      setProjectEvents((previous) => [payload.event, ...previous])
-      form.reset()
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setEventCreateError(requestError.message)
-      } else {
-        setEventCreateError('تعذر إنشاء الفعالية.')
-      }
-    } finally {
-      setIsCreatingEvent(false)
-    }
   }
 
   const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
@@ -520,7 +432,7 @@ export function DashboardProjectDetailsPage() {
         previewMembers={previewMembers}
         hiddenMembersCount={hiddenMembersCount}
         onOpenAddTask={() => setIsAddTaskOpen(true)}
-        onOpenEvents={openProjectEventsModal}
+        eventsPath={`/dashboard/projects/${project.id}/events`}
         onOpenMembers={() => setIsMembersOpen(true)}
         onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}
       >
@@ -591,19 +503,6 @@ export function DashboardProjectDetailsPage() {
             setIsMembersOpen(false)
             setIsAddMemberOpen(true)
           }}
-        />
-      ) : null}
-
-      {isProjectEventsOpen ? (
-        <ProjectEventsModal
-          events={projectEvents}
-          isLoading={isLoadingProjectEvents}
-          hasError={projectEventsError}
-          canCreateEvents={canManageProjectEvents}
-          isCreatingEvent={isCreatingEvent}
-          createError={eventCreateError}
-          onClose={() => setIsProjectEventsOpen(false)}
-          onCreateEvent={handleCreateEventForProject}
         />
       ) : null}
     </section>
