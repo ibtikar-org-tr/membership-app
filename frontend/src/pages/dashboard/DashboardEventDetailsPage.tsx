@@ -2,7 +2,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
-  ArrowLeft,
+  ArrowRight,
   Calendar,
   Clock,
   ExternalLink,
@@ -315,6 +315,7 @@ export function DashboardEventDetailsPage() {
       return
     }
 
+    const applyForm = event.currentTarget
     setIsApplying(true)
 
     try {
@@ -327,7 +328,7 @@ export function DashboardEventDetailsPage() {
 
       setRegistrations((previous) => [payload.eventRegistration, ...previous])
       setApplySuccess('تم إرسال طلب التسجيل بنجاح.')
-      event.currentTarget.reset()
+      applyForm.reset()
     } catch (requestError) {
       if (requestError instanceof Error) {
         setApplyError(requestError.message)
@@ -364,6 +365,7 @@ export function DashboardEventDetailsPage() {
       return
     }
 
+    const ticketForm = event.currentTarget
     setIsCreatingTicket(true)
 
     try {
@@ -377,7 +379,7 @@ export function DashboardEventDetailsPage() {
       })
 
       setTickets((previous) => [payload.eventTicket, ...previous])
-      event.currentTarget.reset()
+      ticketForm.reset()
     } catch (requestError) {
       if (requestError instanceof Error) {
         setTicketError(requestError.message)
@@ -458,8 +460,8 @@ export function DashboardEventDetailsPage() {
               to="/dashboard/events"
               className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
-              <ArrowLeft className="h-4 w-4" />
               العودة للفعاليات
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
