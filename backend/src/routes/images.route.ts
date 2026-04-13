@@ -1,4 +1,5 @@
 import { Context } from 'hono'
+import { getEventById, updateEventById } from '../repositories/vms-events.repository'
 import type { AppBindings } from '../types/bindings'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB per file
@@ -108,6 +109,62 @@ export async function uploadImages(c: Context<{ Bindings: AppBindings }>) {
       { error: 'Failed to process upload request' },
       500,
     )
+  }
+}
+
+export async function uploadEventBanner(c: Context<{ Bindings: AppBindings }>) {
+  const bucket = c.env.MY_BUCKET
+  const eventId = c.req.param('id')?.trim()
+
+  if (!bucket) {
+    return c.json({ error: 'R2 bucket not configured' }, 500)
+  }
+
+  if (!eventId) {
+    return c.json({ error: 'Event ID is required.' }, 400)
+  }
+
+  const event = await getEventById(c.env.VMS_DB, eventId)
+  if (!event) {
+    return c.json({ error: 'Event not found.' }, 404)
+  }
+
+  try {
+    const formData = await c.req.formData()
+    const fileEntry = formData.get('image')
+
+    if (!fileEntry || !(fileEntry instanceof File)) {
+      return c.json({ error: 'No image file provided.' }, 400)
+    }
+
+    if (fileEntry.size > MAX_FILE_SIZE) {
+      return c.json({ error: 'Image exceeds maximum size of 5MB.' }, 400)
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(fileEntry.type)) {
+      return c.json({ error: 'Unsupported image type. Allowed: JPEG, PNG, WebP, GIF.' }, 400)
+    }
+
+    const key = `events/${eventId}/banner/image.jpg`
+    await bucket.delete(key)
+    await bucket.put(key, await fileEntry.arrayBuffer(), {
+      httpMetadata: {
+        contentType: fileEntry.type,
+      },
+    })
+
+    const requestUrl = new URL(c.req.url)
+    const apiPrefix = `/ms/membership-app/api/events/${eventId}/banner`
+    const basePath = requestUrl.pathname.endsWith(apiPrefix)
+      ? requestUrl.pathname.slice(0, -apiPrefix.length)
+      : '/ms/membership-app/api'
+    const imageUrl = `${requestUrl.origin}${basePath}/event-images/${key}`
+
+    const updatedEvent = await updateEventById(c.env.VMS_DB, eventId, { imageUrl })
+    return c.json({ event: updatedEvent })
+  } catch (error) {
+    console.error('Event banner upload error:', error)
+    return c.json({ error: 'Failed to upload event banner.' }, 500)
   }
 }
 

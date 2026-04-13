@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
-import { createEvent, fetchEvents, fetchProjectById, fetchProjectMembers } from '../../api/vms'
+import { createEvent, fetchEvents, fetchProjectById, fetchProjectMembers, uploadEventBanner } from '../../api/vms'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
@@ -22,7 +22,7 @@ export function DashboardProjectEventsPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false)
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -119,7 +119,6 @@ export function DashboardProjectEventsPage() {
       return
     }
 
-    let imageUrl: string | undefined
     let associatedUrls: Record<string, unknown> | undefined
 
     if (associatedUrlsRaw) {
@@ -135,10 +134,6 @@ export function DashboardProjectEventsPage() {
       }
     }
 
-    if (uploadedImageUrl) {
-      imageUrl = uploadedImageUrl
-    }
-
     setIsCreating(true)
 
     try {
@@ -148,15 +143,21 @@ export function DashboardProjectEventsPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         location: location || undefined,
-        ...(imageUrl ? { imageUrl } : {}),
         ...(associatedUrls ? { associatedUrls } : {}),
         createdBy: user.membershipNumber,
         projectId: projectID,
       })
 
-      setEvents((previous) => [payload.event, ...previous])
+      let createdEvent = payload.event
+
+      if (selectedBannerFile) {
+        const bannerPayload = await uploadEventBanner(createdEvent.id, selectedBannerFile)
+        createdEvent = bannerPayload.event
+      }
+
+      setEvents((previous) => [createdEvent, ...previous])
       form.reset()
-      setUploadedImageUrl(null)
+      setSelectedBannerFile(null)
       setUploadError(null)
       setIsCreateEventOpen(false)
     } catch (requestError) {
@@ -265,19 +266,17 @@ export function DashboardProjectEventsPage() {
           <div className="md:col-span-5">
             <h3 className="mb-2 text-sm font-medium text-slate-700">صور الفعالية</h3>
             <ImageUploader
-              maxFiles={1}
-              onUpload={async (images) => {
-                const firstImage = images[0]
-                setUploadedImageUrl(firstImage?.url ?? null)
+              onSelect={(file) => {
+                setSelectedBannerFile(file)
                 setUploadError(null)
               }}
               onError={(error) => {
                 setUploadError(error)
               }}
             />
-            {uploadedImageUrl && (
+            {selectedBannerFile && (
               <div className="mt-2 rounded-md bg-green-50 p-2">
-                <p className="text-xs font-medium text-green-800">تم رفع صورة البانر بنجاح</p>
+                <p className="text-xs font-medium text-green-800">تم اختيار صورة البانر. سيتم رفعها عند حفظ الفعالية.</p>
               </div>
             )}
           </div>

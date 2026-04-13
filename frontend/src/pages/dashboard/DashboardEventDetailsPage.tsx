@@ -9,6 +9,7 @@ import {
   fetchEventTickets,
   fetchProjectById,
   fetchProjectMembers,
+  uploadEventBanner,
   updateEvent,
 } from '../../api/vms'
 import type {
@@ -61,7 +62,7 @@ export function DashboardEventDetailsPage() {
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
   const [projectLoadError, setProjectLoadError] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -172,7 +173,7 @@ export function DashboardEventDetailsPage() {
 
   useEffect(() => {
     if (!isEditing) {
-      setUploadedImageUrl(null)
+      setSelectedBannerFile(null)
       setUploadError(null)
     }
   }, [isEditing])
@@ -225,7 +226,6 @@ export function DashboardEventDetailsPage() {
       return
     }
 
-    let imageUrl: string | undefined
     let associatedUrls: Record<string, unknown> | undefined
 
     if (associatedUrlsRaw) {
@@ -241,10 +241,6 @@ export function DashboardEventDetailsPage() {
       }
     }
 
-    if (uploadedImageUrl) {
-      imageUrl = uploadedImageUrl
-    }
-
     setIsSaving(true)
 
     try {
@@ -254,12 +250,18 @@ export function DashboardEventDetailsPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         ...(location ? { location } : {}),
-        ...(imageUrl ? { imageUrl } : {}),
         ...(associatedUrls ? { associatedUrls } : {}),
       })
 
-      setEventItem(payload.event)
-      setUploadedImageUrl(null)
+      let updatedEvent = payload.event
+
+      if (selectedBannerFile) {
+        const bannerPayload = await uploadEventBanner(eventID, selectedBannerFile)
+        updatedEvent = bannerPayload.event
+      }
+
+      setEventItem(updatedEvent)
+      setSelectedBannerFile(null)
       setUploadError(null)
       setIsEditing(false)
     } catch (requestError) {
@@ -486,19 +488,17 @@ export function DashboardEventDetailsPage() {
                 </div>
               ) : null}
               <ImageUploader
-                maxFiles={1}
-                onUpload={async (images) => {
-                  const firstImage = images[0]
-                  setUploadedImageUrl(firstImage?.url ?? null)
+                onSelect={(file) => {
+                  setSelectedBannerFile(file)
                   setUploadError(null)
                 }}
                 onError={(error) => {
                   setUploadError(error)
                 }}
               />
-              {uploadedImageUrl && (
+              {selectedBannerFile && (
                 <div className="mt-2 rounded-md bg-green-50 p-2">
-                  <p className="text-xs font-medium text-green-800">تم رفع صورة البانر بنجاح</p>
+                  <p className="text-xs font-medium text-green-800">تم اختيار صورة بانر جديدة. سيتم رفعها عند حفظ التعديلات.</p>
                 </div>
               )}
             </div>

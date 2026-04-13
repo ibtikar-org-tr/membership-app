@@ -326,3 +326,31 @@ export async function uploadImages(files: File[]): Promise<{ images: string[] }>
   const data = (await response.json()) as { success: boolean; imageUrls: Record<string, string> }
   return { images: Object.values(data.imageUrls) }
 }
+
+export async function uploadEventBanner(eventId: string, file: File) {
+  const formData = new FormData()
+  formData.append('image', file)
+
+  const response = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}/banner`, {
+    method: 'PUT',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const fallbackMessage = `Upload failed (${response.status})`
+    let message = fallbackMessage
+
+    try {
+      const body = (await response.json()) as { error?: unknown }
+      if (typeof body.error === 'string' && body.error.trim()) {
+        message = body.error
+      }
+    } catch {
+      // Ignore JSON parsing errors and keep fallback message.
+    }
+
+    throw new Error(message)
+  }
+
+  return (await response.json()) as { event: VmsEvent }
+}

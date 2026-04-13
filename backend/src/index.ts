@@ -12,7 +12,7 @@ import { vmsProjectMembersRoute } from './routes/vms-project-members.route'
 import { vmsProjectsRoute } from './routes/vms-projects.route'
 import { vmsSkillsRoute } from './routes/vms-skills.route'
 import { vmsTasksRoute } from './routes/vms-tasks.route'
-import { uploadImages, serveImage } from './routes/images.route'
+import { uploadEventBanner, uploadImages, serveImage } from './routes/images.route'
 import type { AppBindings } from './types/bindings'
 
 const app = new Hono<{ Bindings: AppBindings }>()
@@ -27,6 +27,7 @@ app.use(
 )
 
 app.post('/ms/membership-app/api/images/upload', uploadImages)
+app.put('/ms/membership-app/api/events/:id/banner', uploadEventBanner)
 app.get('/ms/membership-app/api/event-images/*', serveImage)
 
 app.get('/ms/membership-app', (c) => {
