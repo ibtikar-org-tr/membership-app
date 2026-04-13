@@ -32,12 +32,6 @@ export function DashboardPage() {
     <main className="min-h-screen w-full bg-[#f7f7f5] text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
       <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
         <aside className="w-full border-b border-slate-200/80 bg-[#fbfbfa] p-4 lg:fixed lg:inset-y-0 lg:right-0 lg:flex lg:w-80 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-l">
-          <div className="rounded-xl border border-slate-200/80 bg-white p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">لوحة التحكم</p>
-            <h1 className="mt-2 text-lg font-semibold text-slate-900">مرحباً أحمد</h1>
-            <p className="mt-1 text-sm text-slate-500">نظرة عامة على حسابك ومحتوى المجتمع</p>
-          </div>
-
           <nav className="mt-5 space-y-2">
             {SIDEBAR_ITEMS.map((item) => {
               return (
