@@ -1,0 +1,85 @@
+import { zValidator } from '@hono/zod-validator'
+import { Hono } from 'hono'
+import { createTask, deleteTaskById, getTaskById, listTasks, updateTaskById } from '../repositories/vms-tasks.repository'
+import { createTaskSchema, taskParamsSchema, updateTaskSchema } from '../schemas/vms-task.schema'
+import type { AppBindings } from '../types/bindings'
+
+export const vmsTasksRoute = new Hono<{ Bindings: AppBindings }>()
+
+vmsTasksRoute.get('/tasks', async (c) => {
+  try {
+    const tasks = await listTasks(c.env.VMS_DB)
+    return c.json({ tasks })
+  } catch (error) {
+    console.error('Failed to list tasks', error)
+    return c.json({ error: 'Could not fetch tasks.' }, 500)
+  }
+})
+
+vmsTasksRoute.get('/tasks/:id', zValidator('param', taskParamsSchema), async (c) => {
+  try {
+    const { id } = c.req.valid('param')
+    const task = await getTaskById(c.env.VMS_DB, id)
+
+    if (!task) {
+      return c.json({ error: 'Task not found.' }, 404)
+    }
+
+    return c.json({ task })
+  } catch (error) {
+    console.error('Failed to fetch task', error)
+    return c.json({ error: 'Could not fetch task.' }, 500)
+  }
+})
+
+vmsTasksRoute.post('/tasks', zValidator('json', createTaskSchema), async (c) => {
+  try {
+    const payload = c.req.valid('json')
+    const taskId = crypto.randomUUID()
+    const task = await createTask(c.env.VMS_DB, taskId, payload)
+
+    return c.json({ task }, 201)
+  } catch (error) {
+    console.error('Failed to create task', error)
+    return c.json({ error: 'Could not create task.' }, 500)
+  }
+})
+
+vmsTasksRoute.put(
+  '/tasks/:id',
+  zValidator('param', taskParamsSchema),
+  zValidator('json', updateTaskSchema),
+  async (c) => {
+    try {
+      const { id } = c.req.valid('param')
+      const payload = c.req.valid('json')
+
+      const existing = await getTaskById(c.env.VMS_DB, id)
+      if (!existing) {
+        return c.json({ error: 'Task not found.' }, 404)
+      }
+
+      const task = await updateTaskById(c.env.VMS_DB, id, payload)
+      return c.json({ task })
+    } catch (error) {
+      console.error('Failed to update task', error)
+      return c.json({ error: 'Could not update task.' }, 500)
+    }
+  },
+)
+
+vmsTasksRoute.delete('/tasks/:id', zValidator('param', taskParamsSchema), async (c) => {
+  try {
+    const { id } = c.req.valid('param')
+    const deleted = await deleteTaskById(c.env.VMS_DB, id)
+
+    if (!deleted) {
+      return c.json({ error: 'Task not found.' }, 404)
+    }
+
+    return c.json({ message: 'Task deleted successfully.' })
+  } catch (error) {
+    console.error('Failed to delete task', error)
+    return c.json({ error: 'Could not delete task.' }, 500)
+  }
+})
