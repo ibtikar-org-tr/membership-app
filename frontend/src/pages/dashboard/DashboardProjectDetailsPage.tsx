@@ -144,6 +144,10 @@ export function DashboardProjectDetailsPage() {
     [projectTasks],
   )
   const memberOptions = useMemo(() => projectMembers, [projectMembers])
+  const memberNameByMembership = useMemo(
+    () => new Map(projectMembers.map((member) => [member.membershipNumber, member.displayName])),
+    [projectMembers],
+  )
   const memberCount = projectMembers.length
   const openTasksCount = useMemo(() => projectTasks.filter((task) => task.status === 'open').length, [projectTasks])
   const inProgressTasksCount = useMemo(
@@ -159,6 +163,14 @@ export function DashboardProjectDetailsPage() {
     ],
     [projectTasks],
   )
+
+  const formatAssignee = (membershipNumber: string | null) => {
+    if (!membershipNumber) {
+      return 'غير مسند'
+    }
+
+    return memberNameByMembership.get(membershipNumber) ?? membershipNumber
+  }
 
   const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -389,47 +401,91 @@ export function DashboardProjectDetailsPage() {
           <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-slate-950">مسار المشروع</p>
-                <p className="mt-1 text-sm text-slate-500">عرض سريع لتوقيت الإنشاء والتحديث ونسبة الإنجاز.</p>
+                <p className="text-sm font-semibold text-slate-950">سير عمل المهام</p>
+                <p className="mt-1 text-sm text-slate-500">اللوحة الأساسية للمشروع. أنشئ المهام هنا وتابعها عبر الأعمدة.</p>
               </div>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                آخر تحديث: {formatDateEnCA(project.updatedAt)}
-              </span>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">{openTasksCount} مفتوحة</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">{inProgressTasksCount} قيد التنفيذ</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">{completedTasksCount} مكتملة</span>
+              </div>
             </div>
 
-            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-              <div className="h-2.5 bg-slate-200">
-                <div className="h-full rounded-r-full bg-gradient-to-l from-cyan-500 via-sky-500 to-emerald-500" style={{ width: `${completedRatio}%` }} />
+            <form onSubmit={handleCreateTask} className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                <input
+                  name="name"
+                  placeholder="عنوان المهمة"
+                  className="xl:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                  required
+                />
+                <select
+                  name="assignedTo"
+                  defaultValue=""
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                >
+                  <option value="">غير مسند</option>
+                  {memberOptions.map((member) => (
+                    <option key={member.membershipNumber} value={member.membershipNumber}>
+                      {member.displayName}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="status"
+                  defaultValue="open"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                >
+                  <option value="open">مفتوحة</option>
+                  <option value="in_progress">قيد التنفيذ</option>
+                  <option value="completed">مكتملة</option>
+                  <option value="archived">مؤرشفة</option>
+                </select>
+                <input
+                  name="dueDate"
+                  type="date"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                />
+                <input
+                  name="points"
+                  type="number"
+                  min={0}
+                  defaultValue={0}
+                  placeholder="نقاط"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                />
               </div>
-              <div className="grid gap-3 p-4 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs text-slate-500">تاريخ الإنشاء</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-950">{formatDateEnCA(project.createdAt)}</p>
-                </div>
-                <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs text-slate-500">آخر تعديل</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-950">{formatDateEnCA(project.updatedAt)}</p>
-                </div>
-                <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs text-slate-500">التقدم</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-950">{completedRatio}%</p>
-                </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <textarea
+                  name="description"
+                  placeholder="تفاصيل المهمة (اختياري)"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                  rows={2}
+                />
+                <button
+                  type="submit"
+                  disabled={isCreatingTask}
+                  className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
+                </button>
               </div>
-            </div>
+              {taskError ? <p className="mt-3 text-sm text-red-600">{taskError}</p> : null}
+            </form>
           </article>
 
           <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-950">لوحة المهام</p>
-                <p className="mt-1 text-sm text-slate-500">المهام منظّمة حسب الحالة مثل أنظمة إدارة العمل الحقيقية.</p>
+                <p className="text-sm font-semibold text-slate-950">Task Board</p>
+                <p className="mt-1 text-sm text-slate-500">اسحب ذهنياً البطاقات بين الأعمدة حسب الحالة: To Do / In Progress / Done.</p>
               </div>
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
                 {projectTasks.length} بطاقة
               </span>
             </div>
 
-            <div className="mt-5 grid gap-4 xl:grid-cols-3">
+            <div className="mt-5 grid auto-cols-[minmax(19rem,1fr)] grid-flow-col gap-4 overflow-x-auto pb-2">
               {boardColumns.map((column) => (
                 <div key={column.key} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between gap-2">
@@ -464,39 +520,11 @@ export function DashboardProjectDetailsPage() {
                         <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
                           <p className="rounded-xl bg-slate-50 px-3 py-2">النقاط: {task.points}</p>
                           <p className="rounded-xl bg-slate-50 px-3 py-2">الموعد: {formatDueDate(task.dueDate)}</p>
-                          <p className="rounded-xl bg-slate-50 px-3 py-2 sm:col-span-2">التكليف: {task.assignedTo ?? 'غير مسند'}</p>
+                          <p className="rounded-xl bg-slate-50 px-3 py-2 sm:col-span-2">التكليف: {formatAssignee(task.assignedTo)}</p>
                         </div>
                       </article>
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-950">المهام المرتبطة</p>
-                <p className="mt-1 text-sm text-slate-500">قائمة مختصرة للبحث السريع.</p>
-              </div>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                {projectTasks.length} سجل
-              </span>
-            </div>
-            <div className="mt-4 space-y-2">
-              {projectTasks.length === 0 ? <p className="text-sm text-slate-500">لا توجد مهام مرتبطة بهذا المشروع.</p> : null}
-              {projectTasks.map((task) => (
-                <div key={task.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-950">{task.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {task.assignedTo ?? 'غير مسند'} • {formatDueDate(task.dueDate)} • {task.points} نقطة
-                    </p>
-                  </div>
-                  <span className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(task.status)}`}>
-                    {taskStatusLabel(task.status)}
-                  </span>
                 </div>
               ))}
             </div>
@@ -589,72 +617,6 @@ export function DashboardProjectDetailsPage() {
                 </span>
               ))}
             </div>
-          </article>
-
-          <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-sm font-semibold text-slate-950">إضافة مهمة جديدة</p>
-            <p className="mt-1 text-sm text-slate-500">أنشئ بطاقة عمل جديدة داخل هذا المشروع.</p>
-            <form onSubmit={handleCreateTask} className="mt-4 space-y-3">
-              <input
-                name="name"
-                placeholder="اسم المهمة"
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                required
-              />
-              <textarea
-                name="description"
-                placeholder="وصف المهمة (اختياري)"
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                rows={3}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <select
-                  name="status"
-                  defaultValue="open"
-                  className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                >
-                  <option value="open">مفتوحة</option>
-                  <option value="in_progress">قيد التنفيذ</option>
-                  <option value="completed">مكتملة</option>
-                  <option value="archived">مؤرشفة</option>
-                </select>
-                <input
-                  name="dueDate"
-                  type="date"
-                  className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  name="points"
-                  type="number"
-                  min={0}
-                  defaultValue={0}
-                  placeholder="النقاط"
-                  className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                />
-                <select
-                  name="assignedTo"
-                  defaultValue=""
-                  className="rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                >
-                  <option value="">غير مسند</option>
-                  {memberOptions.map((member) => (
-                    <option key={member.membershipNumber} value={member.membershipNumber}>
-                      {member.displayName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="submit"
-                disabled={isCreatingTask}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-l from-cyan-600 to-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
-              </button>
-            </form>
-            {taskError ? <p className="mt-3 text-sm text-red-600">{taskError}</p> : null}
           </article>
 
           <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
