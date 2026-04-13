@@ -51,6 +51,34 @@ async function postJson<TResponse, TPayload>(path: string, payload: TPayload): P
   return (await response.json()) as TResponse
 }
 
+async function putJson<TResponse, TPayload>(path: string, payload: TPayload): Promise<TResponse> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const fallbackMessage = `Request failed (${response.status})`
+    let message = fallbackMessage
+
+    try {
+      const body = (await response.json()) as { error?: unknown }
+      if (typeof body.error === 'string' && body.error.trim()) {
+        message = body.error
+      }
+    } catch {
+      // Ignore JSON parsing errors and keep fallback message.
+    }
+
+    throw new Error(message)
+  }
+
+  return (await response.json()) as TResponse
+}
+
 export function login(payload: { email: string; password: string }) {
   return postJson<LoginResponse, { email: string; password: string }>('/login', payload)
 }
@@ -72,6 +100,20 @@ export function createProject(payload: {
 
 export function fetchProjectById(projectId: string) {
   return fetchJson<{ project: VmsProject }>(`/projects/${encodeURIComponent(projectId)}`)
+}
+
+export function updateProject(
+  projectId: string,
+  payload: Partial<{
+    name: string
+    description: string
+    parentProjectId: string
+    owner: string
+    telegramGroupId: string
+    status: 'active' | 'completed' | 'archived'
+  }>,
+) {
+  return putJson<{ project: VmsProject }, typeof payload>(`/projects/${encodeURIComponent(projectId)}`, payload)
 }
 
 export function fetchTasks() {
@@ -98,6 +140,23 @@ export function createEvent(payload: {
 
 export function fetchEventById(eventId: string) {
   return fetchJson<{ event: VmsEvent }>(`/events/${encodeURIComponent(eventId)}`)
+}
+
+export function updateEvent(
+  eventId: string,
+  payload: Partial<{
+    name: string
+    description: string
+    startTime: string
+    endTime: string
+    location: string
+    createdBy: string
+    projectId: string
+    skills: Record<string, string>
+    telegramGroupId: string
+  }>,
+) {
+  return putJson<{ event: VmsEvent }, typeof payload>(`/events/${encodeURIComponent(eventId)}`, payload)
 }
 
 export function fetchEventTickets(eventId?: string) {

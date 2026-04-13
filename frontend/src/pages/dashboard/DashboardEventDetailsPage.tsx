@@ -1,6 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchEventById, fetchEventRegistrations, fetchEventTickets } from '../../api/vms'
+import type { FormEvent } from 'react'
+import { fetchEventById, fetchEventRegistrations, fetchEventTickets, updateEvent } from '../../api/vms'
 import type { VmsEvent, VmsEventRegistration, VmsEventTicket } from '../../types/vms'
 
 function registrationStatusLabel(status: string) {
@@ -30,6 +31,8 @@ export function DashboardEventDetailsPage() {
   const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventID) {
@@ -75,6 +78,63 @@ export function DashboardEventDetailsPage() {
 
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
 
+  const toDateTimeLocal = (value: string) => {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) {
+      return ''
+    }
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+
+  const handleUpdateEvent = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSaveError(null)
+
+    if (!eventID || !eventItem) {
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const startTime = String(formData.get('startTime') ?? '').trim()
+    const endTime = String(formData.get('endTime') ?? '').trim()
+    const location = String(formData.get('location') ?? '').trim()
+
+    if (!name || !startTime || !endTime) {
+      setSaveError('يرجى إدخال الاسم ووقت البداية ووقت النهاية.')
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const payload = await updateEvent(eventID, {
+        name,
+        description,
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
+        location,
+      })
+
+      setEventItem(payload.event)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setSaveError(requestError.message)
+      } else {
+        setSaveError('تعذر تحديث الفعالية.')
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   if (!eventID || notFound) {
     return <Navigate to="/dashboard/events" replace />
   }
@@ -104,6 +164,54 @@ export function DashboardEventDetailsPage() {
           </Link>
         </div>
       </header>
+
+      <article className="rounded-xl border border-slate-200 bg-white p-5">
+        <p className="text-sm font-semibold text-slate-900">تعديل الفعالية</p>
+        <form onSubmit={handleUpdateEvent} className="mt-4 grid gap-3 md:grid-cols-4">
+          <input
+            name="name"
+            defaultValue={eventItem.name}
+            placeholder="اسم الفعالية"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <input
+            name="startTime"
+            type="datetime-local"
+            defaultValue={toDateTimeLocal(eventItem.startTime)}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <input
+            name="endTime"
+            type="datetime-local"
+            defaultValue={toDateTimeLocal(eventItem.endTime)}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+          >
+            {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
+          </button>
+          <input
+            name="location"
+            defaultValue={eventItem.location ?? ''}
+            placeholder="الموقع"
+            className="md:col-span-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          />
+          <textarea
+            name="description"
+            defaultValue={eventItem.description ?? ''}
+            placeholder="وصف الفعالية"
+            className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            rows={2}
+          />
+        </form>
+        {saveError ? <p className="mt-2 text-sm text-red-600">{saveError}</p> : null}
+      </article>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <article className="rounded-xl border border-slate-200 bg-white p-4">

@@ -1,6 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchProjectById, fetchTasks } from '../../api/vms'
+import type { FormEvent } from 'react'
+import { fetchProjectById, fetchTasks, updateProject } from '../../api/vms'
 import type { VmsProject, VmsTask } from '../../types/vms'
 
 function statusLabel(status: string) {
@@ -45,6 +46,8 @@ export function DashboardProjectDetailsPage() {
   const [projectTasks, setProjectTasks] = useState<VmsTask[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!projectID) {
@@ -88,6 +91,45 @@ export function DashboardProjectDetailsPage() {
     [projectTasks],
   )
 
+  const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSaveError(null)
+
+    if (!projectID || !project) {
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const statusRaw = String(formData.get('status') ?? project.status).trim()
+    const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
+
+    if (!name) {
+      setSaveError('يرجى إدخال اسم المشروع.')
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const payload = await updateProject(projectID, {
+        name,
+        description,
+        status,
+      })
+      setProject(payload.project)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setSaveError(requestError.message)
+      } else {
+        setSaveError('تعذر تحديث المشروع.')
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   if (!projectID || notFound) {
     return <Navigate to="/dashboard/projects" replace />
   }
@@ -117,6 +159,43 @@ export function DashboardProjectDetailsPage() {
           </Link>
         </div>
       </header>
+
+      <article className="rounded-xl border border-slate-200 bg-white p-5">
+        <p className="text-sm font-semibold text-slate-900">تعديل المشروع</p>
+        <form onSubmit={handleUpdateProject} className="mt-4 grid gap-3 md:grid-cols-3">
+          <input
+            name="name"
+            defaultValue={project.name}
+            placeholder="اسم المشروع"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <select
+            name="status"
+            defaultValue={project.status}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          >
+            <option value="active">نشط</option>
+            <option value="completed">مكتمل</option>
+            <option value="archived">مؤرشف</option>
+          </select>
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+          >
+            {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
+          </button>
+          <textarea
+            name="description"
+            defaultValue={project.description ?? ''}
+            placeholder="وصف المشروع"
+            className="md:col-span-3 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            rows={2}
+          />
+        </form>
+        {saveError ? <p className="mt-2 text-sm text-red-600">{saveError}</p> : null}
+      </article>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <article className="rounded-xl border border-slate-200 bg-white p-4">
