@@ -1118,116 +1118,368 @@ export function DashboardEventDetailsPage() {
             </div>
             <div>
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">المسجّلون</h3>
-              <ul className="space-y-2">
-                {registrations.map((registration) => (
-                  <li
-                    key={registration.id}
-                    className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
-                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
-                          registration.status === 'attended'
-                            ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
-                            : registration.status === 'cancelled'
-                            ? 'bg-red-100 text-red-800 ring-red-200'
-                            : registration.status === 'no_show'
-                            ? 'bg-amber-100 text-amber-800 ring-amber-200'
-                            : 'bg-white text-slate-700 ring-slate-200'
-                        }`}>
-                          {registrationStatusLabel(registration.status)}
+              {tickets.length > 0 && registrations.length > 0 ? (
+                <div className="space-y-6">
+                  {tickets.map((ticket) => {
+                    const ticketRegistrations = registrations.filter((reg) => reg.ticketId === ticket.id)
+                    if (ticketRegistrations.length === 0) return null
+
+                    return (
+                      <div key={ticket.id}>
+                        <h4 className="mb-2 text-sm font-semibold text-slate-700">
+                          {ticket.name}
+                          <span className="ml-2 rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-medium text-cyan-800">
+                            {ticketRegistrations.length} {ticketRegistrations.length === 1 ? 'مسجّل' : 'مسجّلين'}
+                          </span>
+                        </h4>
+                        <ul className="space-y-2">
+                          {ticketRegistrations.map((registration) => (
+                            <li
+                              key={registration.id}
+                              className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                              <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
+                                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
+                                    registration.status === 'attended'
+                                      ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                                      : registration.status === 'cancelled'
+                                      ? 'bg-red-100 text-red-800 ring-red-200'
+                                      : registration.status === 'no_show'
+                                      ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                                      : 'bg-white text-slate-700 ring-slate-200'
+                                  }`}>
+                                    {registrationStatusLabel(registration.status)}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
+                                  {registration.paymentApprovedBy && (
+                                    <span>الدفع: {registration.paymentApprovedBy}</span>
+                                  )}
+                                  {registration.attendanceApprovedBy && (
+                                    <span>الحضور: {registration.attendanceApprovedBy}</span>
+                                  )}
+                                </div>
+                              </div>
+                              {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
+                                <div className="flex flex-wrap gap-1.5 sm:shrink-0">
+                                  {registration.status === 'registered' ? (
+                                    <>
+                                      {!registration.paymentApprovedBy ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleApproveRegistration(registration.id, 'payment')}
+                                          disabled={approvingRegistrationId === registration.id}
+                                          className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                          <CheckCircle className="h-3 w-3" />
+                                          {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الدفع'}
+                                        </button>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800">
+                                          <CheckCircle className="h-3 w-3" />
+                                          تم الدفع
+                                        </span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
+                                        disabled={updatingRegistrationId === registration.id}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        <CheckCircle className="h-3 w-3" />
+                                        {updatingRegistrationId === registration.id ? 'جار...' : 'حضر'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleUpdateRegistrationStatus(registration.id, 'no_show')}
+                                        disabled={updatingRegistrationId === registration.id}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        <Clock className="h-3 w-3" />
+                                        {updatingRegistrationId === registration.id ? 'جار...' : 'لم يحضر'}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
+                                        disabled={updatingRegistrationId === registration.id}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        إلغاء
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {!registration.attendanceApprovedBy ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleApproveRegistration(registration.id, 'attendance')}
+                                          disabled={approvingRegistrationId === registration.id}
+                                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                          <CheckCircle className="h-3 w-3" />
+                                          {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الحضور'}
+                                        </button>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
+                                          <CheckCircle className="h-3 w-3" />
+                                          تمت الموافقة
+                                        </span>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
+                                        disabled={updatingRegistrationId === registration.id}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        إلغاء
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
+                  {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).length > 0 && (
+                    <div>
+                      <h4 className="mb-2 text-sm font-semibold text-slate-700">
+                        تذاكر أخرى
+                        <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                          {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).length} {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).length === 1 ? 'مسجّل' : 'مسجّلين'}
                         </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
-                        {registration.paymentApprovedBy && (
-                          <span>الدفع: {registration.paymentApprovedBy}</span>
-                        )}
-                        {registration.attendanceApprovedBy && (
-                          <span>الحضور: {registration.attendanceApprovedBy}</span>
-                        )}
-                      </div>
+                      </h4>
+                      <ul className="space-y-2">
+                        {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).map((registration) => (
+                          <li
+                            key={registration.id}
+                            className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
+                                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
+                                  registration.status === 'attended'
+                                    ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                                    : registration.status === 'cancelled'
+                                    ? 'bg-red-100 text-red-800 ring-red-200'
+                                    : registration.status === 'no_show'
+                                    ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                                    : 'bg-white text-slate-700 ring-slate-200'
+                                }`}>
+                                  {registrationStatusLabel(registration.status)}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
+                                {registration.paymentApprovedBy && (
+                                  <span>الدفع: {registration.paymentApprovedBy}</span>
+                                )}
+                                {registration.attendanceApprovedBy && (
+                                  <span>الحضور: {registration.attendanceApprovedBy}</span>
+                                )}
+                              </div>
+                            </div>
+                            {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
+                              <div className="flex flex-wrap gap-1.5 sm:shrink-0">
+                                {registration.status === 'registered' ? (
+                                  <>
+                                    {!registration.paymentApprovedBy ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleApproveRegistration(registration.id, 'payment')}
+                                        disabled={approvingRegistrationId === registration.id}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        <CheckCircle className="h-3 w-3" />
+                                        {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الدفع'}
+                                      </button>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800">
+                                        <CheckCircle className="h-3 w-3" />
+                                        تم الدفع
+                                      </span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
+                                      disabled={updatingRegistrationId === registration.id}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      <CheckCircle className="h-3 w-3" />
+                                      {updatingRegistrationId === registration.id ? 'جار...' : 'حضر'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUpdateRegistrationStatus(registration.id, 'no_show')}
+                                      disabled={updatingRegistrationId === registration.id}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      <Clock className="h-3 w-3" />
+                                      {updatingRegistrationId === registration.id ? 'جار...' : 'لم يحضر'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
+                                      disabled={updatingRegistrationId === registration.id}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      إلغاء
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    {!registration.attendanceApprovedBy ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleApproveRegistration(registration.id, 'attendance')}
+                                        disabled={approvingRegistrationId === registration.id}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        <CheckCircle className="h-3 w-3" />
+                                        {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الحضور'}
+                                      </button>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
+                                        <CheckCircle className="h-3 w-3" />
+                                        تمت الموافقة
+                                      </span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
+                                      disabled={updatingRegistrationId === registration.id}
+                                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                      إلغاء
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
-                      <div className="flex flex-wrap gap-1.5 sm:shrink-0">
-                        {registration.status === 'registered' ? (
-                          <>
-                            {!registration.paymentApprovedBy ? (
+                  )}
+                </div>
+              ) : registrations.length > 0 ? (
+                <ul className="space-y-2">
+                  {registrations.map((registration) => (
+                    <li
+                      key={registration.id}
+                      className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
+                          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
+                            registration.status === 'attended'
+                              ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                              : registration.status === 'cancelled'
+                              ? 'bg-red-100 text-red-800 ring-red-200'
+                              : registration.status === 'no_show'
+                              ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                              : 'bg-white text-slate-700 ring-slate-200'
+                          }`}>
+                            {registrationStatusLabel(registration.status)}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
+                          {registration.paymentApprovedBy && (
+                            <span>الدفع: {registration.paymentApprovedBy}</span>
+                          )}
+                          {registration.attendanceApprovedBy && (
+                            <span>الحضور: {registration.attendanceApprovedBy}</span>
+                          )}
+                        </div>
+                      </div>
+                      {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
+                        <div className="flex flex-wrap gap-1.5 sm:shrink-0">
+                          {registration.status === 'registered' ? (
+                            <>
+                              {!registration.paymentApprovedBy ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleApproveRegistration(registration.id, 'payment')}
+                                  disabled={approvingRegistrationId === registration.id}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <CheckCircle className="h-3 w-3" />
+                                  {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الدفع'}
+                                </button>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800">
+                                  <CheckCircle className="h-3 w-3" />
+                                  تم الدفع
+                                </span>
+                              )}
                               <button
                                 type="button"
-                                onClick={() => void handleApproveRegistration(registration.id, 'payment')}
-                                disabled={approvingRegistrationId === registration.id}
-                                className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                <CheckCircle className="h-3 w-3" />
-                                {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الدفع'}
-                              </button>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800">
-                                <CheckCircle className="h-3 w-3" />
-                                تم الدفع
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
-                              disabled={updatingRegistrationId === registration.id}
-                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                              {updatingRegistrationId === registration.id ? 'جار...' : 'حضر'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleUpdateRegistrationStatus(registration.id, 'no_show')}
-                              disabled={updatingRegistrationId === registration.id}
-                              className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <Clock className="h-3 w-3" />
-                              {updatingRegistrationId === registration.id ? 'جار...' : 'لم يحضر'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
-                              disabled={updatingRegistrationId === registration.id}
-                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              إلغاء
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {!registration.attendanceApprovedBy ? (
-                              <button
-                                type="button"
-                                onClick={() => void handleApproveRegistration(registration.id, 'attendance')}
-                                disabled={approvingRegistrationId === registration.id}
+                                onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
+                                disabled={updatingRegistrationId === registration.id}
                                 className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 <CheckCircle className="h-3 w-3" />
-                                {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الحضور'}
+                                {updatingRegistrationId === registration.id ? 'جار...' : 'حضر'}
                               </button>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
-                                <CheckCircle className="h-3 w-3" />
-                                تمت الموافقة
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
-                              disabled={updatingRegistrationId === registration.id}
-                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              إلغاء
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+                              <button
+                                type="button"
+                                onClick={() => void handleUpdateRegistrationStatus(registration.id, 'no_show')}
+                                disabled={updatingRegistrationId === registration.id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Clock className="h-3 w-3" />
+                                {updatingRegistrationId === registration.id ? 'جار...' : 'لم يحضر'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
+                                disabled={updatingRegistrationId === registration.id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                إلغاء
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {!registration.attendanceApprovedBy ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleApproveRegistration(registration.id, 'attendance')}
+                                  disabled={approvingRegistrationId === registration.id}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <CheckCircle className="h-3 w-3" />
+                                  {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الحضور'}
+                                </button>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
+                                  <CheckCircle className="h-3 w-3" />
+                                  تمت الموافقة
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
+                                disabled={updatingRegistrationId === registration.id}
+                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                إلغاء
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-center text-sm text-slate-500">لا توجد تسجيلات لهذه الفعالية بعد.</p>
+              )}
               {registrationUpdateError ? <p className="mt-3 text-sm text-red-600">{registrationUpdateError}</p> : null}
               {registrationApprovalError ? <p className="mt-3 text-sm text-red-600">{registrationApprovalError}</p> : null}
               {registrationApprovalSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{registrationApprovalSuccess}</p> : null}
