@@ -95,7 +95,8 @@ CREATE TABLE IF NOT EXISTS event_tickets ( -- the available tickets for the even
     name TEXT NOT NULL,
     description TEXT,
     point_price INTEGER NOT NULL, -- price in points (can be 0 for free tickets, negative for rewarding points to participants, and positive for charging points from participants)
-    currency_price TEXT NOT NULL, -- price in currency (e.g., 10 $USD, 250 TRY, 10000 SYP, etc.)
+    currency_price TEXT, -- price in currency (e.g., 10 $USD, 250 TRY, 10000 SYP, etc.)
+    payment_approved_by TEXT, -- membership_number of the user who approved the payment (e.g., "1234567890")
     quantity INTEGER NOT NULL -- total quantity of this ticket type available for the event
 );
 
