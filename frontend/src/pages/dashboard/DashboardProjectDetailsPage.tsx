@@ -102,6 +102,36 @@ function laneStyle(status: string) {
   }
 }
 
+function memberInitials(displayName: string, membershipNumber: string) {
+  const value = displayName.trim()
+  if (!value) {
+    return membershipNumber.slice(-2).toUpperCase()
+  }
+
+  const segments = value.split(/\s+/).filter(Boolean)
+  if (segments.length === 1) {
+    return segments[0].slice(0, 2).toUpperCase()
+  }
+
+  return `${segments[0][0] ?? ''}${segments[1][0] ?? ''}`.toUpperCase()
+}
+
+function memberAvatarTone(membershipNumber: string) {
+  const tones = [
+    'bg-cyan-100 text-cyan-800 border-cyan-200',
+    'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'bg-amber-100 text-amber-800 border-amber-200',
+    'bg-rose-100 text-rose-800 border-rose-200',
+    'bg-indigo-100 text-indigo-800 border-indigo-200',
+  ]
+
+  const code = membershipNumber
+    .split('')
+    .reduce((sum, char) => sum + char.charCodeAt(0), 0)
+
+  return tones[code % tones.length]
+}
+
 function formatDueDate(value: string | null) {
   if (!value) {
     return 'بدون موعد'
@@ -191,6 +221,8 @@ export function DashboardProjectDetailsPage() {
     () => (selectedTaskId ? projectTasks.find((task) => task.id === selectedTaskId) ?? null : null),
     [projectTasks, selectedTaskId],
   )
+  const previewMembers = useMemo(() => projectMembers.slice(0, 4), [projectMembers])
+  const hiddenMembersCount = Math.max(0, projectMembers.length - previewMembers.length)
 
   const formatAssignee = (membershipNumber: string | null) => {
     if (!membershipNumber) {
@@ -423,17 +455,31 @@ export function DashboardProjectDetailsPage() {
             </button>
             <button
               type="button"
-              onClick={() => setIsAddMemberOpen(true)}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              إضافة عضو
-            </button>
-            <button
-              type="button"
               onClick={() => setIsMembersOpen(true)}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              title="عرض أعضاء المشروع"
             >
-              أعضاء المشروع
+              <div className="flex -space-x-2">
+                {previewMembers.map((member) => (
+                  <span
+                    key={`member-preview-${member.projectId}-${member.membershipNumber}`}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-semibold shadow-sm ${memberAvatarTone(member.membershipNumber)}`}
+                  >
+                    {memberInitials(member.displayName, member.membershipNumber)}
+                  </span>
+                ))}
+                {hiddenMembersCount > 0 ? (
+                  <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-700 shadow-sm">
+                    (+{hiddenMembersCount})
+                  </span>
+                ) : null}
+                {projectMembers.length === 0 ? (
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[11px] font-semibold text-slate-600 shadow-sm">
+                    0
+                  </span>
+                ) : null}
+              </div>
+              <span className="hidden sm:inline">الأعضاء</span>
             </button>
           </div>
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
@@ -703,6 +749,18 @@ export function DashboardProjectDetailsPage() {
             <div className="flex items-center justify-between">
               <p className="text-base font-semibold text-slate-950">أعضاء المشروع</p>
               <button type="button" onClick={() => setIsMembersOpen(false)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
+            </div>
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMembersOpen(false)
+                  setIsAddMemberOpen(true)
+                }}
+                className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+              >
+                + إضافة عضو
+              </button>
             </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {projectMembers.length === 0 ? <p className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</p> : null}
