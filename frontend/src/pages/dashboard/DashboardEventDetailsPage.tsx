@@ -777,11 +777,6 @@ export function DashboardEventDetailsPage() {
           يمكنك تعديل تفاصيل الفعالية من زر <span className="font-medium text-slate-800">تعديل الفعالية</span> أعلاه.
         </div>
       ) : null}
-      {!canEditEvent ? (
-        <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-center text-sm text-slate-600">
-          عرض للأعضاء. يمكن لمالك المشروع ومديريه تعديل الفعالية.
-        </div>
-      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="group flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-cyan-200/80 hover:shadow-md">
@@ -820,16 +815,12 @@ export function DashboardEventDetailsPage() {
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm">
-            <span className="text-slate-500">المنشئ</span>
-            <p className="mt-1 font-mono text-sm font-medium text-slate-900">{eventItem.createdBy}</p>
+            <span className="text-slate-500">المشروع</span>
+            <p className="mt-1 font-mono text-sm font-medium text-slate-900">{project?.name ?? (eventItem.projectId ? 'جار التحميل...' : 'غير مرتبط بمشروع')}</p>
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm">
             <span className="text-slate-500">سعة التذاكر</span>
             <p className="mt-1 font-semibold text-slate-900">{totalTicketCapacity} مقعد</p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm sm:col-span-2">
-            <span className="text-slate-500">المشروع</span>
-            <p className="mt-1 font-medium text-slate-900">{project?.name ?? (eventItem.projectId ? 'جار التحميل...' : 'غير مرتبط بمشروع')}</p>
           </div>
         </div>
         {projectLoadError ? <p className="mt-3 text-sm text-red-600">تعذر تحميل معلومات المشروع المرتبط بهذه الفعالية.</p> : null}
