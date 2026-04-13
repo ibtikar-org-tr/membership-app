@@ -9,6 +9,7 @@ import type {
   VmsTask,
 } from '../types/vms'
 import type { LoginResponse } from '../types/auth'
+import type { MemberProfile } from '../types/profile'
 
 const MEMBER_MS_BASE_URL = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
 const API_BASE = MEMBER_MS_BASE_URL ? `${MEMBER_MS_BASE_URL.replace(/\/+$/, '')}/api` : '/ms/membership-app/api'
@@ -81,6 +82,10 @@ async function putJson<TResponse, TPayload>(path: string, payload: TPayload): Pr
 
 export function login(payload: { email: string; password: string }) {
   return postJson<LoginResponse, { email: string; password: string }>('/login', payload)
+}
+
+export function fetchProfile(membershipNumber: string) {
+  return fetchJson<{ profile: MemberProfile }>(`/profile/${encodeURIComponent(membershipNumber)}`)
 }
 
 export function fetchProjects() {
