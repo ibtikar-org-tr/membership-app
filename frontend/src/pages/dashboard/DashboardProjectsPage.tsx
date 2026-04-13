@@ -157,7 +157,7 @@ export function DashboardProjectsPage() {
         </div>
       </header>
 
-      {isPlatformAdmin(user) ? (
+      {isPlatformAdmin(user) && 
         <section className="rounded-3xl border border-slate-200/70 bg-[radial-gradient(circle_at_top,#f8fafc,#eef2ff_55%,#e2e8f0)] p-4 shadow-sm sm:p-6">
           <div className="rounded-2xl border border-white/70 bg-white/90 p-4 backdrop-blur-sm sm:p-5">
             <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
@@ -228,14 +228,7 @@ export function DashboardProjectsPage() {
             </form>
           </div>
         </section>
-      ) : (
-        <section className="rounded-3xl border border-amber-200/80 bg-amber-50/50 p-4 shadow-sm sm:p-5">
-          <p className="text-sm font-medium text-amber-950">إنشاء مشروع رئيسي</p>
-          <p className="mt-1 text-xs leading-relaxed text-amber-900/85">
-            إضافة مشاريع بدون مشروع أب متاحة للمسؤولين فقط. لإضافة مشروع فرعي لمبادرتك، افتح صفحة المشروع ثم اختر «المشاريع الفرعية».
-          </p>
-        </section>
-      )}
+      }
 
       <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
