@@ -94,6 +94,20 @@ async function getDirectVisibleProjectIds(db: D1DatabaseLike, membershipNumber: 
 function getVisibleProjectIds(projects: ProjectRecord[], directVisibleIds: Set<string>): Set<string> {
   const visibleIds = new Set(directVisibleIds)
   const projectById = new Map(projects.map((project) => [project.id, project]))
+  const childrenByParentId = new Map<string, string[]>()
+
+  for (const project of projects) {
+    if (!project.parentProjectId) {
+      continue
+    }
+
+    const siblings = childrenByParentId.get(project.parentProjectId)
+    if (siblings) {
+      siblings.push(project.id)
+    } else {
+      childrenByParentId.set(project.parentProjectId, [project.id])
+    }
+  }
 
   for (const projectId of directVisibleIds) {
     let currentProject = projectById.get(projectId)
@@ -110,6 +124,27 @@ function getVisibleProjectIds(projects: ProjectRecord[], directVisibleIds: Set<s
 
       visibleIds.add(parentProjectId)
       currentProject = projectById.get(parentProjectId)
+    }
+  }
+
+  const queue = [...visibleIds]
+  const visitedDescendantIds = new Set<string>(visibleIds)
+
+  while (queue.length > 0) {
+    const currentProjectId = queue.shift()
+    if (!currentProjectId) {
+      continue
+    }
+
+    const childProjectIds = childrenByParentId.get(currentProjectId) ?? []
+    for (const childProjectId of childProjectIds) {
+      if (visitedDescendantIds.has(childProjectId)) {
+        continue
+      }
+
+      visitedDescendantIds.add(childProjectId)
+      visibleIds.add(childProjectId)
+      queue.push(childProjectId)
     }
   }
 
