@@ -520,6 +520,12 @@ export function DashboardProjectDetailsPage() {
 
                 {column.items.map((task) => {
                   const isUnassigned = !task.assignedTo?.trim()
+                  const dueDateTimestamp = task.dueDate ? Date.parse(task.dueDate) : Number.NaN
+                  const isOverdue =
+                    Number.isFinite(dueDateTimestamp) &&
+                    dueDateTimestamp < Date.now() &&
+                    task.status !== 'completed' &&
+                    task.status !== 'archived'
 
                   return (
                   <article
@@ -534,15 +540,21 @@ export function DashboardProjectDetailsPage() {
                       }
                     }}
                     className={`group cursor-pointer rounded-xl border bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500/50 ${
-                      isUnassigned
-                        ? 'border-violet-300/90 ring-1 ring-violet-200/80 hover:border-violet-400'
-                        : 'border-slate-200/80 hover:border-slate-300'
+                      isOverdue
+                        ? 'border-red-300/90 ring-1 ring-red-200/80 hover:border-red-400'
+                        : isUnassigned
+                          ? 'border-violet-300/90 ring-1 ring-violet-200/80 hover:border-violet-400'
+                          : 'border-slate-200/80 hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-slate-900">{task.name}</p>
-                        {isUnassigned ? (
+                        {isOverdue ? (
+                          <span className="mt-1 inline-flex rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-800">
+                            متأخرة
+                          </span>
+                        ) : isUnassigned ? (
                           <span className="mt-1 inline-flex rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-800">
                             متاحة للتكليف
                           </span>
@@ -561,8 +573,13 @@ export function DashboardProjectDetailsPage() {
                         <FiTarget className="h-3.5 w-3.5 text-slate-500" />
                         <span>{task.points}</span>
                       </p>
-                      <p className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5" title="الموعد">
-                        <FiCalendar className="h-3.5 w-3.5 text-slate-500" />
+                      <p
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${
+                          isOverdue ? 'bg-red-50 text-red-800' : 'bg-slate-50'
+                        }`}
+                        title="الموعد"
+                      >
+                        <FiCalendar className={`h-3.5 w-3.5 ${isOverdue ? 'text-red-700' : 'text-slate-500'}`} />
                         <span>{formatDueDate(task.dueDate)}</span>
                       </p>
                       <p
