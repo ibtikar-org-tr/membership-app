@@ -535,7 +535,7 @@ export function DashboardProjectDetailsPage() {
                     }}
                     className={`group cursor-pointer rounded-xl border bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500/50 ${
                       isUnassigned
-                        ? 'border-amber-300/90 ring-1 ring-amber-200/80 hover:border-amber-400'
+                        ? 'border-violet-300/90 ring-1 ring-violet-200/80 hover:border-violet-400'
                         : 'border-slate-200/80 hover:border-slate-300'
                     }`}
                   >
@@ -543,7 +543,7 @@ export function DashboardProjectDetailsPage() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-slate-900">{task.name}</p>
                         {isUnassigned ? (
-                          <span className="mt-1 inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                          <span className="mt-1 inline-flex rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-800">
                             متاحة للتكليف
                           </span>
                         ) : null}
@@ -567,11 +567,11 @@ export function DashboardProjectDetailsPage() {
                       </p>
                       <p
                         className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 sm:col-span-2 ${
-                          isUnassigned ? 'bg-amber-50 text-amber-800' : 'bg-slate-50'
+                          isUnassigned ? 'bg-violet-50 text-violet-800' : 'bg-slate-50'
                         }`}
                         title="التكليف"
                       >
-                        <FiUser className={`h-3.5 w-3.5 ${isUnassigned ? 'text-amber-700' : 'text-slate-500'}`} />
+                        <FiUser className={`h-3.5 w-3.5 ${isUnassigned ? 'text-violet-700' : 'text-slate-500'}`} />
                         <span>{formatAssignee(task.assignedTo)}</span>
                       </p>
                     </div>
