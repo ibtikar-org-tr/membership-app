@@ -439,51 +439,56 @@ export function DashboardProjectDetailsPage() {
 
       <div className="rounded-3xl border border-slate-200/70 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2ff_55%,_#e2e8f0)] p-4 shadow-sm sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/85 p-2 backdrop-blur-sm">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setIsAddTaskOpen(true)}
-              className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-            >
-              + إضافة مهمة
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsProjectSettingsOpen(true)}
-              aria-label="إعدادات المشروع"
-              title="إعدادات المشروع"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50"
-            >
-              <FiSettings className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsMembersOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-              title="عرض أعضاء المشروع"
-            >
-              <div className="flex -space-x-2">
-                {previewMembers.map((member) => (
-                  <span
-                    key={`member-preview-${member.projectId}-${member.membershipNumber}`}
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-semibold shadow-sm ${memberAvatarTone(member.membershipNumber)}`}
-                  >
-                    {memberInitials(member.displayName, member.membershipNumber)}
-                  </span>
-                ))}
-                {hiddenMembersCount > 0 ? (
-                  <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-700 shadow-sm">
-                    (+{hiddenMembersCount})
-                  </span>
-                ) : null}
-                {projectMembers.length === 0 ? (
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[11px] font-semibold text-slate-600 shadow-sm">
-                    0
-                  </span>
-                ) : null}
-              </div>
-              <span className="hidden sm:inline">الأعضاء</span>
-            </button>
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAddTaskOpen(true)}
+                className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+              >
+                + إضافة مهمة
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsProjectSettingsOpen(true)}
+                aria-label="إعدادات المشروع"
+                title="إعدادات المشروع"
+                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50"
+              >
+                <FiSettings className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMembersOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                title="عرض أعضاء المشروع"
+              >
+                <div className="flex -space-x-2">
+                  {previewMembers.map((member) => (
+                    <span
+                      key={`member-preview-${member.projectId}-${member.membershipNumber}`}
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-semibold shadow-sm ${memberAvatarTone(member.membershipNumber)}`}
+                    >
+                      {memberInitials(member.displayName, member.membershipNumber)}
+                    </span>
+                  ))}
+                  {hiddenMembersCount > 0 ? (
+                    <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-700 shadow-sm">
+                      (+{hiddenMembersCount})
+                    </span>
+                  ) : null}
+                  {projectMembers.length === 0 ? (
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[11px] font-semibold text-slate-600 shadow-sm">
+                      0
+                    </span>
+                  ) : null}
+                </div>
+                <span className="hidden sm:inline">الأعضاء</span>
+              </button>
+            </div>
           </div>
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
             آخر تحديث: {formatDateEnCA(project.updatedAt)}
