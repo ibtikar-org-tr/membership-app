@@ -96,6 +96,7 @@ export function DashboardProjectDetailsPage() {
   const [taskError, setTaskError] = useState<string | null>(null)
   const [isAddingMember, setIsAddingMember] = useState(false)
   const [memberError, setMemberError] = useState<string | null>(null)
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
@@ -336,11 +337,11 @@ export function DashboardProjectDetailsPage() {
   }
 
   return (
-    <section className="w-full space-y-4">
+    <section className="w-full space-y-3">
       <header className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-sm">
-        <div className="bg-gradient-to-l from-slate-950 via-slate-900 to-cyan-950 px-5 py-6 text-white sm:px-7 sm:py-7">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl space-y-4">
+        <div className="bg-gradient-to-l from-slate-950 via-slate-900 to-cyan-950 px-4 py-4 text-white sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(project.status)}`}>
                   {statusLabel(project.status)}
@@ -354,20 +355,20 @@ export function DashboardProjectDetailsPage() {
               </div>
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.24em] text-cyan-100/80">لوحة المشروع</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">{project.name}</h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base">
+                <h2 className="mt-1.5 text-xl font-semibold text-white sm:text-2xl">{project.name}</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-5 text-slate-200">
                   {project.description ?? 'لا يوجد وصف للمشروع حالياً.'}
                 </p>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:w-[23rem] lg:grid-cols-1">
+            <div className="grid gap-2 sm:grid-cols-2 lg:w-[20rem] lg:grid-cols-1">
               <Link
                 to="/dashboard/projects"
-                className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
               >
                 العودة للمشاريع
               </Link>
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-sm">
+              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 backdrop-blur-sm">
                 <p className="text-xs text-cyan-100/80">المسؤول</p>
                 <p className="mt-1 text-sm font-semibold text-white">{project.owner}</p>
                 <p className="mt-1 text-xs text-slate-200">{project.telegramGroupId ?? 'لا توجد مجموعة تلغرام مرتبطة'}</p>
@@ -376,25 +377,25 @@ export function DashboardProjectDetailsPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 border-t border-slate-200/70 bg-white p-5 sm:grid-cols-2 xl:grid-cols-4">
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 shadow-sm">
+        <div className="grid gap-2 border-t border-slate-200/70 bg-white p-3 sm:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 shadow-sm">
             <p className="text-xs font-medium text-slate-500">إجمالي المهام</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-950">{projectTasks.length}</p>
+            <p className="mt-1 text-xl font-semibold text-slate-950">{projectTasks.length}</p>
             <p className="mt-1 text-xs text-slate-500">كل المهام المرتبطة بالمشروع</p>
           </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 shadow-sm">
+          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 shadow-sm">
             <p className="text-xs font-medium text-slate-500">قيد التنفيذ</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-950">{inProgressTasksCount}</p>
+            <p className="mt-1 text-xl font-semibold text-slate-950">{inProgressTasksCount}</p>
             <p className="mt-1 text-xs text-slate-500">المهام المتحركة حالياً</p>
           </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 shadow-sm">
+          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 shadow-sm">
             <p className="text-xs font-medium text-slate-500">مكتملة</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-950">{completedTasksCount}</p>
+            <p className="mt-1 text-xl font-semibold text-slate-950">{completedTasksCount}</p>
             <p className="mt-1 text-xs text-slate-500">نسبة الإنجاز {completedRatio}%</p>
           </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 shadow-sm">
+          <article className="rounded-2xl border border-slate-200 bg-slate-50/90 p-3 shadow-sm">
             <p className="text-xs font-medium text-slate-500">مفتوحة</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-950">{openTasksCount}</p>
+            <p className="mt-1 text-xl font-semibold text-slate-950">{openTasksCount}</p>
             <p className="mt-1 text-xs text-slate-500">جاهزة للتنفيذ</p>
           </article>
         </div>
@@ -403,6 +404,13 @@ export function DashboardProjectDetailsPage() {
       <div className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setIsAddTaskOpen(true)}
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+            >
+              إضافة مهمة
+            </button>
             <button
               type="button"
               onClick={() => setIsProjectSettingsOpen(true)}
@@ -429,68 +437,6 @@ export function DashboardProjectDetailsPage() {
             آخر تحديث: {formatDateEnCA(project.updatedAt)}
           </span>
         </div>
-
-        <form onSubmit={handleCreateTask} className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            <input
-              name="name"
-              placeholder="عنوان المهمة"
-              className="xl:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-              required
-            />
-            <select
-              name="assignedTo"
-              defaultValue=""
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-            >
-              <option value="">غير مسند</option>
-              {memberOptions.map((member) => (
-                <option key={member.membershipNumber} value={member.membershipNumber}>
-                  {member.displayName}
-                </option>
-              ))}
-            </select>
-            <select
-              name="status"
-              defaultValue="open"
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-            >
-              <option value="open">مفتوحة</option>
-              <option value="in_progress">قيد التنفيذ</option>
-              <option value="completed">مكتملة</option>
-              <option value="archived">مؤرشفة</option>
-            </select>
-            <input
-              name="dueDate"
-              type="date"
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-            />
-            <input
-              name="points"
-              type="number"
-              min={0}
-              defaultValue={0}
-              placeholder="نقاط"
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-            />
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-            <textarea
-              name="description"
-              placeholder="تفاصيل المهمة (اختياري)"
-              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-              rows={2}
-            />
-            <button
-              type="submit"
-              disabled={isCreatingTask}
-              className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
-            </button>
-          </div>
-          {taskError ? <p className="mt-3 text-sm text-red-600">{taskError}</p> : null}
-        </form>
 
         <div className="grid auto-cols-[minmax(22rem,1fr)] grid-flow-col gap-4 overflow-x-auto pb-2">
           {boardColumns.map((column) => (
@@ -577,6 +523,79 @@ export function DashboardProjectDetailsPage() {
               </button>
             </form>
             {saveError ? <p className="mt-3 text-sm text-red-600">{saveError}</p> : null}
+          </article>
+        </div>
+      ) : null}
+
+      {isAddTaskOpen ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setIsAddTaskOpen(false)}>
+          <article className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="text-base font-semibold text-slate-950">إضافة مهمة جديدة</p>
+              <button type="button" onClick={() => setIsAddTaskOpen(false)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
+            </div>
+
+            <form onSubmit={handleCreateTask} className="mt-4 space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+                <input
+                  name="name"
+                  placeholder="عنوان المهمة"
+                  className="xl:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                  required
+                />
+                <select
+                  name="assignedTo"
+                  defaultValue=""
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                >
+                  <option value="">غير مسند</option>
+                  {memberOptions.map((member) => (
+                    <option key={member.membershipNumber} value={member.membershipNumber}>
+                      {member.displayName}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="status"
+                  defaultValue="open"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                >
+                  <option value="open">مفتوحة</option>
+                  <option value="in_progress">قيد التنفيذ</option>
+                  <option value="completed">مكتملة</option>
+                  <option value="archived">مؤرشفة</option>
+                </select>
+                <input
+                  name="dueDate"
+                  type="date"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                />
+                <input
+                  name="points"
+                  type="number"
+                  min={0}
+                  defaultValue={0}
+                  placeholder="نقاط"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <textarea
+                  name="description"
+                  placeholder="تفاصيل المهمة (اختياري)"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                  rows={2}
+                />
+                <button
+                  type="submit"
+                  disabled={isCreatingTask}
+                  className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
+                </button>
+              </div>
+            </form>
+            {taskError ? <p className="mt-3 text-sm text-red-600">{taskError}</p> : null}
           </article>
         </div>
       ) : null}
