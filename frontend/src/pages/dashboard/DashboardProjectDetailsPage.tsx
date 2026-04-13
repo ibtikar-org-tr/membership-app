@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchProjectById, fetchTasks, updateProject } from '../../api/vms'
 import type { VmsProject, VmsTask } from '../../types/vms'
+import { formatDateEnCA } from '../../utils/date-format'
 
 function statusLabel(status: string) {
   if (status === 'completed') {
@@ -226,8 +227,8 @@ export function DashboardProjectDetailsPage() {
           />
         </div>
         <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
-          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">تاريخ الإنشاء: {new Date(project.createdAt).toLocaleDateString('ar-EG')}</p>
-          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">آخر تحديث: {new Date(project.updatedAt).toLocaleDateString('ar-EG')}</p>
+          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">تاريخ الإنشاء: {formatDateEnCA(project.createdAt)}</p>
+          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">آخر تحديث: {formatDateEnCA(project.updatedAt)}</p>
         </div>
       </article>
 

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchEventById, fetchEventRegistrations, fetchEventTickets, updateEvent } from '../../api/vms'
 import type { VmsEvent, VmsEventRegistration, VmsEventTicket } from '../../types/vms'
+import { formatDateTimeEnCA } from '../../utils/date-format'
 
 function registrationStatusLabel(status: string) {
   if (status === 'registered') {
@@ -216,11 +217,11 @@ export function DashboardEventDetailsPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <article className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs text-slate-500">البداية</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">{new Date(eventItem.startTime).toLocaleString('ar-EG')}</p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">{formatDateTimeEnCA(eventItem.startTime)}</p>
         </article>
         <article className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs text-slate-500">النهاية</p>
-          <p className="mt-2 text-sm font-semibold text-slate-900">{new Date(eventItem.endTime).toLocaleString('ar-EG')}</p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">{formatDateTimeEnCA(eventItem.endTime)}</p>
         </article>
         <article className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="text-xs text-slate-500">المكان</p>

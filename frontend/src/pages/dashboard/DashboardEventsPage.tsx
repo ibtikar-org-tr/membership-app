@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 import { createEvent, fetchEvents } from '../../api/vms'
 import type { VmsEvent } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
+import { formatDateTimeEnCA } from '../../utils/date-format'
 
 export function DashboardEventsPage() {
   const [events, setEvents] = useState<VmsEvent[]>([])
@@ -161,8 +162,8 @@ export function DashboardEventsPage() {
               </Link>
             </div>
             <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
-              <p>البداية: {new Date(eventItem.startTime).toLocaleString('ar-EG')}</p>
-              <p>النهاية: {new Date(eventItem.endTime).toLocaleString('ar-EG')}</p>
+              <p>البداية: {formatDateTimeEnCA(eventItem.startTime)}</p>
+              <p>النهاية: {formatDateTimeEnCA(eventItem.endTime)}</p>
               <p>المكان: {eventItem.location ?? 'غير محدد'}</p>
             </div>
           </article>
