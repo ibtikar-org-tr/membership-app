@@ -112,6 +112,14 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: 'event/:eventID',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardEventDetailsPage } = await import('../pages/dashboard/DashboardEventDetailsPage')
+          return { Component: DashboardEventDetailsPage }
+        },
+      },
+      {
         path: 'settings',
         hydrateFallbackElement: <div />,
         lazy: async () => {

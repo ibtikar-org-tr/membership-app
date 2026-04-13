@@ -7,9 +7,17 @@ import {
   fetchEventById,
   fetchEventRegistrations,
   fetchEventTickets,
+  fetchProjectById,
+  fetchProjectMembers,
   updateEvent,
 } from '../../api/vms'
-import type { VmsEvent, VmsEventRegistration, VmsEventTicket } from '../../types/vms'
+import type {
+  VmsEvent,
+  VmsEventRegistration,
+  VmsEventTicket,
+  VmsProject,
+  VmsProjectMember,
+} from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
 
@@ -48,6 +56,10 @@ export function DashboardEventDetailsPage() {
   const [isApplying, setIsApplying] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<string | null>(null)
+  const [project, setProject] = useState<VmsProject | null>(null)
+  const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
+  const [projectLoadError, setProjectLoadError] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     if (!eventID) {
@@ -90,6 +102,70 @@ export function DashboardEventDetailsPage() {
       controller.abort()
     }
   }, [eventID])
+
+  useEffect(() => {
+    if (!eventItem || !eventItem.projectId) {
+      setProject(null)
+      setProjectMembers([])
+      setProjectLoadError(false)
+      return
+    }
+
+    const currentProjectId = eventItem.projectId
+    const controller = new AbortController()
+
+    async function loadEventProjectInfo() {
+      setProjectLoadError(false)
+
+      try {
+        const [projectPayload, projectMembersPayload] = await Promise.all([
+          fetchProjectById(currentProjectId, user?.membershipNumber),
+          fetchProjectMembers(currentProjectId),
+        ])
+
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setProject(projectPayload.project)
+        setProjectMembers(projectMembersPayload.projectMembers)
+      } catch {
+        if (!controller.signal.aborted) {
+          setProject(null)
+          setProjectMembers([])
+          setProjectLoadError(true)
+        }
+      }
+    }
+
+    loadEventProjectInfo()
+
+    return () => {
+      controller.abort()
+    }
+  }, [eventItem, user])
+
+  const canEditEvent = useMemo(() => {
+    if (!user || !eventItem) {
+      return false
+    }
+
+    if (eventItem.projectId && project) {
+      const managerMembershipNumbers = new Set(
+        projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber),
+      )
+
+      return project.owner === user.membershipNumber || managerMembershipNumbers.has(user.membershipNumber)
+    }
+
+    return eventItem.createdBy === user.membershipNumber
+  }, [eventItem, project, projectMembers, user])
+
+  useEffect(() => {
+    if (!canEditEvent) {
+      setIsEditing(false)
+    }
+  }, [canEditEvent])
 
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
   const hasUserRegistered = useMemo(() => {
@@ -283,60 +359,83 @@ export function DashboardEventDetailsPage() {
             <h2 className="mt-1 text-xl font-semibold text-slate-900">{eventItem.name}</h2>
             <p className="mt-2 text-sm text-slate-600">{eventItem.description ?? 'لا يوجد وصف متاح للفعالية.'}</p>
           </div>
-          <Link
-            to="/dashboard/events"
-            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            العودة للفعاليات
-          </Link>
+          <div className="flex items-center gap-2">
+            {canEditEvent ? (
+              <button
+                type="button"
+                onClick={() => setIsEditing((previous) => !previous)}
+                className="inline-flex items-center rounded-md border border-slate-300 bg-slate-950 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
+              >
+                {isEditing ? 'إلغاء التعديل' : 'تعديل الفعالية'}
+              </button>
+            ) : null}
+            <Link
+              to="/dashboard/events"
+              className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              العودة للفعاليات
+            </Link>
+          </div>
         </div>
       </header>
 
-      <article className="rounded-xl border border-slate-200 bg-white p-5">
-        <p className="text-sm font-semibold text-slate-900">تعديل الفعالية</p>
-        <form onSubmit={handleUpdateEvent} className="mt-4 grid gap-3 md:grid-cols-4">
-          <input
-            name="name"
-            defaultValue={eventItem.name}
-            placeholder="اسم الفعالية"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
-          />
-          <input
-            name="startTime"
-            type="datetime-local"
-            defaultValue={toDateTimeLocal(eventItem.startTime)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          />
-          <input
-            name="endTime"
-            type="datetime-local"
-            defaultValue={toDateTimeLocal(eventItem.endTime)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          />
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
-          >
-            {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
-          </button>
-          <input
-            name="location"
-            defaultValue={eventItem.location ?? ''}
-            placeholder="الموقع"
-            className="md:col-span-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          />
-          <textarea
-            name="description"
-            defaultValue={eventItem.description ?? ''}
-            placeholder="وصف الفعالية"
-            className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            rows={2}
-          />
-        </form>
-        {saveError ? <p className="mt-2 text-sm text-red-600">{saveError}</p> : null}
-      </article>
+      {isEditing && canEditEvent ? (
+        <article className="rounded-xl border border-slate-200 bg-white p-5">
+          <p className="text-sm font-semibold text-slate-900">تعديل الفعالية</p>
+          <form onSubmit={handleUpdateEvent} className="mt-4 grid gap-3 md:grid-cols-4">
+            <input
+              name="name"
+              defaultValue={eventItem.name}
+              placeholder="اسم الفعالية"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <input
+              name="startTime"
+              type="datetime-local"
+              defaultValue={toDateTimeLocal(eventItem.startTime)}
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+            <input
+              name="endTime"
+              type="datetime-local"
+              defaultValue={toDateTimeLocal(eventItem.endTime)}
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+            >
+              {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
+            </button>
+            <input
+              name="location"
+              defaultValue={eventItem.location ?? ''}
+              placeholder="الموقع"
+              className="md:col-span-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+            <textarea
+              name="description"
+              defaultValue={eventItem.description ?? ''}
+              placeholder="وصف الفعالية"
+              className="md:col-span-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              rows={2}
+            />
+          </form>
+          {saveError ? <p className="mt-2 text-sm text-red-600">{saveError}</p> : null}
+        </article>
+      ) : null}
+      {!isEditing && canEditEvent ? (
+        <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          يمكنك الضغط على زر "تعديل الفعالية" لتعديل تفاصيل الفعالية.
+        </article>
+      ) : null}
+      {!canEditEvent ? (
+        <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          هذه الصفحة تعرض جميع المعلومات المتاحة للأعضاء. يمكن لمالك المشروع ومديريه تعديل الفعالية.
+        </article>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <article className="rounded-xl border border-slate-200 bg-white p-4">
@@ -358,7 +457,10 @@ export function DashboardEventDetailsPage() {
         <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
           <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">المنشئ: {eventItem.createdBy}</p>
           <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">سعة التذاكر: {totalTicketCapacity} مقعد</p>
+          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">المشروع: {project?.name ?? (eventItem.projectId ? 'جار التحميل...' : 'غير مرتبط بمشروع')}</p>
+          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">الموقع: {eventItem.location ?? 'غير محدد'}</p>
         </div>
+        {projectLoadError ? <p className="mt-3 text-sm text-red-600">تعذر تحميل معلومات المشروع المرتبط بهذه الفعالية.</p> : null}
       </article>
 
       <article className="rounded-xl border border-slate-200 bg-white p-5">
@@ -377,48 +479,54 @@ export function DashboardEventDetailsPage() {
 
       <article className="rounded-xl border border-slate-200 bg-white p-5">
         <p className="text-sm font-semibold text-slate-900">التذاكر والتسجيلات</p>
-        <form onSubmit={handleCreateTicket} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
-          <input
-            name="name"
-            placeholder="اسم التذكرة"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
-          />
-          <input
-            name="currencyPrice"
-            placeholder="السعر النقدي (مثال: 10 USD)"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
-          />
-          <input
-            name="pointPrice"
-            type="number"
-            min={0}
-            placeholder="النقاط"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
-          />
-          <input
-            name="quantity"
-            type="number"
-            min={0}
-            placeholder="الكمية"
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
-          />
-          <button
-            type="submit"
-            disabled={isCreatingTicket}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
-          >
-            {isCreatingTicket ? 'جار إضافة التذكرة...' : 'إضافة تذكرة'}
-          </button>
-          <input
-            name="description"
-            placeholder="وصف التذكرة (اختياري)"
-            className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          />
-        </form>
+        {canEditEvent ? (
+          <form onSubmit={handleCreateTicket} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
+            <input
+              name="name"
+              placeholder="اسم التذكرة"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <input
+              name="currencyPrice"
+              placeholder="السعر النقدي (مثال: 10 USD)"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <input
+              name="pointPrice"
+              type="number"
+              min={0}
+              placeholder="النقاط"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <input
+              name="quantity"
+              type="number"
+              min={0}
+              placeholder="الكمية"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <button
+              type="submit"
+              disabled={isCreatingTicket}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+            >
+              {isCreatingTicket ? 'جار إضافة التذكرة...' : 'إضافة تذكرة'}
+            </button>
+            <input
+              name="description"
+              placeholder="وصف التذكرة (اختياري)"
+              className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+          </form>
+        ) : (
+          <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            إدارة التذاكر مقصورة على مالك المشروع ومديريه.
+          </p>
+        )}
         {ticketError ? <p className="mt-2 text-sm text-red-600">{ticketError}</p> : null}
 
         <form onSubmit={handleApplyToEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-4">

@@ -242,7 +242,7 @@ export function DashboardProjectEventsPage() {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <p className="text-sm font-semibold text-slate-900">{eventItem.name}</p>
                 <Link
-                  to={`/dashboard/events/${eventItem.id}`}
+                  to={`/dashboard/event/${eventItem.id}`}
                   className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   عرض الفعالية
