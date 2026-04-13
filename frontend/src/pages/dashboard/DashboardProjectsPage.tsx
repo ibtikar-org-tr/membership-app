@@ -72,6 +72,7 @@ export function DashboardProjectsPage() {
   }, [])
 
   const activeCount = useMemo(() => projects.filter((project) => project.status === 'active').length, [projects])
+  const topLevelCount = useMemo(() => projects.filter((project) => !project.parentProjectId).length, [projects])
 
   const handleCreateProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -85,6 +86,7 @@ export function DashboardProjectsPage() {
     const formData = new FormData(event.currentTarget)
     const name = String(formData.get('name') ?? '').trim()
     const description = String(formData.get('description') ?? '').trim()
+    const parentProjectIdRaw = String(formData.get('parentProjectId') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? 'active').trim()
     const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
 
@@ -99,6 +101,7 @@ export function DashboardProjectsPage() {
       const payload = await createProject({
         name,
         description: description || undefined,
+        parentProjectId: parentProjectIdRaw || undefined,
         owner: user.membershipNumber,
         status,
       })
@@ -126,9 +129,12 @@ export function DashboardProjectsPage() {
         <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
           {activeCount} مشاريع نشطة
         </span>
+        <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+          {projects.length - topLevelCount} مشاريع فرعية
+        </span>
       </div>
 
-      <form onSubmit={handleCreateProject} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-4">
+      <form onSubmit={handleCreateProject} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
         <input
           name="name"
           placeholder="اسم المشروع"
@@ -140,6 +146,18 @@ export function DashboardProjectsPage() {
           placeholder="وصف مختصر"
           className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
         />
+        <select
+          name="parentProjectId"
+          defaultValue=""
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+        >
+          <option value="">بدون مشروع أب (مشروع رئيسي)</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
         <select
           name="status"
           defaultValue="active"
@@ -176,6 +194,7 @@ export function DashboardProjectsPage() {
               <div>
                 <p className="text-sm font-semibold text-slate-900">{project.name}</p>
                 <p className="mt-1 text-xs text-slate-600">{project.owner} • الحالة {statusLabel(project.status)}</p>
+                {project.parentProjectId ? <p className="mt-1 text-xs text-slate-500">مشروع فرعي</p> : null}
               </div>
               <Link
                 to={`/dashboard/projects/${project.id}`}

@@ -164,9 +164,30 @@ export function fetchEventTickets(eventId?: string) {
   return fetchJson<{ eventTickets: VmsEventTicket[] }>(`/event-tickets${query}`)
 }
 
+export function createEventTicket(payload: {
+  eventId: string
+  name: string
+  description?: string
+  pointPrice: number
+  currencyPrice: string
+  quantity: number
+}) {
+  return postJson<{ eventTicket: VmsEventTicket }, typeof payload>('/event-tickets', payload)
+}
+
 export function fetchEventRegistrations(eventId?: string) {
   const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''
   return fetchJson<{ eventRegistrations: VmsEventRegistration[] }>(`/event-registrations${query}`)
+}
+
+export function createEventRegistration(payload: {
+  eventId: string
+  membershipNumber: string
+  ticketId: string
+  status: 'registered' | 'attended' | 'cancelled' | 'no_show'
+  approvedBy?: string
+}) {
+  return postJson<{ eventRegistration: VmsEventRegistration }, typeof payload>('/event-registrations', payload)
 }
 
 export function fetchSkills() {

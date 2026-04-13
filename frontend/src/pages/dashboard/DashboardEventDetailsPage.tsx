@@ -1,8 +1,16 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { fetchEventById, fetchEventRegistrations, fetchEventTickets, updateEvent } from '../../api/vms'
+import {
+  createEventRegistration,
+  createEventTicket,
+  fetchEventById,
+  fetchEventRegistrations,
+  fetchEventTickets,
+  updateEvent,
+} from '../../api/vms'
 import type { VmsEvent, VmsEventRegistration, VmsEventTicket } from '../../types/vms'
+import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
 
 function registrationStatusLabel(status: string) {
@@ -27,6 +35,7 @@ function registrationStatusLabel(status: string) {
 
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
+  const user = getStoredUser()
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
   const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
@@ -34,6 +43,11 @@ export function DashboardEventDetailsPage() {
   const [notFound, setNotFound] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false)
+  const [ticketError, setTicketError] = useState<string | null>(null)
+  const [isApplying, setIsApplying] = useState(false)
+  const [applyError, setApplyError] = useState<string | null>(null)
+  const [applySuccess, setApplySuccess] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventID) {
@@ -78,6 +92,13 @@ export function DashboardEventDetailsPage() {
   }, [eventID])
 
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
+  const hasUserRegistered = useMemo(() => {
+    if (!user) {
+      return false
+    }
+
+    return registrations.some((registration) => registration.membershipNumber === user.membershipNumber)
+  }, [registrations, user])
 
   const toDateTimeLocal = (value: string) => {
     const date = new Date(value)
@@ -133,6 +154,107 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleApplyToEvent = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setApplyError(null)
+    setApplySuccess(null)
+
+    if (!eventID) {
+      return
+    }
+
+    if (!user) {
+      setApplyError('يجب تسجيل الدخول قبل التقديم للفعالية.')
+      return
+    }
+
+    if (hasUserRegistered) {
+      setApplyError('لقد قمت بالتسجيل في هذه الفعالية مسبقاً.')
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const ticketId = String(formData.get('ticketId') ?? '').trim()
+
+    if (!ticketId) {
+      setApplyError('يرجى اختيار تذكرة للتسجيل.')
+      return
+    }
+
+    setIsApplying(true)
+
+    try {
+      const payload = await createEventRegistration({
+        eventId: eventID,
+        membershipNumber: user.membershipNumber,
+        ticketId,
+        status: 'registered',
+      })
+
+      setRegistrations((previous) => [payload.eventRegistration, ...previous])
+      setApplySuccess('تم إرسال طلب التسجيل بنجاح.')
+      event.currentTarget.reset()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApplyError(requestError.message)
+      } else {
+        setApplyError('تعذر إرسال طلب التسجيل.')
+      }
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
+  const handleCreateTicket = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setTicketError(null)
+
+    if (!eventID) {
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const pointPriceRaw = Number(formData.get('pointPrice') ?? 0)
+    const currencyPrice = String(formData.get('currencyPrice') ?? '').trim()
+    const quantityRaw = Number(formData.get('quantity') ?? 0)
+
+    if (!name || !currencyPrice || Number.isNaN(pointPriceRaw) || Number.isNaN(quantityRaw)) {
+      setTicketError('يرجى إدخال جميع حقول التذكرة المطلوبة بشكل صحيح.')
+      return
+    }
+
+    if (pointPriceRaw < 0 || quantityRaw < 0) {
+      setTicketError('يجب أن تكون قيمة النقاط والكمية أرقاماً غير سالبة.')
+      return
+    }
+
+    setIsCreatingTicket(true)
+
+    try {
+      const payload = await createEventTicket({
+        eventId: eventID,
+        name,
+        description: description || undefined,
+        pointPrice: Math.trunc(pointPriceRaw),
+        currencyPrice,
+        quantity: Math.trunc(quantityRaw),
+      })
+
+      setTickets((previous) => [payload.eventTicket, ...previous])
+      event.currentTarget.reset()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTicketError(requestError.message)
+      } else {
+        setTicketError('تعذر إنشاء التذكرة.')
+      }
+    } finally {
+      setIsCreatingTicket(false)
     }
   }
 
@@ -253,6 +375,76 @@ export function DashboardEventDetailsPage() {
 
       <article className="rounded-xl border border-slate-200 bg-white p-5">
         <p className="text-sm font-semibold text-slate-900">التذاكر والتسجيلات</p>
+        <form onSubmit={handleCreateTicket} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
+          <input
+            name="name"
+            placeholder="اسم التذكرة"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <input
+            name="currencyPrice"
+            placeholder="السعر النقدي (مثال: 10 USD)"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <input
+            name="pointPrice"
+            type="number"
+            min={0}
+            placeholder="النقاط"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <input
+            name="quantity"
+            type="number"
+            min={0}
+            placeholder="الكمية"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            required
+          />
+          <button
+            type="submit"
+            disabled={isCreatingTicket}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+          >
+            {isCreatingTicket ? 'جار إضافة التذكرة...' : 'إضافة تذكرة'}
+          </button>
+          <input
+            name="description"
+            placeholder="وصف التذكرة (اختياري)"
+            className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          />
+        </form>
+        {ticketError ? <p className="mt-2 text-sm text-red-600">{ticketError}</p> : null}
+
+        <form onSubmit={handleApplyToEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-4">
+          <select
+            name="ticketId"
+            defaultValue=""
+            className="md:col-span-3 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            disabled={isApplying || tickets.length === 0 || hasUserRegistered}
+            required
+          >
+            <option value="">اختر نوع التذكرة</option>
+            {tickets.map((ticket) => (
+              <option key={ticket.id} value={ticket.id}>
+                {ticket.name} - {ticket.quantity} مقعد - {ticket.pointPrice} نقطة
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={isApplying || tickets.length === 0 || hasUserRegistered}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+          >
+            {hasUserRegistered ? 'تم التسجيل مسبقاً' : isApplying ? 'جار الإرسال...' : 'التقديم على الفعالية'}
+          </button>
+        </form>
+        {applyError ? <p className="mt-2 text-sm text-red-600">{applyError}</p> : null}
+        {applySuccess ? <p className="mt-2 text-sm text-green-700">{applySuccess}</p> : null}
+
         <div className="mt-4 space-y-2">
           {tickets.map((ticket) => (
             <div key={ticket.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
