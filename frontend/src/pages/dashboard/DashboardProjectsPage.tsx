@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 import { createProject, fetchProjects } from '../../api/vms'
 import type { VmsProject } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
+import { ProjectHierarchyTree } from './ProjectHierarchyTree'
 
 function statusLabel(status: string) {
   if (status === 'active') {
@@ -192,6 +193,10 @@ export function DashboardProjectsPage() {
           </article>
             )
           })}
+      </div>
+
+      <div className="mt-6">
+        <ProjectHierarchyTree />
       </div>
     </section>
   )

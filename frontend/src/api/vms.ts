@@ -126,6 +126,10 @@ export function fetchProjects(membershipNumber?: string) {
   return fetchJson<{ projects: VmsProject[] }>(`/projects${query}`)
 }
 
+export function fetchPlatformProjects() {
+  return fetchJson<{ projects: VmsProject[] }>('/projects/platform')
+}
+
 export function createProject(payload: {
   name: string
   description?: string

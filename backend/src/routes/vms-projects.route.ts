@@ -5,6 +5,7 @@ import {
   deleteProjectById,
   getProjectById,
   getProjectByIdForMember,
+  listProjects,
   listProjectsForMember,
   updateProjectById,
 } from '../repositories/vms-projects.repository'
@@ -26,6 +27,16 @@ vmsProjectsRoute.get('/projects', async (c) => {
   } catch (error) {
     console.error('Failed to list projects', error)
     return c.json({ error: 'Could not fetch projects.' }, 500)
+  }
+})
+
+vmsProjectsRoute.get('/projects/platform', async (c) => {
+  try {
+    const projects = await listProjects(c.env.VMS_DB)
+    return c.json({ projects })
+  } catch (error) {
+    console.error('Failed to list platform projects', error)
+    return c.json({ error: 'Could not fetch platform projects.' }, 500)
   }
 })
 
