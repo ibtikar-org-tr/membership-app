@@ -1,7 +1,8 @@
 import type { FormEvent } from 'react'
 import { FiEdit3 } from 'react-icons/fi'
-import type { VmsProject, VmsProjectMember, VmsTask } from '../../../types/vms'
-import { formatDateEnCA } from '../../../utils/date-format'
+import { Link } from 'react-router-dom'
+import type { VmsEvent, VmsProject, VmsProjectMember, VmsTask } from '../../../types/vms'
+import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
 import { formatDueDate, statusBadgeClass, taskStatusLabel } from './helpers'
 
 interface TaskDetailsModalProps {
@@ -430,6 +431,113 @@ export function MembersModal({ projectMembers, onClose, onOpenAddMember }: Membe
               <p className="mt-1 text-xs text-slate-500">{member.role} • {member.membershipNumber}</p>
             </div>
           ))}
+        </div>
+      </article>
+    </div>
+  )
+}
+
+interface ProjectEventsModalProps {
+  events: VmsEvent[]
+  isLoading: boolean
+  hasError: boolean
+  canCreateEvents: boolean
+  isCreatingEvent: boolean
+  createError: string | null
+  onClose: () => void
+  onCreateEvent: (event: FormEvent<HTMLFormElement>) => void
+}
+
+export function ProjectEventsModal({
+  events,
+  isLoading,
+  hasError,
+  canCreateEvents,
+  isCreatingEvent,
+  createError,
+  onClose,
+  onCreateEvent,
+}: ProjectEventsModalProps) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+      <article className="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <p className="text-base font-semibold text-slate-950">فعاليات المشروع</p>
+          <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
+        </div>
+
+        {canCreateEvents ? (
+          <form onSubmit={onCreateEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
+            <input
+              name="name"
+              placeholder="اسم الفعالية"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <input
+              name="startTime"
+              type="datetime-local"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <input
+              name="endTime"
+              type="datetime-local"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <input
+              name="location"
+              placeholder="الموقع"
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+            <button
+              type="submit"
+              disabled={isCreatingEvent}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
+            >
+              {isCreatingEvent ? 'جار الإضافة...' : 'إضافة فعالية'}
+            </button>
+            <textarea
+              name="description"
+              placeholder="وصف الفعالية"
+              className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              rows={2}
+            />
+          </form>
+        ) : (
+          <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            إنشاء الفعاليات متاح فقط لمالك المشروع ومديري المشروع.
+          </p>
+        )}
+
+        {createError ? <p className="mt-2 text-sm text-red-600">{createError}</p> : null}
+
+        <div className="mt-5 space-y-3">
+          {isLoading ? <p className="text-sm text-slate-500">جار تحميل الفعاليات...</p> : null}
+          {!isLoading && hasError ? <p className="text-sm text-red-600">تعذر تحميل فعاليات المشروع.</p> : null}
+          {!isLoading && !hasError && events.length === 0 ? <p className="text-sm text-slate-500">لا توجد فعاليات مرتبطة بهذا المشروع حالياً.</p> : null}
+
+          {!isLoading &&
+            !hasError &&
+            events.map((eventItem) => (
+              <article key={eventItem.id} className="rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <p className="text-sm font-semibold text-slate-900">{eventItem.name}</p>
+                  <Link
+                    to={`/dashboard/events/${eventItem.id}`}
+                    className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  >
+                    عرض الفعالية
+                  </Link>
+                </div>
+                <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+                  <p>البداية: {formatDateTimeEnCA(eventItem.startTime)}</p>
+                  <p>النهاية: {formatDateTimeEnCA(eventItem.endTime)}</p>
+                  <p>المكان: {eventItem.location ?? 'غير محدد'}</p>
+                </div>
+              </article>
+            ))}
         </div>
       </article>
     </div>

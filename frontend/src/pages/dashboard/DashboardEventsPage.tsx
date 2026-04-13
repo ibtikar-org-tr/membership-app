@@ -1,19 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
-import { createEvent, fetchEvents } from '../../api/vms'
+import { fetchEvents } from '../../api/vms'
 import type { VmsEvent } from '../../types/vms'
-import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
 
 export function DashboardEventsPage() {
   const [events, setEvents] = useState<VmsEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
-  const [createError, setCreateError] = useState<string | null>(null)
-
-  const user = getStoredUser()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -44,104 +38,18 @@ export function DashboardEventsPage() {
     }
   }, [])
 
-  const handleCreateEvent = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setCreateError(null)
-
-    if (!user) {
-      setCreateError('يجب تسجيل الدخول أولاً.')
-      return
-    }
-
-    const formData = new FormData(event.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-    const description = String(formData.get('description') ?? '').trim()
-    const startTime = String(formData.get('startTime') ?? '').trim()
-    const endTime = String(formData.get('endTime') ?? '').trim()
-    const location = String(formData.get('location') ?? '').trim()
-
-    if (!name || !startTime || !endTime) {
-      setCreateError('يرجى إدخال الاسم ووقت البداية ووقت النهاية.')
-      return
-    }
-
-    setIsCreating(true)
-
-    try {
-      const payload = await createEvent({
-        name,
-        description: description || undefined,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
-        location: location || undefined,
-        createdBy: user.membershipNumber,
-      })
-
-      setEvents((previous) => [payload.event, ...previous])
-      event.currentTarget.reset()
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setCreateError(requestError.message)
-      } else {
-        setCreateError('تعذر إنشاء الفعالية.')
-      }
-    } finally {
-      setIsCreating(false)
-    }
-  }
-
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">الفعاليات</h2>
           <p className="mt-1 text-sm text-slate-500">جدول الفعاليات القادمة داخل المجتمع.</p>
+          <p className="mt-1 text-xs text-slate-500">إضافة الفعاليات تتم من صفحة المشروع بواسطة مالك المشروع أو مديريه.</p>
         </div>
         <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
           {events.length} فعالية
         </span>
       </div>
-
-      <form onSubmit={handleCreateEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
-        <input
-          name="name"
-          placeholder="اسم الفعالية"
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          required
-        />
-        <input
-          name="startTime"
-          type="datetime-local"
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          required
-        />
-        <input
-          name="endTime"
-          type="datetime-local"
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          required
-        />
-        <input
-          name="location"
-          placeholder="الموقع"
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-        />
-        <button
-          type="submit"
-          disabled={isCreating}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
-        >
-          {isCreating ? 'جار الإضافة...' : 'إضافة فعالية'}
-        </button>
-        <textarea
-          name="description"
-          placeholder="وصف الفعالية"
-          className="md:col-span-5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-          rows={2}
-        />
-      </form>
-
-      {createError ? <p className="mt-2 text-sm text-red-600">{createError}</p> : null}
 
       <div className="mt-5 space-y-3">
         {isLoading ? <p className="text-sm text-slate-500">جار تحميل الفعاليات...</p> : null}

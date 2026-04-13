@@ -15,6 +15,7 @@ interface ProjectHeaderProps {
   previewMembers: VmsProjectMember[]
   hiddenMembersCount: number
   onOpenAddTask: () => void
+  onOpenEvents: () => void
   onOpenMembers: () => void
   onOpenProjectSettings: () => void
   children?: ReactNode
@@ -30,6 +31,7 @@ export function ProjectHeader({
   previewMembers,
   hiddenMembersCount,
   onOpenAddTask,
+  onOpenEvents,
   onOpenMembers,
   onOpenProjectSettings,
   children,
@@ -85,6 +87,13 @@ export function ProjectHeader({
               className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
             >
               + إضافة مهمة
+            </button>
+            <button
+              type="button"
+              onClick={onOpenEvents}
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              الفعاليات
             </button>
             <button
               type="button"

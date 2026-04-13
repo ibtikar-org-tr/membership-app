@@ -11,7 +11,7 @@ export const createEventSchema = z.object({
   endTime: requiredTrimmedString,
   location: optionalTrimmedString,
   createdBy: requiredTrimmedString,
-  projectId: optionalTrimmedString,
+  projectId: requiredTrimmedString,
   skills: eventSkillsSchema,
   telegramGroupId: optionalTrimmedString,
 })
