@@ -96,7 +96,6 @@ CREATE TABLE IF NOT EXISTS event_tickets ( -- the available tickets for the even
     description TEXT,
     point_price INTEGER NOT NULL, -- price in points (can be 0 for free tickets, negative for rewarding points to participants, and positive for charging points from participants)
     currency_price TEXT, -- price in currency (e.g., 10 $USD, 250 TRY, 10000 SYP, etc.)
-    payment_approved_by TEXT, -- membership_number of the user who approved the payment (e.g., "1234567890")
     quantity INTEGER NOT NULL -- total quantity of this ticket type available for the event
 );
 
@@ -113,7 +112,8 @@ CREATE TABLE IF NOT EXISTS event_registrations ( -- the registrations of users t
     membership_number TEXT NOT NULL, -- membership_number of the user who registered for the event
     ticket_id TEXT NOT NULL REFERENCES event_tickets(id) ON DELETE CASCADE,
     status TEXT NOT NULL, -- "registered", "attended", "cancelled", "no_show"
-    approved_by TEXT -- membership_number of the user who approved the status (e.g., marking as attended, marking as no_show etc.)
+    payment_approved_by TEXT, -- membership_number of the user who approved the payment (e.g., "1234567890")
+    attendance_approved_by TEXT -- membership_number of the user who approved the attendance status (e.g., marking as attended, marking as no_show etc.)
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_registration_updated_at AFTER UPDATE ON event_registrations
