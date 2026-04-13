@@ -6,8 +6,8 @@
     "dev:local": "wrangler dev --config wrangler.local.jsonc",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "db:migrate:local": "wrangler d1 migrations apply membership-app-database --local",
-    "db:migrate:remote": "wrangler d1 migrations apply membership-app-database --remote"
+    "db:migrate:local": "wrangler d1 migrations apply membership-app-database --local && wrangler d1 migrations apply vms-database --local",
+    "db:migrate:remote": "wrangler d1 migrations apply membership-app-database --remote && wrangler d1 migrations apply vms-database --remote"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
