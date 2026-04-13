@@ -74,6 +74,34 @@ function priorityTone(status: string) {
   return 'bg-cyan-500'
 }
 
+function laneStyle(status: string) {
+  if (status === 'completed') {
+    return {
+      lane: 'border-emerald-200/80 bg-emerald-50/70',
+      head: 'from-emerald-100 to-emerald-50 text-emerald-900',
+    }
+  }
+
+  if (status === 'in_progress') {
+    return {
+      lane: 'border-amber-200/80 bg-amber-50/70',
+      head: 'from-amber-100 to-amber-50 text-amber-900',
+    }
+  }
+
+  if (status === 'archived') {
+    return {
+      lane: 'border-slate-300/80 bg-slate-100/80',
+      head: 'from-slate-200 to-slate-100 text-slate-700',
+    }
+  }
+
+  return {
+    lane: 'border-cyan-200/80 bg-cyan-50/70',
+    head: 'from-cyan-100 to-cyan-50 text-cyan-900',
+  }
+}
+
 function formatDueDate(value: string | null) {
   if (!value) {
     return 'بدون موعد'
@@ -375,57 +403,61 @@ export function DashboardProjectDetailsPage() {
         </div>
       </header>
 
-      <div className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="rounded-3xl border border-slate-200/70 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2ff_55%,_#e2e8f0)] p-4 shadow-sm sm:p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/85 p-2 backdrop-blur-sm">
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setIsAddTaskOpen(true)}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+              className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
             >
-              إضافة مهمة
+              + إضافة مهمة
             </button>
             <button
               type="button"
               onClick={() => setIsProjectSettingsOpen(true)}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               إعدادات المشروع
             </button>
             <button
               type="button"
               onClick={() => setIsAddMemberOpen(true)}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               إضافة عضو
             </button>
             <button
               type="button"
               onClick={() => setIsMembersOpen(true)}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               أعضاء المشروع
             </button>
           </div>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
             آخر تحديث: {formatDateEnCA(project.updatedAt)}
           </span>
         </div>
 
-        <div className="grid auto-cols-[minmax(22rem,1fr)] grid-flow-col gap-4 overflow-x-auto pb-2">
-          {boardColumns.map((column) => (
-            <div key={column.key} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-slate-950">{column.label}</p>
-                  <p className="mt-1 text-xs text-slate-500">{column.items.length} مهمة</p>
-                </div>
-                <span className={`h-2.5 w-2.5 rounded-full ${priorityTone(column.key)}`} />
-              </div>
+        <div className="grid auto-cols-[minmax(20rem,1fr)] grid-flow-col gap-4 overflow-x-auto pb-2">
+          {boardColumns.map((column) => {
+            const lane = laneStyle(column.key)
 
-              <div className="mt-4 space-y-3">
+            return (
+            <section key={column.key} className={`flex max-h-[calc(100vh-18rem)] flex-col overflow-hidden rounded-2xl border shadow-sm ${lane.lane}`}>
+              <header className={`sticky top-0 z-10 bg-gradient-to-b px-4 py-3 ${lane.head}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">{column.label}</p>
+                  <span className="inline-flex min-w-8 items-center justify-center rounded-full border border-black/10 bg-white/70 px-2 py-0.5 text-xs font-semibold text-slate-800">
+                    {column.items.length}
+                  </span>
+                </div>
+              </header>
+
+              <div className="min-h-[8rem] flex-1 space-y-3 overflow-y-auto px-3 pb-3 pt-3">
                 {column.items.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-white/70 px-4 py-6 text-center text-sm text-slate-500">
                     لا توجد مهام هنا بعد.
                   </div>
                 ) : null}
@@ -442,12 +474,12 @@ export function DashboardProjectDetailsPage() {
                         setSelectedTaskId(task.id)
                       }
                     }}
-                    className="cursor-pointer rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                    className="group cursor-pointer rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-950">{task.name}</p>
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                        <p className="truncate text-sm font-semibold text-slate-900">{task.name}</p>
+                        <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-500">
                           {task.description ?? 'لا يوجد وصف للمهمة.'}
                         </p>
                       </div>
@@ -456,16 +488,20 @@ export function DashboardProjectDetailsPage() {
                       </span>
                     </div>
 
-                    <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-                      <p className="rounded-xl bg-slate-50 px-3 py-2">النقاط: {task.points}</p>
-                      <p className="rounded-xl bg-slate-50 px-3 py-2">الموعد: {formatDueDate(task.dueDate)}</p>
-                      <p className="rounded-xl bg-slate-50 px-3 py-2 sm:col-span-2">التكليف: {formatAssignee(task.assignedTo)}</p>
+                    <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+                      <p className="rounded-lg bg-slate-50 px-2.5 py-1.5">النقاط: {task.points}</p>
+                      <p className="rounded-lg bg-slate-50 px-2.5 py-1.5">الموعد: {formatDueDate(task.dueDate)}</p>
+                      <p className="rounded-lg bg-slate-50 px-2.5 py-1.5 sm:col-span-2">التكليف: {formatAssignee(task.assignedTo)}</p>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-end">
+                      <span className={`h-2 w-2 rounded-full transition ${priorityTone(task.status)} group-hover:scale-110`} />
                     </div>
                   </article>
                 ))}
               </div>
-            </div>
-          ))}
+            </section>
+          )})}
         </div>
       </div>
 
