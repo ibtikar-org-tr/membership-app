@@ -96,6 +96,9 @@ export function DashboardProjectDetailsPage() {
   const [taskError, setTaskError] = useState<string | null>(null)
   const [isAddingMember, setIsAddingMember] = useState(false)
   const [memberError, setMemberError] = useState<string | null>(null)
+  const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
+  const [isMembersOpen, setIsMembersOpen] = useState(false)
 
   useEffect(() => {
     if (!projectID) {
@@ -160,6 +163,7 @@ export function DashboardProjectDetailsPage() {
       { key: 'open', label: 'مفتوحة', items: projectTasks.filter((task) => task.status === 'open') },
       { key: 'in_progress', label: 'قيد التنفيذ', items: projectTasks.filter((task) => task.status === 'in_progress') },
       { key: 'completed', label: 'مكتملة', items: projectTasks.filter((task) => task.status === 'completed') },
+      { key: 'archived', label: 'مؤرشفة', items: projectTasks.filter((task) => task.status === 'archived') },
     ],
     [projectTasks],
   )
@@ -332,7 +336,7 @@ export function DashboardProjectDetailsPage() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="w-full space-y-4">
       <header className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-sm">
         <div className="bg-gradient-to-l from-slate-950 via-slate-900 to-cyan-950 px-5 py-6 text-white sm:px-7 sm:py-7">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -396,145 +400,150 @@ export function DashboardProjectDetailsPage() {
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <div className="space-y-6">
-          <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-950">سير عمل المهام</p>
-                <p className="mt-1 text-sm text-slate-500">اللوحة الأساسية للمشروع. أنشئ المهام هنا وتابعها عبر الأعمدة.</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">{openTasksCount} مفتوحة</span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">{inProgressTasksCount} قيد التنفيذ</span>
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">{completedTasksCount} مكتملة</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleCreateTask} className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                <input
-                  name="name"
-                  placeholder="عنوان المهمة"
-                  className="xl:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                  required
-                />
-                <select
-                  name="assignedTo"
-                  defaultValue=""
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                >
-                  <option value="">غير مسند</option>
-                  {memberOptions.map((member) => (
-                    <option key={member.membershipNumber} value={member.membershipNumber}>
-                      {member.displayName}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  name="status"
-                  defaultValue="open"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                >
-                  <option value="open">مفتوحة</option>
-                  <option value="in_progress">قيد التنفيذ</option>
-                  <option value="completed">مكتملة</option>
-                  <option value="archived">مؤرشفة</option>
-                </select>
-                <input
-                  name="dueDate"
-                  type="date"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                />
-                <input
-                  name="points"
-                  type="number"
-                  min={0}
-                  defaultValue={0}
-                  placeholder="نقاط"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                />
-              </div>
-              <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <textarea
-                  name="description"
-                  placeholder="تفاصيل المهمة (اختياري)"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                  rows={2}
-                />
-                <button
-                  type="submit"
-                  disabled={isCreatingTask}
-                  className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                >
-                  {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
-                </button>
-              </div>
-              {taskError ? <p className="mt-3 text-sm text-red-600">{taskError}</p> : null}
-            </form>
-          </article>
-
-          <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-950">Task Board</p>
-                <p className="mt-1 text-sm text-slate-500">اسحب ذهنياً البطاقات بين الأعمدة حسب الحالة: To Do / In Progress / Done.</p>
-              </div>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-                {projectTasks.length} بطاقة
-              </span>
-            </div>
-
-            <div className="mt-5 grid auto-cols-[minmax(19rem,1fr)] grid-flow-col gap-4 overflow-x-auto pb-2">
-              {boardColumns.map((column) => (
-                <div key={column.key} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-950">{column.label}</p>
-                      <p className="mt-1 text-xs text-slate-500">{column.items.length} مهمة</p>
-                    </div>
-                    <span className={`h-2.5 w-2.5 rounded-full ${priorityTone(column.key)}`} />
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {column.items.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
-                        لا توجد مهام هنا بعد.
-                      </div>
-                    ) : null}
-
-                    {column.items.map((task) => (
-                      <article key={task.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-950">{task.name}</p>
-                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
-                              {task.description ?? 'لا يوجد وصف للمهمة.'}
-                            </p>
-                          </div>
-                          <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass(task.status)}`}>
-                            {taskStatusLabel(task.status)}
-                          </span>
-                        </div>
-
-                        <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-                          <p className="rounded-xl bg-slate-50 px-3 py-2">النقاط: {task.points}</p>
-                          <p className="rounded-xl bg-slate-50 px-3 py-2">الموعد: {formatDueDate(task.dueDate)}</p>
-                          <p className="rounded-xl bg-slate-50 px-3 py-2 sm:col-span-2">التكليف: {formatAssignee(task.assignedTo)}</p>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
+      <div className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setIsProjectSettingsOpen(true)}
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+            >
+              إعدادات المشروع
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAddMemberOpen(true)}
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+            >
+              إضافة عضو
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMembersOpen(true)}
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-white"
+            >
+              أعضاء المشروع
+            </button>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+            آخر تحديث: {formatDateEnCA(project.updatedAt)}
+          </span>
         </div>
 
-        <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-          <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-sm font-semibold text-slate-950">إعدادات المشروع</p>
-            <p className="mt-1 text-sm text-slate-500">تعديل سريع لاسم المشروع وحالته ووصفه.</p>
+        <form onSubmit={handleCreateTask} className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <input
+              name="name"
+              placeholder="عنوان المهمة"
+              className="xl:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+              required
+            />
+            <select
+              name="assignedTo"
+              defaultValue=""
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+            >
+              <option value="">غير مسند</option>
+              {memberOptions.map((member) => (
+                <option key={member.membershipNumber} value={member.membershipNumber}>
+                  {member.displayName}
+                </option>
+              ))}
+            </select>
+            <select
+              name="status"
+              defaultValue="open"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+            >
+              <option value="open">مفتوحة</option>
+              <option value="in_progress">قيد التنفيذ</option>
+              <option value="completed">مكتملة</option>
+              <option value="archived">مؤرشفة</option>
+            </select>
+            <input
+              name="dueDate"
+              type="date"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+            />
+            <input
+              name="points"
+              type="number"
+              min={0}
+              defaultValue={0}
+              placeholder="نقاط"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+            />
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <textarea
+              name="description"
+              placeholder="تفاصيل المهمة (اختياري)"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+              rows={2}
+            />
+            <button
+              type="submit"
+              disabled={isCreatingTask}
+              className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
+            </button>
+          </div>
+          {taskError ? <p className="mt-3 text-sm text-red-600">{taskError}</p> : null}
+        </form>
+
+        <div className="grid auto-cols-[minmax(22rem,1fr)] grid-flow-col gap-4 overflow-x-auto pb-2">
+          {boardColumns.map((column) => (
+            <div key={column.key} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-slate-950">{column.label}</p>
+                  <p className="mt-1 text-xs text-slate-500">{column.items.length} مهمة</p>
+                </div>
+                <span className={`h-2.5 w-2.5 rounded-full ${priorityTone(column.key)}`} />
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {column.items.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
+                    لا توجد مهام هنا بعد.
+                  </div>
+                ) : null}
+
+                {column.items.map((task) => (
+                  <article key={task.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-950">{task.name}</p>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                          {task.description ?? 'لا يوجد وصف للمهمة.'}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass(task.status)}`}>
+                        {taskStatusLabel(task.status)}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+                      <p className="rounded-xl bg-slate-50 px-3 py-2">النقاط: {task.points}</p>
+                      <p className="rounded-xl bg-slate-50 px-3 py-2">الموعد: {formatDueDate(task.dueDate)}</p>
+                      <p className="rounded-xl bg-slate-50 px-3 py-2 sm:col-span-2">التكليف: {formatAssignee(task.assignedTo)}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {isProjectSettingsOpen ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setIsProjectSettingsOpen(false)}>
+          <article className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="text-base font-semibold text-slate-950">إعدادات المشروع</p>
+              <button type="button" onClick={() => setIsProjectSettingsOpen(false)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
+            </div>
             <form onSubmit={handleUpdateProject} className="mt-4 space-y-3">
               <input
                 name="name"
@@ -569,10 +578,16 @@ export function DashboardProjectDetailsPage() {
             </form>
             {saveError ? <p className="mt-3 text-sm text-red-600">{saveError}</p> : null}
           </article>
+        </div>
+      ) : null}
 
-          <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-sm font-semibold text-slate-950">إضافة عضو إلى المشروع</p>
-            <p className="mt-1 text-sm text-slate-500">أضف العضو قبل إسناد المهام له.</p>
+      {isAddMemberOpen ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setIsAddMemberOpen(false)}>
+          <article className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="text-base font-semibold text-slate-950">إضافة عضو إلى المشروع</p>
+              <button type="button" onClick={() => setIsAddMemberOpen(false)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
+            </div>
             <form onSubmit={handleAddMember} className="mt-4 space-y-3">
               <input
                 name="membershipNumber"
@@ -604,35 +619,29 @@ export function DashboardProjectDetailsPage() {
               </button>
             </form>
             {memberError ? <p className="mt-3 text-sm text-red-600">{memberError}</p> : null}
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {projectMembers.length === 0 ? <span className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</span> : null}
-              {projectMembers.map((member) => (
-                <span
-                  key={`${member.projectId}-${member.membershipNumber}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700"
-                >
-                  <span className="h-2 w-2 rounded-full bg-cyan-500" />
-                  {member.displayName} • {member.role}
-                </span>
-              ))}
-            </div>
           </article>
+        </div>
+      ) : null}
 
-          <article className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
-            <p className="text-sm font-semibold text-slate-950">أعضاء المشروع</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+      {isMembersOpen ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setIsMembersOpen(false)}>
+          <article className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="text-base font-semibold text-slate-950">أعضاء المشروع</p>
+              <button type="button" onClick={() => setIsMembersOpen(false)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {projectMembers.length === 0 ? <p className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</p> : null}
               {projectMembers.map((member) => (
-                <div key={`member-${member.projectId}-${member.membershipNumber}`} className="min-w-[7rem] rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                      <p className="font-semibold text-slate-900">{member.displayName}</p>
-                      <p className="mt-1 uppercase tracking-wide text-slate-500">{member.role} • {member.membershipNumber}</p>
+                <div key={`member-${member.projectId}-${member.membershipNumber}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                  <p className="font-semibold text-slate-900">{member.displayName}</p>
+                  <p className="mt-1 text-xs text-slate-500">{member.role} • {member.membershipNumber}</p>
                 </div>
               ))}
             </div>
           </article>
-        </aside>
-      </div>
+        </div>
+      ) : null}
     </section>
   )
 }

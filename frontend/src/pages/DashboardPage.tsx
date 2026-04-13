@@ -91,7 +91,7 @@ export function DashboardPage() {
         </aside>
 
         <section className="w-full flex-1 p-4 md:p-6 lg:h-screen lg:overflow-y-auto lg:pr-[22rem] lg:pl-8 lg:py-8">
-          <div className="mx-auto w-full max-w-6xl">
+          <div className="w-full">
             <Outlet />
           </div>
         </section>
