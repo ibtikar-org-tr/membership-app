@@ -9,7 +9,7 @@ export function DashboardMainPage() {
   const [projectsCount, setProjectsCount] = useState(0)
   const [eventsCount, setEventsCount] = useState(0)
   const [openTasksCount, setOpenTasksCount] = useState(0)
-  const user = getStoredUser()
+  const user = useMemo(() => getStoredUser(), [])
 
   useEffect(() => {
     const controller = new AbortController()

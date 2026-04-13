@@ -10,7 +10,7 @@ import { TaskBoard } from './project-details/TaskBoard'
 
 export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
-  const user = getStoredUser()
+  const user = useMemo(() => getStoredUser(), [])
   const [project, setProject] = useState<VmsProject | null>(null)
   const [parentProjectName, setParentProjectName] = useState<string | null>(null)
   const [ownerDisplayName, setOwnerDisplayName] = useState<string | null>(null)

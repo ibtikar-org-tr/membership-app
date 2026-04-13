@@ -9,7 +9,7 @@ import { ImageUploader } from '../../components/ImageUploader'
 
 export function DashboardProjectEventsPage() {
   const { projectID } = useParams()
-  const user = getStoredUser()
+  const user = useMemo(() => getStoredUser(), [])
 
   const [project, setProject] = useState<VmsProject | null>(null)
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])

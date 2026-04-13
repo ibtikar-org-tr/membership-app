@@ -1,4 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom'
+import { useMemo } from 'react'
 import { clearStoredUser, getStoredUser } from '../utils/auth'
 
 interface SidebarItem {
@@ -18,7 +19,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 ]
 
 export function DashboardPage() {
-  const user = getStoredUser()
+  const user = useMemo(() => getStoredUser(), [])
 
   if (!user) {
     return <Navigate to="/login" replace />

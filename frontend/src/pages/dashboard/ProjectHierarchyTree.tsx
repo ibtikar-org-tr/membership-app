@@ -21,7 +21,7 @@ export function ProjectHierarchyTree() {
   const [hasError, setHasError] = useState(false)
   const diagramRef = useRef<HTMLDivElement | null>(null)
   const diagramId = useId().replace(/:/g, '_')
-  const user = getStoredUser()
+  const user = useMemo(() => getStoredUser(), [])
 
   useEffect(() => {
     const controller = new AbortController()

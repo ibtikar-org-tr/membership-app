@@ -44,7 +44,7 @@ function registrationStatusLabel(status: string) {
 
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
-  const user = getStoredUser()
+  const user = useMemo(() => getStoredUser(), [])
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
   const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])

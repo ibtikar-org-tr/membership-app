@@ -13,7 +13,7 @@ export function DashboardProjectsPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
-  const user = getStoredUser()
+  const user = useMemo(() => getStoredUser(), [])
 
   useEffect(() => {
     const controller = new AbortController()
