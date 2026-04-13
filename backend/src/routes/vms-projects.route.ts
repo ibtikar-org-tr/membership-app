@@ -5,8 +5,8 @@ import {
   deleteProjectById,
   getProjectById,
   getProjectByIdForMember,
-  listProjects,
   listProjectsForMember,
+  listProjectsForMemberWithRedactedNames,
   updateProjectById,
 } from '../repositories/vms-projects.repository'
 import { createProjectSchema, projectParamsSchema, updateProjectSchema } from '../schemas/vms-project.schema'
@@ -32,7 +32,13 @@ vmsProjectsRoute.get('/projects', async (c) => {
 
 vmsProjectsRoute.get('/projects/platform', async (c) => {
   try {
-    const projects = await listProjects(c.env.VMS_DB)
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!membershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
+    const projects = await listProjectsForMemberWithRedactedNames(c.env.VMS_DB, membershipNumber)
     return c.json({ projects })
   } catch (error) {
     console.error('Failed to list platform projects', error)

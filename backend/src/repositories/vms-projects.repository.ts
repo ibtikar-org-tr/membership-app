@@ -13,7 +13,19 @@ interface ProjectRow {
   status: string
 }
 
-function mapProjectRow(row: ProjectRow) {
+export interface ProjectRecord {
+  id: string
+  createdAt: string
+  updatedAt: string
+  name: string
+  description: string | null
+  parentProjectId: string | null
+  owner: string
+  telegramGroupId: string | null
+  status: string
+}
+
+function mapProjectRow(row: ProjectRow): ProjectRecord {
   return {
     id: row.id,
     createdAt: row.created_at,
@@ -27,13 +39,72 @@ function mapProjectRow(row: ProjectRow) {
   }
 }
 
-export async function listProjects(db: D1DatabaseLike) {
+async function listProjectRows(db: D1DatabaseLike): Promise<ProjectRecord[]> {
   const result = await db
     .prepare('SELECT id, created_at, updated_at, name, description, parent_project_id, owner, telegram_group_id, status FROM projects ORDER BY created_at DESC')
     .bind()
     .all<ProjectRow>()
 
   return result.results.map(mapProjectRow)
+}
+
+async function getDirectVisibleProjectIds(db: D1DatabaseLike, membershipNumber: string): Promise<Set<string>> {
+  const normalizedMembershipNumber = membershipNumber.trim()
+
+  const result = await db
+    .prepare(
+      `SELECT id
+       FROM projects
+       WHERE owner = ?
+       UNION
+       SELECT project_id AS id
+       FROM project_members
+       WHERE membership_number = ?`,
+    )
+    .bind(normalizedMembershipNumber, normalizedMembershipNumber)
+    .all<{ id: string }>()
+
+  return new Set(result.results.map((row) => row.id))
+}
+
+function getVisibleProjectIds(projects: ProjectRecord[], directVisibleIds: Set<string>): Set<string> {
+  const visibleIds = new Set(directVisibleIds)
+  const projectById = new Map(projects.map((project) => [project.id, project]))
+
+  for (const projectId of directVisibleIds) {
+    let currentProject = projectById.get(projectId)
+    const visitedAncestorIds = new Set<string>()
+
+    while (currentProject?.parentProjectId && !visitedAncestorIds.has(currentProject.parentProjectId)) {
+      const parentProjectId = currentProject.parentProjectId
+      visitedAncestorIds.add(parentProjectId)
+
+      if (visibleIds.has(parentProjectId)) {
+        currentProject = projectById.get(parentProjectId)
+        continue
+      }
+
+      visibleIds.add(parentProjectId)
+      currentProject = projectById.get(parentProjectId)
+    }
+  }
+
+  return visibleIds
+}
+
+function redactProjectNames(projects: ProjectRecord[], visibleIds: Set<string>): ProjectRecord[] {
+  return projects.map((project) =>
+    visibleIds.has(project.id)
+      ? project
+      : {
+          ...project,
+          name: 'XXX',
+        },
+  )
+}
+
+export async function listProjects(db: D1DatabaseLike) {
+  return listProjectRows(db)
 }
 
 export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber: string) {
@@ -58,6 +129,14 @@ export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber
   return result.results.map(mapProjectRow)
 }
 
+export async function listProjectsForMemberWithRedactedNames(db: D1DatabaseLike, membershipNumber: string) {
+  const projects = await listProjects(db)
+  const directVisibleIds = await getDirectVisibleProjectIds(db, membershipNumber)
+  const visibleIds = getVisibleProjectIds(projects, directVisibleIds)
+
+  return redactProjectNames(projects, visibleIds)
+}
+
 export async function getProjectById(db: D1DatabaseLike, id: string) {
   const row = await db
     .prepare('SELECT id, created_at, updated_at, name, description, parent_project_id, owner, telegram_group_id, status FROM projects WHERE id = ?')
@@ -68,27 +147,11 @@ export async function getProjectById(db: D1DatabaseLike, id: string) {
 }
 
 export async function getProjectByIdForMember(db: D1DatabaseLike, id: string, membershipNumber: string) {
-  const normalizedMembershipNumber = membershipNumber.trim()
+  const projects = await listProjects(db)
+  const directVisibleIds = await getDirectVisibleProjectIds(db, membershipNumber)
+  const visibleIds = getVisibleProjectIds(projects, directVisibleIds)
 
-  const row = await db
-    .prepare(
-      `SELECT id, created_at, updated_at, name, description, parent_project_id, owner, telegram_group_id, status
-       FROM projects
-       WHERE id = ?
-         AND (
-           owner = ?
-           OR EXISTS (
-             SELECT 1
-             FROM project_members pm
-             WHERE pm.project_id = projects.id
-               AND pm.membership_number = ?
-           )
-         )`,
-    )
-    .bind(id, normalizedMembershipNumber, normalizedMembershipNumber)
-    .first<ProjectRow>()
-
-  return row ? mapProjectRow(row) : null
+  return projects.find((project) => project.id === id && visibleIds.has(project.id)) ?? null
 }
 
 export async function createProject(db: D1DatabaseLike, id: string, input: CreateProjectInput) {

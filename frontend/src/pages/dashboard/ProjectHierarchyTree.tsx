@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { fetchPlatformProjects } from '../../api/vms'
 import type { VmsProject } from '../../types/vms'
+import { getStoredUser } from '../../utils/auth'
 
 function toMermaidNodeId(projectId: string) {
   return `project_${projectId.replace(/[^a-zA-Z0-9_]/g, '_')}`
@@ -21,13 +22,14 @@ export function ProjectHierarchyTree() {
   const [hasError, setHasError] = useState(false)
   const diagramRef = useRef<HTMLDivElement | null>(null)
   const diagramId = useId().replace(/:/g, '_')
+  const user = getStoredUser()
 
   useEffect(() => {
     const controller = new AbortController()
 
     async function loadProjects() {
       try {
-        const payload = await fetchPlatformProjects()
+        const payload = await fetchPlatformProjects(user?.membershipNumber)
 
         if (!controller.signal.aborted) {
           setProjects(payload.projects)
@@ -49,7 +51,7 @@ export function ProjectHierarchyTree() {
     return () => {
       controller.abort()
     }
-  }, [])
+  }, [user?.membershipNumber])
 
   const diagramDefinition = useMemo(() => {
     if (projects.length === 0) {

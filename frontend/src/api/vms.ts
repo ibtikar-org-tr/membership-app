@@ -126,8 +126,9 @@ export function fetchProjects(membershipNumber?: string) {
   return fetchJson<{ projects: VmsProject[] }>(`/projects${query}`)
 }
 
-export function fetchPlatformProjects() {
-  return fetchJson<{ projects: VmsProject[] }>('/projects/platform')
+export function fetchPlatformProjects(membershipNumber?: string) {
+  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  return fetchJson<{ projects: VmsProject[] }>(`/projects/platform${query}`)
 }
 
 export function createProject(payload: {
