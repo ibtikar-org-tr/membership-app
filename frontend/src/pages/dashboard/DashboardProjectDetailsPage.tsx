@@ -722,55 +722,71 @@ export function DashboardProjectDetailsPage() {
                 <form onSubmit={handleUpdateTask} className="space-y-3">
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <input
-                        name="name"
-                        defaultValue={selectedTask.name}
-                        placeholder="عنوان المهمة"
-                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                        required
-                      />
-                      <select
-                        name="status"
-                        defaultValue={selectedTask.status}
-                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                      >
-                        <option value="open">مفتوحة</option>
-                        <option value="in_progress">قيد التنفيذ</option>
-                        <option value="completed">مكتملة</option>
-                        <option value="archived">مؤرشفة</option>
-                      </select>
-                      <input
-                        name="points"
-                        type="number"
-                        min={1}
-                        defaultValue={selectedTask.points}
-                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                      />
-                      <input
-                        name="dueDate"
-                        type="date"
-                        defaultValue={selectedTask.dueDate ? formatDateEnCA(selectedTask.dueDate) : ''}
-                        className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                      />
-                      <select
-                        name="assignedTo"
-                        defaultValue={selectedTask.assignedTo ?? ''}
-                        className="sm:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                      >
-                        <option value="">غير مسند</option>
-                        {memberOptions.map((member) => (
-                          <option key={`task-edit-member-${member.membershipNumber}`} value={member.membershipNumber}>
-                            {member.displayName}
-                          </option>
-                        ))}
-                      </select>
-                      <textarea
-                        name="description"
-                        defaultValue={selectedTask.description ?? ''}
-                        placeholder="تفاصيل المهمة"
-                        className="sm:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                        rows={3}
-                      />
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-600">عنوان المهمة</label>
+                        <input
+                          name="name"
+                          defaultValue={selectedTask.name}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-600">الحالة</label>
+                        <select
+                          name="status"
+                          defaultValue={selectedTask.status}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                        >
+                          <option value="open">مفتوحة</option>
+                          <option value="in_progress">قيد التنفيذ</option>
+                          <option value="completed">مكتملة</option>
+                          <option value="archived">مؤرشفة</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-600">النقاط</label>
+                        <input
+                          name="points"
+                          type="number"
+                          min={1}
+                          defaultValue={selectedTask.points}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-600">الموعد</label>
+                        <input
+                          name="dueDate"
+                          type="date"
+                          defaultValue={selectedTask.dueDate ? formatDateEnCA(selectedTask.dueDate) : ''}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="mb-1 block text-xs font-medium text-slate-600">التكليف</label>
+                        <select
+                          name="assignedTo"
+                          defaultValue={selectedTask.assignedTo ?? ''}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                        >
+                          <option value="">غير مسند</option>
+                          {memberOptions.map((member) => (
+                            <option key={`task-edit-member-${member.membershipNumber}`} value={member.membershipNumber}>
+                              {member.displayName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="mb-1 block text-xs font-medium text-slate-600">الوصف</label>
+                        <textarea
+                          name="description"
+                          defaultValue={selectedTask.description ?? ''}
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                          rows={3}
+                        />
+                      </div>
                     </div>
                   </div>
                   <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
@@ -841,29 +857,36 @@ export function DashboardProjectDetailsPage() {
               <button type="button" onClick={() => setIsProjectSettingsOpen(false)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
             </div>
             <form onSubmit={handleUpdateProject} className="mt-4 space-y-3">
-              <input
-                name="name"
-                defaultValue={project.name}
-                placeholder="اسم المشروع"
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                required
-              />
-              <select
-                name="status"
-                defaultValue={project.status}
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-              >
-                <option value="active">نشط</option>
-                <option value="completed">مكتمل</option>
-                <option value="archived">مؤرشف</option>
-              </select>
-              <textarea
-                name="description"
-                defaultValue={project.description ?? ''}
-                placeholder="وصف المشروع"
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                rows={4}
-              />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">اسم المشروع</label>
+                <input
+                  name="name"
+                  defaultValue={project.name}
+                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">حالة المشروع</label>
+                <select
+                  name="status"
+                  defaultValue={project.status}
+                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
+                >
+                  <option value="active">نشط</option>
+                  <option value="completed">مكتمل</option>
+                  <option value="archived">مؤرشف</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">وصف المشروع</label>
+                <textarea
+                  name="description"
+                  defaultValue={project.description ?? ''}
+                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
+                  rows={4}
+                />
+              </div>
               <button
                 type="submit"
                 disabled={isSaving}
@@ -887,55 +910,70 @@ export function DashboardProjectDetailsPage() {
 
             <form onSubmit={handleCreateTask} className="mt-4 space-y-3">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                <input
-                  name="name"
-                  placeholder="عنوان المهمة"
-                  className="xl:col-span-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                  required
-                />
-                <select
-                  name="assignedTo"
-                  defaultValue=""
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                >
-                  <option value="">غير مسند</option>
-                  {memberOptions.map((member) => (
-                    <option key={member.membershipNumber} value={member.membershipNumber}>
-                      {member.displayName}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  name="status"
-                  defaultValue="open"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                >
-                  <option value="open">مفتوحة</option>
-                  <option value="in_progress">قيد التنفيذ</option>
-                  <option value="completed">مكتملة</option>
-                  <option value="archived">مؤرشفة</option>
-                </select>
-                <input
-                  name="dueDate"
-                  type="date"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                />
-                <input
-                  name="points"
-                  type="number"
-                  min={1}
-                  defaultValue={1}
-                  placeholder="نقاط"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                />
+                <div className="xl:col-span-2">
+                  <label className="mb-1 block text-xs font-medium text-slate-600">عنوان المهمة</label>
+                  <input
+                    name="name"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">التكليف</label>
+                  <select
+                    name="assignedTo"
+                    defaultValue=""
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                  >
+                    <option value="">غير مسند</option>
+                    {memberOptions.map((member) => (
+                      <option key={member.membershipNumber} value={member.membershipNumber}>
+                        {member.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">الحالة</label>
+                  <select
+                    name="status"
+                    defaultValue="open"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                  >
+                    <option value="open">مفتوحة</option>
+                    <option value="in_progress">قيد التنفيذ</option>
+                    <option value="completed">مكتملة</option>
+                    <option value="archived">مؤرشفة</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">الموعد</label>
+                  <input
+                    name="dueDate"
+                    type="date"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">النقاط</label>
+                  <input
+                    name="points"
+                    type="number"
+                    min={1}
+                    defaultValue={1}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                  />
+                </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <textarea
-                  name="description"
-                  placeholder="تفاصيل المهمة (اختياري)"
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
-                  rows={2}
-                />
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">تفاصيل المهمة</label>
+                  <textarea
+                    name="description"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                    rows={2}
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={isCreatingTask}
@@ -958,27 +996,32 @@ export function DashboardProjectDetailsPage() {
               <button type="button" onClick={() => setIsAddMemberOpen(false)} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
             </div>
             <form onSubmit={handleAddMember} className="mt-4 space-y-3">
-              <input
-                name="membershipNumber"
-                list="project-member-assignee-options"
-                placeholder="رقم العضوية"
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-                required
-              />
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">رقم العضوية</label>
+                <input
+                  name="membershipNumber"
+                  list="project-member-assignee-options"
+                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
+                  required
+                />
+              </div>
               <datalist id="project-member-assignee-options">
                 {memberOptions.map((member) => (
                   <option key={member.membershipNumber} value={member.membershipNumber} label={member.displayName} />
                 ))}
               </datalist>
-              <select
-                name="role"
-                defaultValue="member"
-                className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-              >
-                <option value="member">عضو</option>
-                <option value="manager">مدير</option>
-                <option value="observer">مراقب</option>
-              </select>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">الدور</label>
+                <select
+                  name="role"
+                  defaultValue="member"
+                  className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
+                >
+                  <option value="member">عضو</option>
+                  <option value="manager">مدير</option>
+                  <option value="observer">مراقب</option>
+                </select>
+              </div>
               <button
                 type="submit"
                 disabled={isAddingMember}
