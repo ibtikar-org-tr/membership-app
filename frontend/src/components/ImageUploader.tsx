@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { XIcon } from 'lucide-react'
+import { uploadImages } from '../api/vms'
 
 export interface UploadedImage {
   name: string
@@ -77,23 +78,7 @@ export function ImageUploader({
     setUploadProgress(0)
 
     try {
-      const formData = new FormData()
-
-      for (const file of selectedFiles) {
-        formData.append('images', file)
-      }
-
-      const response = await fetch('/ms/membership-app/api/images/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || `Upload failed with status ${response.status}`)
-      }
-
-      const data = await response.json()
+      const data = await uploadImages(selectedFiles)
 
       // Process uploaded images - data.images is the key
       if (data.images && Array.isArray(data.images)) {
