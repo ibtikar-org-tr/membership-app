@@ -5,7 +5,7 @@ import { FiChevronLeft, FiFolder, FiGitBranch, FiLayers } from 'react-icons/fi'
 import { createProject, fetchProjects } from '../../api/vms'
 import type { VmsProject } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
-import { getStoredUser } from '../../utils/auth'
+import { getStoredUser, isPlatformAdmin } from '../../utils/auth'
 import { ProjectHierarchyTree } from './ProjectHierarchyTree'
 import { priorityTone, statusBadgeClass, statusLabel } from './project-details/helpers'
 
@@ -94,13 +94,16 @@ export function DashboardProjectsPage() {
     setIsCreating(true)
 
     try {
-      const payload = await createProject({
-        name,
-        description: description || undefined,
-        parentProjectId: parentProjectIdRaw || undefined,
-        owner: user.membershipNumber,
-        status,
-      })
+      const payload = await createProject(
+        {
+          name,
+          description: description || undefined,
+          parentProjectId: parentProjectIdRaw || undefined,
+          owner: user.membershipNumber,
+          status,
+        },
+        user.membershipNumber,
+      )
 
       setProjects((previous) => [payload.project, ...previous])
       event.currentTarget.reset()
@@ -152,76 +155,85 @@ export function DashboardProjectsPage() {
         </div>
       </header>
 
-      <section className="rounded-3xl border border-slate-200/70 bg-[radial-gradient(circle_at_top,#f8fafc,#eef2ff_55%,#e2e8f0)] p-4 shadow-sm sm:p-6">
-        <div className="rounded-2xl border border-white/70 bg-white/90 p-4 backdrop-blur-sm sm:p-5">
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
-              <FiLayers className="h-4 w-4" aria-hidden />
-            </span>
-            <div>
-              <h3 className="text-base font-semibold text-slate-900">مشروع جديد</h3>
-              <p className="text-xs text-slate-500">املأ الحقول أدناه لإضافة مشروع إلى المنصة.</p>
+      {isPlatformAdmin(user) ? (
+        <section className="rounded-3xl border border-slate-200/70 bg-[radial-gradient(circle_at_top,#f8fafc,#eef2ff_55%,#e2e8f0)] p-4 shadow-sm sm:p-6">
+          <div className="rounded-2xl border border-white/70 bg-white/90 p-4 backdrop-blur-sm sm:p-5">
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
+                <FiLayers className="h-4 w-4" aria-hidden />
+              </span>
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">مشروع جديد (مسؤول)</h3>
+                <p className="text-xs text-slate-500">إنشاء مشاريع رئيسية أو ربط مشروع بمشروع أب موجود. يظهر هذا النموذج للمسؤولين فقط.</p>
+              </div>
             </div>
-          </div>
 
-          <form onSubmit={handleCreateProject} className="mt-4 grid gap-4 md:grid-cols-2">
-            <label className="block space-y-1.5 md:col-span-1">
-              <span className="text-xs font-medium text-slate-600">اسم المشروع</span>
-              <input
-                name="name"
-                placeholder="مثال: حملة التوعية الصحية"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
-                required
-              />
-            </label>
-            <label className="block space-y-1.5 md:col-span-1">
-              <span className="text-xs font-medium text-slate-600">وصف مختصر</span>
-              <input
-                name="description"
-                placeholder="اختياري — سطر أو سطران"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-slate-600">المشروع الأب</span>
-              <select
-                name="parentProjectId"
-                defaultValue=""
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
-              >
-                <option value="">بدون — مشروع رئيسي</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-slate-600">الحالة</span>
-              <select
-                name="status"
-                defaultValue="active"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
-              >
-                <option value="active">نشط</option>
-                <option value="completed">مكتمل</option>
-                <option value="archived">مؤرشف</option>
-              </select>
-            </label>
-            <div className="flex flex-col gap-2 md:col-span-2 md:flex-row md:items-center md:justify-between">
-              {createError ? <p className="text-sm text-red-600">{createError}</p> : <span className="hidden text-xs text-slate-400 md:inline">سيتم ربط المشروع بحسابك كمالك.</span>}
-              <button
-                type="submit"
-                disabled={isCreating}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-500 md:ms-auto md:w-auto"
-              >
-                {isCreating ? 'جار الإضافة...' : 'إضافة المشروع'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
+            <form onSubmit={handleCreateProject} className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="block space-y-1.5 md:col-span-1">
+                <span className="text-xs font-medium text-slate-600">اسم المشروع</span>
+                <input
+                  name="name"
+                  placeholder="مثال: حملة التوعية الصحية"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                  required
+                />
+              </label>
+              <label className="block space-y-1.5 md:col-span-1">
+                <span className="text-xs font-medium text-slate-600">وصف مختصر</span>
+                <input
+                  name="description"
+                  placeholder="اختياري — سطر أو سطران"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-xs font-medium text-slate-600">المشروع الأب</span>
+                <select
+                  name="parentProjectId"
+                  defaultValue=""
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                >
+                  <option value="">بدون — مشروع رئيسي</option>
+                  {projects.map((projectItem) => (
+                    <option key={projectItem.id} value={projectItem.id}>
+                      {projectItem.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-xs font-medium text-slate-600">الحالة</span>
+                <select
+                  name="status"
+                  defaultValue="active"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                >
+                  <option value="active">نشط</option>
+                  <option value="completed">مكتمل</option>
+                  <option value="archived">مؤرشف</option>
+                </select>
+              </label>
+              <div className="flex flex-col gap-2 md:col-span-2 md:flex-row md:items-center md:justify-between">
+                {createError ? <p className="text-sm text-red-600">{createError}</p> : <span className="hidden text-xs text-slate-400 md:inline">سيتم ربط المشروع بحسابك كمالك.</span>}
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-500 md:ms-auto md:w-auto"
+                >
+                  {isCreating ? 'جار الإضافة...' : 'إضافة المشروع'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-3xl border border-amber-200/80 bg-amber-50/50 p-4 shadow-sm sm:p-5">
+          <p className="text-sm font-medium text-amber-950">إنشاء مشروع رئيسي</p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-900/85">
+            إضافة مشاريع بدون مشروع أب متاحة للمسؤولين فقط. لإضافة مشروع فرعي لمبادرتك، افتح صفحة المشروع ثم اختر «المشاريع الفرعية».
+          </p>
+        </section>
+      )}
 
       <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">

@@ -153,15 +153,19 @@ export function fetchPlatformProjects(membershipNumber?: string) {
   return fetchJson<{ projects: VmsProject[] }>(`/projects/platform${query}`)
 }
 
-export function createProject(payload: {
-  name: string
-  description?: string
-  parentProjectId?: string
-  owner: string
-  telegramGroupId?: string
-  status: 'active' | 'completed' | 'archived'
-}) {
-  return postJson<{ project: VmsProject }, typeof payload>('/projects', payload)
+export function createProject(
+  payload: {
+    name: string
+    description?: string
+    parentProjectId?: string
+    owner: string
+    telegramGroupId?: string
+    status: 'active' | 'completed' | 'archived'
+  },
+  membershipNumber: string,
+) {
+  const query = `?membershipNumber=${encodeURIComponent(membershipNumber)}`
+  return postJson<{ project: VmsProject }, typeof payload>(`/projects${query}`, payload)
 }
 
 export function fetchProjectById(projectId: string, membershipNumber?: string) {

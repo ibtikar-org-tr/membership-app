@@ -2,6 +2,10 @@ import type { AuthUser } from '../types/auth'
 
 const AUTH_STORAGE_KEY = 'membership-auth-user-v1'
 
+export function isPlatformAdmin(user: AuthUser | null): boolean {
+  return user?.role?.trim().toLowerCase() === 'admin'
+}
+
 export function getStoredUser(): AuthUser | null {
   if (typeof window === 'undefined') {
     return null

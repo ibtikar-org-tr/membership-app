@@ -1,5 +1,6 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
+import { getUserByMembershipNumber } from '../repositories/users.repository'
 import {
   createProject,
   deleteProjectById,
@@ -9,6 +10,7 @@ import {
   listProjectsForMemberWithRedactedNames,
   updateProjectById,
 } from '../repositories/vms-projects.repository'
+import { getProjectMember } from '../repositories/vms-project-members.repository'
 import { createProjectSchema, projectParamsSchema, updateProjectSchema } from '../schemas/vms-project.schema'
 import type { AppBindings } from '../types/bindings'
 
@@ -70,7 +72,47 @@ vmsProjectsRoute.get('/projects/:id', zValidator('param', projectParamsSchema), 
 
 vmsProjectsRoute.post('/projects', zValidator('json', createProjectSchema), async (c) => {
   try {
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!membershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
     const payload = c.req.valid('json')
+
+    if (payload.owner.trim() !== membershipNumber) {
+      return c.json({ error: 'يجب أن يطابق المالك رقم عضويتك.' }, 403)
+    }
+
+    const actor = await getUserByMembershipNumber(c.env.MEMBERS_DB, membershipNumber)
+
+    if (!actor) {
+      return c.json({ error: 'Could not create project.' }, 404)
+    }
+
+    const parentId = payload.parentProjectId?.trim()
+    const isAdmin = actor.role.trim().toLowerCase() === 'admin'
+
+    if (!parentId) {
+      if (!isAdmin) {
+        return c.json({ error: 'يُسمح للمسؤولين فقط بإنشاء مشاريع رئيسية (بدون مشروع أب).' }, 403)
+      }
+    } else {
+      const parent = await getProjectById(c.env.VMS_DB, parentId)
+
+      if (!parent) {
+        return c.json({ error: 'المشروع الأب غير موجود.' }, 404)
+      }
+
+      const isParentOwner = parent.owner === membershipNumber
+      const membership = await getProjectMember(c.env.VMS_DB, parentId, membershipNumber)
+      const isParentManager = membership?.role === 'manager'
+
+      if (!isAdmin && !isParentOwner && !isParentManager) {
+        return c.json({ error: 'يُسمح لمالك المشروع أو المدراء فقط بإضافة مشاريع فرعية.' }, 403)
+      }
+    }
+
     const projectId = crypto.randomUUID()
     const project = await createProject(c.env.VMS_DB, projectId, payload)
 

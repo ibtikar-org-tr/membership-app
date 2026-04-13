@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FiSettings } from 'react-icons/fi'
+import { FiGitBranch, FiSettings } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import type { VmsProject, VmsProjectMember } from '../../../types/vms'
 import { formatDateEnCA } from '../../../utils/date-format'
@@ -18,6 +18,7 @@ interface ProjectHeaderProps {
   eventsPath: string
   onOpenMembers: () => void
   onOpenProjectSettings: () => void
+  subProjectsPath: string
   children?: ReactNode
 }
 
@@ -34,6 +35,7 @@ export function ProjectHeader({
   eventsPath,
   onOpenMembers,
   onOpenProjectSettings,
+  subProjectsPath,
   children,
 }: ProjectHeaderProps) {
   return (
@@ -93,6 +95,13 @@ export function ProjectHeader({
               className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               الفعاليات
+            </Link>
+            <Link
+              to={subProjectsPath}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              <FiGitBranch className="h-3.5 w-3.5 opacity-80" aria-hidden />
+              المشاريع الفرعية
             </Link>
             <button
               type="button"

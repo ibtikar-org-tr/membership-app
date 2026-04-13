@@ -433,6 +433,7 @@ export function DashboardProjectDetailsPage() {
         hiddenMembersCount={hiddenMembersCount}
         onOpenAddTask={() => setIsAddTaskOpen(true)}
         eventsPath={`/dashboard/projects/${project.id}/events`}
+        subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}
         onOpenMembers={() => setIsMembersOpen(true)}
         onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}
       >
