@@ -175,7 +175,7 @@ export async function getUserDisplayNamesByMembershipNumbers(
 
   for (const row of rows.results) {
     const displayName =
-      row.en_name?.trim() || row.ar_name?.trim() || row.email?.trim() || row.membership_number
+      row.ar_name?.trim() || row.en_name?.trim() || row.email?.trim() || row.membership_number
 
     displayNameMap.set(row.membership_number, displayName)
   }
