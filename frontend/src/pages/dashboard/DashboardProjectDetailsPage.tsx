@@ -225,7 +225,7 @@ export function DashboardProjectDetailsPage() {
     try {
       const payload = await updateProject(projectID, {
         name,
-        description,
+        ...(description ? { description } : {}),
         status,
       })
       setProject(payload.project)
