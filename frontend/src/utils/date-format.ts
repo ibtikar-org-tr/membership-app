@@ -37,10 +37,15 @@ export function formatDateTimeEnCA(input: string | Date | null | undefined): str
     return '-'
   }
 
+  // Get timezone offset
+  const timezoneOffset = -date.getTimezoneOffset()
+  const offsetHours = Math.floor(timezoneOffset / 60)
+  const offsetMinutes = timezoneOffset % 60
+  const timezoneString = `GMT+${offsetHours}${offsetMinutes !== 0 ? String(offsetMinutes).padStart(2, '0') : ''}`
+
   const datePart = formatDateEnCA(date)
   const hours = pad(date.getHours())
   const minutes = pad(date.getMinutes())
-  const seconds = pad(date.getSeconds())
 
-  return `${datePart}T${hours}:${minutes}:${seconds}`
+  return `${datePart} ${hours}:${minutes} ${timezoneString}`
 }
