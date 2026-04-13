@@ -32,7 +32,7 @@ export function DashboardProjectEventsPage() {
     async function loadPageData() {
       try {
         const [projectPayload, membersPayload, eventsPayload] = await Promise.all([
-          fetchProjectById(currentProjectId),
+          fetchProjectById(currentProjectId, user?.membershipNumber),
           fetchProjectMembers(currentProjectId),
           fetchEvents(),
         ])

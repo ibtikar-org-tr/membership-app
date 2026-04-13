@@ -47,7 +47,7 @@ export function DashboardProjectsPage() {
 
     async function loadProjects() {
       try {
-        const payload = await fetchProjects()
+        const payload = await fetchProjects(user?.membershipNumber)
 
         if (!controller.signal.aborted) {
           setProjects(payload.projects)

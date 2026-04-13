@@ -36,10 +36,56 @@ export async function listProjects(db: D1DatabaseLike) {
   return result.results.map(mapProjectRow)
 }
 
+export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber: string) {
+  const normalizedMembershipNumber = membershipNumber.trim()
+
+  const result = await db
+    .prepare(
+      `SELECT id, created_at, updated_at, name, description, parent_project_id, owner, telegram_group_id, status
+       FROM projects
+       WHERE owner = ?
+          OR EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.project_id = projects.id
+              AND pm.membership_number = ?
+          )
+       ORDER BY created_at DESC`,
+    )
+    .bind(normalizedMembershipNumber, normalizedMembershipNumber)
+    .all<ProjectRow>()
+
+  return result.results.map(mapProjectRow)
+}
+
 export async function getProjectById(db: D1DatabaseLike, id: string) {
   const row = await db
     .prepare('SELECT id, created_at, updated_at, name, description, parent_project_id, owner, telegram_group_id, status FROM projects WHERE id = ?')
     .bind(id)
+    .first<ProjectRow>()
+
+  return row ? mapProjectRow(row) : null
+}
+
+export async function getProjectByIdForMember(db: D1DatabaseLike, id: string, membershipNumber: string) {
+  const normalizedMembershipNumber = membershipNumber.trim()
+
+  const row = await db
+    .prepare(
+      `SELECT id, created_at, updated_at, name, description, parent_project_id, owner, telegram_group_id, status
+       FROM projects
+       WHERE id = ?
+         AND (
+           owner = ?
+           OR EXISTS (
+             SELECT 1
+             FROM project_members pm
+             WHERE pm.project_id = projects.id
+               AND pm.membership_number = ?
+           )
+         )`,
+    )
+    .bind(id, normalizedMembershipNumber, normalizedMembershipNumber)
     .first<ProjectRow>()
 
   return row ? mapProjectRow(row) : null

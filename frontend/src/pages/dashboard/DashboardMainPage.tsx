@@ -2,19 +2,25 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchEvents, fetchProjects, fetchTasks } from '../../api/vms'
 import { useHomeStats } from '../../hooks/useHomeStats'
 import { MOCK_NEWS } from './mockData'
+import { getStoredUser } from '../../utils/auth'
 
 export function DashboardMainPage() {
   const { stats, isLoading: isStatsLoading } = useHomeStats()
   const [projectsCount, setProjectsCount] = useState(0)
   const [eventsCount, setEventsCount] = useState(0)
   const [openTasksCount, setOpenTasksCount] = useState(0)
+  const user = getStoredUser()
 
   useEffect(() => {
     const controller = new AbortController()
 
     async function loadDashboardCounts() {
       try {
-        const [projectsPayload, eventsPayload, tasksPayload] = await Promise.all([fetchProjects(), fetchEvents(), fetchTasks()])
+        const [projectsPayload, eventsPayload, tasksPayload] = await Promise.all([
+          fetchProjects(user?.membershipNumber),
+          fetchEvents(),
+          fetchTasks(),
+        ])
 
         if (controller.signal.aborted) {
           return
@@ -33,7 +39,7 @@ export function DashboardMainPage() {
     return () => {
       controller.abort()
     }
-  }, [])
+  }, [user?.membershipNumber])
 
   const summaryCards = useMemo(
     () => [

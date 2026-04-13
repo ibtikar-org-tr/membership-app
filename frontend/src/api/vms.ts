@@ -121,8 +121,9 @@ export function fetchProfile(membershipNumber: string) {
   return fetchJson<{ profile: MemberProfile }>(`/profile/${encodeURIComponent(membershipNumber)}`)
 }
 
-export function fetchProjects() {
-  return fetchJson<{ projects: VmsProject[] }>('/projects')
+export function fetchProjects(membershipNumber?: string) {
+  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  return fetchJson<{ projects: VmsProject[] }>(`/projects${query}`)
 }
 
 export function createProject(payload: {
@@ -136,8 +137,9 @@ export function createProject(payload: {
   return postJson<{ project: VmsProject }, typeof payload>('/projects', payload)
 }
 
-export function fetchProjectById(projectId: string) {
-  return fetchJson<{ project: VmsProject }>(`/projects/${encodeURIComponent(projectId)}`)
+export function fetchProjectById(projectId: string, membershipNumber?: string) {
+  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  return fetchJson<{ project: VmsProject }>(`/projects/${encodeURIComponent(projectId)}${query}`)
 }
 
 export function updateProject(

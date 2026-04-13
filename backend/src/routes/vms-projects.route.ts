@@ -1,6 +1,13 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { createProject, deleteProjectById, getProjectById, listProjects, updateProjectById } from '../repositories/vms-projects.repository'
+import {
+  createProject,
+  deleteProjectById,
+  getProjectById,
+  getProjectByIdForMember,
+  listProjectsForMember,
+  updateProjectById,
+} from '../repositories/vms-projects.repository'
 import { createProjectSchema, projectParamsSchema, updateProjectSchema } from '../schemas/vms-project.schema'
 import type { AppBindings } from '../types/bindings'
 
@@ -8,7 +15,13 @@ export const vmsProjectsRoute = new Hono<{ Bindings: AppBindings }>()
 
 vmsProjectsRoute.get('/projects', async (c) => {
   try {
-    const projects = await listProjects(c.env.VMS_DB)
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!membershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
+    const projects = await listProjectsForMember(c.env.VMS_DB, membershipNumber)
     return c.json({ projects })
   } catch (error) {
     console.error('Failed to list projects', error)
@@ -19,7 +32,13 @@ vmsProjectsRoute.get('/projects', async (c) => {
 vmsProjectsRoute.get('/projects/:id', zValidator('param', projectParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const project = await getProjectById(c.env.VMS_DB, id)
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!membershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
+    const project = await getProjectByIdForMember(c.env.VMS_DB, id, membershipNumber)
 
     if (!project) {
       return c.json({ error: 'Project not found.' }, 404)

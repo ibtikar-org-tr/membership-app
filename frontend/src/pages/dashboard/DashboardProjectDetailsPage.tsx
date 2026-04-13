@@ -48,7 +48,7 @@ export function DashboardProjectDetailsPage() {
     async function loadProjectData() {
       try {
         const [projectPayload, tasksPayload, membersPayload] = await Promise.all([
-          fetchProjectById(currentProjectId),
+          fetchProjectById(currentProjectId, user?.membershipNumber),
           fetchTasks(),
           fetchProjectMembers(currentProjectId),
         ])
@@ -89,7 +89,7 @@ export function DashboardProjectDetailsPage() {
 
     async function loadParentProjectName() {
       try {
-        const payload = await fetchProjectById(parentId)
+        const payload = await fetchProjectById(parentId, user?.membershipNumber)
         if (!isActive) {
           return
         }
