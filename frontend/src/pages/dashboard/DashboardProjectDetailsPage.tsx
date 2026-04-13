@@ -12,6 +12,7 @@ export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
   const user = getStoredUser()
   const [project, setProject] = useState<VmsProject | null>(null)
+  const [parentProjectName, setParentProjectName] = useState<string | null>(null)
   const [ownerDisplayName, setOwnerDisplayName] = useState<string | null>(null)
   const [projectTasks, setProjectTasks] = useState<VmsTask[]>([])
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
@@ -76,6 +77,37 @@ export function DashboardProjectDetailsPage() {
       controller.abort()
     }
   }, [projectID])
+
+  useEffect(() => {
+    if (!project?.parentProjectId) {
+      setParentProjectName(null)
+      return
+    }
+
+    const parentId = project.parentProjectId
+    let isActive = true
+
+    async function loadParentProjectName() {
+      try {
+        const payload = await fetchProjectById(parentId)
+        if (!isActive) {
+          return
+        }
+
+        setParentProjectName(payload.project.name)
+      } catch {
+        if (isActive) {
+          setParentProjectName(null)
+        }
+      }
+    }
+
+    loadParentProjectName()
+
+    return () => {
+      isActive = false
+    }
+  }, [project?.parentProjectId])
 
   useEffect(() => {
     if (!project?.owner) {
@@ -392,6 +424,7 @@ export function DashboardProjectDetailsPage() {
     <section className="w-full space-y-3">
       <ProjectHeader
         project={project}
+        parentProjectName={parentProjectName}
         ownerDisplayName={ownerDisplayName}
         ownerFallbackName={formatAssignee(project.owner)}
         memberCount={memberCount}

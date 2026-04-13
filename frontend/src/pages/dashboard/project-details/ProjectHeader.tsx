@@ -7,6 +7,7 @@ import { memberAvatarTone, memberInitials, statusBadgeClass, statusLabel } from 
 
 interface ProjectHeaderProps {
   project: VmsProject
+  parentProjectName: string | null
   ownerDisplayName: string | null
   ownerFallbackName: string
   memberCount: number
@@ -21,6 +22,7 @@ interface ProjectHeaderProps {
 
 export function ProjectHeader({
   project,
+  parentProjectName,
   ownerDisplayName,
   ownerFallbackName,
   memberCount,
@@ -43,7 +45,7 @@ export function ProjectHeader({
                   {statusLabel(project.status)}
                 </span>
                 <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90">
-                  {project.parentProjectId ? `مشروع فرعي • ${project.parentProjectId}` : 'مشروع رئيسي'}
+                  {project.parentProjectId ? `مشروع فرعي • ${parentProjectName ?? project.parentProjectId}` : 'مشروع رئيسي'}
                 </span>
                 <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90">
                   {memberCount} عضو
