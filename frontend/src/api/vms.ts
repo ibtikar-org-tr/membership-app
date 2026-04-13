@@ -319,5 +319,6 @@ export async function uploadImages(files: File[]): Promise<{ images: string[] }>
     throw new Error(message)
   }
 
-  return (await response.json()) as { images: string[] }
+  const data = (await response.json()) as { success: boolean; imageUrls: Record<string, string> }
+  return { images: Object.values(data.imageUrls) }
 }
