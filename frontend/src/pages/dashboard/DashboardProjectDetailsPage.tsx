@@ -214,6 +214,7 @@ export function DashboardProjectDetailsPage() {
   const handleCreateTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTaskError(null)
+    const form = event.currentTarget
 
     if (!projectID) {
       return
@@ -224,7 +225,7 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
-    const formData = new FormData(event.currentTarget)
+    const formData = new FormData(form)
     const name = String(formData.get('name') ?? '').trim()
     const description = String(formData.get('description') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? 'open').trim()
@@ -259,7 +260,7 @@ export function DashboardProjectDetailsPage() {
       })
 
       setProjectTasks((previous) => [payload.task, ...previous])
-      event.currentTarget.reset()
+      form.reset()
     } catch (requestError) {
       if (requestError instanceof Error) {
         setTaskError(requestError.message)
@@ -274,12 +275,13 @@ export function DashboardProjectDetailsPage() {
   const handleAddMember = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setMemberError(null)
+    const form = event.currentTarget
 
     if (!projectID) {
       return
     }
 
-    const formData = new FormData(event.currentTarget)
+    const formData = new FormData(form)
     const membershipNumber = String(formData.get('membershipNumber') ?? '').trim()
     const roleRaw = String(formData.get('role') ?? 'member').trim()
     const role = roleRaw === 'manager' || roleRaw === 'observer' ? roleRaw : 'member'
@@ -307,7 +309,7 @@ export function DashboardProjectDetailsPage() {
         setProjectMembers((previous) => [payload.projectMember, ...previous])
       }
 
-      event.currentTarget.reset()
+      form.reset()
     } catch (requestError) {
       if (requestError instanceof Error) {
         setMemberError(requestError.message)
