@@ -14,14 +14,47 @@ import type { MemberProfile } from '../types/profile'
 const MEMBER_MS_BASE_URL = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
 const API_BASE = MEMBER_MS_BASE_URL ? `${MEMBER_MS_BASE_URL.replace(/\/+$/, '')}/api` : '/ms/membership-app/api'
 
-async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, { method: 'GET' })
+const GET_CACHE_TTL_MS = 1500
+const inFlightGetRequests = new Map<string, Promise<unknown>>()
+const recentGetResponses = new Map<string, { expiresAt: number; data: unknown }>()
 
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`)
+async function fetchJson<T>(path: string): Promise<T> {
+  const requestKey = path
+  const now = Date.now()
+
+  const cached = recentGetResponses.get(requestKey)
+  if (cached && cached.expiresAt > now) {
+    return cached.data as T
   }
 
-  return (await response.json()) as T
+  const inFlight = inFlightGetRequests.get(requestKey)
+  if (inFlight) {
+    return inFlight as Promise<T>
+  }
+
+  const requestPromise = (async () => {
+    const response = await fetch(`${API_BASE}${path}`, { method: 'GET' })
+
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status})`)
+    }
+
+    const payload = (await response.json()) as T
+    recentGetResponses.set(requestKey, {
+      data: payload,
+      expiresAt: Date.now() + GET_CACHE_TTL_MS,
+    })
+
+    return payload
+  })()
+
+  inFlightGetRequests.set(requestKey, requestPromise)
+
+  try {
+    return await requestPromise
+  } finally {
+    inFlightGetRequests.delete(requestKey)
+  }
 }
 
 async function postJson<TResponse, TPayload>(path: string, payload: TPayload): Promise<TResponse> {
