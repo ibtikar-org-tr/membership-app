@@ -1,6 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { FiSettings } from 'react-icons/fi'
 import { createProjectMember, createTask, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
@@ -449,9 +450,11 @@ export function DashboardProjectDetailsPage() {
             <button
               type="button"
               onClick={() => setIsProjectSettingsOpen(true)}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              aria-label="إعدادات المشروع"
+              title="إعدادات المشروع"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
             >
-              إعدادات المشروع
+              <FiSettings className="h-4 w-4" />
             </button>
             <button
               type="button"
