@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS events (
     start_time TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     end_time TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     location TEXT,
+    image_urls TEXT, -- JSON array of image URLs associated with the event (e.g., {"banner":"https://example.com/banner.jpg", "gallery": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"]})
+    associated_urls TEXT, -- JSON array of URLs associated with the event (e.g., {"website": "https://example.com", "facebook": "https://facebook.com/example", "map": "https://www.openstreetmap.org/relation/1661399"})
     created_by TEXT NOT NULL, -- membership_number of the user who created the event
     project_id TEXT REFERENCES projects(id), -- optional association with a project
     -- required_skills TEXT, -- comma-separated list of skills required for the event (e.g., "python,project_management,design")
