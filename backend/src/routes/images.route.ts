@@ -71,11 +71,7 @@ export async function uploadImages(c: Context<{ Bindings: AppBindings }>) {
         const key = `events/${timestamp}-${hexSuffix}-${sanitizedName}`
 
         const arrayBuffer = await file.arrayBuffer()
-        await bucket.put(key, arrayBuffer, {
-          httpMetadata: {
-            contentType: file.type,
-          },
-        })
+        await bucket.put(key, arrayBuffer)
 
         // Generate public URL
         const publicUrl = `${c.req.url.split('/images/upload')[0]}/event-images/${key}`
@@ -147,18 +143,10 @@ export async function uploadEventBanner(c: Context<{ Bindings: AppBindings }>) {
 
     const key = `events/${eventId}/banner/image.jpg`
     await bucket.delete(key)
-    await bucket.put(key, await fileEntry.arrayBuffer(), {
-      httpMetadata: {
-        contentType: fileEntry.type,
-      },
-    })
+    await bucket.put(key, await fileEntry.arrayBuffer())
 
     const requestUrl = new URL(c.req.url)
-    const apiPrefix = `/ms/membership-app/api/events/${eventId}/banner`
-    const basePath = requestUrl.pathname.endsWith(apiPrefix)
-      ? requestUrl.pathname.slice(0, -apiPrefix.length)
-      : '/ms/membership-app/api'
-    const imageUrl = `${requestUrl.origin}${basePath}/event-images/${key}`
+    const imageUrl = `${requestUrl.origin}/ms/membership-app/api/event-images/${key}`
 
     const updatedEvent = await updateEventById(c.env.VMS_DB, eventId, { imageUrl })
     return c.json({ event: updatedEvent })
