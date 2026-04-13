@@ -452,7 +452,7 @@ export function DashboardProjectDetailsPage() {
               onClick={() => setIsProjectSettingsOpen(true)}
               aria-label="إعدادات المشروع"
               title="إعدادات المشروع"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50"
             >
               <FiSettings className="h-4 w-4" />
             </button>
