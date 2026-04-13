@@ -14,6 +14,8 @@ interface EventRow {
   associated_urls: string | null
   created_by: string
   project_id: string | null
+  project_name: string | null
+  project_owner: string | null
   skills: string | null
   telegram_group_id: string | null
 }
@@ -73,6 +75,8 @@ function mapEventRow(row: EventRow) {
     associatedUrls: parseJsonObject(row.associated_urls),
     createdBy: row.created_by,
     projectId: row.project_id,
+    projectName: row.project_name,
+    projectOwner: row.project_owner,
     skills: parseSkills(row.skills),
     telegramGroupId: row.telegram_group_id,
   }
@@ -81,7 +85,26 @@ function mapEventRow(row: EventRow) {
 export async function listEvents(db: D1DatabaseLike) {
   const result = await db
     .prepare(
-      'SELECT id, created_at, updated_at, name, description, start_time, end_time, location, image_url, associated_urls, created_by, project_id, skills, telegram_group_id FROM events ORDER BY created_at DESC',
+      `SELECT
+         events.id,
+         events.created_at,
+         events.updated_at,
+         events.name,
+         events.description,
+         events.start_time,
+         events.end_time,
+         events.location,
+         events.image_url,
+         events.associated_urls,
+         events.created_by,
+         events.project_id,
+         projects.name AS project_name,
+         projects.owner AS project_owner,
+         events.skills,
+         events.telegram_group_id
+       FROM events
+       LEFT JOIN projects ON projects.id = events.project_id
+       ORDER BY events.created_at DESC`,
     )
     .bind()
     .all<EventRow>()
@@ -92,7 +115,26 @@ export async function listEvents(db: D1DatabaseLike) {
 export async function getEventById(db: D1DatabaseLike, id: string) {
   const row = await db
     .prepare(
-      'SELECT id, created_at, updated_at, name, description, start_time, end_time, location, image_url, associated_urls, created_by, project_id, skills, telegram_group_id FROM events WHERE id = ?',
+      `SELECT
+         events.id,
+         events.created_at,
+         events.updated_at,
+         events.name,
+         events.description,
+         events.start_time,
+         events.end_time,
+         events.location,
+         events.image_url,
+         events.associated_urls,
+         events.created_by,
+         events.project_id,
+         projects.name AS project_name,
+         projects.owner AS project_owner,
+         events.skills,
+         events.telegram_group_id
+       FROM events
+       LEFT JOIN projects ON projects.id = events.project_id
+       WHERE events.id = ?`,
     )
     .bind(id)
     .first<EventRow>()

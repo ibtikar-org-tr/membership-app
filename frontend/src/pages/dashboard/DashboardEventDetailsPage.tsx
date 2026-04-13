@@ -27,7 +27,6 @@ import {
   fetchEventById,
   fetchEventRegistrations,
   fetchEventTickets,
-  fetchProjectById,
   fetchProjectMembers,
   updateEventRegistration,
   updateEventTicket,
@@ -38,7 +37,6 @@ import type {
   VmsEvent,
   VmsEventRegistration,
   VmsEventTicket,
-  VmsProject,
   VmsProjectMember,
 } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
@@ -83,9 +81,7 @@ export function DashboardEventDetailsPage() {
   const [isApplying, setIsApplying] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<string | null>(null)
-  const [project, setProject] = useState<VmsProject | null>(null)
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
-  const [projectLoadError, setProjectLoadError] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -142,9 +138,7 @@ export function DashboardEventDetailsPage() {
 
   useEffect(() => {
     if (!eventItem || !eventItem.projectId) {
-      setProject(null)
       setProjectMembers([])
-      setProjectLoadError(false)
       return
     }
 
@@ -152,25 +146,17 @@ export function DashboardEventDetailsPage() {
     const controller = new AbortController()
 
     async function loadEventProjectInfo() {
-      setProjectLoadError(false)
-
       try {
-        const [projectPayload, projectMembersPayload] = await Promise.all([
-          fetchProjectById(currentProjectId, user?.membershipNumber),
-          fetchProjectMembers(currentProjectId),
-        ])
+        const projectMembersPayload = await fetchProjectMembers(currentProjectId)
 
         if (controller.signal.aborted) {
           return
         }
 
-        setProject(projectPayload.project)
         setProjectMembers(projectMembersPayload.projectMembers)
       } catch {
         if (!controller.signal.aborted) {
-          setProject(null)
           setProjectMembers([])
-          setProjectLoadError(true)
         }
       }
     }
@@ -180,23 +166,23 @@ export function DashboardEventDetailsPage() {
     return () => {
       controller.abort()
     }
-  }, [eventItem, user])
+  }, [eventItem])
 
   const canEditEvent = useMemo(() => {
     if (!user || !eventItem) {
       return false
     }
 
-    if (eventItem.projectId && project) {
+    if (eventItem.projectId && eventItem.projectOwner) {
       const managerMembershipNumbers = new Set(
         projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber),
       )
 
-      return project.owner === user.membershipNumber || managerMembershipNumbers.has(user.membershipNumber)
+      return eventItem.projectOwner === user.membershipNumber || managerMembershipNumbers.has(user.membershipNumber)
     }
 
     return eventItem.createdBy === user.membershipNumber
-  }, [eventItem, project, projectMembers, user])
+  }, [eventItem, projectMembers, user])
 
   useEffect(() => {
     if (!canEditEvent) {
@@ -816,14 +802,15 @@ export function DashboardEventDetailsPage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm">
             <span className="text-slate-500">المشروع</span>
-            <p className="mt-1 font-mono text-sm font-medium text-slate-900">{project?.name ?? (eventItem.projectId ? 'جار التحميل...' : 'غير مرتبط بمشروع')}</p>
+            <p className="mt-1 font-mono text-sm font-medium text-slate-900">
+              {eventItem.projectName ?? (eventItem.projectId ? 'غير متاح' : 'غير مرتبط بمشروع')}
+            </p>
           </div>
           <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm">
             <span className="text-slate-500">سعة التذاكر</span>
             <p className="mt-1 font-semibold text-slate-900">{totalTicketCapacity} مقعد</p>
           </div>
         </div>
-        {projectLoadError ? <p className="mt-3 text-sm text-red-600">تعذر تحميل معلومات المشروع المرتبط بهذه الفعالية.</p> : null}
       </article>
 
       <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 sm:p-6">

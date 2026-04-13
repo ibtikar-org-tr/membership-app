@@ -41,6 +41,8 @@ export interface VmsEvent {
   associatedUrls: Record<string, unknown> | null
   createdBy: string
   projectId: string | null
+  projectName: string | null
+  projectOwner: string | null
   skills: Record<string, string> | null
   telegramGroupId: string | null
 }
