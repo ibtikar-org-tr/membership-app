@@ -213,6 +213,8 @@ export function createEvent(payload: {
   projectId?: string
   skills?: Record<string, string>
   telegramGroupId?: string
+  imageUrls?: Record<string, unknown>
+  associatedUrls?: Record<string, unknown>
 }) {
   return postJson<{ event: VmsEvent }, typeof payload>('/events', payload)
 }
@@ -233,6 +235,8 @@ export function updateEvent(
     projectId: string
     skills: Record<string, string>
     telegramGroupId: string
+    imageUrls: Record<string, unknown>
+    associatedUrls: Record<string, unknown>
   }>,
 ) {
   return putJson<{ event: VmsEvent }, typeof payload>(`/events/${encodeURIComponent(eventId)}`, payload)

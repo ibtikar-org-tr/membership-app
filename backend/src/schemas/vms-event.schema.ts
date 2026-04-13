@@ -3,7 +3,7 @@ import { z } from 'zod'
 const requiredTrimmedString = z.string().trim().min(1)
 const optionalTrimmedString = z.string().trim().min(1).optional()
 const eventSkillsSchema = z.record(z.string().trim().min(1), z.string().trim().min(1)).optional()
-const eventUrlsSchema = z.record(z.unknown()).optional()
+const eventUrlsSchema = z.object({}).passthrough().optional()
 
 export const createEventSchema = z.object({
   name: requiredTrimmedString.max(160),
