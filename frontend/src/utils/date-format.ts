@@ -1,4 +1,8 @@
-function parseDate(input: string | Date): Date | null {
+function parseDate(input: string | Date | null | undefined): Date | null {
+  if (input === null || input === undefined || input === '') {
+    return null
+  }
+
   const candidate = input instanceof Date ? input : new Date(input)
 
   if (Number.isNaN(candidate.getTime())) {
@@ -12,7 +16,7 @@ function pad(value: number): string {
   return String(value).padStart(2, '0')
 }
 
-export function formatDateEnCA(input: string | Date): string {
+export function formatDateEnCA(input: string | Date | null | undefined): string {
   const date = parseDate(input)
 
   if (!date) {
@@ -26,7 +30,7 @@ export function formatDateEnCA(input: string | Date): string {
   return `${year}-${month}-${day}`
 }
 
-export function formatDateTimeEnCA(input: string | Date): string {
+export function formatDateTimeEnCA(input: string | Date | null | undefined): string {
   const date = parseDate(input)
 
   if (!date) {

@@ -7,8 +7,8 @@ const eventSkillsSchema = z.record(z.string().trim().min(1), z.string().trim().m
 export const createEventSchema = z.object({
   name: requiredTrimmedString.max(160),
   description: optionalTrimmedString,
-  startTime: requiredTrimmedString,
-  endTime: requiredTrimmedString,
+  startTime: optionalTrimmedString,
+  endTime: optionalTrimmedString,
   location: optionalTrimmedString,
   createdBy: requiredTrimmedString,
   projectId: requiredTrimmedString,

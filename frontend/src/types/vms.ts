@@ -34,8 +34,8 @@ export interface VmsEvent {
   updatedAt: string
   name: string
   description: string | null
-  startTime: string
-  endTime: string
+  startTime: string | null
+  endTime: string | null
   location: string | null
   createdBy: string
   projectId: string | null

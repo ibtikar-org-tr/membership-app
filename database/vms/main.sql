@@ -68,8 +68,8 @@ CREATE TABLE IF NOT EXISTS events (
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     name TEXT NOT NULL,
     description TEXT,
-    start_time TEXT NOT NULL, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
-    end_time TEXT NOT NULL, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
+    start_time TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
+    end_time TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     location TEXT,
     created_by TEXT NOT NULL, -- membership_number of the user who created the event
     project_id TEXT REFERENCES projects(id), -- optional association with a project

@@ -110,8 +110,8 @@ export function DashboardProjectEventsPage() {
     const endTime = String(formData.get('endTime') ?? '').trim()
     const location = String(formData.get('location') ?? '').trim()
 
-    if (!name || !startTime || !endTime) {
-      setCreateError('يرجى إدخال الاسم ووقت البداية ووقت النهاية.')
+    if (!name) {
+      setCreateError('يرجى إدخال اسم الفعالية.')
       return
     }
 
@@ -121,8 +121,8 @@ export function DashboardProjectEventsPage() {
       const payload = await createEvent({
         name,
         description: description || undefined,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
+        ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
+        ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         location: location || undefined,
         createdBy: user.membershipNumber,
         projectId: projectID,
@@ -195,13 +195,11 @@ export function DashboardProjectEventsPage() {
             name="startTime"
             type="datetime-local"
             className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
           />
           <input
             name="endTime"
             type="datetime-local"
             className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
           />
           <input
             name="location"

@@ -100,7 +100,11 @@ export function DashboardEventDetailsPage() {
     return registrations.some((registration) => registration.membershipNumber === user.membershipNumber)
   }, [registrations, user])
 
-  const toDateTimeLocal = (value: string) => {
+  const toDateTimeLocal = (value: string | null | undefined) => {
+    if (!value) {
+      return ''
+    }
+
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) {
       return ''
@@ -129,8 +133,8 @@ export function DashboardEventDetailsPage() {
     const endTime = String(formData.get('endTime') ?? '').trim()
     const location = String(formData.get('location') ?? '').trim()
 
-    if (!name || !startTime || !endTime) {
-      setSaveError('يرجى إدخال الاسم ووقت البداية ووقت النهاية.')
+    if (!name) {
+      setSaveError('يرجى إدخال اسم الفعالية.')
       return
     }
 
@@ -139,10 +143,10 @@ export function DashboardEventDetailsPage() {
     try {
       const payload = await updateEvent(eventID, {
         name,
-        description,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
-        location,
+        ...(description ? { description } : {}),
+        ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
+        ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
+        ...(location ? { location } : {}),
       })
 
       setEventItem(payload.event)
@@ -303,14 +307,12 @@ export function DashboardEventDetailsPage() {
             type="datetime-local"
             defaultValue={toDateTimeLocal(eventItem.startTime)}
             className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
           />
           <input
             name="endTime"
             type="datetime-local"
             defaultValue={toDateTimeLocal(eventItem.endTime)}
             className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            required
           />
           <button
             type="submit"

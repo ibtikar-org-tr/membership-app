@@ -206,8 +206,8 @@ export function fetchEvents() {
 export function createEvent(payload: {
   name: string
   description?: string
-  startTime: string
-  endTime: string
+  startTime?: string
+  endTime?: string
   location?: string
   createdBy: string
   projectId?: string

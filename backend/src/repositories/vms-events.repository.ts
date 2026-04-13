@@ -7,8 +7,8 @@ interface EventRow {
   updated_at: string
   name: string
   description: string | null
-  start_time: string
-  end_time: string
+  start_time: string | null
+  end_time: string | null
   location: string | null
   created_by: string
   project_id: string | null
@@ -87,8 +87,8 @@ export async function createEvent(db: D1DatabaseLike, id: string, input: CreateE
       id,
       input.name,
       input.description ?? null,
-      input.startTime,
-      input.endTime,
+      input.startTime ?? null,
+      input.endTime ?? null,
       input.location ?? null,
       input.createdBy,
       input.projectId ?? null,
