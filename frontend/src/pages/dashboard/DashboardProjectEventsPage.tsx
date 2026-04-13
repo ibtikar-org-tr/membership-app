@@ -20,6 +20,7 @@ export function DashboardProjectEventsPage() {
 
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [isCreateEventOpen, setIsCreateEventOpen] = useState(false)
 
   useEffect(() => {
     if (!projectID) {
@@ -80,6 +81,13 @@ export function DashboardProjectEventsPage() {
     return project.owner === membershipNumber || managerMembershipNumbers.has(membershipNumber)
   }, [project, managerMembershipNumbers, user])
 
+  useEffect(() => {
+    if (!canCreateEvents) {
+      setIsCreateEventOpen(false)
+      setCreateError(null)
+    }
+  }, [canCreateEvents])
+
   const handleCreateEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setCreateError(null)
@@ -122,6 +130,7 @@ export function DashboardProjectEventsPage() {
 
       setEvents((previous) => [payload.event, ...previous])
       form.reset()
+      setIsCreateEventOpen(false)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -156,6 +165,15 @@ export function DashboardProjectEventsPage() {
           <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
             {events.length} فعالية
           </span>
+          {canCreateEvents ? (
+            <button
+              type="button"
+              onClick={() => setIsCreateEventOpen((previous) => !previous)}
+              className="inline-flex items-center rounded-md border border-slate-300 bg-slate-950 px-3 py-1 text-xs font-medium text-white transition hover:bg-slate-800"
+            >
+              {isCreateEventOpen ? 'إغلاق إضافة فعالية' : 'إضافة فعالية'}
+            </button>
+          ) : null}
           <Link
             to={`/dashboard/projects/${project.id}`}
             className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
@@ -165,7 +183,7 @@ export function DashboardProjectEventsPage() {
         </div>
       </div>
 
-      {canCreateEvents ? (
+      {canCreateEvents && isCreateEventOpen ? (
         <form onSubmit={handleCreateEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
           <input
             name="name"
@@ -204,6 +222,10 @@ export function DashboardProjectEventsPage() {
             rows={2}
           />
         </form>
+      ) : canCreateEvents ? (
+        <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          اضغط زر إضافة فعالية لفتح نموذج الإنشاء.
+        </p>
       ) : (
         <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
           إنشاء الفعاليات متاح فقط لمالك المشروع ومديري المشروع.
