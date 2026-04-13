@@ -41,8 +41,8 @@ jobs:
           | .vars.MEMBERSHIP_NUMBER_PREFIX = $mprefix
           | .vars.SMTP_HOST = $smtpHost
           | .vars.SMTP_PORT = $smtpPort
-          | .vars.SMTP_USER = $smtpUser'
-          | .account_id = $accountId
+          | .vars.SMTP_USER = $smtpUser
+          | .account_id = $accountId'
 
           jq \
             --arg dbid0 "${{ vars.MEMBERS_DB_ID }}" \
