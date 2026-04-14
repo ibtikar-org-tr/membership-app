@@ -150,9 +150,25 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
             }
 
             node.style.cursor = 'pointer'
+            node.classList.add('clickable-project-node')
             node.setAttribute('tabindex', '0')
             node.setAttribute('role', 'link')
             node.setAttribute('aria-label', 'فتح تفاصيل المشروع')
+            node.setAttribute('title', 'اضغط لفتح تفاصيل المشروع')
+
+            const label = node.querySelector<SVGTextElement>('text')
+            if (label) {
+              label.style.fontWeight = '700'
+              label.style.textDecoration = 'underline'
+              label.style.textUnderlineOffset = '3px'
+            }
+
+            const shape = node.querySelector<SVGElement>('rect, polygon, path, circle, ellipse')
+            if (shape) {
+              shape.style.stroke = '#0f766e'
+              shape.style.strokeWidth = '2.5px'
+              shape.style.filter = 'drop-shadow(0 0 0.35rem rgba(15, 118, 110, 0.18))'
+            }
 
             const handleOpenProject = () => {
               navigate(`/dashboard/projects/${projectId}`)
@@ -190,6 +206,9 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
         <div>
           <h3 className="text-base font-semibold text-slate-900 sm:text-lg">شجرة المشاريع</h3>
           <p className="mt-1 text-sm text-slate-500">عرض هرمي لجميع المشاريع في المنصة.</p>
+          {clickableProjectIds.length > 0 ? (
+            <p className="mt-2 text-xs font-medium text-cyan-800">العُقد المميزة بخط سفلي وحدّ أوضح قابلة للضغط وفتح تفاصيل المشروع.</p>
+          ) : null}
         </div>
         <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
           {projects.length} مشروع
