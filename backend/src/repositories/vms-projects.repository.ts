@@ -167,6 +167,20 @@ export async function listProjects(db: D1DatabaseLike) {
 }
 
 export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber: string) {
+  const projects = await listProjects(db)
+  const directVisibleIds = await getDirectVisibleProjectIds(db, membershipNumber)
+  const visibleIds = getVisibleProjectIds(projects, directVisibleIds)
+
+  return projects
+    .filter((project) => visibleIds.has(project.id))
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .map((project) => ({
+      ...toPublicProjectRecord(project),
+      status: project.status,
+    }))
+}
+
+export async function listDirectProjectsForMember(db: D1DatabaseLike, membershipNumber: string) {
   const normalizedMembershipNumber = membershipNumber.trim()
 
   const result = await db
@@ -186,8 +200,8 @@ export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber
     .all<ProjectRow>()
 
   return result.results.map(mapProjectRow).map((project) => ({
-    ...toPublicProjectRecord(project),
-    status: project.status,
+      ...toPublicProjectRecord(project),
+      status: project.status,
   }))
 }
 

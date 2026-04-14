@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { FiChevronLeft, FiFolder, FiGitBranch, FiLayers } from 'react-icons/fi'
-import { createProject, fetchProjects } from '../../api/vms'
+import { createProject, fetchDirectProjects } from '../../api/vms'
 import type { VmsProject } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser, isPlatformAdmin } from '../../utils/auth'
@@ -23,7 +23,7 @@ export function DashboardProjectsPage() {
     setHasError(false)
 
     try {
-      const payload = await fetchProjects(user?.membershipNumber)
+      const payload = await fetchDirectProjects(user?.membershipNumber)
 
       if (signal?.aborted) {
         return

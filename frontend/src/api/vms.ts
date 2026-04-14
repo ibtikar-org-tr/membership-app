@@ -148,6 +148,11 @@ export function fetchProjects(membershipNumber?: string) {
   return fetchJson<{ projects: VmsProject[] }>(`/projects${query}`)
 }
 
+export function fetchDirectProjects(membershipNumber?: string) {
+  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  return fetchJson<{ projects: VmsProject[] }>(`/projects/direct${query}`)
+}
+
 export function fetchPlatformProjects(membershipNumber?: string) {
   const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
   return fetchJson<{ projects: VmsProject[] }>(`/projects/platform${query}`)

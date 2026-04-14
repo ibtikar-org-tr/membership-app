@@ -6,6 +6,7 @@ import {
   deleteProjectById,
   getProjectById,
   getProjectByIdForMember,
+  listDirectProjectsForMember,
   listProjectsForMember,
   listProjectsForMemberWithRedactedNames,
   updateProjectById,
@@ -29,6 +30,22 @@ vmsProjectsRoute.get('/projects', async (c) => {
   } catch (error) {
     console.error('Failed to list projects', error)
     return c.json({ error: 'Could not fetch projects.' }, 500)
+  }
+})
+
+vmsProjectsRoute.get('/projects/direct', async (c) => {
+  try {
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!membershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
+    const projects = await listDirectProjectsForMember(c.env.VMS_DB, membershipNumber)
+    return c.json({ projects })
+  } catch (error) {
+    console.error('Failed to list direct projects', error)
+    return c.json({ error: 'Could not fetch direct projects.' }, 500)
   }
 })
 
