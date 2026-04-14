@@ -47,7 +47,7 @@ export function DashboardPage() {
     <main className="min-h-screen w-full bg-slate-50 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
       <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
         <aside
-          className={`w-full border-b border-slate-200 bg-white p-4 lg:fixed lg:inset-y-0 lg:right-0 lg:flex lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-l lg:shadow-sm transition-all duration-300 ${
+          className={`relative z-40 w-full border-b border-slate-200 bg-white p-4 lg:fixed lg:inset-y-0 lg:right-0 lg:z-50 lg:flex lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-l lg:shadow-sm transition-all duration-300 ${
             isSidebarCollapsed ? 'lg:w-20' : 'lg:w-80'
           }`}
         >
@@ -55,9 +55,7 @@ export function DashboardPage() {
           <div className="mb-6 flex items-center justify-between border-b border-slate-200 pb-5">
             {!isSidebarCollapsed && (
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
-                  <Home className="h-5 w-5 text-white" />
-                </div>
+                <img src="/square_logo.svg" alt="Logo" className="h-11 w-11 rounded-xl" />
                 <div>
                   <h1 className="text-base font-bold text-slate-900">منصّة تجمّع إبتكار</h1>
                   <p className="text-xs text-slate-500">نظام إدارة المتطوّعين</p>
@@ -118,7 +116,7 @@ export function DashboardPage() {
           {/* Back to Home Link */}
           <Link
             to="/"
-            className={`mt-6 flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md ${
+            className={`group relative mt-6 flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md ${
               isSidebarCollapsed ? 'px-2' : ''
             }`}
             title={isSidebarCollapsed ? 'العودة إلى الرئيسية' : undefined}
@@ -177,7 +175,7 @@ export function DashboardPage() {
         </aside>
 
         <section
-          className={`w-full flex-1 p-4 md:p-6 lg:h-screen lg:overflow-y-auto transition-all duration-300 ${
+          className={`relative z-0 w-full flex-1 p-4 md:p-6 lg:h-screen lg:overflow-y-auto transition-all duration-300 ${
             isSidebarCollapsed ? 'lg:pr-[5.5rem] lg:pl-8' : 'lg:pr-[22rem] lg:pl-8'
           }`}
         >
