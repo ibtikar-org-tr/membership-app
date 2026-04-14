@@ -167,17 +167,28 @@ export async function listProjects(db: D1DatabaseLike) {
 }
 
 export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber: string) {
-  const projects = await listProjects(db)
-  const directVisibleIds = await getDirectVisibleProjectIds(db, membershipNumber)
-  const visibleIds = getVisibleProjectIds(projects, directVisibleIds)
+  const normalizedMembershipNumber = membershipNumber.trim()
 
-  return projects
-    .filter((project) => visibleIds.has(project.id))
-    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-    .map((project) => ({
-      ...toPublicProjectRecord(project),
-      status: project.status,
-    }))
+  const result = await db
+    .prepare(
+      `SELECT id, created_at, updated_at, name, description, parent_project_id, owner, telegram_group_id, status
+       FROM projects
+       WHERE owner = ?
+          OR EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.project_id = projects.id
+              AND pm.membership_number = ?
+          )
+       ORDER BY created_at DESC`,
+    )
+    .bind(normalizedMembershipNumber, normalizedMembershipNumber)
+    .all<ProjectRow>()
+
+  return result.results.map(mapProjectRow).map((project) => ({
+    ...toPublicProjectRecord(project),
+    status: project.status,
+  }))
 }
 
 export async function listProjectsForMemberWithRedactedNames(db: D1DatabaseLike, membershipNumber: string) {
