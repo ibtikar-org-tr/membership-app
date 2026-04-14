@@ -38,18 +38,19 @@ export function DashboardProjectDetailsPage() {
   const [isMembersOpen, setIsMembersOpen] = useState(false)
 
   useEffect(() => {
-    if (!projectID) {
+    if (!projectID || !user) {
       return
     }
 
     const currentProjectId = projectID
+    const currentUser = user
     const controller = new AbortController()
 
     async function loadProjectData() {
       try {
         const [projectPayload, tasksPayload, membersPayload] = await Promise.all([
-          fetchProjectById(currentProjectId, user?.membershipNumber),
-          fetchTasks(),
+          fetchProjectById(currentProjectId, currentUser.membershipNumber),
+          fetchTasks(currentUser.membershipNumber),
           fetchProjectMembers(currentProjectId),
         ])
 
@@ -76,7 +77,7 @@ export function DashboardProjectDetailsPage() {
     return () => {
       controller.abort()
     }
-  }, [projectID])
+  }, [projectID, user])
 
   useEffect(() => {
     if (!project?.parentProjectId) {
@@ -181,6 +182,18 @@ export function DashboardProjectDetailsPage() {
     const currentMembershipNumber = user.membershipNumber
     return project.owner === currentMembershipNumber || projectManagerMembershipNumbers.has(currentMembershipNumber)
   }, [project, projectManagerMembershipNumbers, user])
+  const canManageProject = canManageProjectMembers
+  const canCreateTask = useMemo(() => {
+    if (!project || !user) {
+      return false
+    }
+
+    if (project.owner === user.membershipNumber) {
+      return true
+    }
+
+    return projectMembers.some((member) => member.membershipNumber === user.membershipNumber)
+  }, [project, projectMembers, user])
 
   const canEditSelectedTask = useMemo(() => {
     if (!selectedTask || !project || !user) {
@@ -213,7 +226,7 @@ export function DashboardProjectDetailsPage() {
     event.preventDefault()
     setSaveError(null)
 
-    if (!projectID || !project) {
+    if (!projectID || !project || !user) {
       return
     }
 
@@ -235,7 +248,7 @@ export function DashboardProjectDetailsPage() {
         name,
         ...(description ? { description } : {}),
         status,
-      })
+      }, user.membershipNumber)
       setProject(payload.project)
       setIsProjectSettingsOpen(false)
     } catch (requestError) {
@@ -263,6 +276,11 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
+    if (!canCreateTask) {
+      setTaskError('إضافة المهام متاحة فقط لأعضاء المشروع المباشرين.')
+      return
+    }
+
     const formData = new FormData(form)
     const name = String(formData.get('name') ?? '').trim()
     const description = String(formData.get('description') ?? '').trim()
@@ -286,17 +304,19 @@ export function DashboardProjectDetailsPage() {
 
     setIsCreatingTask(true)
 
+    const currentUser = user
+
     try {
       const payload = await createTask({
         projectId: projectID,
         name,
         description: description || undefined,
-        createdBy: user.membershipNumber,
+        createdBy: currentUser.membershipNumber,
         status,
         dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : undefined,
         points: Math.max(1, Math.trunc(pointsRaw)),
         assignedTo: assignedTo || undefined,
-      })
+      }, currentUser.membershipNumber)
 
       setProjectTasks((previous) => [payload.task, ...previous])
       form.reset()
@@ -371,7 +391,7 @@ export function DashboardProjectDetailsPage() {
     event.preventDefault()
     setTaskUpdateError(null)
 
-    if (!selectedTask || !canEditSelectedTask) {
+    if (!selectedTask || !canEditSelectedTask || !user) {
       return
     }
 
@@ -396,6 +416,8 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
+    const currentUser = user
+
     setIsUpdatingTask(true)
 
     try {
@@ -406,7 +428,7 @@ export function DashboardProjectDetailsPage() {
         dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : selectedTask.dueDate ?? undefined,
         points: Math.max(1, Math.trunc(pointsRaw)),
         assignedTo: assignedTo || undefined,
-      })
+      }, currentUser.membershipNumber)
 
       setProjectTasks((previous) => previous.map((task) => (task.id === payload.task.id ? payload.task : task)))
       setIsTaskEditMode(false)
@@ -444,6 +466,8 @@ export function DashboardProjectDetailsPage() {
         projectMembers={projectMembers}
         previewMembers={previewMembers}
         hiddenMembersCount={hiddenMembersCount}
+        canCreateTask={canCreateTask}
+        canManageProject={canManageProject}
         onOpenAddTask={() => setIsAddTaskOpen(true)}
         eventsPath={`/dashboard/projects/${project.id}/events`}
         subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}

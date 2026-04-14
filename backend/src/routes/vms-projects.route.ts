@@ -4,8 +4,8 @@ import { getUserByMembershipNumber } from '../repositories/users.repository'
 import {
   createProject,
   deleteProjectById,
+  getDirectProjectByIdForMember,
   getProjectById,
-  getProjectByIdForMember,
   listDirectProjectsForMember,
   listProjectsForMember,
   listProjectsForMemberWithRedactedNames,
@@ -16,6 +16,21 @@ import { createProjectSchema, projectParamsSchema, updateProjectSchema } from '.
 import type { AppBindings } from '../types/bindings'
 
 export const vmsProjectsRoute = new Hono<{ Bindings: AppBindings }>()
+
+async function canManageProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
+  const project = await getProjectById(db, projectId)
+
+  if (!project) {
+    return { project: null, isAuthorized: false }
+  }
+
+  if (project.owner === membershipNumber) {
+    return { project, isAuthorized: true }
+  }
+
+  const membership = await getProjectMember(db, projectId, membershipNumber)
+  return { project, isAuthorized: membership?.role === 'manager' }
+}
 
 vmsProjectsRoute.get('/projects', async (c) => {
   try {
@@ -74,7 +89,7 @@ vmsProjectsRoute.get('/projects/:id', zValidator('param', projectParamsSchema), 
       return c.json({ error: 'Membership number is required.' }, 400)
     }
 
-    const project = await getProjectByIdForMember(c.env.VMS_DB, id, membershipNumber)
+    const project = await getDirectProjectByIdForMember(c.env.VMS_DB, id, membershipNumber)
 
     if (!project) {
       return c.json({ error: 'Project not found.' }, 404)
@@ -147,11 +162,20 @@ vmsProjectsRoute.put(
   async (c) => {
     try {
       const { id } = c.req.valid('param')
-      const payload = c.req.valid('json')
+      const membershipNumber = c.req.query('membershipNumber')?.trim()
 
-      const existing = await getProjectById(c.env.VMS_DB, id)
-      if (!existing) {
+      if (!membershipNumber) {
+        return c.json({ error: 'Membership number is required.' }, 400)
+      }
+
+      const payload = c.req.valid('json')
+      const authorization = await canManageProject(c.env.VMS_DB, id, membershipNumber)
+      if (!authorization.project) {
         return c.json({ error: 'Project not found.' }, 404)
+      }
+
+      if (!authorization.isAuthorized) {
+        return c.json({ error: 'Only project owner or managers can update project settings.' }, 403)
       }
 
       const project = await updateProjectById(c.env.VMS_DB, id, payload)

@@ -230,6 +230,17 @@ export async function getProjectByIdForMember(db: D1DatabaseLike, id: string, me
   return projects.find((project) => project.id === id && visibleIds.has(project.id)) ?? null
 }
 
+export async function getDirectProjectByIdForMember(db: D1DatabaseLike, id: string, membershipNumber: string) {
+  const project = await getProjectById(db, id)
+
+  if (!project) {
+    return null
+  }
+
+  const directVisibleIds = await getDirectVisibleProjectIds(db, membershipNumber)
+  return directVisibleIds.has(project.id) ? project : null
+}
+
 export async function createProject(db: D1DatabaseLike, id: string, input: CreateProjectInput) {
   await db
     .prepare(

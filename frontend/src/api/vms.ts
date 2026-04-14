@@ -188,12 +188,16 @@ export function updateProject(
     telegramGroupId: string
     status: 'active' | 'completed' | 'archived'
   }>,
+  membershipNumber: string,
 ) {
-  return putJson<{ project: VmsProject }, typeof payload>(`/projects/${encodeURIComponent(projectId)}`, payload)
+  return putJson<{ project: VmsProject }, typeof payload>(
+    `/projects/${encodeURIComponent(projectId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    payload,
+  )
 }
 
-export function fetchTasks() {
-  return fetchJson<{ tasks: VmsTask[] }>('/tasks')
+export function fetchTasks(membershipNumber: string) {
+  return fetchJson<{ tasks: VmsTask[] }>(`/tasks?membershipNumber=${encodeURIComponent(membershipNumber)}`)
 }
 
 export function createTask(payload: {
@@ -206,8 +210,11 @@ export function createTask(payload: {
   points?: number
   assignedTo?: string
   skills?: Record<string, string>
-}) {
-  return postJson<{ task: VmsTask }, typeof payload>('/tasks', payload)
+}, membershipNumber: string) {
+  return postJson<{ task: VmsTask }, typeof payload>(
+    `/tasks?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    payload,
+  )
 }
 
 export function updateTask(
@@ -226,8 +233,12 @@ export function updateTask(
     approvedBy: string
     skills: Record<string, string>
   }>,
+  membershipNumber: string,
 ) {
-  return putJson<{ task: VmsTask }, typeof payload>(`/tasks/${encodeURIComponent(taskId)}`, payload)
+  return putJson<{ task: VmsTask }, typeof payload>(
+    `/tasks/${encodeURIComponent(taskId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    payload,
+  )
 }
 
 export function fetchEvents() {

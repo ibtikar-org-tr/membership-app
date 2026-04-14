@@ -19,7 +19,7 @@ export function DashboardMainPage() {
         const [projectsPayload, eventsPayload, tasksPayload] = await Promise.all([
           fetchProjects(user?.membershipNumber),
           fetchEvents(),
-          fetchTasks(),
+          fetchTasks(user?.membershipNumber ?? ''),
         ])
 
         if (controller.signal.aborted) {
