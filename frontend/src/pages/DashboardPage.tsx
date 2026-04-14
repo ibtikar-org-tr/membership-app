@@ -102,12 +102,6 @@ export function DashboardPage() {
                       <p className="mt-0.5 text-xs opacity-70">{item.helper}</p>
                     </div>
                   )}
-                  {isSidebarCollapsed && (
-                    <div className="pointer-events-none absolute left-full top-1/2 z-[100] ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                      {item.label}
-                      <div className="absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 translate-x-1/2 rotate-45 bg-slate-900"></div>
-                    </div>
-                  )}
                 </NavLink>
               )
             })}
@@ -123,12 +117,6 @@ export function DashboardPage() {
           >
             <Home className="h-4 w-4 flex-shrink-0" />
             {!isSidebarCollapsed && <span>العودة إلى الرئيسية</span>}
-            {isSidebarCollapsed && (
-              <div className="pointer-events-none absolute left-full top-1/2 z-[100] ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                العودة إلى الرئيسية
-                <div className="absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 translate-x-1/2 rotate-45 bg-slate-900"></div>
-              </div>
-            )}
           </Link>
 
           {/* User Profile Section */}
@@ -164,12 +152,6 @@ export function DashboardPage() {
             >
               <LogOut className="h-4 w-4 flex-shrink-0" />
               {!isSidebarCollapsed && <span>تسجيل الخروج</span>}
-              {isSidebarCollapsed && (
-                <div className="pointer-events-none absolute left-full top-1/2 z-[100] ml-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                  تسجيل الخروج
-                  <div className="absolute right-0 top-1/2 h-2 w-2 -translate-y-1/2 translate-x-1/2 rotate-45 bg-slate-900"></div>
-                </div>
-              )}
             </Link>
           </div>
         </aside>
