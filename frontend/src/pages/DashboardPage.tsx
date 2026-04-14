@@ -59,8 +59,8 @@ export function DashboardPage() {
                   <Home className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-base font-bold text-slate-900">لوحة التحكم</h1>
-                  <p className="text-xs text-slate-500">نظام إدارة الأعضاء</p>
+                  <h1 className="text-base font-bold text-slate-900">منصّة تجمّع إبتكار</h1>
+                  <p className="text-xs text-slate-500">نظام إدارة المتطوّعين</p>
                 </div>
               </div>
             )}
@@ -146,7 +146,7 @@ export function DashboardPage() {
                 </div>
                 {!isSidebarCollapsed && (
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900">{user.role}</p>
+                    <p className="truncate text-sm font-semibold text-slate-900">{user.role === 'admin' ? 'مدير' : 'عضو'}</p>
                     <p className="truncate text-xs text-slate-600">{user.email}</p>
                     <p className="mt-1 text-[11px] font-medium text-slate-500">
                       رقم العضوية: {user.membershipNumber}
