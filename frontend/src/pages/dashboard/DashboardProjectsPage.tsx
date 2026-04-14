@@ -350,7 +350,7 @@ export function DashboardProjectsPage() {
         </div>
       </section>
 
-      <ProjectHierarchyTree />
+      <ProjectHierarchyTree clickableProjectIds={projects.map((project) => project.id)} />
     </div>
   )
 }

@@ -1,10 +1,15 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { fetchPlatformProjects } from '../../api/vms'
 import type { VmsProject } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 
 function toMermaidNodeId(projectId: string) {
   return `project_${projectId.replace(/[^a-zA-Z0-9_]/g, '_')}`
+}
+
+function escapeAttributeValue(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
 function escapeMermaidLabel(value: string) {
@@ -15,13 +20,19 @@ function projectLabel(project: VmsProject) {
   return project.name
 }
 
-export function ProjectHierarchyTree() {
+interface ProjectHierarchyTreeProps {
+  clickableProjectIds?: string[]
+}
+
+export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierarchyTreeProps) {
   const [projects, setProjects] = useState<VmsProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const diagramRef = useRef<HTMLDivElement | null>(null)
   const diagramId = useId().replace(/:/g, '_')
   const user = useMemo(() => getStoredUser(), [])
+  const navigate = useNavigate()
+  const clickableProjectIdSet = useMemo(() => new Set(clickableProjectIds), [clickableProjectIds])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -126,6 +137,38 @@ export function ProjectHierarchyTree() {
 
         if (isActive && diagramRef.current) {
           diagramRef.current.innerHTML = svg
+
+          for (const projectId of clickableProjectIdSet) {
+            const nodeId = toMermaidNodeId(projectId)
+            const escapedNodeId = escapeAttributeValue(nodeId)
+            const node = diagramRef.current.querySelector<SVGGElement>(
+              `g.node[id="${escapedNodeId}"], g.node[id*="${escapedNodeId}"], g[id="${escapedNodeId}"], g[id*="${escapedNodeId}"]`,
+            )
+
+            if (!node) {
+              continue
+            }
+
+            node.style.cursor = 'pointer'
+            node.setAttribute('tabindex', '0')
+            node.setAttribute('role', 'link')
+            node.setAttribute('aria-label', 'فتح تفاصيل المشروع')
+
+            const handleOpenProject = () => {
+              navigate(`/dashboard/projects/${projectId}`)
+            }
+
+            const handleKeyDown = (event: Event) => {
+              const keyboardEvent = event as KeyboardEvent
+              if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
+                keyboardEvent.preventDefault()
+                handleOpenProject()
+              }
+            }
+
+            node.addEventListener('click', handleOpenProject)
+            node.addEventListener('keydown', handleKeyDown)
+          }
         }
       } catch {
         if (isActive) {
@@ -139,7 +182,7 @@ export function ProjectHierarchyTree() {
     return () => {
       isActive = false
     }
-  }, [diagramDefinition, diagramId])
+  }, [clickableProjectIdSet, diagramDefinition, diagramId, navigate])
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
