@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
+import { getProjectById } from '../repositories/vms-projects.repository'
 import {
   createProjectMember,
   deleteProjectMember,
@@ -16,6 +17,24 @@ import {
 import type { AppBindings } from '../types/bindings'
 
 export const vmsProjectMembersRoute = new Hono<{ Bindings: AppBindings }>()
+
+async function canManageProjectMembers(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
+  const project = await getProjectById(db, projectId)
+
+  if (!project) {
+    return { project: null, isAuthorized: false }
+  }
+
+  if (project.owner === membershipNumber) {
+    return { project, isAuthorized: true }
+  }
+
+  const projectMember = await getProjectMember(db, projectId, membershipNumber)
+  return {
+    project,
+    isAuthorized: projectMember?.role === 'manager',
+  }
+}
 
 async function enrichProjectMembersWithDisplayNames(
   membersDb: AppBindings['MEMBERS_DB'],
@@ -67,7 +86,23 @@ vmsProjectMembersRoute.get(
 
 vmsProjectMembersRoute.post('/project-members', zValidator('json', createProjectMemberSchema), async (c) => {
   try {
+    const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!actorMembershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
     const payload = c.req.valid('json')
+    const authorization = await canManageProjectMembers(c.env.VMS_DB, payload.projectId, actorMembershipNumber)
+
+    if (!authorization.project) {
+      return c.json({ error: 'Project not found.' }, 404)
+    }
+
+    if (!authorization.isAuthorized) {
+      return c.json({ error: 'Only project owner or managers can add project members.' }, 403)
+    }
+
     const projectMember = await createProjectMember(c.env.VMS_DB, payload)
 
     if (!projectMember) {
@@ -90,7 +125,22 @@ vmsProjectMembersRoute.put(
   async (c) => {
     try {
       const { projectId, membershipNumber } = c.req.valid('param')
+      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+
+      if (!actorMembershipNumber) {
+        return c.json({ error: 'Membership number is required.' }, 400)
+      }
+
       const payload = c.req.valid('json')
+      const authorization = await canManageProjectMembers(c.env.VMS_DB, projectId, actorMembershipNumber)
+
+      if (!authorization.project) {
+        return c.json({ error: 'Project not found.' }, 404)
+      }
+
+      if (!authorization.isAuthorized) {
+        return c.json({ error: 'Only project owner or managers can update project members.' }, 403)
+      }
 
       const existing = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
       if (!existing) {

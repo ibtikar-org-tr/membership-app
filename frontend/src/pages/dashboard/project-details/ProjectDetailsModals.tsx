@@ -347,11 +347,19 @@ interface AddMemberModalProps {
   isAddingMember: boolean
   memberError: string | null
   memberOptions: VmsProjectMember[]
+  canManageProjectMembers: boolean
   onClose: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }
 
-export function AddMemberModal({ isAddingMember, memberError, memberOptions, onClose, onSubmit }: AddMemberModalProps) {
+export function AddMemberModal({
+  isAddingMember,
+  memberError,
+  memberOptions,
+  canManageProjectMembers,
+  onClose,
+  onSubmit,
+}: AddMemberModalProps) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <article className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
@@ -388,12 +396,13 @@ export function AddMemberModal({ isAddingMember, memberError, memberOptions, onC
           </div>
           <button
             type="submit"
-            disabled={isAddingMember}
+            disabled={isAddingMember || !canManageProjectMembers}
             className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {isAddingMember ? 'جار الإضافة...' : 'إضافة العضو'}
           </button>
         </form>
+        {!canManageProjectMembers ? <p className="mt-3 text-sm text-amber-700">إضافة الأعضاء متاحة فقط لمالك المشروع أو مديريه.</p> : null}
         {memberError ? <p className="mt-3 text-sm text-red-600">{memberError}</p> : null}
       </article>
     </div>
@@ -402,11 +411,12 @@ export function AddMemberModal({ isAddingMember, memberError, memberOptions, onC
 
 interface MembersModalProps {
   projectMembers: VmsProjectMember[]
+  canManageProjectMembers: boolean
   onClose: () => void
   onOpenAddMember: () => void
 }
 
-export function MembersModal({ projectMembers, onClose, onOpenAddMember }: MembersModalProps) {
+export function MembersModal({ projectMembers, canManageProjectMembers, onClose, onOpenAddMember }: MembersModalProps) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <article className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
@@ -414,15 +424,17 @@ export function MembersModal({ projectMembers, onClose, onOpenAddMember }: Membe
           <p className="text-base font-semibold text-slate-950">أعضاء المشروع</p>
           <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
         </div>
-        <div className="mt-3">
-          <button
-            type="button"
-            onClick={onOpenAddMember}
-            className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-          >
-            + إضافة عضو
-          </button>
-        </div>
+        {canManageProjectMembers ? (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={onOpenAddMember}
+              className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+            >
+              + إضافة عضو
+            </button>
+          </div>
+        ) : null}
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {projectMembers.length === 0 ? <p className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</p> : null}
           {projectMembers.map((member) => (

@@ -173,6 +173,14 @@ export function DashboardProjectDetailsPage() {
     () => new Set(projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber)),
     [projectMembers],
   )
+  const canManageProjectMembers = useMemo(() => {
+    if (!project || !user) {
+      return false
+    }
+
+    const currentMembershipNumber = user.membershipNumber
+    return project.owner === currentMembershipNumber || projectManagerMembershipNumbers.has(currentMembershipNumber)
+  }, [project, projectManagerMembershipNumbers, user])
 
   const canEditSelectedTask = useMemo(() => {
     if (!selectedTask || !project || !user) {
@@ -313,6 +321,11 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
+    if (!user || !canManageProjectMembers) {
+      setMemberError('إضافة أعضاء المشروع متاحة فقط لمالك المشروع أو مديريه.')
+      return
+    }
+
     const formData = new FormData(form)
     const membershipNumber = String(formData.get('membershipNumber') ?? '').trim()
     const roleRaw = String(formData.get('role') ?? 'member').trim()
@@ -335,7 +348,7 @@ export function DashboardProjectDetailsPage() {
         projectId: projectID,
         membershipNumber,
         role,
-      })
+      }, user.membershipNumber)
 
       if (payload.projectMember) {
         setProjectMembers((previous) => [payload.projectMember, ...previous])
@@ -491,6 +504,7 @@ export function DashboardProjectDetailsPage() {
           isAddingMember={isAddingMember}
           memberError={memberError}
           memberOptions={memberOptions}
+          canManageProjectMembers={canManageProjectMembers}
           onClose={() => setIsAddMemberOpen(false)}
           onSubmit={handleAddMember}
         />
@@ -499,8 +513,12 @@ export function DashboardProjectDetailsPage() {
       {isMembersOpen ? (
         <MembersModal
           projectMembers={projectMembers}
+          canManageProjectMembers={canManageProjectMembers}
           onClose={() => setIsMembersOpen(false)}
           onOpenAddMember={() => {
+            if (!canManageProjectMembers) {
+              return
+            }
             setIsMembersOpen(false)
             setIsAddMemberOpen(true)
           }}

@@ -355,8 +355,11 @@ export function createProjectMember(payload: {
   projectId: string
   membershipNumber: string
   role: 'member' | 'manager' | 'observer'
-}) {
-  return postJson<{ projectMember: VmsProjectMember }, typeof payload>('/project-members', payload)
+}, actorMembershipNumber: string) {
+  return postJson<{ projectMember: VmsProjectMember }, typeof payload>(
+    `/project-members?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    payload,
+  )
 }
 
 export function fetchPointTransactions(membershipNumber?: string) {
