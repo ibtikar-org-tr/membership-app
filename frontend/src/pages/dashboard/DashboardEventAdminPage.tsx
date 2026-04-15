@@ -41,9 +41,9 @@ export function DashboardEventAdminPage() {
     async function load() {
       try {
         const [eventPayload, ticketsPayload, registrationsPayload] = await Promise.all([
-          fetchEventById(eventID),
-          fetchEventTickets(eventID),
-          fetchEventRegistrations(eventID),
+          fetchEventById(eventID as string),
+          fetchEventTickets(eventID as string),
+          fetchEventRegistrations(eventID as string),
         ])
         if (controller.signal.aborted) return
         setEventItem(eventPayload.event)
@@ -60,14 +60,15 @@ export function DashboardEventAdminPage() {
   }, [eventID])
 
   useEffect(() => {
-    if (!eventItem?.projectId) {
+    if (!eventItem || !eventItem.projectId) {
       setProjectMembers([])
       return
     }
+    const projectId = eventItem.projectId!
     const controller = new AbortController()
     async function loadMembers() {
       try {
-        const payload = await fetchProjectMembers(eventItem.projectId as string)
+        const payload = await fetchProjectMembers(projectId)
         if (!controller.signal.aborted) setProjectMembers(payload.projectMembers)
       } catch {
         if (!controller.signal.aborted) setProjectMembers([])
