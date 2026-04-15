@@ -2,7 +2,6 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
-  CheckCircle,
   Clock,
   MapPin,
   Calendar,
@@ -14,14 +13,13 @@ import {
   ArrowRight,
   ExternalLink,
 } from 'lucide-react'
+import Avatar from 'boring-avatars'
 import {
-  approveRegistration,
   createEventRegistration,
   fetchEventById,
   fetchEventRegistrations,
   fetchEventTickets,
   fetchProjectMembers,
-  updateEventRegistration,
 } from '../../api/vms'
 import type {
   VmsEvent,
@@ -31,26 +29,6 @@ import type {
 } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
-
-function registrationStatusLabel(status: string) {
-  if (status === 'registered') {
-    return 'مسجل'
-  }
-
-  if (status === 'attended') {
-    return 'حضر'
-  }
-
-  if (status === 'cancelled') {
-    return 'ملغي'
-  }
-
-  if (status === 'no_show') {
-    return 'لم يحضر'
-  }
-
-  return status
-}
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -72,11 +50,6 @@ export function DashboardEventDetailsPage() {
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<string | null>(null)
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
-  const [updatingRegistrationId, setUpdatingRegistrationId] = useState<string | null>(null)
-  const [registrationUpdateError, setRegistrationUpdateError] = useState<string | null>(null)
-  const [approvingRegistrationId, setApprovingRegistrationId] = useState<string | null>(null)
-  const [registrationApprovalError, setRegistrationApprovalError] = useState<string | null>(null)
-  const [registrationApprovalSuccess, setRegistrationApprovalSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventID) {
@@ -224,56 +197,6 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setIsApplying(false)
-    }
-  }
-
-  const handleUpdateRegistrationStatus = async (registrationId: string, newStatus: 'attended' | 'no_show' | 'cancelled') => {
-    if (!user) {
-      setRegistrationUpdateError('يجب تسجيل الدخول.')
-      return
-    }
-
-    setRegistrationUpdateError(null)
-    setUpdatingRegistrationId(registrationId)
-
-    try {
-      const payload = await updateEventRegistration(registrationId, {
-        status: newStatus,
-      })
-      setRegistrations((previous) => previous.map((reg) => (reg.id === registrationId ? payload.eventRegistration : reg)))
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setRegistrationUpdateError(requestError.message)
-      } else {
-        setRegistrationUpdateError('تعذر تحديث حالة التسجيل.')
-      }
-    } finally {
-      setUpdatingRegistrationId(null)
-    }
-  }
-
-  const handleApproveRegistration = async (registrationId: string, type: 'payment' | 'attendance') => {
-    if (!user) {
-      setRegistrationApprovalError('يجب تسجيل الدخول.')
-      return
-    }
-
-    setRegistrationApprovalError(null)
-    setRegistrationApprovalSuccess(null)
-    setApprovingRegistrationId(registrationId)
-
-    try {
-      const payload = await approveRegistration(registrationId, user.membershipNumber, type)
-      setRegistrations((previous) => previous.map((reg) => (reg.id === registrationId ? payload.eventRegistration : reg)))
-      setRegistrationApprovalSuccess(type === 'payment' ? 'تمت الموافقة على الدفع بنجاح.' : 'تمت الموافقة على الحضور بنجاح.')
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setRegistrationApprovalError(requestError.message)
-      } else {
-        setRegistrationApprovalError('تعذر الموافقة.')
-      }
-    } finally {
-      setApprovingRegistrationId(null)
     }
   }
 
@@ -643,116 +566,30 @@ export function DashboardEventDetailsPage() {
                             {ticketRegistrations.length} {ticketRegistrations.length === 1 ? 'مسجّل' : 'مسجّلين'}
                           </span>
                         </h4>
-                        <ul className="space-y-2">
+                        <div className="mt-3 flex flex-wrap gap-2">
                           {ticketRegistrations.map((registration) => (
-                            <li
-                              key={registration.id}
-                              className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                              <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
-                                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
-                                    registration.status === 'attended'
-                                      ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
-                                      : registration.status === 'cancelled'
-                                      ? 'bg-red-100 text-red-800 ring-red-200'
-                                      : registration.status === 'no_show'
-                                      ? 'bg-amber-100 text-amber-800 ring-amber-200'
-                                      : 'bg-white text-slate-700 ring-slate-200'
-                                  }`}>
-                                    {registrationStatusLabel(registration.status)}
-                                  </span>
-                                </div>
-                                <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
-                                  {registration.paymentApprovedBy && (
-                                    <span>الدفع: {registration.paymentApprovedBy}</span>
-                                  )}
-                                  {registration.attendanceApprovedBy && (
-                                    <span>الحضور: {registration.attendanceApprovedBy}</span>
-                                  )}
-                                </div>
-                              </div>
-                              {false ? (
-                                <div className="flex flex-wrap gap-1.5 sm:shrink-0">
-                                  {registration.status === 'registered' ? (
-                                    <>
-                                      {!registration.paymentApprovedBy ? (
-                                        <button
-                                          type="button"
-                                          onClick={() => void handleApproveRegistration(registration.id, 'payment')}
-                                          disabled={approvingRegistrationId === registration.id}
-                                          className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                          <CheckCircle className="h-3 w-3" />
-                                          {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الدفع'}
-                                        </button>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800">
-                                          <CheckCircle className="h-3 w-3" />
-                                          تم الدفع
-                                        </span>
-                                      )}
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
-                                        disabled={updatingRegistrationId === registration.id}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                      >
-                                        <CheckCircle className="h-3 w-3" />
-                                        {updatingRegistrationId === registration.id ? 'جار...' : 'حضر'}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleUpdateRegistrationStatus(registration.id, 'no_show')}
-                                        disabled={updatingRegistrationId === registration.id}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                      >
-                                        <Clock className="h-3 w-3" />
-                                        {updatingRegistrationId === registration.id ? 'جار...' : 'لم يحضر'}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
-                                        disabled={updatingRegistrationId === registration.id}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                      >
-                                        إلغاء
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      {!registration.attendanceApprovedBy ? (
-                                        <button
-                                          type="button"
-                                          onClick={() => void handleApproveRegistration(registration.id, 'attendance')}
-                                          disabled={approvingRegistrationId === registration.id}
-                                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                        >
-                                          <CheckCircle className="h-3 w-3" />
-                                          {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الحضور'}
-                                        </button>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
-                                          <CheckCircle className="h-3 w-3" />
-                                          تمت الموافقة
-                                        </span>
-                                      )}
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
-                                        disabled={updatingRegistrationId === registration.id}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                      >
-                                        إلغاء
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              ) : null}
-                            </li>
+                            <div key={registration.id} className="relative">
+                              <Avatar
+                                size={40}
+                                name={registration.id}
+                                variant="beam"
+                                colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
+                                className="ring-2 ring-white shadow-sm"
+                              />
+                              <span className={`absolute -bottom-1 -right-1 rounded-full px-1 py-0.5 text-[10px] font-medium ring-1 ${
+                                registration.status === 'attended'
+                                  ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                                  : registration.status === 'cancelled'
+                                  ? 'bg-red-100 text-red-800 ring-red-200'
+                                  : registration.status === 'no_show'
+                                  ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                                  : 'bg-white text-slate-700 ring-slate-200'
+                              }`}>
+                                {registration.status === 'attended' ? '✓' : registration.status === 'cancelled' ? '✗' : registration.status === 'no_show' ? '?' : '○'}
+                              </span>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     )
                   })}
@@ -764,236 +601,61 @@ export function DashboardEventDetailsPage() {
                           {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).length} {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).length === 1 ? 'مسجّل' : 'مسجّلين'}
                         </span>
                       </h4>
-                      <ul className="space-y-2">
+                      <div className="mt-3 flex flex-wrap gap-2">
                         {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).map((registration) => (
-                          <li
-                            key={registration.id}
-                            className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
-                          >
-                            <div className="flex flex-col gap-1.5">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
-                                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
-                                  registration.status === 'attended'
-                                    ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
-                                    : registration.status === 'cancelled'
-                                    ? 'bg-red-100 text-red-800 ring-red-200'
-                                    : registration.status === 'no_show'
-                                    ? 'bg-amber-100 text-amber-800 ring-amber-200'
-                                    : 'bg-white text-slate-700 ring-slate-200'
-                                }`}>
-                                  {registrationStatusLabel(registration.status)}
-                                </span>
-                              </div>
-                              <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
-                                {registration.paymentApprovedBy && (
-                                  <span>الدفع: {registration.paymentApprovedBy}</span>
-                                )}
-                                {registration.attendanceApprovedBy && (
-                                  <span>الحضور: {registration.attendanceApprovedBy}</span>
-                                )}
-                              </div>
-                            </div>
-                            {false ? (
-                              <div className="flex flex-wrap gap-1.5 sm:shrink-0">
-                                {registration.status === 'registered' ? (
-                                  <>
-                                    {!registration.paymentApprovedBy ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleApproveRegistration(registration.id, 'payment')}
-                                        disabled={approvingRegistrationId === registration.id}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                      >
-                                        <CheckCircle className="h-3 w-3" />
-                                        {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الدفع'}
-                                      </button>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800">
-                                        <CheckCircle className="h-3 w-3" />
-                                        تم الدفع
-                                      </span>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
-                                      disabled={updatingRegistrationId === registration.id}
-                                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                      <CheckCircle className="h-3 w-3" />
-                                      {updatingRegistrationId === registration.id ? 'جار...' : 'حضر'}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleUpdateRegistrationStatus(registration.id, 'no_show')}
-                                      disabled={updatingRegistrationId === registration.id}
-                                      className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                      <Clock className="h-3 w-3" />
-                                      {updatingRegistrationId === registration.id ? 'جار...' : 'لم يحضر'}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
-                                      disabled={updatingRegistrationId === registration.id}
-                                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                      إلغاء
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    {!registration.attendanceApprovedBy ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleApproveRegistration(registration.id, 'attendance')}
-                                        disabled={approvingRegistrationId === registration.id}
-                                        className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                      >
-                                        <CheckCircle className="h-3 w-3" />
-                                        {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الحضور'}
-                                      </button>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
-                                        <CheckCircle className="h-3 w-3" />
-                                        تمت الموافقة
-                                      </span>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
-                                      disabled={updatingRegistrationId === registration.id}
-                                      className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                      إلغاء
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            ) : null}
-                          </li>
+                          <div key={registration.id} className="relative">
+                            <Avatar
+                              size={40}
+                              name={registration.id}
+                              variant="beam"
+                              colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
+                              className="ring-2 ring-white shadow-sm"
+                            />
+                            <span className={`absolute -bottom-1 -right-1 rounded-full px-1 py-0.5 text-[10px] font-medium ring-1 ${
+                              registration.status === 'attended'
+                                ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                                : registration.status === 'cancelled'
+                                ? 'bg-red-100 text-red-800 ring-red-200'
+                                : registration.status === 'no_show'
+                                ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                                : 'bg-white text-slate-700 ring-slate-200'
+                            }`}>
+                              {registration.status === 'attended' ? '✓' : registration.status === 'cancelled' ? '✗' : registration.status === 'no_show' ? '?' : '○'}
+                            </span>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
                 </div>
               ) : registrations.length > 0 ? (
-                <ul className="space-y-2">
+                <div className="flex flex-wrap gap-2">
                   {registrations.map((registration) => (
-                    <li
-                      key={registration.id}
-                      className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm text-slate-800">{registration.membershipNumber}</span>
-                          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${
-                            registration.status === 'attended'
-                              ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
-                              : registration.status === 'cancelled'
-                              ? 'bg-red-100 text-red-800 ring-red-200'
-                              : registration.status === 'no_show'
-                              ? 'bg-amber-100 text-amber-800 ring-amber-200'
-                              : 'bg-white text-slate-700 ring-slate-200'
-                          }`}>
-                            {registrationStatusLabel(registration.status)}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 text-[10px] text-slate-500">
-                          {registration.paymentApprovedBy && (
-                            <span>الدفع: {registration.paymentApprovedBy}</span>
-                          )}
-                          {registration.attendanceApprovedBy && (
-                            <span>الحضور: {registration.attendanceApprovedBy}</span>
-                          )}
-                        </div>
-                      </div>
-                      {false ? (
-                        <div className="flex flex-wrap gap-1.5 sm:shrink-0">
-                          {registration.status === 'registered' ? (
-                            <>
-                              {!registration.paymentApprovedBy ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleApproveRegistration(registration.id, 'payment')}
-                                  disabled={approvingRegistrationId === registration.id}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  <CheckCircle className="h-3 w-3" />
-                                  {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الدفع'}
-                                </button>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs font-medium text-violet-800">
-                                  <CheckCircle className="h-3 w-3" />
-                                  تم الدفع
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => void handleUpdateRegistrationStatus(registration.id, 'attended')}
-                                disabled={updatingRegistrationId === registration.id}
-                                className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                <CheckCircle className="h-3 w-3" />
-                                {updatingRegistrationId === registration.id ? 'جار...' : 'حضر'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleUpdateRegistrationStatus(registration.id, 'no_show')}
-                                disabled={updatingRegistrationId === registration.id}
-                                className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                <Clock className="h-3 w-3" />
-                                {updatingRegistrationId === registration.id ? 'جار...' : 'لم يحضر'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
-                                disabled={updatingRegistrationId === registration.id}
-                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                إلغاء
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {!registration.attendanceApprovedBy ? (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleApproveRegistration(registration.id, 'attendance')}
-                                  disabled={approvingRegistrationId === registration.id}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                  <CheckCircle className="h-3 w-3" />
-                                  {approvingRegistrationId === registration.id ? 'جار...' : 'موافقة الحضور'}
-                                </button>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">
-                                  <CheckCircle className="h-3 w-3" />
-                                  تمت الموافقة
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => void handleUpdateRegistrationStatus(registration.id, 'cancelled')}
-                                disabled={updatingRegistrationId === registration.id}
-                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                إلغاء
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      ) : null}
-                    </li>
+                    <div key={registration.id} className="relative">
+                      <Avatar
+                        size={40}
+                        name={registration.membershipNumber}
+                        variant="beam"
+                        colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
+                        className="ring-2 ring-white shadow-sm"
+                      />
+                      <span className={`absolute -bottom-1 -right-1 rounded-full px-1 py-0.5 text-[10px] font-medium ring-1 ${
+                        registration.status === 'attended'
+                          ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                          : registration.status === 'cancelled'
+                          ? 'bg-red-100 text-red-800 ring-red-200'
+                          : registration.status === 'no_show'
+                          ? 'bg-amber-100 text-amber-800 ring-amber-200'
+                          : 'bg-white text-slate-700 ring-slate-200'
+                      }`}>
+                        {registration.status === 'attended' ? '✓' : registration.status === 'cancelled' ? '✗' : registration.status === 'no_show' ? '?' : '○'}
+                      </span>
+                    </div>
                   ))}
-                </ul>
+                </div>
               ) : (
                 <p className="text-center text-sm text-slate-500">لا توجد تسجيلات لهذه الفعالية بعد.</p>
               )}
-              {registrationUpdateError ? <p className="mt-3 text-sm text-red-600">{registrationUpdateError}</p> : null}
-              {registrationApprovalError ? <p className="mt-3 text-sm text-red-600">{registrationApprovalError}</p> : null}
-              {registrationApprovalSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{registrationApprovalSuccess}</p> : null}
             </div>
           </div>
           {tickets.length === 0 && registrations.length === 0 ? (
