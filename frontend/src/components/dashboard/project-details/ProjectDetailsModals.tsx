@@ -5,6 +5,13 @@ import type { VmsEvent, VmsProject, VmsProjectMember, VmsTask } from '../../../t
 import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
 import { formatDueDate, statusBadgeClass, taskStatusLabel } from './helpers'
 
+function eventStatusLabel(status: string) {
+  if (status === 'draft') return 'مسودة'
+  if (status === 'public') return 'منشورة'
+  if (status === 'archived') return 'مؤرشفة'
+  return status
+}
+
 interface TaskDetailsModalProps {
   selectedTask: VmsTask
   canEditSelectedTask: boolean
@@ -496,11 +503,15 @@ export function ProjectEventsModal({
               type="datetime-local"
               className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
             />
-            <input
-              name="location"
-              placeholder="الموقع"
+            <select
+              name="status"
+              defaultValue="draft"
               className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            />
+            >
+              <option value="draft">مسودة</option>
+              <option value="public">منشورة</option>
+              <option value="archived">مؤرشفة</option>
+            </select>
             <button
               type="submit"
               disabled={isCreatingEvent}
@@ -544,7 +555,7 @@ export function ProjectEventsModal({
                 <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
                   <p>البداية: {formatDateTimeEnCA(eventItem.startTime)}</p>
                   <p>النهاية: {formatDateTimeEnCA(eventItem.endTime)}</p>
-                  <p>المكان: {eventItem.location ?? 'غير محدد'}</p>
+                  <p>الحالة: {eventStatusLabel(eventItem.status)}</p>
                 </div>
               </article>
             ))}

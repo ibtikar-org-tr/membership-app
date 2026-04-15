@@ -4,6 +4,13 @@ import { fetchEvents } from '../../api/vms'
 import type { VmsEvent } from '../../types/vms'
 import { formatDateTimeEnCA } from '../../utils/date-format'
 
+function eventStatusLabel(status: string) {
+  if (status === 'draft') return 'مسودة'
+  if (status === 'public') return 'منشورة'
+  if (status === 'archived') return 'مؤرشفة'
+  return status
+}
+
 export function DashboardEventsPage() {
   const [events, setEvents] = useState<VmsEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -155,25 +162,9 @@ export function DashboardEventsPage() {
                               <span>النهاية: {formatDateTimeEnCA(eventItem.endTime)}</span>
                             </div>
                           )}
-                          {eventItem.location && (
-                            <div className="flex items-center gap-1.5">
-                              <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                />
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                              </svg>
-                              <span>{eventItem.location}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span>الحالة: {eventStatusLabel(eventItem.status)}</span>
+                          </div>
                         </div>
                         <Link
                           to={`/dashboard/event/${eventItem.id}`}
@@ -266,25 +257,9 @@ export function DashboardEventsPage() {
                               <span>النهاية: {formatDateTimeEnCA(eventItem.endTime)}</span>
                             </div>
                           )}
-                          {eventItem.location && (
-                            <div className="flex items-center gap-1.5">
-                              <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                />
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                              </svg>
-                              <span>{eventItem.location}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span>الحالة: {eventStatusLabel(eventItem.status)}</span>
+                          </div>
                         </div>
                         <Link
                           to={`/dashboard/event/${eventItem.id}`}

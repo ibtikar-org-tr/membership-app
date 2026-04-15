@@ -36,7 +36,7 @@ export interface VmsEvent {
   description: string | null
   startTime: string | null
   endTime: string | null
-  location: string | null
+  status: 'draft' | 'public' | 'archived' | string
   imageUrl: string | null
   associatedUrls: Record<string, unknown> | null
   createdBy: string

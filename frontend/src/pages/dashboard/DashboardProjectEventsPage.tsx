@@ -7,6 +7,13 @@ import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
 import { ImageUploader } from '../../components/ImageUploader'
 
+function eventStatusLabel(status: string) {
+  if (status === 'draft') return 'مسودة'
+  if (status === 'public') return 'منشورة'
+  if (status === 'archived') return 'مؤرشفة'
+  return status
+}
+
 export function DashboardProjectEventsPage() {
   const { projectID } = useParams()
   const user = useMemo(() => getStoredUser(), [])
@@ -134,7 +141,8 @@ export function DashboardProjectEventsPage() {
     const description = String(formData.get('description') ?? '').trim()
     const startTime = String(formData.get('startTime') ?? '').trim()
     const endTime = String(formData.get('endTime') ?? '').trim()
-    const location = String(formData.get('location') ?? '').trim()
+    const statusRaw = String(formData.get('status') ?? 'draft').trim()
+    const status = statusRaw === 'public' || statusRaw === 'archived' ? statusRaw : 'draft'
     const associatedUrlsRaw = String(formData.get('associatedUrls') ?? '').trim()
     const country = String(formData.get('country') ?? '').trim()
     const region = String(formData.get('region') ?? '').trim()
@@ -169,7 +177,7 @@ export function DashboardProjectEventsPage() {
         description: description || undefined,
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
-        location: location || undefined,
+        status,
         ...(associatedUrls ? { associatedUrls } : {}),
         createdBy: user.membershipNumber,
         projectId: projectID,
@@ -269,12 +277,16 @@ export function DashboardProjectEventsPage() {
             />
           </label>
           <label className="space-y-1">
-            <span className="text-xs font-medium text-slate-700">الموقع</span>
-            <input
-              name="location"
-              placeholder="الموقع"
+            <span className="text-xs font-medium text-slate-700">حالة الفعالية</span>
+            <select
+              name="status"
+              defaultValue="draft"
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            />
+            >
+              <option value="draft">مسودة</option>
+              <option value="public">منشورة</option>
+              <option value="archived">مؤرشفة</option>
+            </select>
           </label>
           <label className="space-y-1">
             <span className="text-xs font-medium text-slate-700">نوع الفعالية</span>
@@ -471,25 +483,9 @@ export function DashboardProjectEventsPage() {
                               <span>النهاية: {formatDateTimeEnCA(eventItem.endTime)}</span>
                             </div>
                           )}
-                          {eventItem.location && (
-                            <div className="flex items-center gap-1.5">
-                              <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                />
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                              </svg>
-                              <span>{eventItem.location}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span>الحالة: {eventStatusLabel(eventItem.status)}</span>
+                          </div>
                         </div>
                         <Link
                           to={`/dashboard/event/${eventItem.id}`}
@@ -582,25 +578,9 @@ export function DashboardProjectEventsPage() {
                               <span>النهاية: {formatDateTimeEnCA(eventItem.endTime)}</span>
                             </div>
                           )}
-                          {eventItem.location && (
-                            <div className="flex items-center gap-1.5">
-                              <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                                />
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                              </svg>
-                              <span>{eventItem.location}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span>الحالة: {eventStatusLabel(eventItem.status)}</span>
+                          </div>
                         </div>
                         <Link
                           to={`/dashboard/event/${eventItem.id}`}

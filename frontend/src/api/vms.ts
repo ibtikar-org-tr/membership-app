@@ -280,7 +280,7 @@ export function createEvent(payload: {
   description?: string
   startTime?: string
   endTime?: string
-  location?: string
+  status: 'draft' | 'public' | 'archived'
   createdBy: string
   projectId?: string
   skills?: Record<string, string>
@@ -302,7 +302,7 @@ export function updateEvent(
     description: string
     startTime: string
     endTime: string
-    location: string
+    status: 'draft' | 'public' | 'archived'
     createdBy: string
     projectId: string
     skills: Record<string, string>

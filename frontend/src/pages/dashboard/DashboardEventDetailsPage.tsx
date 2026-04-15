@@ -63,6 +63,13 @@ function registrationStatusLabel(status: string) {
   return status
 }
 
+function eventStatusLabel(status: string) {
+  if (status === 'draft') return 'مسودة'
+  if (status === 'public') return 'منشورة'
+  if (status === 'archived') return 'مؤرشفة'
+  return status
+}
+
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
   const user = useMemo(() => getStoredUser(), [])
@@ -246,7 +253,8 @@ export function DashboardEventDetailsPage() {
     const description = String(formData.get('description') ?? '').trim()
     const startTime = String(formData.get('startTime') ?? '').trim()
     const endTime = String(formData.get('endTime') ?? '').trim()
-    const location = String(formData.get('location') ?? '').trim()
+    const statusRaw = String(formData.get('status') ?? eventItem.status).trim()
+    const status = statusRaw === 'public' || statusRaw === 'archived' ? statusRaw : 'draft'
     const country = String(formData.get('country') ?? '').trim()
     const region = String(formData.get('region') ?? '').trim()
     const city = String(formData.get('city') ?? '').trim()
@@ -270,7 +278,7 @@ export function DashboardEventDetailsPage() {
         ...(description ? { description } : {}),
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
-        ...(location ? { location } : {}),
+        status,
         ...(associatedUrlsObject ? { associatedUrls: associatedUrlsObject } : {}),
         ...(locationType === 'online' ? { address: 'online' } : { country: country || undefined, region: region || undefined, city: city || undefined, address: address || undefined }),
       })
@@ -655,13 +663,16 @@ export function DashboardEventDetailsPage() {
               {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
             </button>
             <label className="md:col-span-2 space-y-1">
-              <span className="text-xs font-medium text-slate-700">الموقع</span>
-              <input
-                name="location"
-                defaultValue={eventItem.location ?? ''}
-                placeholder="الموقع"
+              <span className="text-xs font-medium text-slate-700">حالة الفعالية</span>
+              <select
+                name="status"
+                defaultValue={eventItem.status}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-              />
+              >
+                <option value="draft">مسودة</option>
+                <option value="public">منشورة</option>
+                <option value="archived">مؤرشفة</option>
+              </select>
             </label>
             <label className="space-y-1">
               <span className="text-xs font-medium text-slate-700">نوع الفعالية</span>
@@ -857,8 +868,8 @@ export function DashboardEventDetailsPage() {
             <MapPin className="h-5 w-5" strokeWidth={1.75} />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-medium text-slate-500">المكان</p>
-            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{eventItem.location ?? 'غير محدد'}</p>
+            <p className="text-xs font-medium text-slate-500">الحالة</p>
+            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{eventStatusLabel(eventItem.status)}</p>
           </div>
         </div>
       </div>

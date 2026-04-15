@@ -10,7 +10,7 @@ export const createEventSchema = z.object({
   description: optionalTrimmedString,
   startTime: optionalTrimmedString,
   endTime: optionalTrimmedString,
-  location: optionalTrimmedString,
+  status: z.enum(['draft', 'public', 'archived']),
   imageUrl: optionalTrimmedString,
   associatedUrls: eventUrlsSchema,
   createdBy: requiredTrimmedString,

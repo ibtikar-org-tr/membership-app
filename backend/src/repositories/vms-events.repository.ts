@@ -9,7 +9,7 @@ interface EventRow {
   description: string | null
   start_time: string | null
   end_time: string | null
-  location: string | null
+  status: string
   image_url: string | null
   associated_urls: string | null
   created_by: string
@@ -74,7 +74,7 @@ function mapEventRow(row: EventRow) {
     description: row.description,
     startTime: row.start_time,
     endTime: row.end_time,
-    location: row.location,
+    status: row.status,
     imageUrl: row.image_url,
     associatedUrls: parseJsonObject(row.associated_urls),
     createdBy: row.created_by,
@@ -101,7 +101,7 @@ export async function listEvents(db: D1DatabaseLike) {
          events.description,
          events.start_time,
          events.end_time,
-         events.location,
+         events.status,
          events.image_url,
          events.associated_urls,
          events.created_by,
@@ -135,7 +135,7 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
          events.description,
          events.start_time,
          events.end_time,
-         events.location,
+         events.status,
          events.image_url,
          events.associated_urls,
          events.created_by,
@@ -161,7 +161,7 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
 export async function createEvent(db: D1DatabaseLike, id: string, input: CreateEventInput) {
   await db
     .prepare(
-      'INSERT INTO events (id, name, description, start_time, end_time, location, image_url, associated_urls, created_by, project_id, skills, telegram_group_id, country, region, city, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, skills, telegram_group_id, country, region, city, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -169,11 +169,11 @@ export async function createEvent(db: D1DatabaseLike, id: string, input: CreateE
       input.description ?? null,
       input.startTime ?? null,
       input.endTime ?? null,
-      input.location ?? null,
       input.imageUrl ?? null,
       input.associatedUrls ? JSON.stringify(input.associatedUrls) : null,
       input.createdBy,
       input.projectId ?? null,
+      input.status,
       input.skills ? JSON.stringify(input.skills) : null,
       input.telegramGroupId ?? null,
       input.country ?? null,
@@ -210,9 +210,9 @@ export async function updateEventById(db: D1DatabaseLike, id: string, input: Upd
     values.push(input.endTime)
   }
 
-  if (input.location !== undefined) {
-    updates.push('location = ?')
-    values.push(input.location)
+  if (input.status !== undefined) {
+    updates.push('status = ?')
+    values.push(input.status)
   }
 
   if (input.imageUrl !== undefined) {
