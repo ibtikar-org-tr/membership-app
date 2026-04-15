@@ -54,8 +54,9 @@ export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
           <p className="mb-3 line-clamp-2 text-xs text-slate-600">{eventItem.description}</p>
         ) : null}
         <div className="space-y-1.5 text-xs text-slate-600">
-          <div>تاريخ البداية: {formatDateEnCA(eventItem.startTime)}</div>
-          {eventItem.city ? <div>المدينة: {eventItem.city}</div> : null}
+          <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
+            {formatDateEnCA(eventItem.startTime)}
+          </span>
         </div>
         <Link
           to={`/dashboard/event/${eventItem.id}`}
