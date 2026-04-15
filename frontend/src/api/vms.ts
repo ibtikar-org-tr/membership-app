@@ -143,6 +143,36 @@ export function fetchProfile(membershipNumber: string) {
   return fetchJson<{ profile: MemberProfile }>(`/profile/${encodeURIComponent(membershipNumber)}`)
 }
 
+export function updateProfile(
+  membershipNumber: string,
+  payload: Partial<{
+    enName: string
+    arName: string
+    phoneNumber: string
+    sex: string
+    dateOfBirth: string
+    country: string
+    region: string
+    city: string
+    address: string
+    educationLevel: string
+    school: string
+    graduationYear: number
+    fieldOfStudy: string
+    bloodType: string
+    socialMediaLinks: string
+    biography: string
+    interests: string
+    skills: string
+    languages: string
+  }>,
+) {
+  return putJson<{ profile: MemberProfile }, typeof payload>(
+    `/profile/${encodeURIComponent(membershipNumber)}`,
+    payload,
+  )
+}
+
 export function fetchProjects(membershipNumber?: string) {
   const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
   return fetchJson<{ projects: VmsProject[] }>(`/projects${query}`)

@@ -29,6 +29,29 @@ interface UserProfileRow {
   languages: string | null
 }
 
+export interface UpdateUserInfoParams {
+  enName?: string | null
+  arName?: string | null
+  phoneNumber?: string | null
+  sex?: string | null
+  dateOfBirth?: string | null
+  country?: string | null
+  region?: string | null
+  city?: string | null
+  address?: string | null
+  educationLevel?: string | null
+  school?: string | null
+  fieldOfStudy?: string | null
+  graduationYear?: number | null
+  bloodType?: string | null
+  socialMediaLinks?: string | null
+  profilePictureUrl?: string | null
+  biography?: string | null
+  interests?: string | null
+  skills?: string | null
+  languages?: string | null
+}
+
 interface UserDisplayNameRow {
   membership_number: string
   email: string | null
@@ -90,6 +113,107 @@ export async function createUserInfo(db: D1DatabaseLike, params: CreateUserInfoP
       params.skills,
       params.languages,
     )
+    .run()
+}
+
+export async function updateUserInfo(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+  params: UpdateUserInfoParams,
+): Promise<void> {
+  const updates: string[] = []
+  const values: Array<string | number | null | undefined> = []
+
+  if (params.enName !== undefined) {
+    updates.push('en_name = ?')
+    values.push(params.enName)
+  }
+  if (params.arName !== undefined) {
+    updates.push('ar_name = ?')
+    values.push(params.arName)
+  }
+  if (params.phoneNumber !== undefined) {
+    updates.push('phone_number = ?')
+    values.push(params.phoneNumber)
+  }
+  if (params.sex !== undefined) {
+    updates.push('sex = ?')
+    values.push(params.sex)
+  }
+  if (params.dateOfBirth !== undefined) {
+    updates.push('date_of_birth = ?')
+    values.push(params.dateOfBirth)
+  }
+  if (params.country !== undefined) {
+    updates.push('country = ?')
+    values.push(params.country)
+  }
+  if (params.region !== undefined) {
+    updates.push('region = ?')
+    values.push(params.region)
+  }
+  if (params.city !== undefined) {
+    updates.push('city = ?')
+    values.push(params.city)
+  }
+  if (params.address !== undefined) {
+    updates.push('address = ?')
+    values.push(params.address)
+  }
+  if (params.educationLevel !== undefined) {
+    updates.push('education_level = ?')
+    values.push(params.educationLevel)
+  }
+  if (params.school !== undefined) {
+    updates.push('school = ?')
+    values.push(params.school)
+  }
+  if (params.fieldOfStudy !== undefined) {
+    updates.push('field_of_study = ?')
+    values.push(params.fieldOfStudy)
+  }
+  if (params.graduationYear !== undefined) {
+    updates.push('graduation_year = ?')
+    values.push(params.graduationYear)
+  }
+  if (params.bloodType !== undefined) {
+    updates.push('blood_type = ?')
+    values.push(params.bloodType)
+  }
+  if (params.socialMediaLinks !== undefined) {
+    updates.push('social_media_links = ?')
+    values.push(params.socialMediaLinks)
+  }
+  if (params.profilePictureUrl !== undefined) {
+    updates.push('profile_picture_url = ?')
+    values.push(params.profilePictureUrl)
+  }
+  if (params.biography !== undefined) {
+    updates.push('biography = ?')
+    values.push(params.biography)
+  }
+  if (params.interests !== undefined) {
+    updates.push('interests = ?')
+    values.push(params.interests)
+  }
+  if (params.skills !== undefined) {
+    updates.push('skills = ?')
+    values.push(params.skills)
+  }
+  if (params.languages !== undefined) {
+    updates.push('languages = ?')
+    values.push(params.languages)
+  }
+
+  if (updates.length === 0) {
+    return
+  }
+
+  values.push(membershipNumber)
+
+  await db
+    .prepare(`UPDATE user_info SET ${updates.join(', ')} WHERE membership_number = ?`)
+    .bind(...values)
     .run()
 }
 
