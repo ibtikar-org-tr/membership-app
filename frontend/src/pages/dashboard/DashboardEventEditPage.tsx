@@ -6,13 +6,14 @@ import {
   createEventTicket,
   deleteEventTicket,
   fetchEventById,
+  fetchEventRegistrations,
   fetchEventTickets,
   fetchProjectMembers,
   updateEvent,
   updateEventTicket,
   uploadEventBanner,
 } from '../../api/vms'
-import type { VmsEvent, VmsEventTicket, VmsProjectMember } from '../../types/vms'
+import type { VmsEvent, VmsEventRegistration, VmsEventTicket, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { ImageUploader } from '../../components/ImageUploader'
 import { LocationDetailsComponent } from '../../components/registration/sections/personal-info-section/LocationDetailsComponent'
@@ -64,6 +65,7 @@ export function DashboardEventEditPage() {
   const [newUrlValue, setNewUrlValue] = useState('')
   const [locationData, setLocationData] = useState<RegistrationFormData>(initialRegistrationFormData)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
+  const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
   const [ticketError, setTicketError] = useState<string | null>(null)
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
@@ -77,13 +79,15 @@ export function DashboardEventEditPage() {
 
     async function loadEvent() {
       try {
-        const [eventPayload, ticketsPayload] = await Promise.all([
+        const [eventPayload, ticketsPayload, registrationsPayload] = await Promise.all([
           fetchEventById(currentEventId),
           fetchEventTickets(currentEventId),
+          fetchEventRegistrations(currentEventId),
         ])
         if (controller.signal.aborted) return
         setEventItem(eventPayload.event)
         setTickets(ticketsPayload.eventTickets)
+        setRegistrations(registrationsPayload.eventRegistrations)
       } catch {
         if (!controller.signal.aborted) setNotFound(true)
       } finally {
@@ -329,6 +333,12 @@ export function DashboardEventEditPage() {
   }
 
   const handleDeleteTicket = async (ticketId: string) => {
+    const hasRegistrants = registrations.some((registration) => registration.ticketId === ticketId)
+    if (hasRegistrants) {
+      setTicketError('لا يمكن حذف التذكرة قبل إزالة جميع المسجلين عليها.')
+      return
+    }
+
     if (!window.confirm('هل أنت متأكد من حذف هذه التذكرة؟ لا يمكن التراجع عن هذا الإجراء.')) {
       return
     }
@@ -339,6 +349,7 @@ export function DashboardEventEditPage() {
     try {
       await deleteEventTicket(ticketId)
       setTickets((previous) => previous.filter((ticket) => ticket.id !== ticketId))
+      setRegistrations((previous) => previous.filter((registration) => registration.ticketId !== ticketId))
       setEditingTicketId((current) => (current === ticketId ? null : current))
     } catch (requestError) {
       if (requestError instanceof Error) {
@@ -619,7 +630,14 @@ export function DashboardEventEditPage() {
         {ticketError ? <p className="mt-3 text-sm text-red-600">{ticketError}</p> : null}
 
         <ul className="mt-4 space-y-2">
-          {tickets.map((ticket) => (
+          {tickets.map((ticket) => {
+            const registrantsCount = registrations.filter((registration) => registration.ticketId === ticket.id).length
+            const cannotDelete = registrantsCount > 0
+            const deleteHint = cannotDelete
+              ? 'يجب إزالة جميع المسجلين على هذه التذكرة قبل حذفها.'
+              : 'حذف التذكرة'
+
+            return (
             <li key={ticket.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               {editingTicketId === ticket.id ? (
                 <form onSubmit={(e) => void handleUpdateTicket(e, ticket.id)} className="grid gap-3 sm:grid-cols-2">
@@ -701,7 +719,7 @@ export function DashboardEventEditPage() {
                     )}
                   </div>
                   <p className="mt-2 text-xs text-slate-600">
-                    الكمية: {ticket.quantity} • النقاط: {ticket.pointPrice}
+                    الكمية: {ticket.quantity} • النقاط: {ticket.pointPrice} • المسجلون: {registrantsCount}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                     <button
@@ -715,7 +733,8 @@ export function DashboardEventEditPage() {
                     <button
                       type="button"
                       onClick={() => void handleDeleteTicket(ticket.id)}
-                      disabled={deletingTicketId === ticket.id}
+                      title={deleteHint}
+                      disabled={deletingTicketId === ticket.id || cannotDelete}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-800 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -725,7 +744,8 @@ export function DashboardEventEditPage() {
                 </>
               )}
             </li>
-          ))}
+            )
+          })}
         </ul>
       </article>
     </section>

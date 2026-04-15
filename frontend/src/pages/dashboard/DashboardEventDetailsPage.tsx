@@ -327,13 +327,22 @@ export function DashboardEventDetailsPage() {
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch sm:gap-2 lg:flex-row">
             {canEditEvent ? (
-              <Link
-                to={`/dashboard/event/${eventItem.id}/edit`}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
-              >
-                <PencilLine className="h-4 w-4" />
-                تعديل الفعالية
-              </Link>
+              <>
+                <Link
+                  to={`/dashboard/event/${eventItem.id}/edit`}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
+                >
+                  <PencilLine className="h-4 w-4" />
+                  تعديل الفعالية
+                </Link>
+                <Link
+                  to={`/dashboard/event/${eventItem.id}/admin`}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-medium text-cyan-800 shadow-sm transition hover:bg-cyan-100"
+                >
+                  <Users className="h-4 w-4" />
+                  إدارة التسجيلات
+                </Link>
+              </>
             ) : null}
             <Link
               to="/dashboard/events"
@@ -348,7 +357,10 @@ export function DashboardEventDetailsPage() {
 
       {canEditEvent ? (
         <div className="rounded-xl border border-dashed border-slate-300/80 bg-slate-50/50 px-4 py-3 text-center text-sm text-slate-600">
-          تعديل بيانات الفعالية متاح من صفحة التحرير الموحدة.
+          تعديل بيانات الفعالية متاح من صفحة التحرير الموحدة، وإدارة التسجيلات من صفحة الإدارة.
+          <Link to={`/dashboard/event/${eventItem.id}/admin`} className="mr-1 font-semibold text-cyan-700 underline">
+            الانتقال إلى إدارة التسجيلات
+          </Link>
         </div>
       ) : null}
 
@@ -661,7 +673,7 @@ export function DashboardEventDetailsPage() {
                                   )}
                                 </div>
                               </div>
-                              {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
+                              {false ? (
                                 <div className="flex flex-wrap gap-1.5 sm:shrink-0">
                                   {registration.status === 'registered' ? (
                                     <>
@@ -782,7 +794,7 @@ export function DashboardEventDetailsPage() {
                                 )}
                               </div>
                             </div>
-                            {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
+                            {false ? (
                               <div className="flex flex-wrap gap-1.5 sm:shrink-0">
                                 {registration.status === 'registered' ? (
                                   <>
@@ -896,7 +908,7 @@ export function DashboardEventDetailsPage() {
                           )}
                         </div>
                       </div>
-                      {canEditEvent && (registration.status === 'registered' || registration.status === 'attended' || registration.status === 'no_show') ? (
+                      {false ? (
                         <div className="flex flex-wrap gap-1.5 sm:shrink-0">
                           {registration.status === 'registered' ? (
                             <>

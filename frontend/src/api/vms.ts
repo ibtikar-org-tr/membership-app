@@ -381,6 +381,10 @@ export function updateEventRegistration(
   )
 }
 
+export function deleteEventRegistration(registrationId: string) {
+  return deleteJson(`/event-registrations/${encodeURIComponent(registrationId)}`)
+}
+
 export function approveRegistration(registrationId: string, approverMembershipNumber: string, type: 'payment' | 'attendance') {
   return postJson<{ eventRegistration: VmsEventRegistration }, unknown>(
     `/event-registrations/${encodeURIComponent(registrationId)}/approve?approver=${encodeURIComponent(approverMembershipNumber)}&type=${type}`,
