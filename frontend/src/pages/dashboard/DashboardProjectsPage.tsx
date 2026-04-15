@@ -287,8 +287,8 @@ export function DashboardProjectsPage() {
               <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400">
                 <FiFolder className="h-7 w-7" aria-hidden />
               </span>
-              <p className="mt-4 text-sm font-medium text-slate-800">لا توجد مشاريع بعد</p>
-              <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">ابدأ بإنشاء أول مشروع باستخدام النموذج أعلاه، أو انتظر حتى يضيف فريقك مشاريع جديدة.</p>
+              <p className="mt-4 text-sm font-medium text-slate-800">ليس هناك أي مشاريع أنت متطوّعٌ فيها </p>
+              <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">يمكنك التطوّع في مشاريع جديدة من خلال قسم التطوّع.</p>
             </div>
           ) : null}
 
