@@ -1,6 +1,6 @@
 import { SectionCard } from '../SectionCard.tsx'
 import { SearchableTagsField } from '../SearchableTagsField.tsx'
-import { SocialMediaLinksField } from '../SocialMediaLinksField.tsx'
+import { SocialMediaLinksField } from './profile-section/SocialMediaLinksField.tsx'
 import { POPULAR_LANGUAGES_INITIAL_SUGGESTIONS, POPULAR_LANGUAGE_OPTIONS } from '../../../config/languages.ts'
 import { POPULAR_SKILLS, POPULAR_SKILLS_INITIAL_SUGGESTIONS } from '../../../config/popularSkills.ts'
 import type { RegistrationFormData } from '../../../types/registration.ts'
