@@ -273,7 +273,7 @@ export function DashboardProfilePage() {
       ) : (
         <div className="space-y-6">
           <Suspense fallback={<div className="h-28 animate-pulse rounded-2xl bg-slate-100" />}>
-            <PersonalInfoSection data={formData} onFieldChange={handleFieldChange} />
+            <PersonalInfoSection data={formData} onFieldChange={handleFieldChange} readOnlyFields={READ_ONLY_FIELDS} />
           </Suspense>
           <Suspense fallback={<div className="h-28 animate-pulse rounded-2xl bg-slate-100" />}>
             <EducationSection data={formData} onFieldChange={handleFieldChange} />

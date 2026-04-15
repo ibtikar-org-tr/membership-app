@@ -6,6 +6,7 @@ type EmailFieldProps = {
   value: string
   onChange: (value: string) => void
   required?: boolean
+  readOnly?: boolean
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -25,7 +26,7 @@ function splitEmailParts(email: string) {
   }
 }
 
-export function EmailField({ id, label, value, onChange, required = false }: EmailFieldProps) {
+export function EmailField({ id, label, value, onChange, required = false, readOnly = false }: EmailFieldProps) {
   const domainInputRef = useRef<HTMLInputElement | null>(null)
   const [hasBlurred, setHasBlurred] = useState(false)
   const { localPart: initialLocalPart, domainPart: initialDomainPart } = useMemo(
@@ -129,7 +130,10 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           value={localPart}
           onChange={(event) => handleLocalPartChange(event.target.value)}
           onKeyDown={handleLocalPartKeyDown}
-          className="h-11 w-full min-w-0 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
+          readOnly={readOnly}
+          className={`h-11 w-full min-w-0 border-0 bg-transparent px-3 text-left text-sm outline-none placeholder:text-slate-400 ${
+            readOnly ? 'text-slate-500 cursor-not-allowed' : 'text-slate-900'
+          }`}
           dir="ltr"
         />
         <div className="flex h-11 w-12 items-center justify-center border-x border-slate-300 bg-slate-50 text-base font-bold text-slate-700" aria-hidden="true">
@@ -147,7 +151,10 @@ export function EmailField({ id, label, value, onChange, required = false }: Ema
           placeholder="proton.me"
           value={domainPart}
           onChange={(event) => handleDomainPartChange(event.target.value)}
-          className="h-11 w-full min-w-0 border-0 bg-transparent px-3 text-left text-sm text-slate-900 outline-none placeholder:text-slate-400"
+          readOnly={readOnly}
+          className={`h-11 w-full min-w-0 border-0 bg-transparent px-3 text-left text-sm outline-none placeholder:text-slate-400 ${
+            readOnly ? 'text-slate-500 cursor-not-allowed' : 'text-slate-900'
+          }`}
           dir="ltr"
         />
       </div>

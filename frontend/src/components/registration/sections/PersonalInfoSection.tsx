@@ -14,9 +14,10 @@ const countryStateCityModulePromise = import('react-country-state-city')
 type PersonalInfoSectionProps = {
   data: RegistrationFormData
   onFieldChange: (field: keyof RegistrationFormData, value: string) => void
+  readOnlyFields?: Set<string>
 }
 
-export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSectionProps) {
+export function PersonalInfoSection({ data, onFieldChange, readOnlyFields }: PersonalInfoSectionProps) {
   const [selectedCountryId, setSelectedCountryId] = useState<number>(0)
   const [selectedStateId, setSelectedStateId] = useState<number>(0)
   const [showAddressField, setShowAddressField] = useState(false)
@@ -204,6 +205,7 @@ export function PersonalInfoSection({ data, onFieldChange }: PersonalInfoSection
             value={data.email}
             onChange={(value) => onFieldChange('email', value)}
             required
+            readOnly={readOnlyFields?.has('email')}
           />
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-900 wrap-break-word">
             تأكّد أنّك مسجّل من بريدك الالكتروني الأساسي لأننا سنتواصل معك عبر هذا الايميل
