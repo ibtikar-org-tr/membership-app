@@ -71,6 +71,7 @@ export function DashboardEventEditPage() {
   const [editingTicketId, setEditingTicketId] = useState<string | null>(null)
   const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null)
   const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null)
+  const [telegramGroupId, setTelegramGroupId] = useState('')
 
   useEffect(() => {
     if (!eventID) return
@@ -140,6 +141,7 @@ export function DashboardEventEditPage() {
         url: String(url),
       })),
     )
+    setTelegramGroupId(eventItem.telegramGroupId ?? '')
   }, [eventItem])
 
   const canEditEvent = useMemo(() => {
@@ -212,6 +214,7 @@ export function DashboardEventEditPage() {
         ...(locationType === 'online'
           ? { address: 'online' }
           : { country: country || undefined, region: region || undefined, city: city || undefined, address: address || undefined }),
+        ...(telegramGroupId.trim() ? { telegramGroupId: telegramGroupId.trim() } : {}),
       })
 
       let updated = payload.event
@@ -461,6 +464,17 @@ export function DashboardEventEditPage() {
               <option value="physical">فعالية حضورية</option>
               <option value="online">فعالية أون لاين</option>
             </select>
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-slate-700">معرف مجموعة التلغرام</span>
+            <input
+              type="text"
+              value={telegramGroupId}
+              onChange={(e) => setTelegramGroupId(e.target.value)}
+              placeholder="-1001234567890"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            />
+            <span className="text-xs text-slate-500">للحصول على المعرف، أرسل /info في المجموعة</span>
           </label>
           <label className="md:col-span-4 space-y-1">
             <span className="text-xs font-medium text-slate-700">وصف الفعالية</span>
