@@ -75,6 +75,10 @@ CREATE TABLE IF NOT EXISTS events (
     associated_urls TEXT, -- JSON array of URLs associated with the event (e.g., {"website": "https://example.com", "facebook": "https://facebook.com/example", "map": "https://www.openstreetmap.org/relation/1661399"})
     created_by TEXT NOT NULL, -- membership_number of the user who created the event
     project_id TEXT REFERENCES projects(id), -- optional association with a project
+    country TEXT, -- ISO 3166-1 alpha-2 country code (e.g., "US", "TR", etc.)
+    region TEXT, -- state/region or province within the country (e.g., "Istanbul", "Aleppo", "California" etc.)
+    city TEXT, -- city of residence (e.g., "Fatih", "Al Bab", "Mezitli", "Azaz" etc.)
+    address TEXT, -- detailed address for the event location (e.g., "123 Main St, Building A, Door 4") | can be "online" for online events
     -- required_skills TEXT, -- comma-separated list of skills required for the event (e.g., "python,project_management,design")
     -- recommended_skills TEXT, -- comma-separated list of skills recommended for the event (e.g., "python,project_management,design")
     -- aquired_skills TEXT, -- comma-separated list of skills that participants can acquire or improve by attending the event (e.g., "python,project_management,design")
