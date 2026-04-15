@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { EmailField } from '../components/registration/EmailField'
-import { PhoneNumberField } from '../components/registration/PhoneNumberField'
+import { EmailField } from '../components/registration/sections/personal-info-section/EmailField'
+import { PhoneNumberField } from '../components/registration/sections/personal-info-section/PhoneNumberField'
 
 type RecoveryOption = '' | 'email' | 'membershipNumber' | 'phoneNumber'
 
