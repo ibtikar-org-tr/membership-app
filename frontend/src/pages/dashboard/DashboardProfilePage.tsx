@@ -229,6 +229,20 @@ export function DashboardProfilePage() {
     ]
   }, [profile])
 
+  const profileCompletion = useMemo(() => {
+    if (!profile) return 0
+
+    const fields = [
+      profile.enName, profile.arName, profile.phoneNumber, profile.sex,
+      profile.dateOfBirth, profile.country, profile.region, profile.city,
+      profile.educationLevel, profile.school, profile.graduationYear,
+      profile.fieldOfStudy, profile.skills, profile.interests, profile.languages
+    ]
+
+    const filledFields = fields.filter(field => field && field.trim() !== '').length
+    return Math.round((filledFields / fields.length) * 100)
+  }, [profile])
+
   if (isLoading) {
     return (
       <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -283,20 +297,6 @@ export function DashboardProfilePage() {
   if (!profile || !formData) {
     return null
   }
-
-  const profileCompletion = useMemo(() => {
-    if (!profile) return 0
-
-    const fields = [
-      profile.enName, profile.arName, profile.phoneNumber, profile.sex,
-      profile.dateOfBirth, profile.country, profile.region, profile.city,
-      profile.educationLevel, profile.school, profile.graduationYear,
-      profile.fieldOfStudy, profile.skills, profile.interests, profile.languages
-    ]
-
-    const filledFields = fields.filter(field => field && field.trim() !== '').length
-    return Math.round((filledFields / fields.length) * 100)
-  }, [profile])
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
