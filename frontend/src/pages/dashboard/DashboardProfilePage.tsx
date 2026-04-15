@@ -239,7 +239,10 @@ export function DashboardProfilePage() {
       profile.fieldOfStudy, profile.skills, profile.interests, profile.languages
     ]
 
-    const filledFields = fields.filter(field => field && field.trim() !== '').length
+    const filledFields = fields.filter(field => {
+      if (field === undefined || field === null) return false
+      return typeof field === 'string' ? field.trim() !== '' : true
+    }).length
     return Math.round((filledFields / fields.length) * 100)
   }, [profile])
 
