@@ -30,10 +30,12 @@ export function EventsCatalog({
   events: VmsEvent[]
   emptyMessage: string
 }) {
+  const [query, setQuery] = useState('')
   const [countryFilter, setCountryFilter] = useState('all')
   const [regionFilter, setRegionFilter] = useState('all')
 
   const now = new Date()
+  const normalizedQuery = query.trim().toLowerCase()
 
   const countryOptions = useMemo(() => {
     return Array.from(new Set(events.map((eventItem) => (eventItem.country ?? '').trim()).filter(Boolean))).sort((a, b) =>
@@ -51,36 +53,46 @@ export function EventsCatalog({
     return events.filter((eventItem) => {
       const matchesCountry = countryFilter === 'all' || (eventItem.country ?? '').trim() === countryFilter
       const matchesRegion = regionFilter === 'all' || (eventItem.region ?? '').trim() === regionFilter
+      const matchesSearch =
+        !normalizedQuery ||
+        eventItem.name.toLowerCase().includes(normalizedQuery) ||
+        (eventItem.description ?? '').toLowerCase().includes(normalizedQuery)
 
-      return matchesCountry && matchesRegion
+      return matchesCountry && matchesRegion && matchesSearch
     })
-  }, [events, countryFilter, regionFilter])
+  }, [events, countryFilter, regionFilter, normalizedQuery])
 
   const groups = useMemo(() => {
-    const started: VmsEvent[] = []
-    const ongoing: VmsEvent[] = []
+    const upcomingAndOngoing: VmsEvent[] = []
     const ended: VmsEvent[] = []
 
     for (const eventItem of filteredEvents) {
       const group = getEventGroup(eventItem, now)
-      if (group === 'started') started.push(eventItem)
-      if (group === 'ongoing') ongoing.push(eventItem)
+      if (group === 'started' || group === 'ongoing') {
+        upcomingAndOngoing.push(eventItem)
+      }
       if (group === 'ended') ended.push(eventItem)
     }
 
-    return { started, ongoing, ended }
+    return { upcomingAndOngoing, ended }
   }, [filteredEvents, now])
 
   return (
     <div className="mt-6 space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-4 shadow-xs">
+      <div className="rounded-2xl border border-slate-200 bg-linear-to-b from-white to-slate-50 p-4 shadow-xs">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-slate-800">تصفية حسب الموقع</p>
           <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
             {filteredEvents.length} نتيجة
           </span>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="ابحث باسم الفعالية أو الوصف"
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+          />
           <select
             value={countryFilter}
             onChange={(event) => setCountryFilter(event.target.value)}
@@ -114,38 +126,18 @@ export function EventsCatalog({
         <div className="space-y-6">
           <section>
             <div className="mb-3 flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900">الفعاليات التي لم تبدأ بعد</h3>
+              <h3 className="text-base font-bold text-slate-900">الفعاليات القادمة والقائمة</h3>
               <span className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-medium text-cyan-800">
-                {groups.started.length}
+                {groups.upcomingAndOngoing.length}
               </span>
             </div>
-            {groups.started.length === 0 ? (
+            {groups.upcomingAndOngoing.length === 0 ? (
               <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                لا توجد فعاليات قادمة.
+                لا توجد فعاليات قادمة أو قائمة.
               </p>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {groups.started.map((eventItem) => (
-                  <EventCard key={eventItem.id} eventItem={eventItem} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section>
-            <div className="mb-3 flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900">الفعاليات الجارية</h3>
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                {groups.ongoing.length}
-              </span>
-            </div>
-            {groups.ongoing.length === 0 ? (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                لا توجد فعاليات جارية.
-              </p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {groups.ongoing.map((eventItem) => (
+                {groups.upcomingAndOngoing.map((eventItem) => (
                   <EventCard key={eventItem.id} eventItem={eventItem} />
                 ))}
               </div>
