@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchEvents, fetchProjects, fetchTasks } from '../../api/vms'
 import { useHomeStats } from '../../hooks/useHomeStats'
-import { MOCK_NEWS } from './mockData'
 import { getStoredUser } from '../../utils/auth'
 
 export function DashboardMainPage() {
@@ -115,19 +114,15 @@ export function DashboardMainPage() {
 
       <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
         <h3 className="text-base font-semibold text-slate-900 sm:text-lg">آخر الأخبار</h3>
-        <div className="mt-4 space-y-3">
-          {MOCK_NEWS.map((item) => (
-            <article key={item.title} className="rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                <p className="font-semibold text-slate-800">{item.title}</p>
-                <span className="inline-flex w-fit rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-medium text-slate-500">
-                  {item.date}
-                </span>
-              </div>
-              <p className="mt-2 text-sm text-slate-600">{item.summary}</p>
-            </article>
-          ))}
-        </div>
+          <div className="mt-8 flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50/50 py-12 px-4">
+            <div className="text-center">
+              <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p className="mt-4 text-lg font-medium text-slate-900">المحتوى فارغ</p>
+              <p className="mt-2 text-sm text-slate-600">سيتم إضافة محتوى هذا القسم قريباً. يرجى العودة لاحقاً.</p>
+            </div>
+          </div>
       </section>
     </div>
   )
