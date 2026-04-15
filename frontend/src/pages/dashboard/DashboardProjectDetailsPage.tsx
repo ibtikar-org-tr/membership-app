@@ -7,6 +7,7 @@ import { getStoredUser } from '../../utils/auth'
 import { AddMemberModal, AddTaskModal, MembersModal, ProjectSettingsModal, TaskDetailsModal } from './project-details/ProjectDetailsModals'
 import { ProjectHeader } from './project-details/ProjectHeader'
 import { TaskBoard } from './project-details/TaskBoard'
+import { UnallowedAccessPage } from './UnallowedAccessPage'
 
 export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
@@ -443,8 +444,12 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
-  if (!projectID || notFound) {
+  if (!projectID) {
     return <Navigate to="/dashboard/projects" replace />
+  }
+
+  if (notFound) {
+    return <UnallowedAccessPage />
   }
 
   if (isLoading || !project) {
