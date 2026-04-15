@@ -70,11 +70,11 @@ CREATE TABLE IF NOT EXISTS events (
     description TEXT,
     start_time TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     end_time TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
-    location TEXT,
     image_url TEXT, -- banner image URL associated with the event (e.g., "https://example.com/banner.jpg")
     associated_urls TEXT, -- JSON array of URLs associated with the event (e.g., {"website": "https://example.com", "facebook": "https://facebook.com/example", "map": "https://www.openstreetmap.org/relation/1661399"})
     created_by TEXT NOT NULL, -- membership_number of the user who created the event
     project_id TEXT REFERENCES projects(id), -- optional association with a project
+    status TEXT NOT NULL, -- "draft","public","archived"
     country TEXT, -- ISO 3166-1 alpha-2 country code (e.g., "US", "TR", etc.)
     region TEXT, -- state/region or province within the country (e.g., "Istanbul", "Aleppo", "California" etc.)
     city TEXT, -- city of residence (e.g., "Fatih", "Al Bab", "Mezitli", "Azaz" etc.)
