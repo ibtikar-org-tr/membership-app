@@ -7,7 +7,7 @@ import type { VmsProject } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser, isPlatformAdmin } from '../../utils/auth'
 import { ProjectHierarchyTree } from './ProjectHierarchyTree'
-import { priorityTone, statusBadgeClass, statusLabel } from './project-details/helpers'
+import { priorityTone, statusBadgeClass, statusLabel } from '../../components/dashboard/project-details/helpers'
 
 export function DashboardProjectsPage() {
   const [projects, setProjects] = useState<VmsProject[]>([])

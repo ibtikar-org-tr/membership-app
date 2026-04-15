@@ -4,9 +4,9 @@ import type { FormEvent } from 'react'
 import { createProjectMember, createTask, fetchProfile, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
-import { AddMemberModal, AddTaskModal, MembersModal, ProjectSettingsModal, TaskDetailsModal } from './project-details/ProjectDetailsModals'
-import { ProjectHeader } from './project-details/ProjectHeader'
-import { TaskBoard } from './project-details/TaskBoard'
+import { AddMemberModal, AddTaskModal, MembersModal, ProjectSettingsModal, TaskDetailsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
+import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
+import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
 import { UnallowedAccessPage } from './UnallowedAccessPage'
 
 export function DashboardProjectDetailsPage() {

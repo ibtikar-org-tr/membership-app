@@ -6,7 +6,7 @@ import { createProject, fetchProjectById, fetchProjectMembers, fetchProjects } f
 import type { VmsProject, VmsProjectMember } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser } from '../../utils/auth'
-import { priorityTone, statusBadgeClass, statusLabel } from './project-details/helpers'
+import { priorityTone, statusBadgeClass, statusLabel } from '../../components/dashboard/project-details/helpers'
 
 function buildChildrenByParentId(projects: VmsProject[]): Map<string, string[]> {
   const map = new Map<string, string[]>()
