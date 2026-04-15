@@ -17,6 +17,10 @@ export const createEventSchema = z.object({
   projectId: requiredTrimmedString,
   skills: eventSkillsSchema,
   telegramGroupId: optionalTrimmedString,
+  country: optionalTrimmedString,
+  region: optionalTrimmedString,
+  city: optionalTrimmedString,
+  address: optionalTrimmedString,
 })
 
 export const updateEventSchema = createEventSchema

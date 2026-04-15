@@ -45,6 +45,10 @@ export interface VmsEvent {
   projectOwner: string | null
   skills: Record<string, string> | null
   telegramGroupId: string | null
+  country: string | null
+  region: string | null
+  city: string | null
+  address: string | null
 }
 
 export interface VmsEventTicket {
