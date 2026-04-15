@@ -7,7 +7,6 @@ import {
   MapPin,
   Calendar,
   PencilLine,
-  ImageIcon,
   Link2,
   Sparkles,
   Ticket,
@@ -16,8 +15,6 @@ import {
   ArrowRight,
   Pencil,
   ExternalLink,
-  Plus,
-  X,
 } from 'lucide-react'
 import {
   approveRegistration,
@@ -30,8 +27,6 @@ import {
   fetchProjectMembers,
   updateEventRegistration,
   updateEventTicket,
-  uploadEventBanner,
-  updateEvent,
 } from '../../api/vms'
 import type {
   VmsEvent,
@@ -41,7 +36,6 @@ import type {
 } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
-import { ImageUploader } from '../../components/ImageUploader'
 
 function registrationStatusLabel(status: string) {
   if (status === 'registered') {
@@ -78,8 +72,6 @@ export function DashboardEventDetailsPage() {
   const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
   const [isCreatingTicket, setIsCreatingTicket] = useState(false)
   const [ticketError, setTicketError] = useState<string | null>(null)
@@ -90,18 +82,11 @@ export function DashboardEventDetailsPage() {
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<string | null>(null)
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
-  const [isEditing, setIsEditing] = useState(false)
-  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [associatedUrls, setAssociatedUrls] = useState<{ label: string; url: string }[]>([])
-  const [newUrlLabel, setNewUrlLabel] = useState('')
-  const [newUrlValue, setNewUrlValue] = useState('')
   const [updatingRegistrationId, setUpdatingRegistrationId] = useState<string | null>(null)
   const [registrationUpdateError, setRegistrationUpdateError] = useState<string | null>(null)
   const [approvingRegistrationId, setApprovingRegistrationId] = useState<string | null>(null)
   const [registrationApprovalError, setRegistrationApprovalError] = useState<string | null>(null)
   const [registrationApprovalSuccess, setRegistrationApprovalSuccess] = useState<string | null>(null)
-  const [locationType, setLocationType] = useState<'online' | 'physical'>('physical')
 
   useEffect(() => {
     if (!eventID) {
@@ -193,26 +178,6 @@ export function DashboardEventDetailsPage() {
     return eventItem.createdBy === user.membershipNumber
   }, [eventItem, projectMembers, user])
 
-  useEffect(() => {
-    if (!canEditEvent) {
-      setIsEditing(false)
-    }
-  }, [canEditEvent])
-
-  useEffect(() => {
-    if (!isEditing) {
-      setSelectedBannerFile(null)
-      setUploadError(null)
-    } else if (eventItem) {
-      const urls = Object.entries(eventItem.associatedUrls ?? {}).map(([label, url]) => ({
-        label,
-        url: String(url),
-      }))
-      setAssociatedUrls(urls)
-      setLocationType(eventItem.address === 'online' ? 'online' : 'physical')
-    }
-  }, [isEditing, eventItem])
-
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
   const hasUserRegistered = useMemo(() => {
     if (!user) {
@@ -221,108 +186,6 @@ export function DashboardEventDetailsPage() {
 
     return registrations.some((registration) => registration.membershipNumber === user.membershipNumber)
   }, [registrations, user])
-
-  const toDateTimeLocal = (value: string | null | undefined) => {
-    if (!value) {
-      return ''
-    }
-
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) {
-      return ''
-    }
-
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day}T${hours}:${minutes}`
-  }
-
-  const handleUpdateEvent = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setSaveError(null)
-
-    if (!eventID || !eventItem) {
-      return
-    }
-
-    const formData = new FormData(event.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-    const description = String(formData.get('description') ?? '').trim()
-    const startTime = String(formData.get('startTime') ?? '').trim()
-    const endTime = String(formData.get('endTime') ?? '').trim()
-    const statusRaw = String(formData.get('status') ?? eventItem.status).trim()
-    const status = statusRaw === 'public' || statusRaw === 'archived' ? statusRaw : 'draft'
-    const country = String(formData.get('country') ?? '').trim()
-    const region = String(formData.get('region') ?? '').trim()
-    const city = String(formData.get('city') ?? '').trim()
-    const address = String(formData.get('address') ?? '').trim()
-
-    if (!name) {
-      setSaveError('يرجى إدخال اسم الفعالية.')
-      return
-    }
-
-    const validUrls = associatedUrls.filter((u) => u.label.trim() && u.url.trim())
-    const associatedUrlsObject = validUrls.length > 0
-      ? Object.fromEntries(validUrls.map((u) => [u.label.trim(), u.url.trim()]))
-      : undefined
-
-    setIsSaving(true)
-
-    try {
-      const payload = await updateEvent(eventID, {
-        name,
-        ...(description ? { description } : {}),
-        ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
-        ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
-        status,
-        ...(associatedUrlsObject ? { associatedUrls: associatedUrlsObject } : {}),
-        ...(locationType === 'online' ? { address: 'online' } : { country: country || undefined, region: region || undefined, city: city || undefined, address: address || undefined }),
-      })
-
-      let updatedEvent = payload.event
-
-      if (selectedBannerFile) {
-        const bannerPayload = await uploadEventBanner(eventID, selectedBannerFile)
-        updatedEvent = bannerPayload.event
-      }
-
-      setEventItem(updatedEvent)
-      setSelectedBannerFile(null)
-      setUploadError(null)
-      setIsEditing(false)
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setSaveError(requestError.message)
-      } else {
-        setSaveError('تعذر تحديث الفعالية.')
-      }
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleAddUrl = () => {
-    if (newUrlLabel.trim() && newUrlValue.trim()) {
-      setAssociatedUrls((prev) => [...prev, { label: newUrlLabel.trim(), url: newUrlValue.trim() }])
-      setNewUrlLabel('')
-      setNewUrlValue('')
-    }
-  }
-
-  const handleRemoveUrl = (index: number) => {
-    setAssociatedUrls((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      handleAddUrl()
-    }
-  }
 
   const handleApplyToEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -594,20 +457,13 @@ export function DashboardEventDetailsPage() {
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch sm:gap-2 lg:flex-row">
             {canEditEvent ? (
-              <button
-                type="button"
-                onClick={() => setIsEditing((previous) => !previous)}
+              <Link
+                to={`/dashboard/event/${eventItem.id}/edit`}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
               >
-                {isEditing ? (
-                  'إلغاء التعديل'
-                ) : (
-                  <>
-                    <PencilLine className="h-4 w-4" />
-                    تعديل الفعالية
-                  </>
-                )}
-              </button>
+                <PencilLine className="h-4 w-4" />
+                تعديل الفعالية
+              </Link>
             ) : null}
             <Link
               to="/dashboard/events"
@@ -620,227 +476,9 @@ export function DashboardEventDetailsPage() {
         </div>
       </div>
 
-      {isEditing && canEditEvent ? (
-        <article className="rounded-2xl border border-cyan-200/60 bg-linear-to-br from-white to-cyan-50/30 p-5 shadow-sm ring-1 ring-cyan-900/5 sm:p-6">
-          <div className="mb-4 flex items-center gap-2 border-b border-cyan-100 pb-3">
-            <PencilLine className="h-5 w-5 text-cyan-700" />
-            <p className="text-base font-semibold text-slate-900">تعديل الفعالية</p>
-          </div>
-          <form onSubmit={handleUpdateEvent} className="mt-4 grid gap-4 md:grid-cols-4">
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-slate-700">اسم الفعالية</span>
-              <input
-                name="name"
-                defaultValue={eventItem.name}
-                placeholder="اسم الفعالية"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                required
-              />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-slate-700">وقت البداية</span>
-              <input
-                name="startTime"
-                type="datetime-local"
-                defaultValue={toDateTimeLocal(eventItem.startTime)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-              />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-slate-700">وقت النهاية</span>
-              <input
-                name="endTime"
-                type="datetime-local"
-                defaultValue={toDateTimeLocal(eventItem.endTime)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
-            </button>
-            <label className="md:col-span-2 space-y-1">
-              <span className="text-xs font-medium text-slate-700">حالة الفعالية</span>
-              <select
-                name="status"
-                defaultValue={eventItem.status}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-              >
-                <option value="draft">مسودة</option>
-                <option value="public">منشورة</option>
-                <option value="archived">مؤرشفة</option>
-              </select>
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-slate-700">نوع الفعالية</span>
-              <select
-                value={locationType}
-                onChange={(e) => setLocationType(e.target.value as 'online' | 'physical')}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-              >
-                <option value="physical">فعالية حضورية</option>
-                <option value="online">فعالية أون لاين</option>
-              </select>
-            </label>
-            <label className="md:col-span-4 space-y-1">
-              <span className="text-xs font-medium text-slate-700">وصف الفعالية</span>
-              <textarea
-                name="description"
-                defaultValue={eventItem.description ?? ''}
-                placeholder="وصف الفعالية"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                rows={2}
-              />
-            </label>
-            {locationType === 'physical' ? (
-              <>
-                <label className="space-y-1">
-                  <span className="text-xs font-medium text-slate-700">الدولة</span>
-                  <input
-                    name="country"
-                    defaultValue={eventItem.country ?? ''}
-                    placeholder="مثال: TR"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </label>
-                <label className="space-y-1">
-                  <span className="text-xs font-medium text-slate-700">المنطقة</span>
-                  <input
-                    name="region"
-                    defaultValue={eventItem.region ?? ''}
-                    placeholder="مثال: Istanbul"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </label>
-                <label className="space-y-1">
-                  <span className="text-xs font-medium text-slate-700">المدينة</span>
-                  <input
-                    name="city"
-                    defaultValue={eventItem.city ?? ''}
-                    placeholder="مثال: Fatih"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </label>
-                <label className="space-y-1">
-                  <span className="text-xs font-medium text-slate-700">العنوان التفصيلي</span>
-                  <input
-                    name="address"
-                    defaultValue={eventItem.address ?? ''}
-                    placeholder="مثال: 123 شارع رئيسي، بناء أ، باب 4"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                  />
-                </label>
-              </>
-            ) : (
-              <label className="md:col-span-2 space-y-1">
-                <span className="text-xs font-medium text-slate-700">العنوان</span>
-                <div className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-800">
-                  online
-                </div>
-                <input
-                  name="address"
-                  type="hidden"
-                  value="online"
-                />
-              </label>
-            )}
-            <div className="md:col-span-4">
-              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <ImageIcon className="h-4 w-4 text-slate-500" />
-                صورة البانر
-              </h3>
-              {eventItem.imageUrl ? (
-                <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                  <p className="mb-2 text-xs font-medium text-slate-600">الصورة الحالية</p>
-                  <img src={eventItem.imageUrl} alt="" className="h-36 w-full max-w-md rounded-lg border border-slate-200 object-cover shadow-inner" />
-                  <p className="mt-2 text-xs text-slate-500">صورة جديدة تستبدل الحالية عند الحفظ.</p>
-                </div>
-              ) : null}
-              <ImageUploader
-                onSelect={(file) => {
-                  setSelectedBannerFile(file)
-                  setUploadError(null)
-                }}
-                onError={(error) => {
-                  setUploadError(error)
-                }}
-              />
-              {selectedBannerFile && (
-                <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2">
-                  <p className="text-xs font-medium text-emerald-900">تم اختيار صورة جديدة — تُرفع عند حفظ التعديلات.</p>
-                </div>
-              )}
-            </div>
-            <div className="md:col-span-4 space-y-3">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <Link2 className="h-4 w-4 text-slate-500" />
-                الروابط المرتبطة
-              </h3>
-              {associatedUrls.length > 0 && (
-                <ul className="flex flex-wrap gap-2">
-                  {associatedUrls.map((url, index) => (
-                    <li key={index}>
-                      <a
-                        href={url.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-medium text-cyan-700 transition hover:bg-cyan-100 hover:text-cyan-800"
-                      >
-                        {url.label}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveUrl(index)}
-                        className="ml-1 inline-flex items-center rounded-full p-0.5 text-slate-400 transition hover:bg-red-100 hover:text-red-600"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newUrlLabel}
-                  onChange={(e) => setNewUrlLabel(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="العنوان (مثال: موقع إلكتروني)"
-                  className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                />
-                <input
-                  type="url"
-                  value={newUrlValue}
-                  onChange={(e) => setNewUrlValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="الرابط"
-                  className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddUrl}
-                  disabled={!newUrlLabel.trim() || !newUrlValue.trim()}
-                  className="shrink-0 rounded-lg border border-cyan-200 bg-cyan-50 p-2 text-cyan-700 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-              <p className="text-xs text-slate-500">
-                اضغط Enter أو زر + لإضافة رابط. سيتم الحفظ عند تحديث الفعالية.
-              </p>
-            </div>
-          </form>
-          {saveError ? <p className="mt-3 text-sm text-red-600">{saveError}</p> : null}
-          {uploadError ? <p className="mt-3 text-sm text-red-600">{uploadError}</p> : null}
-        </article>
-      ) : null}
-      {!isEditing && canEditEvent ? (
+      {canEditEvent ? (
         <div className="rounded-xl border border-dashed border-slate-300/80 bg-slate-50/50 px-4 py-3 text-center text-sm text-slate-600">
-          يمكنك تعديل تفاصيل الفعالية من زر <span className="font-medium text-slate-800">تعديل الفعالية</span> أعلاه.
+          تعديل بيانات الفعالية متاح من صفحة التحرير الموحدة.
         </div>
       ) : null}
 

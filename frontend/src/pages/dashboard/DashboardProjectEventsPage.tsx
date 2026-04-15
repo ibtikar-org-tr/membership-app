@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
-import { createEvent, fetchEvents, fetchProjectById, fetchProjectMembers, uploadEventBanner } from '../../api/vms'
+import { createEvent, fetchEvents, fetchProjectById, fetchProjectMembers } from '../../api/vms'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { formatDateTimeEnCA } from '../../utils/date-format'
-import { ImageUploader } from '../../components/ImageUploader'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -16,6 +15,7 @@ function eventStatusLabel(status: string) {
 
 export function DashboardProjectEventsPage() {
   const { projectID } = useParams()
+  const navigate = useNavigate()
   const user = useMemo(() => getStoredUser(), [])
 
   const [project, setProject] = useState<VmsProject | null>(null)
@@ -29,9 +29,6 @@ export function DashboardProjectEventsPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false)
-  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [locationType, setLocationType] = useState<'online' | 'physical'>('physical')
 
   const now = new Date()
 
@@ -138,35 +135,10 @@ export function DashboardProjectEventsPage() {
     const form = event.currentTarget
     const formData = new FormData(form)
     const name = String(formData.get('name') ?? '').trim()
-    const description = String(formData.get('description') ?? '').trim()
-    const startTime = String(formData.get('startTime') ?? '').trim()
-    const endTime = String(formData.get('endTime') ?? '').trim()
-    const statusRaw = String(formData.get('status') ?? 'draft').trim()
-    const status = statusRaw === 'public' || statusRaw === 'archived' ? statusRaw : 'draft'
-    const associatedUrlsRaw = String(formData.get('associatedUrls') ?? '').trim()
-    const country = String(formData.get('country') ?? '').trim()
-    const region = String(formData.get('region') ?? '').trim()
-    const city = String(formData.get('city') ?? '').trim()
-    const address = String(formData.get('address') ?? '').trim()
 
     if (!name) {
       setCreateError('يرجى إدخال اسم الفعالية.')
       return
-    }
-
-    let associatedUrls: Record<string, unknown> | undefined
-
-    if (associatedUrlsRaw) {
-      try {
-        associatedUrls = JSON.parse(associatedUrlsRaw)
-        if (typeof associatedUrls !== 'object' || Array.isArray(associatedUrls)) {
-          setCreateError('صيغة الروابط المرتبطة غير صحيحة. يجب أن تكون كائن JSON.')
-          return
-        }
-      } catch {
-        setCreateError('صيغة الروابط المرتبطة غير صحيحة. يجب أن تكون JSON صحيح.')
-        return
-      }
     }
 
     setIsCreating(true)
@@ -174,29 +146,15 @@ export function DashboardProjectEventsPage() {
     try {
       const payload = await createEvent({
         name,
-        description: description || undefined,
-        ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
-        ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
-        status,
-        ...(associatedUrls ? { associatedUrls } : {}),
+        status: 'draft',
         createdBy: user.membershipNumber,
         projectId: projectID,
-        ...(locationType === 'online' ? { address: 'online' } : { country: country || undefined, region: region || undefined, city: city || undefined, address: address || undefined }),
       })
 
-      let createdEvent = payload.event
-
-      if (selectedBannerFile) {
-        const bannerPayload = await uploadEventBanner(createdEvent.id, selectedBannerFile)
-        createdEvent = bannerPayload.event
-      }
-
-      setEvents((previous) => [createdEvent, ...previous])
+      setEvents((previous) => [payload.event, ...previous])
       form.reset()
-      setSelectedBannerFile(null)
-      setUploadError(null)
       setIsCreateEventOpen(false)
-      setLocationType('physical')
+      navigate(`/dashboard/event/${payload.event.id}/edit`)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -251,7 +209,7 @@ export function DashboardProjectEventsPage() {
 
       {canCreateEvents && isCreateEventOpen ? (
         <form onSubmit={handleCreateEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
-          <label className="space-y-1">
+          <label className="space-y-1 md:col-span-4">
             <span className="text-xs font-medium text-slate-700">اسم الفعالية</span>
             <input
               name="name"
@@ -260,135 +218,16 @@ export function DashboardProjectEventsPage() {
               required
             />
           </label>
-          <label className="space-y-1">
-            <span className="text-xs font-medium text-slate-700">وقت البداية</span>
-            <input
-              name="startTime"
-              type="datetime-local"
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-xs font-medium text-slate-700">وقت النهاية</span>
-            <input
-              name="endTime"
-              type="datetime-local"
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-xs font-medium text-slate-700">حالة الفعالية</span>
-            <select
-              name="status"
-              defaultValue="draft"
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            >
-              <option value="draft">مسودة</option>
-              <option value="public">منشورة</option>
-              <option value="archived">مؤرشفة</option>
-            </select>
-          </label>
-          <label className="space-y-1">
-            <span className="text-xs font-medium text-slate-700">نوع الفعالية</span>
-            <select
-              value={locationType}
-              onChange={(e) => setLocationType(e.target.value as 'online' | 'physical')}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-            >
-              <option value="physical">فعالية حضورية</option>
-              <option value="online">فعالية أون لاين</option>
-            </select>
-          </label>
-          {locationType === 'physical' ? (
-            <>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-700">الدولة</span>
-                <input
-                  name="country"
-                  placeholder="مثال: TR"
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-700">المنطقة</span>
-                <input
-                  name="region"
-                  placeholder="مثال: Istanbul"
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-700">المدينة</span>
-                <input
-                  name="city"
-                  placeholder="مثال: Fatih"
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-700">العنوان التفصيلي</span>
-                <input
-                  name="address"
-                  placeholder="مثال: 123 شارع رئيسي، بناء أ، باب 4"
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-                />
-              </label>
-            </>
-          ) : (
-            <label className="md:col-span-2 space-y-1">
-              <span className="text-xs font-medium text-slate-700">العنوان</span>
-              <div className="rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-800">
-                online
-              </div>
-              <input
-                name="address"
-                type="hidden"
-                value="online"
-              />
-            </label>
-          )}
           <button
             type="submit"
             disabled={isCreating}
             className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-500"
           >
-            {isCreating ? 'جار الإضافة...' : 'إضافة فعالية'}
+            {isCreating ? 'جار إنشاء المسودة...' : 'إنشاء مسودة'}
           </button>
-          <label className="md:col-span-5 space-y-1">
-            <span className="text-xs font-medium text-slate-700">وصف الفعالية</span>
-            <textarea
-              name="description"
-              placeholder="وصف الفعالية"
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              rows={2}
-            />
-          </label>
-          <div className="md:col-span-5">
-            <h3 className="mb-2 text-sm font-medium text-slate-700">صور الفعالية</h3>
-            <ImageUploader
-              onSelect={(file) => {
-                setSelectedBannerFile(file)
-                setUploadError(null)
-              }}
-              onError={(error) => {
-                setUploadError(error)
-              }}
-            />
-            {selectedBannerFile && (
-              <div className="mt-2 rounded-md bg-green-50 p-2">
-                <p className="text-xs font-medium text-green-800">تم اختيار صورة البانر. سيتم رفعها عند حفظ الفعالية.</p>
-              </div>
-            )}
-          </div>
-          <label className="md:col-span-5 space-y-1">
-            <span className="text-xs font-medium text-slate-700">الروابط المرتبطة (JSON)</span>
-            <textarea
-              name="associatedUrls"
-              placeholder={'الروابط المرتبطة (JSON، مثال: {"website": "https://...", "facebook": "https://..."}'}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
-              rows={2}
-            />
-          </label>
+          <p className="text-xs text-slate-500 md:col-span-5">
+            سيتم إنشاء الفعالية بحالة <span className="font-semibold">مسودة</span> ثم تحويلك مباشرة إلى صفحة التعديل لإكمال التفاصيل.
+          </p>
         </form>
       ) : canCreateEvents ? (
         <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
@@ -401,7 +240,6 @@ export function DashboardProjectEventsPage() {
       )}
 
       {createError ? <p className="mt-2 text-sm text-red-600">{createError}</p> : null}
-      {uploadError ? <p className="mt-2 text-sm text-red-600">{uploadError}</p> : null}
 
       <div className="mt-6 space-y-8">
         {hasError ? (
