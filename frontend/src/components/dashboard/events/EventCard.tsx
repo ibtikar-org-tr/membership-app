@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { VmsEvent } from '../../../types/vms'
-import { formatDateTimeEnCA } from '../../../utils/date-format'
+import { formatDateEnCA } from '../../../utils/date-format'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -11,7 +11,7 @@ function eventStatusLabel(status: string) {
 
 export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
   return (
-    <article className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md">
+    <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-md">
       {eventItem.imageUrl ? (
         <div className="relative aspect-video overflow-hidden bg-slate-100">
           <img
@@ -34,18 +34,32 @@ export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
         </div>
       )}
       <div className="p-4">
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+            {eventStatusLabel(eventItem.status)}
+          </span>
+          {eventItem.country ? (
+            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700">
+              {eventItem.country}
+            </span>
+          ) : null}
+          {eventItem.region ? (
+            <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+              {eventItem.region}
+            </span>
+          ) : null}
+        </div>
         <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-slate-900">{eventItem.name}</h3>
         {eventItem.description ? (
           <p className="mb-3 line-clamp-2 text-xs text-slate-600">{eventItem.description}</p>
         ) : null}
         <div className="space-y-1.5 text-xs text-slate-600">
-          {eventItem.startTime && <div>البداية: {formatDateTimeEnCA(eventItem.startTime)}</div>}
-          {eventItem.endTime && <div>النهاية: {formatDateTimeEnCA(eventItem.endTime)}</div>}
-          <div>الحالة: {eventStatusLabel(eventItem.status)}</div>
+          <div>تاريخ البداية: {formatDateEnCA(eventItem.startTime)}</div>
+          {eventItem.city ? <div>المدينة: {eventItem.city}</div> : null}
         </div>
         <Link
           to={`/dashboard/event/${eventItem.id}`}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
         >
           عرض التفاصيل
         </Link>
