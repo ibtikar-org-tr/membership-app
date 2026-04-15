@@ -6,6 +6,9 @@ import { fetchEventById, fetchProjectMembers, updateEvent, uploadEventBanner } f
 import type { VmsEvent, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { ImageUploader } from '../../components/ImageUploader'
+import { LocationDetailsComponent } from '../../components/registration/sections/personal-info-section/LocationDetailsComponent'
+import { initialRegistrationFormData } from '../../types/registration'
+import type { RegistrationFormData } from '../../types/registration'
 
 function statusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -50,6 +53,7 @@ export function DashboardEventEditPage() {
   const [associatedUrls, setAssociatedUrls] = useState<{ label: string; url: string }[]>([])
   const [newUrlLabel, setNewUrlLabel] = useState('')
   const [newUrlValue, setNewUrlValue] = useState('')
+  const [locationData, setLocationData] = useState<RegistrationFormData>(initialRegistrationFormData)
 
   useEffect(() => {
     if (!eventID) return
@@ -100,6 +104,13 @@ export function DashboardEventEditPage() {
     }
 
     setLocationType(eventItem.address === 'online' ? 'online' : 'physical')
+    setLocationData((previous) => ({
+      ...previous,
+      country: eventItem.country ?? '',
+      region: eventItem.region ?? '',
+      city: eventItem.city ?? '',
+      address: eventItem.address === 'online' ? '' : (eventItem.address ?? ''),
+    }))
     setAssociatedUrls(
       Object.entries(eventItem.associatedUrls ?? {}).map(([label, url]) => ({
         label,
@@ -153,10 +164,10 @@ export function DashboardEventEditPage() {
     const endTime = String(formData.get('endTime') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? eventItem.status).trim()
     const status = statusRaw === 'public' || statusRaw === 'archived' ? statusRaw : 'draft'
-    const country = String(formData.get('country') ?? '').trim()
-    const region = String(formData.get('region') ?? '').trim()
-    const city = String(formData.get('city') ?? '').trim()
-    const address = String(formData.get('address') ?? '').trim()
+    const country = locationData.country.trim()
+    const region = locationData.region.trim()
+    const city = locationData.city.trim()
+    const address = locationData.address.trim()
 
     if (!name) {
       setSaveError('يرجى إدخال اسم الفعالية.')
@@ -313,24 +324,14 @@ export function DashboardEventEditPage() {
           </label>
 
           {locationType === 'physical' ? (
-            <>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-700">الدولة</span>
-                <input name="country" defaultValue={eventItem.country ?? ''} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20" />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-700">المنطقة</span>
-                <input name="region" defaultValue={eventItem.region ?? ''} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20" />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-700">المدينة</span>
-                <input name="city" defaultValue={eventItem.city ?? ''} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20" />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-700">العنوان التفصيلي</span>
-                <input name="address" defaultValue={eventItem.address ?? ''} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20" />
-              </label>
-            </>
+            <div className="md:col-span-4">
+              <LocationDetailsComponent
+                data={locationData}
+                onFieldChange={(field, value) => {
+                  setLocationData((previous) => ({ ...previous, [field]: value }))
+                }}
+              />
+            </div>
           ) : (
             <label className="space-y-1">
               <span className="text-xs font-medium text-slate-700">العنوان</span>
