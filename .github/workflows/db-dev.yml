@@ -27,6 +27,9 @@ jobs:
       - name: Install project dependencies
         run: npm install
 
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
       - name: Update wrangler config with environment variables
         run: |
           jq_filter='.d1_databases[0].database_id = $dbid0
@@ -76,6 +79,9 @@ jobs:
 
       - name: Install project dependencies
         run: npm install
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
 
       - name: Update wrangler config with environment variables
         run: |
