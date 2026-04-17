@@ -60,7 +60,7 @@ jobs:
       - name: Migrate D1 Databases
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: wrangler d1 migrations apply ${{ vars.MEMBERS_DB_NAME }} --remote && wrangler d1 migrations apply ${{ vars.VMS_DB_NAME }} --remote
+        run: wrangler d1 migrations apply ${{ vars.MEMBERS_DB_NAME }} --remote --config wrangler.local.jsonc && wrangler d1 migrations apply ${{ vars.VMS_DB_NAME }} --remote --config wrangler.local.jsonc
   
   telegram-ms-migrations:
     runs-on: ubuntu-latest
@@ -109,4 +109,4 @@ jobs:
       - name: Migrate D1 Database
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: wrangler d1 migrations apply ${{ vars.TELEGRAM_DB_NAME }} --remote
+        run: wrangler d1 migrations apply ${{ vars.TELEGRAM_DB_NAME }} --remote --config wrangler.local.jsonc
