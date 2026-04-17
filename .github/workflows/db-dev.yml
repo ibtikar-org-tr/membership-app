@@ -1,6 +1,11 @@
 name: (dev) [database-migrations] Migrate D1 Databases
 
 on:
+  push:
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/db-dev.yml'
   workflow_dispatch:
 
 jobs:
