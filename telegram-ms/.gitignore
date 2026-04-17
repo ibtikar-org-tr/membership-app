@@ -34,3 +34,6 @@ lerna-debug.log*
 
 # local config
 wrangler.local.jsonc
+
+# generated types
+worker-configuration.d.ts

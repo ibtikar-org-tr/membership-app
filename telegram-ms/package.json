@@ -10,7 +10,8 @@
     "db:migrate:remote": "wrangler d1 migrations apply telegram-ms-database --remote"
   },
   "dependencies": {
-    "hono": "^4.12.14"
+    "hono": "^4.12.14",
+    "worker-mailer": "^1.2.1"
   },
   "devDependencies": {
     "wrangler": "^4.4.0"

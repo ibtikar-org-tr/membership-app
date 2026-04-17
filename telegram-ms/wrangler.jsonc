@@ -11,6 +11,12 @@
       "database_id": "383415c6-91c5-4b14-83e5-1e03cf7618c9",
       "remote": true,
       "migrations_dir": "../database/telegram"
+    },
+    {
+      "binding": "MEMBERS_DB",
+      "database_name": "membership-app-database",
+      "database_id": "bb86e7a4-11e2-4d80-88b8-c376a19994dd",
+      "remote": true
     }
   ],
   "ai": {
