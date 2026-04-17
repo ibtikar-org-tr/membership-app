@@ -125,7 +125,7 @@ telegram.post('/webhook', async (c) => {
 
         // User is verified - create private invite link
         try {
-          const fullName = member.latin_name || `${callbackQuery.from.first_name} ${callbackQuery.from.last_name || ''}`.trim();
+          const fullName = member.en_name || `${callbackQuery.from.first_name} ${callbackQuery.from.last_name || ''}`.trim();
           const inviteLink = await telegramService.createChatInviteLink(
             chatId,
             telegramId,
@@ -301,7 +301,7 @@ telegram.post('/webhook', async (c) => {
         await userStateService.clearUserState(telegramId.toString());
         await telegramService.sendMessage(
           telegramId,
-          `أنت مسجل بالفعل برقم العضوية ${existingMember.membership_number}\n\nالاسم: ${escapeMarkdownV2(existingMember.latin_name)}\n\nاستخدم /help لعرض الأوامر المتاحة`
+          `أنت مسجل بالفعل برقم العضوية ${existingMember.membership_number}\n\nالاسم: ${escapeMarkdownV2(existingMember.en_name)}\n\nاستخدم /help لعرض الأوامر المتاحة`
         );
         return c.json({ ok: true });
       }
@@ -370,7 +370,7 @@ telegram.post('/webhook', async (c) => {
 
 🆔 *رقم العضوية:* ${escapeMarkdownV2(existingMember.membership_number)}
 👤 *الاسم بالعربية:* ${escapeMarkdownV2(existingMember.ar_name || 'غير متوفر')}
-👤 *الاسم اللاتيني:* ${escapeMarkdownV2(existingMember.latin_name || 'غير متوفر')}
+👤 *الاسم اللاتيني:* ${escapeMarkdownV2(existingMember.en_name || 'غير متوفر')}
 📧 *البريد الإلكتروني:* ${escapeMarkdownV2(existingMember.email || 'غير متوفر')}
 📱 *الهاتف:* ${escapeMarkdownV2(existingMember.phone || 'غير متوفر')}
 💬 *واتساب:* ${escapeMarkdownV2(existingMember.whatsapp || 'غير متوفر')}
@@ -727,7 +727,7 @@ async function handleVerificationCodeInput(
   // Send confirmation message
   await telegramService.sendMessage(
     telegramId,
-    `✅ تم التحقق بنجاح\\!\n\nأنت الآن مسجل لتلقي الرسائل من منظمتنا\\.\n\nعضويتك: ${escapeMarkdownV2(member.latin_name)} \\- ${escapeMarkdownV2(membershipNumber)}\n\nاستخدم /help لعرض الأوامر المتاحة`
+    `✅ تم التحقق بنجاح\\!\n\nأنت الآن مسجل لتلقي الرسائل من منظمتنا\\.\n\nعضويتك: ${escapeMarkdownV2(member.en_name)} \\- ${escapeMarkdownV2(membershipNumber)}\n\nاستخدم /help لعرض الأوامر المتاحة`
   );
 }
 
@@ -770,12 +770,12 @@ telegram.get('/verify', async (c) => {
     // Send confirmation message
     await telegramService.sendMessage(
       parseInt(telegramId),
-      `تم التحقق بنجاح\\. أنت الآن مسجل لتلقي الرسائل من منظمتنا\\.\n\nعضويتك: ${escapeMarkdownV2(member.latin_name)} \\، ${escapeMarkdownV2(membershipNumber)}\n\nاستخدم /help لعرض الأوامر المتاحة`
+      `تم التحقق بنجاح\\. أنت الآن مسجل لتلقي الرسائل من منظمتنا\\.\n\nعضويتك: ${escapeMarkdownV2(member.en_name)} \\، ${escapeMarkdownV2(membershipNumber)}\n\nاستخدم /help لعرض الأوامر المتاحة`
     );
 
     return c.html(`
       <h1>تم التحقق بنجاح!</h1>
-      <p>مرحباً ${member.latin_name}،</p>
+      <p>مرحباً ${member.en_name}،</p>
       <p>تم ربط حساب تيليجرام الخاص بك بعضويتك (${membershipNumber}) بنجاح.</p>
       <p>يمكنك الآن إغلاق هذه النافذة والعودة إلى تيليجرام.</p>
     `);

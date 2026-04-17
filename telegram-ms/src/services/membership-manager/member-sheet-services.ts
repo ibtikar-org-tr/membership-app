@@ -3,7 +3,7 @@ import { Member } from '../../types/membership-manager';
 
 interface MemberRow {
   membership_number: string;
-  latin_name: string | null;
+  en_name: string | null;
   ar_name: string | null;
   email: string;
   phone: string | null;
@@ -24,7 +24,7 @@ export class MemberSheetServices {
       .prepare(
         `SELECT
           u.membership_number,
-          ui.en_name AS latin_name,
+          ui.en_name,
           ui.ar_name,
           u.email,
           ui.phone_number AS phone,
@@ -45,7 +45,7 @@ export class MemberSheetServices {
       .prepare(
         `SELECT
           u.membership_number,
-          ui.en_name AS latin_name,
+          ui.en_name,
           ui.ar_name,
           u.email,
           ui.phone_number AS phone,
@@ -68,7 +68,7 @@ export class MemberSheetServices {
       .prepare(
         `SELECT
           u.membership_number,
-          ui.en_name AS latin_name,
+          ui.en_name,
           ui.ar_name,
           u.email,
           ui.phone_number AS phone,
@@ -91,7 +91,7 @@ export class MemberSheetServices {
       .prepare(
         `SELECT
           u.membership_number,
-          ui.en_name AS latin_name,
+          ui.en_name,
           ui.ar_name,
           u.email,
           ui.phone_number AS phone,
@@ -123,7 +123,7 @@ export class MemberSheetServices {
   private toMember(row: MemberRow): Member {
     return {
       membership_number: row.membership_number,
-      latin_name: row.latin_name || row.email || row.membership_number,
+      en_name: row.en_name || row.email || row.membership_number,
       ar_name: row.ar_name,
       email: row.email,
       phone: row.phone,

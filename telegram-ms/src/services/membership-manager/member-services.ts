@@ -85,7 +85,7 @@ export async function sendMessageToMember(
 
     return { 
       success: true, 
-      message: `Message sent to ${member.latin_name} (${member.membership_number})`,
+      message: `Message sent to ${member.en_name} (${member.membership_number})`,
       telegram_id: member.telegram_id,
       member: member
     };

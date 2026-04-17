@@ -58,7 +58,7 @@ api.post('/send-message', async (c) => {
       
       return c.json({ 
         success: true, 
-        message: `Message sent to ${member.latin_name}` 
+        message: `Message sent to ${member.en_name}` 
       });
     } else {
       return c.json({ error: 'Target is required (use "all" for all members or specific membership number/email)' }, 400);

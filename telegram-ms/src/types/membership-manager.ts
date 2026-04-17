@@ -1,6 +1,6 @@
 export interface Member {
   membership_number: string;
-  latin_name: string;
+  en_name: string;
   ar_name?: string | null;
   email: string;
   phone?: string | null;

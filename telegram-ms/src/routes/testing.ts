@@ -18,7 +18,7 @@ api.get('/members', async (c) => {
     // Filter out sensitive information
     const publicMembers = members.map(member => ({
       membership_number: member.membership_number,
-      latin_name: member.latin_name,
+      en_name: member.en_name,
       ar_name: member.ar_name,
       email: member.email,
       telegram_id: member.telegram_id,
@@ -42,7 +42,7 @@ api.get('/members/telegram', async (c) => {
       .filter(member => member.telegram_id)
       .map(member => ({
         membership_number: member.membership_number,
-        latin_name: member.latin_name,
+        en_name: member.en_name,
         ar_name: member.ar_name,
         email: member.email,
         telegram_id: member.telegram_id,
