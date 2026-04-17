@@ -66,4 +66,5 @@ jobs:
           echo "${{ secrets.INTERNAL_SECRET }}" | wrangler secret put SHARED_SECRET --config wrangler.local.jsonc --name telegram-ms-dev
           echo "${{ secrets.SMTP_PASS }}" | wrangler secret put SMTP_PASS --config wrangler.local.jsonc --name telegram-ms-dev
           echo "${{ secrets.TELEGRAM_BOT_TOKEN }}" | wrangler secret put TELEGRAM_BOT_TOKEN --config wrangler.local.jsonc --name telegram-ms-dev
+          echo "${{ secrets.DEEPSEEK_API_KEY }}" | wrangler secret put DEEPSEEK_API_KEY --config wrangler.local.jsonc --name telegram-ms-dev
 
