@@ -10,6 +10,10 @@ const notifyTelegramSchema = z.object({
   target: z.string().trim().min(1).optional(),
   targets: z.array(z.string().trim().min(1)).optional(),
   message: z.string().trim().min(1),
+  boxes: z.array(z.object({
+    text: z.string().trim().min(1),
+    link: z.string().url()
+  })).optional(),
 }).refine((data) => data.target || (data.targets && data.targets.length > 0), {
   message: "Either 'target' or 'targets' must be provided",
 })
@@ -19,12 +23,13 @@ telegramNotificationRoute.post(
   zValidator('json', notifyTelegramSchema),
   async (c) => {
     try {
-      const { target, targets, message } = c.req.valid('json')
+      const { target, targets, message, boxes } = c.req.valid('json')
 
       const result = await sendBackendTelegramNotification(c.env, {
         target,
         targets,
         message,
+        boxes,
       })
 
       if (!result.success) {

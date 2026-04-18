@@ -12,6 +12,7 @@ export async function sendMessageToMember(
   cachedMember?: Member | null // Optional: pass cached member to avoid extra API calls
 ) {
   try {
+    console.log(`📤 sendMessageToMember called for member ${member_id}, message: "${message.substring(0, 50)}...", boxes:`, boxes);
     const telegramService = new TelegramService(env);
 
     // Use cached member if provided, otherwise fetch from Google Sheets

@@ -4,6 +4,7 @@ export interface TelegramNotificationPayload {
   target?: string
   targets?: string[]
   message: string
+  boxes?: Array<{ text: string, link: string }>
 }
 
 export interface TelegramNotificationResult {
@@ -49,6 +50,7 @@ export async function sendBackendTelegramNotification(
     requestBody = {
       member_ids: payload.targets,
       message: payload.message,
+      boxes: payload.boxes,
     };
   } else if (payload.target) {
     // Send to single target (existing behavior)
@@ -56,6 +58,7 @@ export async function sendBackendTelegramNotification(
     requestBody = {
       member_id: payload.target,
       message: payload.message,
+      boxes: payload.boxes,
     };
   } else {
     return {

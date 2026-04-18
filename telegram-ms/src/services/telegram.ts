@@ -59,6 +59,7 @@ export class TelegramService {
     console.log(`📤 Sending message to chat ${chatId}`);
     console.log(`   - Text: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`);
     console.log(`   - Parse mode: ${parseMode || 'MarkdownV2 (with auto-escape)'}`);
+    console.log(`   - Inline keyboard: ${inlineKeyboard ? `Yes (${inlineKeyboard.length} rows)` : 'No'}`);
     console.log(`   - Bot token (first 10 chars): ${this.botToken.substring(0, 10)}...`);
     
     let compatibleText = text;
@@ -344,6 +345,7 @@ export class TelegramService {
   }
 
   async sendMessageWithBoxes(chatId: number | string, text: string, boxes: Array<{text: string, link: string}>, parseMode?: string): Promise<void> {
+    console.log(`📦 sendMessageWithBoxes called for chat ${chatId}, boxes:`, boxes);
     // Create inline keyboard from boxes
     const inlineKeyboard: InlineKeyboardButton[][] = boxes.map(box => [
       {

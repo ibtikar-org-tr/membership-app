@@ -120,6 +120,7 @@ api.post('/notify-member', async (c) => {
     } else {
       // Handle JSON data
       const { member_id, member_ids: jsonMemberIds, message: jsonMessage, boxes: jsonBoxes, photo: jsonPhoto } = await c.req.json();
+      console.log('📨 Received JSON request:', { member_id, member_ids: jsonMemberIds, message: jsonMessage, boxes: jsonBoxes, photo: jsonPhoto });
 
       if (jsonMemberIds !== undefined) {
         if (!Array.isArray(jsonMemberIds)) {
