@@ -4,7 +4,7 @@ export interface Environment {
   TELEGRAM_DB: D1Database;
   MEMBERS_DB: D1Database;
   TELEGRAM_BOT_TOKEN: string;
-  SECRET_KEY: string;
+  INTERNAL_SECRET: string;
   SMTP_HOST: string;
   SMTP_PORT: string;
   SMTP_USER: string;
