@@ -275,4 +275,69 @@ api.post('/announcement', async (c) => {
   }
 });
 
+api.post('/send-to-members', async (c) => {
+  try {
+    const { membership_numbers, message } = await c.req.json();
+
+    if (!membership_numbers || !Array.isArray(membership_numbers) || membership_numbers.length === 0) {
+      return c.json({ error: 'membership_numbers must be a non-empty array' }, 400);
+    }
+
+    if (!message) {
+      return c.json({ error: 'Message is required' }, 400);
+    }
+
+    const telegramService = new TelegramService(c.env);
+    const memberSheetServices = new MemberSheetServices(c.env);
+
+    // Look up each membership number and collect telegram IDs
+    const telegramIds: string[] = [];
+    const notFound: string[] = [];
+    const noTelegramId: string[] = [];
+
+    for (const membershipNumber of membership_numbers) {
+      if (typeof membershipNumber !== 'string') {
+        continue; // Skip invalid entries
+      }
+
+      const member = await memberSheetServices.getMemberByMembershipNumber(membershipNumber.trim());
+
+      if (!member) {
+        notFound.push(membershipNumber);
+        continue;
+      }
+
+      if (!member.telegram_id) {
+        noTelegramId.push(membershipNumber);
+        continue;
+      }
+
+      telegramIds.push(member.telegram_id);
+    }
+
+    if (telegramIds.length === 0) {
+      return c.json({
+        error: 'No valid members with Telegram IDs found',
+        not_found: notFound,
+        no_telegram_id: noTelegramId
+      }, 404);
+    }
+
+    // Send message to all found telegram IDs
+    await telegramService.sendBulkMessage(telegramIds, message);
+
+    return c.json({
+      success: true,
+      message: `Message sent to ${telegramIds.length} members`,
+      total_requested: membership_numbers.length,
+      sent_to: telegramIds.length,
+      not_found: notFound,
+      no_telegram_id: noTelegramId
+    });
+  } catch (error) {
+    console.error('Send to members error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 export default api;

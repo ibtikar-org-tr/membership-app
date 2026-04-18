@@ -1,7 +1,8 @@
 import type { AppBindings } from '../types/bindings'
 
 export interface TelegramNotificationPayload {
-  target: string
+  target?: string
+  targets?: string[]
   message: string
 }
 
@@ -37,7 +38,32 @@ export async function sendBackendTelegramNotification(
   }
 
   const baseUrl = telegramMsBaseUrl.replace(/\/+$/, '')
-  const url = `${baseUrl}/api/send-message`
+  
+  // Determine endpoint and payload based on whether we're sending to multiple targets or single target
+  let url: string;
+  let requestBody: any;
+  
+  if (payload.targets && payload.targets.length > 0) {
+    // Send to multiple membership numbers
+    url = `${baseUrl}/api/send-to-members`;
+    requestBody = {
+      membership_numbers: payload.targets,
+      message: payload.message,
+    };
+  } else if (payload.target) {
+    // Send to single target (existing behavior)
+    url = `${baseUrl}/api/send-message`;
+    requestBody = {
+      target: payload.target,
+      message: payload.message,
+    };
+  } else {
+    return {
+      success: false,
+      status: 400,
+      error: 'Either target or targets must be provided',
+    };
+  }
 
   try {
     const response = await fetch(url, {
@@ -46,10 +72,7 @@ export async function sendBackendTelegramNotification(
         'Content-Type': 'application/json',
         'X-API-Key': internalSecret,
       },
-      body: JSON.stringify({
-        target: payload.target,
-        message: payload.message,
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     const responseData = await response.json().catch(() => null)

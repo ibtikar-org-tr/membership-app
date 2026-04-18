@@ -7,8 +7,11 @@ import type { AppBindings } from '../types/bindings'
 export const telegramNotificationRoute = new Hono<{ Bindings: AppBindings }>()
 
 const notifyTelegramSchema = z.object({
-  target: z.string().trim().min(1),
+  target: z.string().trim().min(1).optional(),
+  targets: z.array(z.string().trim().min(1)).optional(),
   message: z.string().trim().min(1),
+}).refine((data) => data.target || (data.targets && data.targets.length > 0), {
+  message: "Either 'target' or 'targets' must be provided",
 })
 
 telegramNotificationRoute.post(
@@ -16,15 +19,16 @@ telegramNotificationRoute.post(
   zValidator('json', notifyTelegramSchema),
   async (c) => {
     try {
-      const { target, message } = c.req.valid('json')
+      const { target, targets, message } = c.req.valid('json')
 
       const result = await sendBackendTelegramNotification(c.env, {
         target,
+        targets,
         message,
       })
 
       if (!result.success) {
-        return c.json({ error: result.error ?? 'Telegram notification failed', details: result.responseData }, result.status ?? 500)
+        return c.json({ error: result.error ?? 'Telegram notification failed', details: result.responseData }, 500)
       }
 
       return c.json({ success: true, detail: result.detail, data: result.responseData })
