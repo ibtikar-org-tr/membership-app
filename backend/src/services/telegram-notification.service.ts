@@ -45,16 +45,16 @@ export async function sendBackendTelegramNotification(
   
   if (payload.targets && payload.targets.length > 0) {
     // Send to multiple membership numbers
-    url = `${baseUrl}/api/send-to-members`;
+    url = `${baseUrl}/api/notify-member`;
     requestBody = {
-      membership_numbers: payload.targets,
+      member_ids: payload.targets,
       message: payload.message,
     };
   } else if (payload.target) {
     // Send to single target (existing behavior)
-    url = `${baseUrl}/api/send-message`;
+    url = `${baseUrl}/api/notify-member`;
     requestBody = {
-      target: payload.target,
+      member_id: payload.target,
       message: payload.message,
     };
   } else {

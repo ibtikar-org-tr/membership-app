@@ -71,7 +71,7 @@ api.post('/send-message', async (c) => {
 
 api.post('/notify-member', async (c) => {
   try {
-    let member_id: string;
+    let member_ids: string | string[];
     let message: string;
     let boxes: Array<{ text: string, link: string }> | undefined;
     let photo: string | Blob | undefined;
@@ -81,10 +81,27 @@ api.post('/notify-member', async (c) => {
     if (contentType.includes('multipart/form-data')) {
       // Handle multipart form data
       const formData = await c.req.formData();
-      
-      member_id = formData.get('member_id') as string;
+
+      const memberIdStr = formData.get('member_id') as string;
+      const memberIdsStr = formData.get('member_ids') as string;
+
+      if (memberIdsStr) {
+        try {
+          member_ids = JSON.parse(memberIdsStr);
+          if (!Array.isArray(member_ids)) {
+            return c.json({ error: 'member_ids must be an array when provided as JSON string' }, 400);
+          }
+        } catch (e) {
+          return c.json({ error: 'Invalid member_ids format. Must be valid JSON array string' }, 400);
+        }
+      } else if (memberIdStr) {
+        member_ids = memberIdStr;
+      } else {
+        return c.json({ error: 'Either member_id or member_ids is required' }, 400);
+      }
+
       message = formData.get('message') as string;
-      
+
       const boxesStr = formData.get('boxes') as string;
       if (boxesStr) {
         try {
@@ -102,32 +119,80 @@ api.post('/notify-member', async (c) => {
       }
     } else {
       // Handle JSON data
-      const { member_id: jsonMemberId, message: jsonMessage, boxes: jsonBoxes, photo: jsonPhoto } = await c.req.json();
-      
-      member_id = jsonMemberId;
+      const { member_id, member_ids: jsonMemberIds, message: jsonMessage, boxes: jsonBoxes, photo: jsonPhoto } = await c.req.json();
+
+      if (jsonMemberIds !== undefined) {
+        if (!Array.isArray(jsonMemberIds)) {
+          return c.json({ error: 'member_ids must be an array' }, 400);
+        }
+        member_ids = jsonMemberIds;
+      } else if (member_id) {
+        member_ids = member_id;
+      } else {
+        return c.json({ error: 'Either member_id or member_ids is required' }, 400);
+      }
+
       message = jsonMessage;
       boxes = jsonBoxes;
       photo = jsonPhoto; // This should be a URL or file_id string
-    }
-    
-    if (!member_id) {
-      return c.json({ error: 'member_id is required' }, 400);
     }
 
     if (!message) {
       return c.json({ error: 'message is required' }, 400);
     }
 
-    const result = await sendMessageToMember(c.env, member_id, message, boxes || [], photo);
+    // Normalize member_ids to array
+    const memberIdsArray = Array.isArray(member_ids) ? member_ids : [member_ids];
 
-    if (result.error) {
-      return c.json({ error: result.error }, 400);
+    if (memberIdsArray.length === 0) {
+      return c.json({ error: 'At least one member ID is required' }, 400);
     }
 
-    return c.json({ 
-      success: true, 
-      message: result.message,
-      telegram_id: result.telegram_id
+    // Process each member
+    const results = [];
+    const successful = [];
+    const failed = [];
+
+    for (const memberId of memberIdsArray) {
+      if (typeof memberId !== 'string' || !memberId.trim()) {
+        failed.push({ member_id: memberId, error: 'Invalid member ID format' });
+        continue;
+      }
+
+      try {
+        const result = await sendMessageToMember(c.env, memberId.trim(), message, boxes || [], photo);
+
+        if (result.error) {
+          failed.push({ member_id: memberId.trim(), error: result.error });
+        } else {
+          successful.push({
+            member_id: memberId.trim(),
+            telegram_id: result.telegram_id,
+            message: result.message
+          });
+        }
+      } catch (error) {
+        failed.push({
+          member_id: memberId.trim(),
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+
+    if (successful.length === 0) {
+      return c.json({
+        error: 'Failed to send message to any members',
+        results: { successful, failed }
+      }, 400);
+    }
+
+    return c.json({
+      success: true,
+      message: `Message sent to ${successful.length} out of ${memberIdsArray.length} members`,
+      results: { successful, failed },
+      total_requested: memberIdsArray.length,
+      sent_to: successful.length,
+      failed_count: failed.length
     });
   } catch (error) {
     console.error('Notify member error:', error);
@@ -272,71 +337,6 @@ api.post('/announcement', async (c) => {
       details: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
     }, 500);
-  }
-});
-
-api.post('/send-to-members', async (c) => {
-  try {
-    const { membership_numbers, message } = await c.req.json();
-
-    if (!membership_numbers || !Array.isArray(membership_numbers) || membership_numbers.length === 0) {
-      return c.json({ error: 'membership_numbers must be a non-empty array' }, 400);
-    }
-
-    if (!message) {
-      return c.json({ error: 'Message is required' }, 400);
-    }
-
-    const telegramService = new TelegramService(c.env);
-    const memberSheetServices = new MemberSheetServices(c.env);
-
-    // Look up each membership number and collect telegram IDs
-    const telegramIds: string[] = [];
-    const notFound: string[] = [];
-    const noTelegramId: string[] = [];
-
-    for (const membershipNumber of membership_numbers) {
-      if (typeof membershipNumber !== 'string') {
-        continue; // Skip invalid entries
-      }
-
-      const member = await memberSheetServices.getMemberByMembershipNumber(membershipNumber.trim());
-
-      if (!member) {
-        notFound.push(membershipNumber);
-        continue;
-      }
-
-      if (!member.telegram_id) {
-        noTelegramId.push(membershipNumber);
-        continue;
-      }
-
-      telegramIds.push(member.telegram_id);
-    }
-
-    if (telegramIds.length === 0) {
-      return c.json({
-        error: 'No valid members with Telegram IDs found',
-        not_found: notFound,
-        no_telegram_id: noTelegramId
-      }, 404);
-    }
-
-    // Send message to all found telegram IDs
-    await telegramService.sendBulkMessage(telegramIds, message);
-
-    return c.json({
-      success: true,
-      message: `Message sent to ${telegramIds.length} members`,
-      total_requested: membership_numbers.length,
-      sent_to: telegramIds.length,
-      not_found: notFound,
-      no_telegram_id: noTelegramId
-    });
-  } catch (error) {
-    console.error('Send to members error:', error);
-    return c.json({ error: 'Internal server error' }, 500);
   }
 });
 
