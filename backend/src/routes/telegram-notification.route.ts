@@ -1,0 +1,36 @@
+import { Hono } from 'hono'
+import { z } from 'zod'
+import { zValidator } from '@hono/zod-validator'
+import { sendBackendTelegramNotification } from '../services/telegram-notification.service'
+import type { AppBindings } from '../types/bindings'
+
+export const telegramNotificationRoute = new Hono<{ Bindings: AppBindings }>()
+
+const notifyTelegramSchema = z.object({
+  target: z.string().trim().min(1),
+  message: z.string().trim().min(1),
+})
+
+telegramNotificationRoute.post(
+  '/telegram/notify',
+  zValidator('json', notifyTelegramSchema),
+  async (c) => {
+    try {
+      const { target, message } = c.req.valid('json')
+
+      const result = await sendBackendTelegramNotification(c.env, {
+        target,
+        message,
+      })
+
+      if (!result.success) {
+        return c.json({ error: result.error ?? 'Telegram notification failed', details: result.responseData }, result.status ?? 500)
+      }
+
+      return c.json({ success: true, detail: result.detail, data: result.responseData })
+    } catch (error) {
+      console.error('Backend telegram notification route error:', error)
+      return c.json({ error: 'Failed to send telegram notification' }, 500)
+    }
+  },
+)

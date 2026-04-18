@@ -53,4 +53,6 @@ export interface AppBindings {
   SMTP_PORT: string | number
   SMTP_USER: string
   SMTP_PASS: string
+  TELEGRAM_MS: string
+  INTERNAL_SECRET: string
 }

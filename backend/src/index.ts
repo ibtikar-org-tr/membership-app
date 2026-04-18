@@ -13,6 +13,7 @@ import { vmsProjectsRoute } from './routes/vms-projects.route'
 import { vmsSkillsRoute } from './routes/vms-skills.route'
 import { vmsTasksRoute } from './routes/vms-tasks.route'
 import { uploadEventBanner, uploadImages, serveImage } from './routes/images.route'
+import { telegramNotificationRoute } from './routes/telegram-notification.route'
 import type { AppBindings } from './types/bindings'
 
 const app = new Hono<{ Bindings: AppBindings }>()
@@ -56,5 +57,6 @@ app.route('/ms/membership-app/api', vmsEventTicketsRoute)
 app.route('/ms/membership-app/api', vmsEventRegistrationsRoute)
 app.route('/ms/membership-app/api', vmsSkillsRoute)
 app.route('/ms/membership-app/api', vmsPointTransactionsRoute)
+app.route('/ms/membership-app/api', telegramNotificationRoute)
 
 export default app

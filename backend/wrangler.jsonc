@@ -29,6 +29,7 @@
   ],
   "vars": {
     "MEMBERSHIP_NUMBER_PREFIX": "2501",
+    "TELEGRAM_MS":"https://ibtikar.tr/ms/telegram",
     "SMTP_HOST": "",
     "SMTP_PORT": "587",
     "SMTP_USER": ""
