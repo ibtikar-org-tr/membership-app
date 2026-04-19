@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { forgotPassword } from '../api/vms'
 import { EmailField } from '../components/registration/sections/personal-info-section/EmailField'
 import { PhoneNumberField } from '../components/registration/sections/personal-info-section/PhoneNumberField'
 
@@ -10,12 +11,19 @@ export function IForgotPage() {
   const [emailValue, setEmailValue] = useState('')
   const [membershipNumberValue, setMembershipNumberValue] = useState('')
   const [phoneNumberValue, setPhoneNumberValue] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submissionError, setSubmissionError] = useState<string | null>(null)
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null)
+  const [telegramSent, setTelegramSent] = useState(false)
   const [showSelectionError, setShowSelectionError] = useState(false)
   const [showValueError, setShowValueError] = useState(false)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setSubmissionError(null)
+    setMaskedEmail(null)
+    setTelegramSent(false)
 
     if (!recoveryOption) {
       setShowSelectionError(true)
@@ -41,9 +49,46 @@ export function IForgotPage() {
       return
     }
 
+    let type: 'email' | 'phone' | 'membership_number'
+    let value = ''
+
+    if (recoveryOption === 'email') {
+      type = 'email'
+      value = emailValue.trim()
+    } else if (recoveryOption === 'membershipNumber') {
+      type = 'membership_number'
+      value = membershipNumberValue.trim()
+    } else {
+      type = 'phone'
+      value = phoneNumberValue.trim()
+    }
+
+    setIsSubmitting(true)
     setShowSelectionError(false)
     setShowValueError(false)
-    setSubmitted(true)
+
+    try {
+      const response = await forgotPassword({ type, value })
+
+      if (!response.found) {
+        setSubmitted(false)
+        setSubmissionError('المعلومات المدخلة غير صحيحة أو غير موجودة في قاعدة البيانات.')
+        return
+      }
+
+      setMaskedEmail(response.maskedEmail ?? null)
+      setTelegramSent(Boolean(response.telegramSent))
+      setSubmitted(true)
+    } catch (requestError) {
+      setSubmitted(false)
+      if (requestError instanceof Error) {
+        setSubmissionError(requestError.message)
+      } else {
+        setSubmissionError('تعذر إرسال الطلب حالياً، حاول مرة أخرى لاحقاً.')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -76,6 +121,9 @@ export function IForgotPage() {
                   setShowSelectionError(false)
                   setShowValueError(false)
                   setSubmitted(false)
+                  setSubmissionError(null)
+                  setMaskedEmail(null)
+                  setTelegramSent(false)
                 }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
               >
@@ -95,6 +143,7 @@ export function IForgotPage() {
                   setEmailValue(value)
                   setShowValueError(false)
                   setSubmitted(false)
+                  setSubmissionError(null)
                 }}
                 required
               />
@@ -115,6 +164,7 @@ export function IForgotPage() {
                     setMembershipNumberValue(event.target.value)
                     setShowValueError(false)
                     setSubmitted(false)
+                    setSubmissionError(null)
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                   placeholder="2503017"
@@ -129,6 +179,7 @@ export function IForgotPage() {
                   setPhoneNumberValue(value)
                   setShowValueError(false)
                   setSubmitted(false)
+                  setSubmissionError(null)
                 }}
               />
             ) : null}
@@ -148,14 +199,23 @@ export function IForgotPage() {
             {submitted ? (
               <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                 تم استلام الطلب. إذا كانت البيانات صحيحة، سنرسل المعلومات إلى بريدك الإلكتروني.
+                {maskedEmail ? ` (${maskedEmail})` : ''}
+                {telegramSent ? ' وتم إرسال نسخة عبر التلغرام أيضًا.' : ''}
+              </p>
+            ) : null}
+
+            {submissionError ? (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {submissionError}
               </p>
             ) : null}
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-700"
             >
-              استرجاع المعلومات
+              {isSubmitting ? 'جار إرسال الطلب...' : 'استرجاع المعلومات'}
             </button>
 
             <p className="text-center text-sm text-slate-600">

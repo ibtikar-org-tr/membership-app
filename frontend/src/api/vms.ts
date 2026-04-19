@@ -8,7 +8,7 @@ import type {
   VmsSkill,
   VmsTask,
 } from '../types/vms'
-import type { LoginResponse } from '../types/auth'
+import type { ForgotPasswordResponse, LoginResponse } from '../types/auth'
 import type { MemberProfile } from '../types/profile'
 
 const MEMBER_MS_BASE_URL = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
@@ -137,6 +137,13 @@ async function deleteJson(path: string): Promise<void> {
 
 export function login(payload: { identifier: string; password: string }) {
   return postJson<LoginResponse, { identifier: string; password: string }>('/login', payload)
+}
+
+export function forgotPassword(payload: { type: 'email' | 'phone' | 'membership_number'; value: string }) {
+  return postJson<ForgotPasswordResponse, { type: 'email' | 'phone' | 'membership_number'; value: string }>(
+    '/forgot-password',
+    payload,
+  )
 }
 
 export function fetchProfile(membershipNumber: string) {
