@@ -1,5 +1,5 @@
-import { Environment, TelegramUserState } from '../../types';
-import { D1DatabaseConnection } from '../database';
+import { Environment, TelegramUserState } from '../types';
+import { D1DatabaseConnection } from './database';
 
 export class TelegramUserStateService {
   private db: D1DatabaseConnection;

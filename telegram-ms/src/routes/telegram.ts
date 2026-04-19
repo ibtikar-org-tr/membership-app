@@ -3,7 +3,7 @@ import { Environment, TelegramUpdate, InlineKeyboardButton } from '../types';
 import { MemberSheetServices } from '../services/membership-manager/member-sheet-services';
 import { TelegramService } from '../services/telegram';
 import { EmailService } from '../services/email';
-import { TelegramUserStateService } from '../crud/membership-manager/telegram-user-state';
+import { TelegramUserStateService } from '../crud/telegram-user-state';
 import { AllMessagesPrivateCrud } from '../crud/all-messages-private';
 import { AllMessagesGroupsCrud } from '../crud/all-messages-groups';
 import { D1DatabaseConnection } from '../crud/database';
