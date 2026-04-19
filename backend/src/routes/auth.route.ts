@@ -259,6 +259,31 @@ async function sendRecoveryEmail(
     'إذا لم تطلب هذا الإجراء، يرجى تجاهل هذه الرسالة.',
   ].join('\n')
 
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; color: #0f172a; line-height: 1.8;">
+      <p>مرحباً ${memberName}</p>
+      <p>استلمنا طلب استعادة معلومات العضوية الخاصة بك.</p>
+      <p>
+        <strong>رقم العضوية:</strong> ${member.membership_number}<br />
+        <strong>البريد الإلكتروني:</strong> ${member.email}<br />
+        <strong>رقم الهاتف:</strong> ${member.phone_number ?? 'غير متوفر'}
+      </p>
+      <p>إذا رغبت بتعديل كلمة المرور، اضغط الزر التالي:</p>
+      <p>
+        <a
+          href="${resetUrl}"
+          style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 10px; font-weight: 700;"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          تعديل كلمة المرور
+        </a>
+      </p>
+      <p>صلاحية الرابط: ساعة واحدة.</p>
+      <p style="color: #475569;">إذا لم تطلب هذا الإجراء، يرجى تجاهل هذه الرسالة.</p>
+    </div>
+  `
+
   let mailer: Awaited<ReturnType<typeof WorkerMailer.connect>> | null = null
 
   try {
@@ -279,7 +304,7 @@ async function sendRecoveryEmail(
       to: member.email,
       subject: 'استعادة معلومات العضوية',
       text,
-      html: text,
+      html,
     })
   } finally {
     if (mailer) {
@@ -347,7 +372,13 @@ authRoute.post('/forgot-password', zValidator('json', forgotPasswordSchema), asy
           `استعادة معلومات العضوية\n` +
           `رقم العضوية: ${member.membership_number}\n` +
           `البريد الإلكتروني: ${member.email}\n` +
-          `لتعديل كلمة المرور: ${resetUrl}`,
+          `اضغط الزر أدناه لتعديل كلمة المرور.`,
+        boxes: [
+          {
+            text: 'تعديل كلمة المرور',
+            link: resetUrl,
+          },
+        ],
       })
 
       if (result.success) {
