@@ -5,7 +5,6 @@ import telegramRoutes from './routes/telegram';
 import apiRoutes from './routes/api';
 import testingRoutes from './routes/testing';
 import uiRoutes from './routes/ui';
-import groupsRouter from './routes/groups';
 
 const app = new Hono<{ Bindings: Environment }>();
 
@@ -26,9 +25,6 @@ app.get('/ms/telegram/health', (c) => {
 app.route('/ms/telegram/telegram', telegramRoutes);
 app.route('/ms/telegram/api', apiRoutes);
 app.route('/ms/telegram/testing', testingRoutes);
-
-// Groups routes
-app.route('/ms/telegram/groups', groupsRouter);
 
 // UI routes
 app.route('/ms/telegram/ui', uiRoutes);

@@ -29,12 +29,10 @@ telegram.post('/webhook', async (c) => {
     if (update.callback_query) {
       const callbackQuery = update.callback_query;
       const telegramId = callbackQuery.from.id;
-      const username = callbackQuery.from.username;
       const callbackData = callbackQuery.data;
       const messageId = callbackQuery.message?.message_id;
 
       const telegramService = new TelegramService(c.env);
-      const memberSheetServices = new MemberSheetServices(c.env);
       const userStateService = new TelegramUserStateService(c.env);
 
       // Handle "check_subscription" callback
@@ -81,120 +79,6 @@ telegram.post('/webhook', async (c) => {
             })
           });
         }
-      }
-
-      // Handle "join_group_" callback (group join requests)
-      if (callbackData?.startsWith('join_group_')) {
-        const chatId = callbackData.replace('join_group_', '');
-        const db = new D1DatabaseConnection(c.env.TELEGRAM_DB);
-        const { GroupsCrud } = await import('../crud/groups');
-        const groupsCrud = new GroupsCrud(db);
-        
-        // Get group info
-        const group = await groupsCrud.getGroupByChatId(chatId);
-        
-        if (!group) {
-          await fetch(`https://api.telegram.org/bot${c.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              callback_query_id: callbackQuery.id,
-              text: '❌ المجموعة غير موجودة',
-              show_alert: true
-            })
-          });
-          return c.json({ ok: true });
-        }
-
-        // Check if user is verified
-        const member = await memberSheetServices.getMemberByTelegramId(telegramId.toString());
-        
-        if (!member || !member.telegram_id) {
-          // User is not verified
-          await fetch(`https://api.telegram.org/bot${c.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              callback_query_id: callbackQuery.id,
-              text: '❌ يجب عليك التحقق من عضويتك أولاً باستخدام /verify',
-              show_alert: true
-            })
-          });
-          return c.json({ ok: true });
-        }
-
-        // User is verified - create private invite link
-        try {
-          const fullName = member.en_name || `${callbackQuery.from.first_name} ${callbackQuery.from.last_name || ''}`.trim();
-          const inviteLink = await telegramService.createChatInviteLink(
-            chatId,
-            telegramId,
-            fullName
-          );
-          
-          if (inviteLink) {
-            // Edit the message to show the invite link
-            if (messageId) {
-              await telegramService.editMessage(
-                telegramId,
-                messageId,
-                `✅ *تم إنشاء رابط الانضمام\\!*\n\n` +
-                `المجموعة: *${escapeMarkdownV2(group.title)}*\n\n` +
-                `إليك رابط الانضمام الخاص بك:\n` +
-                `${escapeMarkdownV2(inviteLink)}\n\n` +
-                `⚠️ *ملاحظة مهمة:*\n` +
-                `• هذا الرابط خاص بك فقط\n` +
-                `• يمكن استخدامه مرة واحدة فقط\n` +
-                `• لا تشاركه مع أي شخص آخر`
-              );
-            } else {
-              await telegramService.sendMessage(
-                telegramId,
-                `✅ *تم إنشاء رابط الانضمام\\!*\n\n` +
-                `المجموعة: *${escapeMarkdownV2(group.title)}*\n\n` +
-                `إليك رابط الانضمام الخاص بك:\n` +
-                `${escapeMarkdownV2(inviteLink)}\n\n` +
-                `⚠️ *ملاحظة مهمة:*\n` +
-                `• هذا الرابط خاص بك فقط\n` +
-                `• يمكن استخدامه مرة واحدة فقط\n` +
-                `• لا تشاركه مع أي شخص آخر`
-              );
-            }
-            
-            await fetch(`https://api.telegram.org/bot${c.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                callback_query_id: callbackQuery.id,
-                text: '✅ تم إنشاء رابط الانضمام'
-              })
-            });
-          } else {
-            // Failed to create invite link
-            await fetch(`https://api.telegram.org/bot${c.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                callback_query_id: callbackQuery.id,
-                text: '❌ فشل إنشاء رابط الانضمام. يرجى المحاولة لاحقاً',
-                show_alert: true
-              })
-            });
-          }
-        } catch (error) {
-          console.error('Error creating invite link for group:', error);
-          await fetch(`https://api.telegram.org/bot${c.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              callback_query_id: callbackQuery.id,
-              text: '❌ حدث خطأ. يرجى المحاولة لاحقاً',
-              show_alert: true
-            })
-          });
-        }
-        
-        return c.json({ ok: true });
       }
 
       return c.json({ ok: true });
@@ -258,9 +142,6 @@ telegram.post('/webhook', async (c) => {
       // Handle /info command in groups
       if (/^\/info(@\w+)?$/.test(command)) {
         const telegramService = new TelegramService(c.env);
-        const db = new D1DatabaseConnection(c.env.TELEGRAM_DB);
-        const { GroupsCrud } = await import('../crud/groups');
-        const groupsCrud = new GroupsCrud(db);
 
         const chatId = message.chat.id;
         const chatIdAsString = chatId.toString();
@@ -288,28 +169,12 @@ telegram.post('/webhook', async (c) => {
           console.warn(`Failed to fetch admins for ${chatId}:`, error);
         }
 
-        const storedGroup = await groupsCrud.getGroupByChatId(chatIdAsString);
-
-        // Fall back to stored values when live Telegram API calls are unavailable
-        if (!memberCount && storedGroup?.member_count) {
-          memberCount = storedGroup.member_count;
-        }
-        if (!adminCount && storedGroup?.admins?.length) {
-          adminCount = storedGroup.admins.length;
-        }
-
-        const title = chatInfo?.title || message.chat.title || storedGroup?.title || 'Unknown';
-        const type = chatInfo?.type || message.chat.type || storedGroup?.type || 'unknown';
-        const username = chatInfo?.username || message.chat.username || storedGroup?.username || null;
-        const description = chatInfo?.description || storedGroup?.description || null;
-        const inviteLink = chatInfo?.invite_link || storedGroup?.invite_link || null;
+        const title = chatInfo?.title || message.chat.title || 'Unknown';
+        const type = chatInfo?.type || message.chat.type || 'unknown';
+        const username = chatInfo?.username || message.chat.username || null;
+        const description = chatInfo?.description || null;
+        const inviteLink = chatInfo?.invite_link || null;
         const forumEnabled = Boolean(chatInfo?.is_forum || message.chat.is_forum);
-        const trackedStatus = storedGroup
-          ? (storedGroup.is_active ? 'Tracked (Active)' : 'Tracked (Inactive)')
-          : 'Not tracked in database';
-        const approvalMode = storedGroup
-          ? (storedGroup.needs_admin_approval ? 'Admin approval required' : 'Direct join')
-          : 'Unknown';
 
         let infoMessage = '*Group Info*\n\n';
         infoMessage += `*Title:* ${escapeMarkdownV2(title)}\n`;
@@ -318,8 +183,6 @@ telegram.post('/webhook', async (c) => {
         infoMessage += `*Members:* ${escapeMarkdownV2(memberCount.toString())}\n`;
         infoMessage += `*Admins:* ${escapeMarkdownV2(adminCount.toString())}\n`;
         infoMessage += `*Forum Topics:* ${forumEnabled ? 'Enabled' : 'Disabled'}\n`;
-        infoMessage += `*Tracking:* ${escapeMarkdownV2(trackedStatus)}\n`;
-        infoMessage += `*Join Mode:* ${escapeMarkdownV2(approvalMode)}\n`;
 
         if (username) {
           infoMessage += `*Username:* @${escapeMarkdownV2(username)}\n`;
@@ -468,72 +331,6 @@ _هذه المعلومات مسجلة في نظامنا\\._
       `.trim();
 
       await telegramService.sendMessage(telegramId, infoText);
-      return c.json({ ok: true });
-    }
-
-    // Handle /groups command - show available groups
-    if (text === '/groups') {
-      const db = new D1DatabaseConnection(c.env.TELEGRAM_DB);
-      const { GroupsCrud } = await import('../crud/groups');
-      const groupsCrud = new GroupsCrud(db);
-      const telegramService = new TelegramService(c.env);
-      
-      // Get public groups (active and no admin approval needed)
-      const publicGroups = await groupsCrud.getPublicGroups();
-      
-      if (publicGroups.length === 0) {
-        await telegramService.sendMessage(
-          telegramId,
-          'لا توجد مجموعات متاحة حالياً\\. يرجى المحاولة لاحقاً\\.'
-        );
-        return c.json({ ok: true });
-      }
-
-      // Build groups list with inline keyboard
-      let groupsText = '*المجموعات المتاحة* 🏢\n\n';
-      groupsText += 'يمكنك طلب الانضمام إلى أي من المجموعات التالية:\n\n';
-      
-      const buttons: InlineKeyboardButton[][] = [];
-      
-      for (const group of publicGroups) {
-        // Fetch live member count
-        let liveMemberCount = group.member_count || 0;
-        try {
-          liveMemberCount = await telegramService.getChatMemberCount(group.chat_id);
-        } catch (error) {
-          console.warn(`Failed to fetch member count for group ${group.chat_id}:`, error);
-          // Fall back to stored count if live fetch fails
-        }
-        
-        // Add group info to message
-        const groupNumber = publicGroups.indexOf(group) + 1;
-        groupsText += `*${groupNumber}\\. ${escapeMarkdownV2(group.title)}*\n`;
-        
-        if (group.description) {
-          groupsText += `   ${escapeMarkdownV2(group.description)}\n`;
-        }
-        
-        groupsText += `   👥 ${liveMemberCount} عضو\n`;
-        
-        groupsText += '\n';
-        
-        // Add button to request join
-        // We'll use callback_data to handle the join request
-        buttons.push([
-          {
-            text: `انضم إلى ${group.title}`,
-            callback_data: `join_group_${group.chat_id}`
-          }
-        ]);
-      }
-      
-      await telegramService.sendMessage(
-        telegramId,
-        groupsText.trim(),
-        'MarkdownV2',
-        buttons
-      );
-      
       return c.json({ ok: true });
     }
 
