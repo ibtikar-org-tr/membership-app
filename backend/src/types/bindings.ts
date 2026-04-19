@@ -55,5 +55,6 @@ export interface AppBindings {
   SMTP_USER: string
   SMTP_PASS: string
   TELEGRAM_MS: string
+  FRONTEND_BASE_URL: string
   INTERNAL_SECRET: string
 }

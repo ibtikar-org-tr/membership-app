@@ -43,9 +43,10 @@ jobs:
           | .vars.SMTP_HOST = $smtpHost
           | .vars.SMTP_PORT = $smtpPort
           | .vars.SMTP_USER = $smtpUser
-          | del(.vars.INTERNAL_SECRET, .vars.SMTP_PASS)
+          | .vars.FRONTEND_BASE_URL = $frontendBaseUrl
           | .services[0].service = $telegramMsName
-          | .account_id = $accountId'
+          | .account_id = $accountId
+          | del(.vars.INTERNAL_SECRET, .vars.SMTP_PASS)'
 
           jq \
             --arg dbid0 "${{ vars.MEMBERS_DB_ID }}" \
@@ -58,6 +59,7 @@ jobs:
             --arg smtpHost "${{ vars.SMTP_HOST }}" \
             --arg smtpPort "${{ vars.SMTP_PORT }}" \
             --arg smtpUser "${{ vars.SMTP_USER }}" \
+            --arg frontendBaseUrl "${{ vars.FRONTEND_BASE_URL }}" \
             --arg telegramMsName "${{ vars.TELEGRAM_MS_NAME }}" \
             --arg accountId "${{ vars.CLOUDFLARE_ACCOUNT_ID }}" \
             "$jq_filter" \

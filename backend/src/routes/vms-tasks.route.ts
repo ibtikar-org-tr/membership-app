@@ -33,16 +33,23 @@ async function notifyAssignedTask(
   }
 
   const message = buildTaskAssignmentMessage(taskName, projectName, dueDate)
-  const projectUrl = `https://ibtikar.tr/dashboard/projects/${encodeURIComponent(projectId)}`
+  const frontendBaseUrl = env.FRONTEND_BASE_URL?.trim().replace(/\/+$/, '')
+  const projectUrl = frontendBaseUrl
+    ? `${frontendBaseUrl}/dashboard/projects/${encodeURIComponent(projectId)}`
+    : null
   const result = await sendBackendTelegramNotification(env, {
     target: assignedTo.trim(),
     message,
-    boxes: [
-      {
-        text: 'فتح المشروع',
-        link: projectUrl,
-      },
-    ],
+    ...(projectUrl
+      ? {
+          boxes: [
+            {
+              text: 'فتح المشروع',
+              link: projectUrl,
+            },
+          ],
+        }
+      : {}),
   })
 
   if (!result.success) {
