@@ -1,8 +1,7 @@
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../../types/vms'
-import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
-import { formatDueDate, priorityBadgeClass, statusBadgeClass, taskPriorityLabel, taskStatusLabel } from './helpers'
+import { formatDateTimeEnCA } from '../../../utils/date-format'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
