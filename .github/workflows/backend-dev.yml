@@ -39,6 +39,7 @@ jobs:
           | .d1_databases[1].database_name = $dbname1
           | .r2_buckets[0].bucket_name = $bucketname
           | .vars.MEMBERSHIP_NUMBER_PREFIX = $mprefix
+          | .vars.TELEGRAM_MS = $telegramMs
           | .vars.SMTP_HOST = $smtpHost
           | .vars.SMTP_PORT = $smtpPort
           | .vars.SMTP_USER = $smtpUser
@@ -51,6 +52,7 @@ jobs:
             --arg dbname1 "${{ vars.VMS_DB_NAME }}" \
             --arg bucketname "${{ vars.BUCKET_NAME }}" \
             --arg mprefix "${{ vars.MEMBERSHIP_NUMBER_PREFIX }}" \
+            --arg telegramMs "${{ vars.TELEGRAM_MS }}" \
             --arg smtpHost "${{ vars.SMTP_HOST }}" \
             --arg smtpPort "${{ vars.SMTP_PORT }}" \
             --arg smtpUser "${{ vars.SMTP_USER }}" \
