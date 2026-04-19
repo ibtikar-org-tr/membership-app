@@ -29,26 +29,28 @@ function buildTaskAssignmentMessage(options: TaskAssignmentNotificationOptions) 
   const taskName = sanitizeBoldValue(options.taskName)
   const projectName = sanitizeBoldValue(options.projectName)
 
-  let message = `تم تعيينك إلى مهمة جديدة: *${taskName}*`
+  let message = `🆕 تم تعيينك إلى مهمة جديدة: *${taskName}*`
 
-  message += `\n\nالمشروع: *${projectName}*`
+  message += `\n\n📁 المشروع: *${projectName}*`
 
   if (options.dueDate) {
-    message += `\n\nتاريخ الاستحقاق: *${formatDueDateYmd(options.dueDate)}*`
+    message += `\n\n⏳ تاريخ الاستحقاق: *${formatDueDateYmd(options.dueDate)}*`
   }
 
   const description = options.description?.trim()
   if (description) {
-    message += `\n\nوصف المهمة:\n${description}`
+    message += `\n\n📝 وصف المهمة:\n${description}`
   }
 
   if (options.priority?.trim() === 'high') {
-    message += `\n\nالأولوية: *عالية*`
+    message += `\n\n‼️ الأولوية: *عالية*`
   }
 
   if (typeof options.points === 'number' && Number.isFinite(options.points) && options.points > 1) {
-    message += `\n\nالنقاط: *${Math.trunc(options.points)}*`
+    message += `\n\n⭐ النقاط: *${Math.trunc(options.points)}*`
   }
+
+  message += '\n\n🚀 يرجى مراجعة تفاصيل المهمة والبدء بالتقدّم عليها.'
 
   return message
 }
