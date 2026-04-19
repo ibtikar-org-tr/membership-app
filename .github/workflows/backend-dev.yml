@@ -71,3 +71,4 @@ jobs:
         run: |
           echo "${{ secrets.JWT_SECRET }}" | wrangler secret put JWT_SECRET --config wrangler.local.jsonc --name membership-app-backend-dev
           echo "${{ secrets.SMTP_PASS }}" | wrangler secret put SMTP_PASS --config wrangler.local.jsonc --name membership-app-backend-dev
+          echo "${{ secrets.INTERNAL_SECRET }}" | wrangler secret put INTERNAL_SECRET --config wrangler.local.jsonc --name membership-app-backend-dev
