@@ -42,7 +42,8 @@ jobs:
           | .vars.TELEGRAM_MS = $telegramMs
           | .vars.SMTP_HOST = $smtpHost
           | .vars.SMTP_PORT = $smtpPort
-          | .vars.SMTP_USER = $smtpUser
+          | .vars.SMTP_USER = $smtpUser.
+          | del(.vars.INTERNAL_SECRET, .vars.SMTP_PASS)
           | .services[0].service = $telegramMsName
           | .account_id = $accountId'
 
