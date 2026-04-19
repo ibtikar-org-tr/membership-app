@@ -101,19 +101,20 @@ telegram.post('/webhook', async (c) => {
 
     // Store all received messages in appropriate database table
     try {
-      const db = new D1DatabaseConnection(c.env.TELEGRAM_DB);
+      const messagesDb = new D1DatabaseConnection(c.env.TELEGRAM_MESSAGES_DB);
       
       if (chatType === 'private') {
         // Store private messages
-        const messagesCrud = new AllMessagesPrivateCrud(db);
+        const messagesCrud = new AllMessagesPrivateCrud(messagesDb);
         await messagesCrud.storeMessage(update.message);
       } else if (chatType === 'group' || chatType === 'supergroup') {
         // Store group messages
-        const groupMessagesCrud = new AllMessagesGroupsCrud(db);
+        const groupMessagesCrud = new AllMessagesGroupsCrud(messagesDb);
         await groupMessagesCrud.storeMessage(update.message);
         
         // Track member changes
-        const memberTrackingService = new GroupMemberTrackingService(db);
+        const telegramDb = new D1DatabaseConnection(c.env.TELEGRAM_DB);
+        const memberTrackingService = new GroupMemberTrackingService(telegramDb);
         await memberTrackingService.processMessage(update.message);
         
         // Delete join/leave service messages immediately
@@ -375,7 +376,7 @@ _هذه المعلومات مسجلة في نظامنا\\._
             );
 
             // Get today's conversation history for this user
-            const db = new D1DatabaseConnection(c.env.TELEGRAM_DB);
+            const db = new D1DatabaseConnection(c.env.TELEGRAM_MESSAGES_DB);
             const messagesCrud = new AllMessagesPrivateCrud(db);
             const todaysConversation = await messagesCrud.getTodaysConversation(telegramId, 100);
 

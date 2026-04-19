@@ -31,7 +31,7 @@ export class GroupServices {
     commandMessageId?: number
   ): Promise<void> {
     try {
-      const db = new D1DatabaseConnection(this.env.TELEGRAM_DB);
+      const db = new D1DatabaseConnection(this.env.TELEGRAM_MESSAGES_DB);
       const groupMessagesCrud = new AllMessagesGroupsCrud(db);
       
       // Parse hours from command (default to 2 hours)

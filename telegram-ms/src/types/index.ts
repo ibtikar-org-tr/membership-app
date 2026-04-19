@@ -2,6 +2,7 @@ export { TelegramUpdate, InlineKeyboardButton, InlineKeyboardMarkup, SendMessage
 
 export interface Environment {
   TELEGRAM_DB: D1Database;
+  TELEGRAM_MESSAGES_DB: D1Database;
   MEMBERS_DB: D1Database;
   TELEGRAM_BOT_TOKEN: string;
   INTERNAL_SECRET: string;

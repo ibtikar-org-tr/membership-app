@@ -4,6 +4,7 @@ import { DatabaseConnection } from './base';
 // Type for Cloudflare Workers Environment with D1 binding
 export interface Env {
   TELEGRAM_DB: D1Database;
+  TELEGRAM_MESSAGES_DB: D1Database;
 }
 
 // Wrapper class to adapt D1Database to our DatabaseConnection interface
@@ -73,4 +74,8 @@ export class D1DatabaseConnection implements DatabaseConnection {
 // Factory function to create database connection from Cloudflare Workers environment
 export function createDatabaseConnection(env: Env): DatabaseConnection {
   return new D1DatabaseConnection(env.TELEGRAM_DB);
+}
+
+export function createMessagesDatabaseConnection(env: Env): DatabaseConnection {
+  return new D1DatabaseConnection(env.TELEGRAM_MESSAGES_DB);
 }
