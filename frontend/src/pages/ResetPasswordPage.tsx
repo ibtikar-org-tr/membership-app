@@ -2,9 +2,91 @@ import { type FormEvent, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../api/vms'
 
+interface ResetTokenPreview {
+  membershipNumber: string
+  email: string
+  exp: number
+}
+
+function base64UrlToUtf8(value: string): string {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+  const padding = '='.repeat((4 - (normalized.length % 4)) % 4)
+  const binary = atob(normalized + padding)
+  const bytes = new Uint8Array(binary.length)
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index)
+  }
+
+  return new TextDecoder().decode(bytes)
+}
+
+function parseTokenPreview(token: string): ResetTokenPreview | null {
+  const [payloadPart] = token.split('.')
+  if (!payloadPart) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(base64UrlToUtf8(payloadPart)) as Partial<ResetTokenPreview>
+    if (
+      typeof parsed.membershipNumber !== 'string' ||
+      typeof parsed.email !== 'string' ||
+      typeof parsed.exp !== 'number'
+    ) {
+      return null
+    }
+
+    return {
+      membershipNumber: parsed.membershipNumber,
+      email: parsed.email,
+      exp: parsed.exp,
+    }
+  } catch {
+    return null
+  }
+}
+
+function formatExpiryDate(exp: number): string {
+  return new Intl.DateTimeFormat('ar', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(exp * 1000))
+}
+
+function formatTimeLeft(exp: number): string {
+  const nowSeconds = Math.floor(Date.now() / 1000)
+  const remainingSeconds = exp - nowSeconds
+
+  if (remainingSeconds <= 0) {
+    return 'انتهت الصلاحية'
+  }
+
+  const remainingMinutes = Math.ceil(remainingSeconds / 60)
+  if (remainingMinutes < 60) {
+    return `متبقي ${remainingMinutes} دقيقة`
+  }
+
+  const hours = Math.floor(remainingMinutes / 60)
+  const minutes = remainingMinutes % 60
+  if (minutes === 0) {
+    return `متبقي ${hours} ساعة`
+  }
+
+  return `متبقي ${hours} ساعة و${minutes} دقيقة`
+}
+
 export function ResetPasswordPage() {
   const [params] = useSearchParams()
   const token = useMemo(() => params.get('token')?.trim() ?? '', [params])
+  const tokenPreview = useMemo(() => parseTokenPreview(token), [token])
+  const isTokenExpired = useMemo(() => {
+    if (!tokenPreview) {
+      return false
+    }
+
+    return tokenPreview.exp <= Math.floor(Date.now() / 1000)
+  }, [tokenPreview])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -17,6 +99,11 @@ export function ResetPasswordPage() {
 
     if (!token) {
       setErrorMessage('رابط إعادة التعيين غير صالح أو مفقود.')
+      return
+    }
+
+    if (isTokenExpired) {
+      setErrorMessage('انتهت صلاحية الرابط. أعد طلب رابط جديد من صفحة الاستعادة.')
       return
     }
 
@@ -64,6 +151,29 @@ export function ResetPasswordPage() {
           <p className="mt-3 text-sm leading-7 text-slate-600">
             أدخل كلمة مرور جديدة لحسابك. صلاحية الرابط مؤقتة.
           </p>
+
+          {tokenPreview ? (
+            <div className="mt-6 space-y-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-4 text-sm text-cyan-900">
+              <p>
+                رقم العضوية: <span dir="ltr" className="font-mono">{tokenPreview.membershipNumber}</span>
+              </p>
+              <p>
+                البريد الإلكتروني: <span dir="ltr" className="font-mono">{tokenPreview.email}</span>
+              </p>
+              <p>
+                ينتهي الرابط في: <span className="font-semibold">{formatExpiryDate(tokenPreview.exp)}</span>
+              </p>
+              <p className={isTokenExpired ? 'font-semibold text-rose-700' : 'font-semibold text-cyan-800'}>
+                {formatTimeLeft(tokenPreview.exp)}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-7 text-amber-900">
+            <p className="font-semibold">إرشادات سريعة</p>
+            <p>اكتب كلمة مرور جديدة لا تقل عن 8 أحرف ويفضل أن تحتوي على أرقام ورموز.</p>
+            <p>بعد الحفظ، استخدم كلمة المرور الجديدة مباشرة في صفحة تسجيل الدخول.</p>
+          </div>
 
           {!token ? (
             <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -117,7 +227,7 @@ export function ResetPasswordPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isTokenExpired}
                 className="w-full rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-700"
               >
                 {isSubmitting ? 'جار التحديث...' : 'حفظ كلمة المرور الجديدة'}
