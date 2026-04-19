@@ -8,14 +8,21 @@ import type { AppBindings } from '../types/bindings'
 
 export const vmsTasksRoute = new Hono<{ Bindings: AppBindings }>()
 
-function buildTaskAssignmentMessage(taskName: string, projectName: string, dueDate?: string) {
-  let message = `تم تعيينك إلى مهمة جديدة: "${taskName}" ضمن مشروع "${projectName}".`
-
-  if (dueDate) {
-    message += `\n\nتاريخ الاستحقاق: ${dueDate}`
+function formatDueDateYmd(value: string) {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return value.slice(0, 10)
   }
 
-  message += `\n\nيرجى مراجعة تفاصيل المهمة والبدء بالتقدّم عليها.`
+  return parsed.toISOString().slice(0, 10)
+}
+
+function buildTaskAssignmentMessage(taskName: string, projectName: string, dueDate?: string) {
+  let message = `تم تعيينك إلى مهمة جديدة: *${taskName}* ضمن مشروع *${projectName}*.`
+
+  if (dueDate) {
+    message += `\n\nتاريخ الاستحقاق: *${formatDueDateYmd(dueDate)}*`
+  }
 
   return message
 }
