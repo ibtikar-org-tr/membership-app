@@ -19,14 +19,19 @@ export async function sendBackendTelegramNotification(
   bindings: AppBindings,
   payload: TelegramNotificationPayload,
 ): Promise<TelegramNotificationResult> {
+  const telegramMsService = bindings.TELEGRAM_MS_SERVICE
   const telegramMsBaseUrl = bindings.TELEGRAM_MS?.trim()
+  const endpointPath = '/ms/telegram/api/notify-member'
+  console.log('Sending Telegram notification with payload:', payload) // Debug log
+  console.log('Using TELEGRAM_MS_SERVICE binding:', Boolean(telegramMsService)) // Debug log
+  console.log('Using TELEGRAM_MS base URL:', telegramMsBaseUrl) // Debug log
   const internalSecret = bindings.INTERNAL_SECRET?.trim()
 
-  if (!telegramMsBaseUrl) {
+  if (!telegramMsService && !telegramMsBaseUrl) {
     return {
       success: false,
       status: 500,
-      error: 'TELEGRAM_MS environment variable is not configured',
+      error: 'Neither TELEGRAM_MS_SERVICE binding nor TELEGRAM_MS URL is configured',
     }
   }
 
@@ -38,28 +43,30 @@ export async function sendBackendTelegramNotification(
     }
   }
 
-  const baseUrl = telegramMsBaseUrl.replace(/\/+$/, '')
+  const baseUrl = telegramMsBaseUrl ? telegramMsBaseUrl.replace(/\/+$/, '') : undefined
+  if (baseUrl) {
+    console.log('Final Telegram MS URL:', baseUrl) // Debug log
+  }
   
   // Determine endpoint and payload based on whether we're sending to multiple targets or single target
-  let url: string;
   let requestBody: any;
   
   if (payload.targets && payload.targets.length > 0) {
     // Send to multiple membership numbers
-    url = `${baseUrl}/api/notify-member`;
     requestBody = {
       member_ids: payload.targets,
       message: payload.message,
       boxes: payload.boxes,
     };
+    console.log('Sending to multiple targets:', payload.targets) // Debug log
   } else if (payload.target) {
     // Send to single target (existing behavior)
-    url = `${baseUrl}/api/notify-member`;
     requestBody = {
       member_id: payload.target,
       message: payload.message,
       boxes: payload.boxes,
     };
+    console.log('Sending to single target:', payload.target) // Debug log
   } else {
     return {
       success: false,
@@ -68,8 +75,24 @@ export async function sendBackendTelegramNotification(
     };
   }
 
+  const requestUrl = baseUrl ? `${baseUrl}/api/notify-member` : undefined
+  const bindingRequestUrl = `https://telegram-ms.internal${endpointPath}`
+  const targetDescriptor = telegramMsService ? `service-binding:${endpointPath}` : requestUrl
+  if (targetDescriptor) {
+    console.log('Request target:', targetDescriptor) // Debug log
+  }
+
   try {
-    const response = await fetch(url, {
+    const response = telegramMsService
+      ? await telegramMsService.fetch(bindingRequestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': internalSecret,
+        },
+        body: JSON.stringify(requestBody),
+      })
+      : await fetch(requestUrl!, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -77,18 +100,50 @@ export async function sendBackendTelegramNotification(
       },
       body: JSON.stringify(requestBody),
     })
+    console.log('Telegram MS response status:', response.status) // Debug log
 
-    const responseData = await response.json().catch(() => null)
+    const responseText = await response.text().catch(() => '')
+    let responseData: unknown = null
+    if (responseText) {
+      try {
+        responseData = JSON.parse(responseText)
+      } catch {
+        responseData = responseText
+      }
+    }
 
     if (!response.ok) {
+      const allowHeader = response.headers.get('allow')
+      const contentType = response.headers.get('content-type')
+      const server = response.headers.get('server')
+      const cfRay = response.headers.get('cf-ray')
+      const failureMeta = {
+        requestUrl: targetDescriptor,
+        status: response.status,
+        statusText: response.statusText,
+        allow: allowHeader,
+        contentType,
+        server,
+        cfRay,
+      }
+
+      console.warn('Telegram MS non-OK response metadata:', failureMeta)
+      if (responseText) {
+        console.warn('Telegram MS non-OK response body preview:', responseText.slice(0, 500))
+      }
+
       return {
         success: false,
         status: response.status,
         error: 'Failed to deliver notification via telegram-ms',
-        responseData,
+        responseData: {
+          ...failureMeta,
+          body: responseData,
+        },
       }
     }
 
+    console.log('Telegram MS response data:', responseData) // Debug log
     return {
       success: true,
       status: response.status,
@@ -100,6 +155,9 @@ export async function sendBackendTelegramNotification(
       success: false,
       status: 500,
       error: error instanceof Error ? error.message : 'Unknown error',
+      responseData: {
+        requestUrl: targetDescriptor,
+      },
     }
   }
 }

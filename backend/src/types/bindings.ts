@@ -48,6 +48,7 @@ export interface AppBindings {
   MEMBERS_DB: D1DatabaseLike
   VMS_DB: D1DatabaseLike
   MY_BUCKET: R2BucketLike
+  TELEGRAM_MS_SERVICE?: Fetcher
   MEMBERSHIP_NUMBER_PREFIX: string
   SMTP_HOST: string
   SMTP_PORT: string | number

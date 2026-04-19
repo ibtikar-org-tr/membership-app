@@ -43,6 +43,7 @@ jobs:
           | .vars.SMTP_HOST = $smtpHost
           | .vars.SMTP_PORT = $smtpPort
           | .vars.SMTP_USER = $smtpUser
+          | .services[0].service = "telegram-ms-dev"
           | .account_id = $accountId'
 
           jq \
