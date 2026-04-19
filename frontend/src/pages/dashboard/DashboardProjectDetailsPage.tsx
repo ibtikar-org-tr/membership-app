@@ -391,35 +391,72 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
-  const handleUpdateTask = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleUpdateTask = async (
+    patch: Partial<{
+      name: string
+      description: string
+      status: 'open' | 'in_progress' | 'completed' | 'archived'
+      priority: 'low' | 'medium' | 'high'
+      dueDate: string
+      points: number
+      assignedTo: string
+    }>,
+  ) => {
     setTaskUpdateError(null)
 
     if (!selectedTask || !canEditSelectedTask || !user) {
-      return
+      throw new Error('لا يمكن تحديث المهمة في الوقت الحالي.')
     }
 
-    const formData = new FormData(event.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-    const description = String(formData.get('description') ?? '').trim()
-    const statusRaw = String(formData.get('status') ?? selectedTask.status).trim()
-    const status =
-      statusRaw === 'in_progress' || statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'open'
-    const priorityRaw = String(formData.get('priority') ?? selectedTask.priority ?? 'medium').trim()
-    const priority =
-      priorityRaw === 'high' || priorityRaw === 'low' || priorityRaw === 'medium' ? priorityRaw : 'medium'
-    const dueDateRaw = String(formData.get('dueDate') ?? '').trim()
-    const pointsRawValue = String(formData.get('points') ?? '').trim()
-    const pointsRaw = pointsRawValue === '' ? selectedTask.points : Number(pointsRawValue)
-    const assignedTo = String(formData.get('assignedTo') ?? '').trim()
+    const payload: Partial<{
+      name: string
+      description: string
+      status: 'open' | 'in_progress' | 'completed' | 'archived'
+      priority: 'low' | 'medium' | 'high'
+      dueDate: string
+      points: number
+      assignedTo: string
+    }> = {}
 
-    if (!name) {
-      setTaskUpdateError('يرجى إدخال اسم المهمة.')
-      return
+    if (patch.name !== undefined) {
+      const nextName = patch.name.trim()
+      if (!nextName) {
+        setTaskUpdateError('يرجى إدخال اسم المهمة.')
+        throw new Error('يرجى إدخال اسم المهمة.')
+      }
+      payload.name = nextName
     }
 
-    if (Number.isNaN(pointsRaw) || pointsRaw < 1) {
-      setTaskUpdateError('يجب أن تكون النقاط 1 على الأقل.')
+    if (patch.description !== undefined) {
+      payload.description = patch.description.trim() || undefined
+    }
+
+    if (patch.status !== undefined) {
+      payload.status = patch.status
+    }
+
+    if (patch.priority !== undefined) {
+      payload.priority = patch.priority
+    }
+
+    if (patch.points !== undefined) {
+      if (Number.isNaN(patch.points) || patch.points < 1) {
+        setTaskUpdateError('يجب أن تكون النقاط 1 على الأقل.')
+        throw new Error('يجب أن تكون النقاط 1 على الأقل.')
+      }
+
+      payload.points = Math.max(1, Math.trunc(patch.points))
+    }
+
+    if (patch.dueDate !== undefined) {
+      payload.dueDate = patch.dueDate
+    }
+
+    if (patch.assignedTo !== undefined) {
+      payload.assignedTo = patch.assignedTo
+    }
+
+    if (Object.keys(payload).length === 0) {
       return
     }
 
@@ -428,23 +465,17 @@ export function DashboardProjectDetailsPage() {
     setIsUpdatingTask(true)
 
     try {
-      const payload = await updateTask(selectedTask.id, {
-        name,
-        description: description || undefined,
-        status,
-        priority,
-        dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : selectedTask.dueDate ?? undefined,
-        points: Math.max(1, Math.trunc(pointsRaw)),
-        assignedTo: assignedTo || undefined,
-      }, currentUser.membershipNumber)
+      const response = await updateTask(selectedTask.id, payload, currentUser.membershipNumber)
 
-      setProjectTasks((previous) => previous.map((task) => (task.id === payload.task.id ? payload.task : task)))
-      setSelectedTaskId(null)
+      setProjectTasks((previous) => previous.map((task) => (task.id === response.task.id ? response.task : task)))
     } catch (requestError) {
       if (requestError instanceof Error) {
         setTaskUpdateError(requestError.message)
+        throw requestError
       } else {
-        setTaskUpdateError('تعذر تحديث المهمة.')
+        const fallbackError = new Error('تعذر تحديث المهمة.')
+        setTaskUpdateError(fallbackError.message)
+        throw fallbackError
       }
     } finally {
       setIsUpdatingTask(false)
