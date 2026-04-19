@@ -48,10 +48,21 @@ function parseTokenPreview(token: string): ResetTokenPreview | null {
 }
 
 function formatExpiryDate(exp: number): string {
-  return new Intl.DateTimeFormat('ar', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(exp * 1000))
+  const date = new Date(exp * 1000)
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Istanbul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+
+  const parts = formatter.formatToParts(date)
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? ''
+
+  return `${getPart('year')}-${getPart('month')}-${getPart('day')}, ${getPart('hour')}:${getPart('minute')} (GMT+3)`
 }
 
 function formatTimeLeft(exp: number): string {
@@ -161,7 +172,10 @@ export function ResetPasswordPage() {
                 البريد الإلكتروني: <span dir="ltr" className="font-mono">{tokenPreview.email}</span>
               </p>
               <p>
-                ينتهي الرابط في: <span className="font-semibold">{formatExpiryDate(tokenPreview.exp)}</span>
+                ينتهي الرابط في:{' '}
+                <span dir="ltr" className="inline-block font-mono font-semibold" style={{ unicodeBidi: 'isolate' }}>
+                  {formatExpiryDate(tokenPreview.exp)}
+                </span>
               </p>
               <p className={isTokenExpired ? 'font-semibold text-rose-700' : 'font-semibold text-cyan-800'}>
                 {formatTimeLeft(tokenPreview.exp)}
