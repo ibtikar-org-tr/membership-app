@@ -102,7 +102,7 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
         <form onSubmit={onSubmit} className="space-y-4 p-5 sm:p-6">
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
             <p className="mb-3 text-xs font-semibold tracking-wide text-slate-500">البيانات الأساسية</p>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="xl:col-span-2">
                 <label className="mb-1 block text-xs font-medium text-slate-600">عنوان المهمة</label>
                 <input
@@ -152,6 +152,9 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
                   <option value="high">عالية</option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">الموعد</label>
                 <input
