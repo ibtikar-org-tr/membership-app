@@ -17,12 +17,20 @@ export class AllMessagesGroupsCrud extends BaseCrud<AllMessagesGroups> {
   ): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
       const message_json = JSON.stringify(messageData);
+      const message_text =
+        messageData?.text ||
+        messageData?.caption ||
+        messageData?.poll?.question ||
+        messageData?.sticker?.emoji ||
+        messageData?.dice?.emoji ||
+        null;
       const chat_id = messageData.chat?.id?.toString() || '';
       const user_id = messageData.from?.id?.toString() || '';
       const message_thread_id = messageData.message_thread_id?.toString() || null;
       
       const data: AllMessagesGroupsModel = {
         message_json,
+        message_text,
         chat_id,
         user_id,
         message_thread_id,
@@ -171,11 +179,11 @@ export class AllMessagesGroupsCrud extends BaseCrud<AllMessagesGroups> {
     try {
       const query = `
         SELECT * FROM ${this.tableName} 
-        WHERE message_json LIKE ? 
+        WHERE message_text LIKE ? OR message_json LIKE ? 
         ORDER BY created_at DESC 
         LIMIT ?
       `;
-      const result = await this.db.prepare(query).bind(`%${searchTerm}%`, limit).all<AllMessagesGroups>();
+      const result = await this.db.prepare(query).bind(`%${searchTerm}%`, `%${searchTerm}%`, limit).all<AllMessagesGroups>();
       
       if (!result.success) return [];
 

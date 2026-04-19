@@ -17,11 +17,19 @@ export class AllMessagesPrivateCrud extends BaseCrud<AllMessagesPrivate> {
   ): Promise<{ success: boolean; id?: string; error?: string }> {
     try {
       const message_json = JSON.stringify(messageData);
+      const message_text =
+        messageData?.text ||
+        messageData?.caption ||
+        messageData?.poll?.question ||
+        messageData?.sticker?.emoji ||
+        messageData?.dice?.emoji ||
+        null;
       // Extract chat_id from the message data (for private chats, this is the user's ID)
       const chat_id = messageData?.chat?.id?.toString() || messageData?.from?.id?.toString() || null;
       
       const data: AllMessagesPrivateModel = {
         message_json,
+        message_text,
         chat_id,
         notes: notes || null
       };
@@ -147,11 +155,11 @@ export class AllMessagesPrivateCrud extends BaseCrud<AllMessagesPrivate> {
     try {
       const query = `
         SELECT * FROM ${this.tableName} 
-        WHERE message_json LIKE ? 
+        WHERE message_text LIKE ? OR message_json LIKE ? 
         ORDER BY created_at DESC 
         LIMIT ?
       `;
-      const result = await this.db.prepare(query).bind(`%${searchTerm}%`, limit).all<AllMessagesPrivate>();
+      const result = await this.db.prepare(query).bind(`%${searchTerm}%`, `%${searchTerm}%`, limit).all<AllMessagesPrivate>();
       
       if (!result.success) return [];
 
@@ -342,7 +350,7 @@ export class AllMessagesPrivateCrud extends BaseCrud<AllMessagesPrivate> {
         .map(result => {
           const message = JSON.parse(result.message_json);
           const isBotResponse = result.notes === 'bot_response';
-          const text = message.text;
+          const text = message.text || result.message_text;
           
           if (!text) return null;
           
