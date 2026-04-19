@@ -253,6 +253,95 @@ telegram.post('/webhook', async (c) => {
 
     // Handle group-specific commands
     if (chatType !== 'private') {
+      const command = text.trim().split(/\s+/)[0].toLowerCase();
+
+      // Handle /info command in groups
+      if (/^\/info(@\w+)?$/.test(command)) {
+        const telegramService = new TelegramService(c.env);
+        const db = new D1DatabaseConnection(c.env.TELEGRAM_DB);
+        const { GroupsCrud } = await import('../crud/groups');
+        const groupsCrud = new GroupsCrud(db);
+
+        const chatId = message.chat.id;
+        const chatIdAsString = chatId.toString();
+
+        let chatInfo: any = null;
+        let memberCount = 0;
+        let adminCount = 0;
+
+        try {
+          chatInfo = await telegramService.getChat(chatId);
+        } catch (error) {
+          console.warn(`Failed to fetch live chat info for ${chatId}:`, error);
+        }
+
+        try {
+          memberCount = await telegramService.getChatMemberCount(chatId);
+        } catch (error) {
+          console.warn(`Failed to fetch member count for ${chatId}:`, error);
+        }
+
+        try {
+          const admins = await telegramService.getChatAdministrators(chatId);
+          adminCount = admins.length;
+        } catch (error) {
+          console.warn(`Failed to fetch admins for ${chatId}:`, error);
+        }
+
+        const storedGroup = await groupsCrud.getGroupByChatId(chatIdAsString);
+
+        // Fall back to stored values when live Telegram API calls are unavailable
+        if (!memberCount && storedGroup?.member_count) {
+          memberCount = storedGroup.member_count;
+        }
+        if (!adminCount && storedGroup?.admins?.length) {
+          adminCount = storedGroup.admins.length;
+        }
+
+        const title = chatInfo?.title || message.chat.title || storedGroup?.title || 'Unknown';
+        const type = chatInfo?.type || message.chat.type || storedGroup?.type || 'unknown';
+        const username = chatInfo?.username || message.chat.username || storedGroup?.username || null;
+        const description = chatInfo?.description || storedGroup?.description || null;
+        const inviteLink = chatInfo?.invite_link || storedGroup?.invite_link || null;
+        const forumEnabled = Boolean(chatInfo?.is_forum || message.chat.is_forum);
+        const trackedStatus = storedGroup
+          ? (storedGroup.is_active ? 'Tracked (Active)' : 'Tracked (Inactive)')
+          : 'Not tracked in database';
+        const approvalMode = storedGroup
+          ? (storedGroup.needs_admin_approval ? 'Admin approval required' : 'Direct join')
+          : 'Unknown';
+
+        let infoMessage = '*Group Info*\n\n';
+        infoMessage += `*Title:* ${escapeMarkdownV2(title)}\n`;
+        infoMessage += `*Chat ID:* ${escapeMarkdownV2(chatIdAsString)}\n`;
+        infoMessage += `*Type:* ${escapeMarkdownV2(type)}\n`;
+        infoMessage += `*Members:* ${escapeMarkdownV2(memberCount.toString())}\n`;
+        infoMessage += `*Admins:* ${escapeMarkdownV2(adminCount.toString())}\n`;
+        infoMessage += `*Forum Topics:* ${forumEnabled ? 'Enabled' : 'Disabled'}\n`;
+        infoMessage += `*Tracking:* ${escapeMarkdownV2(trackedStatus)}\n`;
+        infoMessage += `*Join Mode:* ${escapeMarkdownV2(approvalMode)}\n`;
+
+        if (username) {
+          infoMessage += `*Username:* @${escapeMarkdownV2(username)}\n`;
+        }
+        if (description) {
+          infoMessage += `*Description:* ${escapeMarkdownV2(description)}\n`;
+        }
+        if (inviteLink) {
+          infoMessage += `*Invite Link:* ${escapeMarkdownV2(inviteLink)}\n`;
+        }
+
+        await telegramService.sendMessage(
+          chatId,
+          infoMessage.trim(),
+          'MarkdownV2',
+          undefined,
+          message.message_thread_id,
+          message.message_id
+        );
+        return c.json({ ok: true });
+      }
+
       // Handle /summarize command in groups
       if (text.startsWith('/summarize')) {
         const groupServices = new GroupServices(c.env);
