@@ -33,7 +33,7 @@ telegramNotificationRoute.post(
       })
 
       if (!result.success) {
-        return c.json({ error: result.error ?? 'Telegram notification failed', details: result.responseData }, 500)
+        return c.json({ error: result.error ?? 'Telegram notification failed', details: result.responseData }, result.status ?? 500)
       }
 
       return c.json({ success: true, detail: result.detail, data: result.responseData })

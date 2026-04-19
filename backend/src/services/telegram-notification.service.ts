@@ -22,9 +22,6 @@ export async function sendBackendTelegramNotification(
   const telegramMsService = bindings.TELEGRAM_MS_SERVICE
   const telegramMsBaseUrl = bindings.TELEGRAM_MS?.trim()
   const endpointPath = '/ms/telegram/api/notify-member'
-  console.log('Sending Telegram notification with payload:', payload) // Debug log
-  console.log('Using TELEGRAM_MS_SERVICE binding:', Boolean(telegramMsService)) // Debug log
-  console.log('Using TELEGRAM_MS base URL:', telegramMsBaseUrl) // Debug log
   const internalSecret = bindings.INTERNAL_SECRET?.trim()
 
   if (!telegramMsService && !telegramMsBaseUrl) {
@@ -44,9 +41,6 @@ export async function sendBackendTelegramNotification(
   }
 
   const baseUrl = telegramMsBaseUrl ? telegramMsBaseUrl.replace(/\/+$/, '') : undefined
-  if (baseUrl) {
-    console.log('Final Telegram MS URL:', baseUrl) // Debug log
-  }
   
   // Determine endpoint and payload based on whether we're sending to multiple targets or single target
   let requestBody: any;
@@ -57,30 +51,25 @@ export async function sendBackendTelegramNotification(
       member_ids: payload.targets,
       message: payload.message,
       boxes: payload.boxes,
-    };
-    console.log('Sending to multiple targets:', payload.targets) // Debug log
+    }
   } else if (payload.target) {
     // Send to single target (existing behavior)
     requestBody = {
       member_id: payload.target,
       message: payload.message,
       boxes: payload.boxes,
-    };
-    console.log('Sending to single target:', payload.target) // Debug log
+    }
   } else {
     return {
       success: false,
       status: 400,
       error: 'Either target or targets must be provided',
-    };
+    }
   }
 
   const requestUrl = baseUrl ? `${baseUrl}/api/notify-member` : undefined
   const bindingRequestUrl = `https://telegram-ms.internal${endpointPath}`
   const targetDescriptor = telegramMsService ? `service-binding:${endpointPath}` : requestUrl
-  if (targetDescriptor) {
-    console.log('Request target:', targetDescriptor) // Debug log
-  }
 
   try {
     const response = telegramMsService
@@ -100,7 +89,6 @@ export async function sendBackendTelegramNotification(
       },
       body: JSON.stringify(requestBody),
     })
-    console.log('Telegram MS response status:', response.status) // Debug log
 
     const responseText = await response.text().catch(() => '')
     let responseData: unknown = null
@@ -143,7 +131,6 @@ export async function sendBackendTelegramNotification(
       }
     }
 
-    console.log('Telegram MS response data:', responseData) // Debug log
     return {
       success: true,
       status: response.status,
@@ -151,6 +138,10 @@ export async function sendBackendTelegramNotification(
       responseData,
     }
   } catch (error) {
+    console.error('Telegram notification request failed:', {
+      requestUrl: targetDescriptor,
+      error: error instanceof Error ? error.message : error,
+    })
     return {
       success: false,
       status: 500,
