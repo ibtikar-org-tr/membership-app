@@ -45,7 +45,7 @@ function buildTaskAssignmentMessage(options: TaskAssignmentNotificationOptions) 
   const taskName = sanitizeBoldValue(options.taskName)
   const projectName = sanitizeBoldValue(options.projectName)
 
-  let message = `🆕 تم تعيينك إلى مهمة جديدة: *${taskName}*`
+  let message = `🆕 مهمة جديدة:\n*${taskName}*`
 
   message += `\n\n📁 المشروع: *${projectName}*`
 
