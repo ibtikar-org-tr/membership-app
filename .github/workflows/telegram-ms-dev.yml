@@ -35,6 +35,8 @@ jobs:
         run: |
           jq_filter='.d1_databases[0].database_id = $dbid0
           | .d1_databases[0].database_name = $dbname0
+          | .d1_databases[1].database_id = $dbid1
+          | .d1_databases[1].database_name = $dbname1
           | .vars.MAIN_CHANNEL = $mainChannel
           | .vars.SMTP_HOST = $smtpHost
           | .vars.SMTP_PORT = $smtpPort
@@ -46,6 +48,8 @@ jobs:
           jq \
             --arg dbid0 "${{ vars.TELEGRAM_DB_ID }}" \
             --arg dbname0 "${{ vars.TELEGRAM_DB_NAME }}" \
+            --arg dbid1 "${{ vars.TELEGRAM_MESSAGES_DB_ID }}" \
+            --arg dbname1 "${{ vars.TELEGRAM_MESSAGES_DB_NAME }}" \
             --arg mainChannel "${{ vars.MAIN_CHANNEL }}" \
             --arg smtpHost "${{ vars.SMTP_HOST }}" \
             --arg smtpPort "${{ vars.SMTP_PORT }}" \
