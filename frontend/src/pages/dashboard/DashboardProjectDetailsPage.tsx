@@ -4,7 +4,8 @@ import type { FormEvent } from 'react'
 import { createProjectMember, createTask, fetchProfile, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
-import { AddMemberModal, AddTaskModal, MembersModal, ProjectSettingsModal, TaskDetailsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
+import { AddMemberModal, AddTaskModal, MembersModal, ProjectSettingsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
+import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
 import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
 import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
 import { UnallowedAccessPage } from './UnallowedAccessPage'
@@ -31,7 +32,6 @@ export function DashboardProjectDetailsPage() {
 
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const [isTaskEditMode, setIsTaskEditMode] = useState(false)
   const [isUpdatingTask, setIsUpdatingTask] = useState(false)
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
@@ -218,7 +218,6 @@ export function DashboardProjectDetailsPage() {
   }
 
   const closeTaskDetails = () => {
-    setIsTaskEditMode(false)
     setTaskUpdateError(null)
     setSelectedTaskId(null)
   }
@@ -440,7 +439,7 @@ export function DashboardProjectDetailsPage() {
       }, currentUser.membershipNumber)
 
       setProjectTasks((previous) => previous.map((task) => (task.id === payload.task.id ? payload.task : task)))
-      setIsTaskEditMode(false)
+      setSelectedTaskId(null)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setTaskUpdateError(requestError.message)
@@ -498,20 +497,11 @@ export function DashboardProjectDetailsPage() {
         <TaskDetailsModal
           selectedTask={selectedTask}
           canEditSelectedTask={canEditSelectedTask}
-          isTaskEditMode={isTaskEditMode}
           isUpdatingTask={isUpdatingTask}
           taskUpdateError={taskUpdateError}
           memberOptions={memberOptions}
           formatAssignee={formatAssignee}
           onClose={closeTaskDetails}
-          onToggleEditMode={() => {
-            setTaskUpdateError(null)
-            setIsTaskEditMode((previous) => !previous)
-          }}
-          onCancelEdit={() => {
-            setTaskUpdateError(null)
-            setIsTaskEditMode(false)
-          }}
           onUpdateTask={handleUpdateTask}
         />
       ) : null}
