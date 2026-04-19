@@ -1,5 +1,5 @@
 import { Environment } from '../../types';
-import { Member } from '../../types/membership-manager';
+import { Member } from '../../types/member';
 
 interface MemberRow {
   membership_number: string;

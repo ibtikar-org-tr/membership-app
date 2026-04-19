@@ -1,7 +1,7 @@
 import { TelegramService } from '../telegram';
 import { MemberSheetServices } from './member-sheet-services';
 import { Environment } from '../../types';
-import { Member } from '../../types/membership-manager';
+import { Member } from '../../types/member';
 
 export async function sendMessageToMember(
   env: Environment, 
