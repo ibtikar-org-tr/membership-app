@@ -3,9 +3,46 @@ import { Hono } from 'hono'
 import { getDirectProjectByIdForMember, listDirectProjectsForMember } from '../repositories/vms-projects.repository'
 import { createTask, deleteTaskById, getTaskById, listTasks, updateTaskById } from '../repositories/vms-tasks.repository'
 import { createTaskSchema, taskParamsSchema, updateTaskSchema } from '../schemas/vms-task.schema'
+import { sendBackendTelegramNotification } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
 
 export const vmsTasksRoute = new Hono<{ Bindings: AppBindings }>()
+
+function buildTaskAssignmentMessage(taskName: string, projectName: string, dueDate?: string) {
+  let message = `تم تعيينك للمهمة "${taskName}" في المشروع "${projectName}".`
+
+  if (dueDate) {
+    message += `\n
+تاريخ الاستحقاق: ${dueDate}`
+  }
+
+  message += `\n
+يرجى مراجعة تفاصيل المهمة والتقدم عليها.`
+
+  return message
+}
+
+async function notifyAssignedTask(
+  env: AppBindings,
+  assignedTo: string,
+  taskName: string,
+  projectName: string,
+  dueDate?: string,
+) {
+  if (!assignedTo?.trim()) {
+    return
+  }
+
+  const message = buildTaskAssignmentMessage(taskName, projectName, dueDate)
+  const result = await sendBackendTelegramNotification(env, {
+    target: assignedTo.trim(),
+    message,
+  })
+
+  if (!result.success) {
+    console.warn('Telegram assignment notification failed:', result)
+  }
+}
 
 vmsTasksRoute.get('/tasks', async (c) => {
   try {
@@ -73,6 +110,16 @@ vmsTasksRoute.post('/tasks', zValidator('json', createTaskSchema), async (c) => 
     const taskId = crypto.randomUUID()
     const task = await createTask(c.env.VMS_DB, taskId, payload)
 
+    if (payload.assignedTo?.trim()) {
+      await notifyAssignedTask(
+        c.env,
+        payload.assignedTo,
+        task.name,
+        project.name,
+        task.dueDate ?? undefined,
+      )
+    }
+
     return c.json({ task }, 201)
   } catch (error) {
     console.error('Failed to create task', error)
@@ -106,6 +153,13 @@ vmsTasksRoute.put(
       }
 
       const task = await updateTaskById(c.env.VMS_DB, id, payload)
+
+      const newAssignee = payload.assignedTo?.trim()
+      const currentAssignee = existing.assignedTo?.trim()
+      if (newAssignee && newAssignee !== currentAssignee) {
+        await notifyAssignedTask(c.env, newAssignee, task.name, project.name, task.dueDate ?? undefined)
+      }
+
       return c.json({ task })
     } catch (error) {
       console.error('Failed to update task', error)
