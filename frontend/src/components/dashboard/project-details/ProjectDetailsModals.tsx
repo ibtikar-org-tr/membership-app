@@ -3,7 +3,7 @@ import { FiEdit3 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import type { VmsEvent, VmsProject, VmsProjectMember, VmsTask } from '../../../types/vms'
 import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
-import { formatDueDate, statusBadgeClass, taskStatusLabel } from './helpers'
+import { formatDueDate, priorityBadgeClass, statusBadgeClass, taskPriorityLabel, taskStatusLabel } from './helpers'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -89,6 +89,22 @@ export function TaskDetailsModal({
                     </select>
                   </div>
                   <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-600">الأولوية</label>
+                    <select
+                      name="priority"
+                      defaultValue={
+                        selectedTask.priority === 'high' || selectedTask.priority === 'low' || selectedTask.priority === 'medium'
+                          ? selectedTask.priority
+                          : 'medium'
+                      }
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+                    >
+                      <option value="low">منخفضة</option>
+                      <option value="medium">متوسطة</option>
+                      <option value="high">عالية</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="mb-1 block text-xs font-medium text-slate-600">النقاط</label>
                     <input
                       name="points"
@@ -158,15 +174,35 @@ export function TaskDetailsModal({
               <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-950">{selectedTask.name}</p>
-                  <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(selectedTask.status)}`}>
-                    {taskStatusLabel(selectedTask.status)}
-                  </span>
+                  <div className="flex flex-wrap items-center justify-end gap-1.5">
+                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${statusBadgeClass(selectedTask.status)}`}>
+                      {taskStatusLabel(selectedTask.status)}
+                    </span>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${priorityBadgeClass(
+                        selectedTask.priority === 'high' || selectedTask.priority === 'low' || selectedTask.priority === 'medium'
+                          ? selectedTask.priority
+                          : 'medium',
+                      )}`}
+                    >
+                      {taskPriorityLabel(
+                        selectedTask.priority === 'high' || selectedTask.priority === 'low' || selectedTask.priority === 'medium'
+                          ? selectedTask.priority
+                          : 'medium',
+                      )}
+                    </span>
+                  </div>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">{selectedTask.description ?? 'لا يوجد وصف للمهمة.'}</p>
               </div>
 
               <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
                 <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">المكلّف: {formatAssignee(selectedTask.assignedTo)}</p>
+                <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">الأولوية: {taskPriorityLabel(
+                  selectedTask.priority === 'high' || selectedTask.priority === 'low' || selectedTask.priority === 'medium'
+                    ? selectedTask.priority
+                    : 'medium',
+                )}</p>
                 <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">النقاط: {selectedTask.points}</p>
                 <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">الموعد: {formatDueDate(selectedTask.dueDate)}</p>
                 <p className="rounded-xl border border-slate-200 bg-white px-3 py-2">أنشئت بواسطة: {formatAssignee(selectedTask.createdBy)}</p>
@@ -305,6 +341,18 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
                 <option value="in_progress">قيد التنفيذ</option>
                 <option value="completed">مكتملة</option>
                 <option value="archived">مؤرشفة</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">الأولوية</label>
+              <select
+                name="priority"
+                defaultValue="medium"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-600"
+              >
+                <option value="low">منخفضة</option>
+                <option value="medium">متوسطة</option>
+                <option value="high">عالية</option>
               </select>
             </div>
             <div>

@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     description TEXT,
     created_by TEXT NOT NULL, -- membership_number of the user who created the task
     status TEXT NOT NULL, -- "open", "in_progress", "completed", "archived"
+    priority TEXT NOT NULL DEFAULT 'medium', -- "low", "medium", "high"
     due_date TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01")
     points INTEGER NOT NULL DEFAULT 0,
     assigned_to TEXT, -- membership_number of the user assigned to the task

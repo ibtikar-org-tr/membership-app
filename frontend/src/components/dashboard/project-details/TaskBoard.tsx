@@ -1,6 +1,6 @@
 import { FiCalendar, FiTarget, FiUser } from 'react-icons/fi'
 import type { VmsTask } from '../../../types/vms'
-import { formatDueDate, laneStyle, priorityTone, statusBadgeClass, taskStatusLabel } from './helpers'
+import { formatDueDate, laneStyle, priorityBadgeClass, priorityTone, statusBadgeClass, taskPriorityLabel, taskStatusLabel } from './helpers'
 
 interface BoardColumn {
   key: string
@@ -39,6 +39,7 @@ export function TaskBoard({ boardColumns, onOpenTask, formatAssignee }: TaskBoar
               ) : null}
 
               {column.items.map((task) => {
+                const priority = task.priority === 'high' || task.priority === 'low' || task.priority === 'medium' ? task.priority : 'medium'
                 const isUnassigned = !task.assignedTo?.trim()
                 const dueDateTimestamp = task.dueDate ? Date.parse(task.dueDate) : Number.NaN
                 const isOverdue =
@@ -83,9 +84,14 @@ export function TaskBoard({ boardColumns, onOpenTask, formatAssignee }: TaskBoar
                           {task.description ?? 'لا يوجد وصف للمهمة.'}
                         </p>
                       </div>
-                      <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass(task.status)}`}>
-                        {taskStatusLabel(task.status)}
-                      </span>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass(task.status)}`}>
+                          {taskStatusLabel(task.status)}
+                        </span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${priorityBadgeClass(priority)}`}>
+                          {taskPriorityLabel(priority)}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
@@ -114,7 +120,7 @@ export function TaskBoard({ boardColumns, onOpenTask, formatAssignee }: TaskBoar
                     </div>
 
                     <div className="mt-2 flex items-center justify-end">
-                      <span className={`h-2 w-2 rounded-full transition ${priorityTone(task.status)} group-hover:scale-110`} />
+                      <span className={`h-2 w-2 rounded-full transition ${priorityTone(priority)} group-hover:scale-110`} title={taskPriorityLabel(priority)} />
                     </div>
                   </article>
                 )

@@ -236,6 +236,7 @@ export function createTask(payload: {
   description?: string
   createdBy: string
   status?: 'open' | 'in_progress' | 'completed' | 'archived'
+  priority?: 'low' | 'medium' | 'high'
   dueDate?: string
   points?: number
   assignedTo?: string
@@ -255,6 +256,7 @@ export function updateTask(
     description: string
     createdBy: string
     status: 'open' | 'in_progress' | 'completed' | 'archived'
+    priority: 'low' | 'medium' | 'high'
     dueDate: string
     points: number
     assignedTo: string

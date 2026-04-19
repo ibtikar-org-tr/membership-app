@@ -5,6 +5,8 @@ const optionalTrimmedString = z.string().trim().min(1).optional()
 
 const taskStatusSchema = z.enum(['open', 'in_progress', 'completed', 'archived'])
 
+const taskPrioritySchema = z.enum(['low', 'medium', 'high'])
+
 const taskSkillsSchema = z.record(z.string().trim().min(1), z.string().trim().min(1)).optional()
 
 export const createTaskSchema = z.object({
@@ -13,6 +15,7 @@ export const createTaskSchema = z.object({
   description: optionalTrimmedString,
   createdBy: requiredTrimmedString,
   status: taskStatusSchema.default('open'),
+  priority: taskPrioritySchema.default('medium'),
   dueDate: optionalTrimmedString,
   points: z.number().int().min(1).optional(),
   assignedTo: optionalTrimmedString,

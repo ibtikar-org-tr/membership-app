@@ -288,6 +288,9 @@ export function DashboardProjectDetailsPage() {
     const statusRaw = String(formData.get('status') ?? 'open').trim()
     const status =
       statusRaw === 'in_progress' || statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'open'
+    const priorityRaw = String(formData.get('priority') ?? 'medium').trim()
+    const priority =
+      priorityRaw === 'high' || priorityRaw === 'low' || priorityRaw === 'medium' ? priorityRaw : 'medium'
     const dueDateRaw = String(formData.get('dueDate') ?? '').trim()
     const pointsRawValue = String(formData.get('points') ?? '').trim()
     const pointsRaw = pointsRawValue === '' ? 1 : Number(pointsRawValue)
@@ -314,6 +317,7 @@ export function DashboardProjectDetailsPage() {
         description: description || undefined,
         createdBy: currentUser.membershipNumber,
         status,
+        priority,
         dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : undefined,
         points: Math.max(1, Math.trunc(pointsRaw)),
         assignedTo: assignedTo || undefined,
@@ -402,6 +406,9 @@ export function DashboardProjectDetailsPage() {
     const statusRaw = String(formData.get('status') ?? selectedTask.status).trim()
     const status =
       statusRaw === 'in_progress' || statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'open'
+    const priorityRaw = String(formData.get('priority') ?? selectedTask.priority ?? 'medium').trim()
+    const priority =
+      priorityRaw === 'high' || priorityRaw === 'low' || priorityRaw === 'medium' ? priorityRaw : 'medium'
     const dueDateRaw = String(formData.get('dueDate') ?? '').trim()
     const pointsRawValue = String(formData.get('points') ?? '').trim()
     const pointsRaw = pointsRawValue === '' ? selectedTask.points : Number(pointsRawValue)
@@ -426,6 +433,7 @@ export function DashboardProjectDetailsPage() {
         name,
         description: description || undefined,
         status,
+        priority,
         dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : selectedTask.dueDate ?? undefined,
         points: Math.max(1, Math.trunc(pointsRaw)),
         assignedTo: assignedTo || undefined,

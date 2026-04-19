@@ -10,6 +10,7 @@ interface TaskRow {
   description: string | null
   created_by: string
   status: string
+  priority: string | null
   due_date: string | null
   points: number
   assigned_to: string | null
@@ -52,6 +53,7 @@ function mapTaskRow(row: TaskRow) {
     description: row.description,
     createdBy: row.created_by,
     status: row.status,
+    priority: row.priority ?? 'medium',
     dueDate: row.due_date,
     points: row.points,
     assignedTo: row.assigned_to,
@@ -65,7 +67,7 @@ function mapTaskRow(row: TaskRow) {
 export async function listTasks(db: D1DatabaseLike) {
   const result = await db
     .prepare(
-      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills FROM tasks ORDER BY created_at DESC',
+      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills FROM tasks ORDER BY created_at DESC',
     )
     .bind()
     .all<TaskRow>()
@@ -76,7 +78,7 @@ export async function listTasks(db: D1DatabaseLike) {
 export async function getTaskById(db: D1DatabaseLike, id: string) {
   const row = await db
     .prepare(
-      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills FROM tasks WHERE id = ?',
+      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills FROM tasks WHERE id = ?',
     )
     .bind(id)
     .first<TaskRow>()
@@ -87,7 +89,7 @@ export async function getTaskById(db: D1DatabaseLike, id: string) {
 export async function createTask(db: D1DatabaseLike, id: string, input: CreateTaskInput) {
   await db
     .prepare(
-      'INSERT INTO tasks (id, project_id, name, description, created_by, status, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO tasks (id, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -96,6 +98,7 @@ export async function createTask(db: D1DatabaseLike, id: string, input: CreateTa
       input.description ?? null,
       input.createdBy,
       input.status,
+      input.priority,
       input.dueDate ?? null,
       input.points ?? 1,
       input.assignedTo ?? null,
@@ -136,6 +139,11 @@ export async function updateTaskById(db: D1DatabaseLike, id: string, input: Upda
   if (input.status !== undefined) {
     updates.push('status = ?')
     values.push(input.status)
+  }
+
+  if (input.priority !== undefined) {
+    updates.push('priority = ?')
+    values.push(input.priority)
   }
 
   if (input.dueDate !== undefined) {

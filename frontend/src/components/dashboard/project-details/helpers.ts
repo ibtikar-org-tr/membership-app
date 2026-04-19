@@ -52,20 +52,44 @@ export function statusBadgeClass(status: string) {
   return 'border-cyan-200 bg-cyan-50 text-cyan-700'
 }
 
-export function priorityTone(status: string) {
-  if (status === 'completed') {
-    return 'bg-emerald-500'
+export function taskPriorityLabel(priority: string) {
+  if (priority === 'high') {
+    return 'عالية'
   }
 
-  if (status === 'in_progress') {
-    return 'bg-amber-500'
+  if (priority === 'low') {
+    return 'منخفضة'
   }
 
-  if (status === 'archived') {
+  if (priority === 'medium') {
+    return 'متوسطة'
+  }
+
+  return priority
+}
+
+export function priorityBadgeClass(priority: string) {
+  if (priority === 'high') {
+    return 'border-rose-200 bg-rose-50 text-rose-800'
+  }
+
+  if (priority === 'low') {
+    return 'border-slate-200 bg-slate-100 text-slate-600'
+  }
+
+  return 'border-amber-200 bg-amber-50 text-amber-800'
+}
+
+export function priorityTone(priority: string) {
+  if (priority === 'high') {
+    return 'bg-rose-500'
+  }
+
+  if (priority === 'low') {
     return 'bg-slate-400'
   }
 
-  return 'bg-cyan-500'
+  return 'bg-amber-500'
 }
 
 export function laneStyle(status: string) {
