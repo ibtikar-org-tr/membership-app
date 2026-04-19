@@ -3,66 +3,11 @@ import { Hono } from 'hono'
 import { getDirectProjectByIdForMember, listDirectProjectsForMember } from '../repositories/vms-projects.repository'
 import { createTask, deleteTaskById, getTaskById, listTasks, updateTaskById } from '../repositories/vms-tasks.repository'
 import { createTaskSchema, taskParamsSchema, updateTaskSchema } from '../schemas/vms-task.schema'
-import { sendBackendTelegramNotification } from '../services/telegram-notification.service'
+import { notifyAssignedTask } from '../services/task-assignment-notification.service'
+
 import type { AppBindings } from '../types/bindings'
 
 export const vmsTasksRoute = new Hono<{ Bindings: AppBindings }>()
-
-function formatDueDateYmd(value: string) {
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) {
-    return value.slice(0, 10)
-  }
-
-  return parsed.toISOString().slice(0, 10)
-}
-
-function buildTaskAssignmentMessage(taskName: string, projectName: string, dueDate?: string) {
-  let message = `تم تعيينك إلى مهمة جديدة: *${taskName}* ضمن مشروع *${projectName}*.`
-
-  if (dueDate) {
-    message += `\n\nتاريخ الاستحقاق: *${formatDueDateYmd(dueDate)}*`
-  }
-
-  return message
-}
-
-async function notifyAssignedTask(
-  env: AppBindings,
-  assignedTo: string,
-  projectId: string,
-  taskName: string,
-  projectName: string,
-  dueDate?: string,
-) {
-  if (!assignedTo?.trim()) {
-    return
-  }
-
-  const message = buildTaskAssignmentMessage(taskName, projectName, dueDate)
-  const frontendBaseUrl = env.FRONTEND_BASE_URL?.trim().replace(/\/+$/, '')
-  const projectUrl = frontendBaseUrl
-    ? `${frontendBaseUrl}/dashboard/projects/${encodeURIComponent(projectId)}`
-    : null
-  const result = await sendBackendTelegramNotification(env, {
-    target: assignedTo.trim(),
-    message,
-    ...(projectUrl
-      ? {
-          boxes: [
-            {
-              text: 'فتح المشروع',
-              link: projectUrl,
-            },
-          ],
-        }
-      : {}),
-  })
-
-  if (!result.success) {
-    console.warn('Telegram assignment notification failed:', result)
-  }
-}
 
 vmsTasksRoute.get('/tasks', async (c) => {
   try {
@@ -131,14 +76,16 @@ vmsTasksRoute.post('/tasks', zValidator('json', createTaskSchema), async (c) => 
     const task = await createTask(c.env.VMS_DB, taskId, payload)
 
     if (payload.assignedTo?.trim()) {
-      await notifyAssignedTask(
-        c.env,
-        payload.assignedTo,
-        project.id,
-        task.name,
-        project.name,
-        task.dueDate ?? undefined,
-      )
+      await notifyAssignedTask(c.env, {
+        assignedTo: payload.assignedTo,
+        projectId: project.id,
+        projectName: project.name,
+        taskName: task.name,
+        dueDate: task.dueDate,
+        description: task.description,
+        priority: task.priority,
+        points: task.points,
+      })
     }
 
     return c.json({ task }, 201)
@@ -178,7 +125,16 @@ vmsTasksRoute.put(
       const newAssignee = payload.assignedTo?.trim()
       const currentAssignee = existing.assignedTo?.trim()
       if (newAssignee && newAssignee !== currentAssignee) {
-        await notifyAssignedTask(c.env, newAssignee, project.id, task.name, project.name, task.dueDate ?? undefined)
+        await notifyAssignedTask(c.env, {
+          assignedTo: newAssignee,
+          projectId: project.id,
+          projectName: project.name,
+          taskName: task.name,
+          dueDate: task.dueDate,
+          description: task.description,
+          priority: task.priority,
+          points: task.points,
+        })
       }
 
       return c.json({ task })
