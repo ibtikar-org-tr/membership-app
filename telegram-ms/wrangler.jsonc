@@ -27,7 +27,11 @@
     "SMTP_HOST": "",
     "SMTP_PORT": "587",
     "SMTP_USER": "",
-    "TELEGRAM_MS": "https://ibtikar.tr/ms/telegram"
+    "SMTP_PASS": "delete-on-deployment",
+    "TELEGRAM_MS": "https://ibtikar.tr/ms/telegram",
+    "TELEGRAM_BOT_TOKEN": "delete-on-deployment",
+    "INTERNAL_SECRET":"delete-on-deployment",
+    "DEEPSEEK_API_KEY":"delete-on-deployment"
   },
   "observability": {
     "enabled": true,

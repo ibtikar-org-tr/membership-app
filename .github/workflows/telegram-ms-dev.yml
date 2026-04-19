@@ -40,7 +40,8 @@ jobs:
           | .vars.SMTP_PORT = $smtpPort
           | .vars.SMTP_USER = $smtpUser
           | .vars.TELEGRAM_MS = $telegramMs
-          | .account_id = $accountId'
+          | .account_id = $accountId
+          | del(.vars.SMTP_PASS, .vars.TELEGRAM_BOT_TOKEN, .vars.INTERNAL_SECRET, .vars.DEEPSEEK_API_KEY)'
 
           jq \
             --arg dbid0 "${{ vars.TELEGRAM_DB_ID }}" \
