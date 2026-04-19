@@ -39,6 +39,15 @@ const router = createBrowserRouter([
     },
   },
   {
+    path: '/reset-password',
+    errorElement: <RouteErrorBoundary />,
+    hydrateFallbackElement: <div />,
+    lazy: async () => {
+      const { ResetPasswordPage } = await import('../pages/ResetPasswordPage')
+      return { Component: ResetPasswordPage }
+    },
+  },
+  {
     path: '/dashboard',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,

@@ -48,3 +48,14 @@ export async function getUserByMembershipNumber(
 export async function deleteUserByMembershipNumber(db: D1DatabaseLike, membershipNumber: string): Promise<void> {
   await db.prepare('DELETE FROM users WHERE membership_number = ?').bind(membershipNumber).run()
 }
+
+export async function updateUserPasswordHash(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+  passwordHash: string,
+): Promise<void> {
+  await db
+    .prepare('UPDATE users SET password_hash = ? WHERE membership_number = ?')
+    .bind(passwordHash, membershipNumber)
+    .run()
+}

@@ -8,7 +8,7 @@ import type {
   VmsSkill,
   VmsTask,
 } from '../types/vms'
-import type { ForgotPasswordResponse, LoginResponse } from '../types/auth'
+import type { ForgotPasswordResponse, LoginResponse, ResetPasswordResponse } from '../types/auth'
 import type { MemberProfile } from '../types/profile'
 
 const MEMBER_MS_BASE_URL = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
@@ -144,6 +144,10 @@ export function forgotPassword(payload: { type: 'email' | 'phone' | 'membership_
     '/forgot-password',
     payload,
   )
+}
+
+export function resetPassword(payload: { token: string; newPassword: string }) {
+  return postJson<ResetPasswordResponse, { token: string; newPassword: string }>('/reset-password', payload)
 }
 
 export function fetchProfile(membershipNumber: string) {

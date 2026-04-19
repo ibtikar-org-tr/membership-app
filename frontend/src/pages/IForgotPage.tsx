@@ -92,7 +92,7 @@ export function IForgotPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-emerald-50 px-6 py-10 text-slate-800" dir="rtl">
+    <main className="min-h-screen bg-linear-to-br from-sky-50 via-white to-emerald-50 px-6 py-10 text-slate-800" dir="rtl">
       <div className="mx-auto flex min-h-[80vh] w-full max-w-4xl items-center justify-center">
         <section className="w-full rounded-3xl border border-white/70 bg-white/85 p-8 shadow-2xl backdrop-blur md:p-10">
           <p className="inline-block rounded-full bg-sky-100 px-4 py-1 text-sm font-semibold text-sky-700">
@@ -200,6 +200,7 @@ export function IForgotPage() {
               <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
                 تم استلام الطلب. إذا كانت البيانات صحيحة، سنرسل المعلومات إلى بريدك الإلكتروني.
                 {maskedEmail ? ` (${maskedEmail})` : ''}
+                {' '}وسيصل رابط لتعديل كلمة المرور.
                 {telegramSent ? ' وتم إرسال نسخة عبر التلغرام أيضًا.' : ''}
               </p>
             ) : null}

@@ -15,3 +15,8 @@ export interface ForgotPasswordResponse {
   maskedEmail?: string
   telegramSent?: boolean
 }
+
+export interface ResetPasswordResponse {
+  success: boolean
+  message: string
+}
