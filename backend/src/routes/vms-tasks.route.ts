@@ -9,15 +9,13 @@ import type { AppBindings } from '../types/bindings'
 export const vmsTasksRoute = new Hono<{ Bindings: AppBindings }>()
 
 function buildTaskAssignmentMessage(taskName: string, projectName: string, dueDate?: string) {
-  let message = `تم تعيينك للمهمة "${taskName}" في المشروع "${projectName}".`
+  let message = `تم تعيينك إلى مهمة جديدة: "${taskName}" ضمن مشروع "${projectName}".`
 
   if (dueDate) {
-    message += `\n
-تاريخ الاستحقاق: ${dueDate}`
+    message += `\n\nتاريخ الاستحقاق: ${dueDate}`
   }
 
-  message += `\n
-يرجى مراجعة تفاصيل المهمة والتقدم عليها.`
+  message += `\n\nيرجى مراجعة تفاصيل المهمة والبدء بالتقدّم عليها.`
 
   return message
 }
@@ -25,6 +23,7 @@ function buildTaskAssignmentMessage(taskName: string, projectName: string, dueDa
 async function notifyAssignedTask(
   env: AppBindings,
   assignedTo: string,
+  projectId: string,
   taskName: string,
   projectName: string,
   dueDate?: string,
@@ -34,9 +33,16 @@ async function notifyAssignedTask(
   }
 
   const message = buildTaskAssignmentMessage(taskName, projectName, dueDate)
+  const projectUrl = `https://ibtikar.tr/dashboard/projects/${encodeURIComponent(projectId)}`
   const result = await sendBackendTelegramNotification(env, {
     target: assignedTo.trim(),
     message,
+    boxes: [
+      {
+        text: 'فتح المشروع',
+        link: projectUrl,
+      },
+    ],
   })
 
   if (!result.success) {
@@ -114,6 +120,7 @@ vmsTasksRoute.post('/tasks', zValidator('json', createTaskSchema), async (c) => 
       await notifyAssignedTask(
         c.env,
         payload.assignedTo,
+        project.id,
         task.name,
         project.name,
         task.dueDate ?? undefined,
@@ -157,7 +164,7 @@ vmsTasksRoute.put(
       const newAssignee = payload.assignedTo?.trim()
       const currentAssignee = existing.assignedTo?.trim()
       if (newAssignee && newAssignee !== currentAssignee) {
-        await notifyAssignedTask(c.env, newAssignee, task.name, project.name, task.dueDate ?? undefined)
+        await notifyAssignedTask(c.env, newAssignee, project.id, task.name, project.name, task.dueDate ?? undefined)
       }
 
       return c.json({ task })
