@@ -322,7 +322,6 @@ telegram.post('/webhook', async (c) => {
 👤 *الاسم اللاتيني:* ${escapeMarkdownV2(existingMember.en_name || 'غير متوفر')}
 📧 *البريد الإلكتروني:* ${escapeMarkdownV2(existingMember.email || 'غير متوفر')}
 📱 *الهاتف:* ${escapeMarkdownV2(existingMember.phone || 'غير متوفر')}
-💬 *واتساب:* ${escapeMarkdownV2(existingMember.whatsapp || 'غير متوفر')}
 
 _هذه المعلومات مسجلة في نظامنا\\._
       `.trim();

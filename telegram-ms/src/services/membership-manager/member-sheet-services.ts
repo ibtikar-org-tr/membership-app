@@ -7,7 +7,6 @@ interface MemberRow {
   ar_name: string | null;
   email: string;
   phone: string | null;
-  whatsapp: string | null;
   telegram_id: string | null;
   telegram_username: string | null;
 }
@@ -28,7 +27,6 @@ export class MemberSheetServices {
           ui.ar_name,
           u.email,
           ui.phone_number AS phone,
-          ui.phone_number AS whatsapp,
           ui.telegram_id,
           ui.telegram_username
         FROM users u
@@ -49,7 +47,6 @@ export class MemberSheetServices {
           ui.ar_name,
           u.email,
           ui.phone_number AS phone,
-          ui.phone_number AS whatsapp,
           ui.telegram_id,
           ui.telegram_username
         FROM users u
@@ -72,7 +69,6 @@ export class MemberSheetServices {
           ui.ar_name,
           u.email,
           ui.phone_number AS phone,
-          ui.phone_number AS whatsapp,
           ui.telegram_id,
           ui.telegram_username
         FROM users u
@@ -95,7 +91,6 @@ export class MemberSheetServices {
           ui.ar_name,
           u.email,
           ui.phone_number AS phone,
-          ui.phone_number AS whatsapp,
           ui.telegram_id,
           ui.telegram_username
         FROM users u
@@ -127,7 +122,6 @@ export class MemberSheetServices {
       ar_name: row.ar_name,
       email: row.email,
       phone: row.phone,
-      whatsapp: row.whatsapp,
       telegram_id: row.telegram_id,
       telegram_username: row.telegram_username,
     };
