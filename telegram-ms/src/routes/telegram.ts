@@ -173,7 +173,6 @@ telegram.post('/webhook', async (c) => {
         const type = chatInfo?.type || message.chat.type || 'unknown';
         const username = chatInfo?.username || message.chat.username || null;
         const description = chatInfo?.description || null;
-        const inviteLink = chatInfo?.invite_link || null;
         const forumEnabled = Boolean(chatInfo?.is_forum || message.chat.is_forum);
 
         let infoMessage = '*Group Info*\n\n';
@@ -190,9 +189,7 @@ telegram.post('/webhook', async (c) => {
         if (description) {
           infoMessage += `*Description:* ${escapeMarkdownV2(description)}\n`;
         }
-        if (inviteLink) {
-          infoMessage += `*Invite Link:* ${escapeMarkdownV2(inviteLink)}\n`;
-        }
+
 
         await telegramService.sendMessage(
           chatId,
