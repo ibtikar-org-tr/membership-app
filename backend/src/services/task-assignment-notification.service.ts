@@ -37,20 +37,18 @@ function buildTaskAssignmentMessage(options: TaskAssignmentNotificationOptions) 
     message += `\n\n⏳ تاريخ الاستحقاق: *${formatDueDateYmd(options.dueDate)}*`
   }
 
+  if (options.priority?.trim() === 'high') {
+    message += `\n\n‼️ الأولوية: *عالية*`
+  }
+  
+  if (typeof options.points === 'number' && Number.isFinite(options.points) && options.points > 1) {
+    message += `\n\n⭐ النقاط: *${Math.trunc(options.points)}*`
+  }
+  
   const description = options.description?.trim()
   if (description) {
     message += `\n\n📝 وصف المهمة:\n${description}`
   }
-
-  if (options.priority?.trim() === 'high') {
-    message += `\n\n‼️ الأولوية: *عالية*`
-  }
-
-  if (typeof options.points === 'number' && Number.isFinite(options.points) && options.points > 1) {
-    message += `\n\n⭐ النقاط: *${Math.trunc(options.points)}*`
-  }
-
-  message += '\n\n🚀 يرجى مراجعة تفاصيل المهمة والبدء بالتقدّم عليها.'
 
   return message
 }
