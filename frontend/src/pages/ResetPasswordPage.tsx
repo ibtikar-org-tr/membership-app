@@ -105,6 +105,7 @@ export function ResetPasswordPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const form = event.currentTarget
     setSuccessMessage(null)
     setErrorMessage(null)
 
@@ -118,7 +119,7 @@ export function ResetPasswordPage() {
       return
     }
 
-    const formData = new FormData(event.currentTarget)
+    const formData = new FormData(form)
     const newPassword = String(formData.get('newPassword') ?? '')
     const confirmPassword = String(formData.get('confirmPassword') ?? '')
 
@@ -137,7 +138,7 @@ export function ResetPasswordPage() {
     try {
       await resetPassword({ token, newPassword })
       setSuccessMessage('تم تحديث كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن.')
-      event.currentTarget.reset()
+      form.reset()
     } catch (requestError) {
       if (requestError instanceof Error) {
         setErrorMessage(requestError.message)
