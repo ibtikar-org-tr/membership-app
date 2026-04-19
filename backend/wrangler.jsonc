@@ -30,7 +30,8 @@
   "services": [
     {
       "binding": "TELEGRAM_MS_SERVICE",
-      "service": "telegram-ms"
+      "service": "telegram-ms",
+      "remote": true
     }
   ],
   "vars": {

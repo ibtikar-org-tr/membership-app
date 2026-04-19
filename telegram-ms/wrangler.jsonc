@@ -20,7 +20,8 @@
     }
   ],
   "ai": {
-    "binding": "AI"
+    "binding": "AI",
+    "remote": true
   },
   "vars": {
     "MAIN_CHANNEL": "ibtikar_org",
