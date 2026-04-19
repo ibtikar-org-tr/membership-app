@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { getDirectProjectByIdForMember, listDirectProjectsForMember } from '../repositories/vms-projects.repository'
 import { createTask, deleteTaskById, getTaskById, listTasks, updateTaskById } from '../repositories/vms-tasks.repository'
+import { getUserProfileByMembershipNumber } from '../repositories/user-info.repository'
 import { createTaskSchema, taskParamsSchema, updateTaskSchema } from '../schemas/vms-task.schema'
 import { notifyAssignedTask } from '../services/task-assignment-notification.service'
 
@@ -72,6 +73,8 @@ vmsTasksRoute.post('/tasks', zValidator('json', createTaskSchema), async (c) => 
       return c.json({ error: 'Project not found.' }, 404)
     }
 
+    const projectOwnerProfile = await getUserProfileByMembershipNumber(c.env.MEMBERS_DB, project.owner)
+
     const taskId = crypto.randomUUID()
     const task = await createTask(c.env.VMS_DB, taskId, payload)
 
@@ -81,6 +84,8 @@ vmsTasksRoute.post('/tasks', zValidator('json', createTaskSchema), async (c) => 
         projectId: project.id,
         projectName: project.name,
         taskName: task.name,
+        projectOwnerTelegramId: projectOwnerProfile?.telegramId,
+        projectOwnerTelegramUsername: projectOwnerProfile?.telegramUsername,
         dueDate: task.dueDate,
         description: task.description,
         priority: task.priority,
@@ -120,6 +125,8 @@ vmsTasksRoute.put(
         return c.json({ error: 'Task not found.' }, 404)
       }
 
+      const projectOwnerProfile = await getUserProfileByMembershipNumber(c.env.MEMBERS_DB, project.owner)
+
       const task = await updateTaskById(c.env.VMS_DB, id, payload)
 
       const newAssignee = payload.assignedTo?.trim()
@@ -130,6 +137,8 @@ vmsTasksRoute.put(
           projectId: project.id,
           projectName: project.name,
           taskName: task.name,
+          projectOwnerTelegramId: projectOwnerProfile?.telegramId,
+          projectOwnerTelegramUsername: projectOwnerProfile?.telegramUsername,
           dueDate: task.dueDate,
           description: task.description,
           priority: task.priority,

@@ -6,6 +6,8 @@ interface TaskAssignmentNotificationOptions {
   projectId: string
   projectName: string
   taskName: string
+  projectOwnerTelegramId?: string | null
+  projectOwnerTelegramUsername?: string | null
   dueDate?: string | null
   description?: string | null
   priority?: string | null
@@ -23,6 +25,20 @@ function formatDueDateYmd(value: string) {
 
 function sanitizeBoldValue(value: string) {
   return value.replace(/[*_]/g, '').trim()
+}
+
+function buildOwnerTelegramDmLink(options: TaskAssignmentNotificationOptions) {
+  const username = options.projectOwnerTelegramUsername?.trim().replace(/^@+/, '')
+  if (username) {
+    return `https://t.me/${encodeURIComponent(username)}`
+  }
+
+  const telegramId = options.projectOwnerTelegramId?.trim()
+  if (telegramId) {
+    return `tg://user?id=${encodeURIComponent(telegramId)}`
+  }
+
+  return null
 }
 
 function buildTaskAssignmentMessage(options: TaskAssignmentNotificationOptions) {
@@ -63,20 +79,30 @@ export async function notifyAssignedTask(env: AppBindings, options: TaskAssignme
   const projectUrl = frontendBaseUrl
     ? `${frontendBaseUrl}/dashboard/projects/${encodeURIComponent(options.projectId)}`
     : null
+  const ownerDmLink = buildOwnerTelegramDmLink(options)
 
   const result = await sendBackendTelegramNotification(env, {
     target: options.assignedTo.trim(),
     message,
-    ...(projectUrl
-      ? {
-          boxes: [
-            {
-              text: 'فتح المشروع',
-              link: projectUrl,
-            },
-          ],
-        }
-      : {}),
+    ...(() => {
+      const boxes: Array<{ text: string; link: string }> = []
+
+      if (projectUrl) {
+        boxes.push({
+          text: 'فتح المشروع 📁',
+          link: projectUrl,
+        })
+      }
+
+      if (ownerDmLink) {
+        boxes.push({
+          text: 'تواصل مع مسؤول المشروع 👤',
+          link: ownerDmLink,
+        })
+      }
+
+      return boxes.length > 0 ? { boxes } : {}
+    })(),
   })
 
   if (!result.success) {
