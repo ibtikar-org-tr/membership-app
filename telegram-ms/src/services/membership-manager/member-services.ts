@@ -1,5 +1,5 @@
 import { TelegramService } from '../telegram';
-import { MemberSheetServices } from './member-sheet-services';
+import { MemberCrud } from '../../crud/member';
 import { Environment } from '../../types';
 import { Member } from '../../types/member';
 
@@ -15,12 +15,12 @@ export async function sendMessageToMember(
     console.log(`📤 sendMessageToMember called for member ${member_id}, message: "${message.substring(0, 50)}...", boxes:`, boxes);
     const telegramService = new TelegramService(env);
 
-    // Use cached member if provided, otherwise fetch from Google Sheets
+    // Use cached member if provided, otherwise fetch from members DB
     let member: Member | null = cachedMember || null;
     
     if (!member) {
-      const memberSheetServices = new MemberSheetServices(env);
-      member = await memberSheetServices.getMemberByMembershipNumber(member_id);
+      const memberCrud = new MemberCrud(env.MEMBERS_DB);
+      member = await memberCrud.getMemberByMembershipNumber(member_id);
     }
 
     if (!member) {

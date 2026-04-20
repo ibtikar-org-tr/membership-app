@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { Environment } from '../types';
-import { MemberSheetServices } from '../services/membership-manager/member-sheet-services';
+import { MemberCrud } from '../crud/member';
 import { TelegramService } from '../services/telegram';
 import { authMiddleware } from '../middleware/auth';
 import { sendMessageToMember } from '../services/membership-manager/member-services';
@@ -19,11 +19,11 @@ api.post('/send-message', async (c) => {
     }
 
     const telegramService = new TelegramService(c.env);
-    const memberSheetServices = new MemberSheetServices(c.env);
+    const memberCrud = new MemberCrud(c.env.MEMBERS_DB);
 
     if (target === 'all') {
       // Send to all members with telegram_id
-      const members = await memberSheetServices.getMembers();
+      const members = await memberCrud.getMembers();
       const telegramIds = members
         .filter(member => member.telegram_id)
         .map(member => member.telegram_id);
@@ -40,10 +40,10 @@ api.post('/send-message', async (c) => {
       });
     } else if (target) {
       // Send to specific member by membership number or email
-      let member = await memberSheetServices.getMemberByMembershipNumber(target);
+      let member = await memberCrud.getMemberByMembershipNumber(target);
       
       if (!member) {
-        member = await memberSheetServices.getMemberByEmail(target);
+        member = await memberCrud.getMemberByEmail(target);
       }
 
       if (!member) {
@@ -278,11 +278,11 @@ api.post('/announcement', async (c) => {
     }
 
     const telegramService = new TelegramService(c.env);
-    const memberSheetServices = new MemberSheetServices(c.env);
+    const memberCrud = new MemberCrud(c.env.MEMBERS_DB);
 
     // Fetch all members from Google Sheet
     console.log('📋 Fetching members from Google Sheet...');
-    const members = await memberSheetServices.getMembers();
+    const members = await memberCrud.getMembers();
     console.log('✅ Retrieved', members.length, 'total members');
     
     // Filter members who have telegram_id

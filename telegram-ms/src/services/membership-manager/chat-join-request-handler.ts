@@ -1,7 +1,7 @@
 import { Context } from 'hono';
 import { Environment } from '../../types';
 import { TelegramService } from '../telegram';
-import { MemberSheetServices } from './member-sheet-services';
+import { MemberCrud } from '../../crud/member';
 import { AllMessagesGroupsCrud } from '../../crud/all-messages-groups';
 import { D1DatabaseConnection } from '../../crud/database';
 import { escapeMarkdownV2 } from '../../utils/helpers';
@@ -36,7 +36,7 @@ export async function handleChatJoinRequest(
   await storeJoinRequest(joinRequest, fullName, username, c.env);
   
   const telegramService = new TelegramService(c.env);
-  const memberSheetServices = new MemberSheetServices(c.env);
+  const memberCrud = new MemberCrud(c.env.MEMBERS_DB);
   
   // Check if the user has the bot activated (can receive messages)
   const hasBotActivated = await telegramService.canSendMessageToUser(telegramId);
@@ -48,7 +48,7 @@ export async function handleChatJoinRequest(
       chatId,
       fullName,
       username,
-      memberSheetServices,
+      memberCrud,
       telegramService
     );
   } else {
@@ -111,11 +111,11 @@ async function handleUserWithBot(
   chatId: number,
   fullName: string,
   username: string | undefined,
-  memberSheetServices: MemberSheetServices,
+  memberCrud: MemberCrud,
   telegramService: TelegramService
 ): Promise<void> {
   // Check if user is verified
-  const member = await memberSheetServices.getMemberByTelegramId(telegramId.toString());
+  const member = await memberCrud.getMemberByTelegramId(telegramId.toString());
   
   if (member && member.telegram_id) {
     // User is verified - create and send private invite link

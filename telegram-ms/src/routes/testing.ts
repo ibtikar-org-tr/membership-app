@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { Environment } from '../types';
-import { MemberSheetServices } from '../services/membership-manager/member-sheet-services';
+import { MemberCrud } from '../crud/member';
 import { TelegramService } from '../services/telegram';
 import { authMiddleware } from '../middleware/auth';
 
@@ -12,8 +12,8 @@ api.use('*', authMiddleware);
 
 api.get('/members', async (c) => {
   try {
-    const memberSheetServices = new MemberSheetServices(c.env);
-    const members = await memberSheetServices.getMembers();
+    const memberCrud = new MemberCrud(c.env.MEMBERS_DB);
+    const members = await memberCrud.getMembers();
     
     // Filter out sensitive information
     const publicMembers = members.map(member => ({
@@ -34,8 +34,8 @@ api.get('/members', async (c) => {
 
 api.get('/members/telegram', async (c) => {
   try {
-    const memberSheetServices = new MemberSheetServices(c.env);
-    const members = await memberSheetServices.getMembers();
+    const memberCrud = new MemberCrud(c.env.MEMBERS_DB);
+    const members = await memberCrud.getMembers();
     
     // Only return members with Telegram IDs
     const telegramMembers = members

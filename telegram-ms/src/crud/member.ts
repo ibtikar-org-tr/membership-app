@@ -1,5 +1,5 @@
-import { Environment } from '../../types';
-import { Member } from '../../types/member';
+import { Member } from '../types/member';
+import { DatabaseConnection } from './base';
 
 interface MemberRow {
   membership_number: string;
@@ -11,11 +11,11 @@ interface MemberRow {
   telegram_username: string | null;
 }
 
-export class MemberSheetServices {
-  private readonly db: D1Database;
+export class MemberCrud {
+  private readonly db: DatabaseConnection;
 
-  constructor(env: Environment) {
-    this.db = env.MEMBERS_DB;
+  constructor(db: DatabaseConnection) {
+    this.db = db;
   }
 
   async getMembers(): Promise<Member[]> {
@@ -33,6 +33,7 @@ export class MemberSheetServices {
         LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
         ORDER BY u.membership_number ASC`
       )
+      .bind()
       .all<MemberRow>();
 
     return (result.results || []).map((row) => this.toMember(row));

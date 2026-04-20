@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { Environment, TelegramUpdate, InlineKeyboardButton } from '../types';
-import { MemberSheetServices } from '../services/membership-manager/member-sheet-services';
+import { MemberCrud } from '../crud/member';
 import { TelegramService } from '../services/telegram';
 import { EmailService } from '../services/email';
 import { TelegramUserStateService } from '../crud/telegram-user-state';
@@ -218,7 +218,7 @@ telegram.post('/webhook', async (c) => {
     }
 
     const telegramService = new TelegramService(c.env);
-    const memberSheetServices = new MemberSheetServices(c.env);
+    const memberCrud = new MemberCrud(c.env.MEMBERS_DB);
     const emailService = new EmailService(c.env);
     const userStateService = new TelegramUserStateService(c.env);
 
@@ -244,7 +244,7 @@ telegram.post('/webhook', async (c) => {
     // Handle /verify command
     if (text === '/verify') {
       // Check if user is already registered
-      const existingMember = await memberSheetServices.getMemberByTelegramId(telegramId.toString());
+      const existingMember = await memberCrud.getMemberByTelegramId(telegramId.toString());
       
       if (existingMember) {
         // User is already registered
@@ -304,7 +304,7 @@ telegram.post('/webhook', async (c) => {
 
     // Handle /info command - show membership information
     if (text === '/info' || text === '/myinfo' || text === '/iforgot') {
-      const existingMember = await memberSheetServices.getMemberByTelegramId(telegramId.toString());
+      const existingMember = await memberCrud.getMemberByTelegramId(telegramId.toString());
       
       if (!existingMember) {
         await telegramService.sendMessage(
@@ -342,7 +342,7 @@ _هذه المعلومات مسجلة في نظامنا\\._
           text.trim(),
           telegramId,
           username,
-          memberSheetServices,
+          memberCrud,
           emailService,
           telegramService,
           userStateService,
@@ -357,7 +357,7 @@ _هذه المعلومات مسجلة في نظامنا\\._
           text.trim(),
           telegramId,
           username,
-          memberSheetServices,
+          memberCrud,
           telegramService,
           userStateService,
           c.env
@@ -465,15 +465,14 @@ async function handleMembershipNumberInput(
   membershipNumber: string,
   telegramId: number,
   username: string | undefined,
-  memberSheetServices: MemberSheetServices,
+  memberCrud: MemberCrud,
   emailService: EmailService,
   telegramService: TelegramService,
   userStateService: TelegramUserStateService,
   maskEmail: (email: string) => string,
   env: Environment
 ) {
-  // Check if member exists in Google Sheets
-  const member = await memberSheetServices.getMemberByMembershipNumber(membershipNumber);
+  const member = await memberCrud.getMemberByMembershipNumber(membershipNumber);
   
   if (!member) {
     await telegramService.sendMessage(
@@ -496,7 +495,7 @@ async function handleMembershipNumberInput(
   }
 
   // Check if this telegram_id is already registered
-  const existingMember = await memberSheetServices.getMemberByTelegramId(telegramId.toString());
+  const existingMember = await memberCrud.getMemberByTelegramId(telegramId.toString());
   if (existingMember) {
     await telegramService.sendMessage(
       telegramId,
@@ -544,7 +543,7 @@ async function handleVerificationCodeInput(
   code: string,
   telegramId: number,
   username: string | undefined,
-  memberSheetServices: MemberSheetServices,
+  memberCrud: MemberCrud,
   telegramService: TelegramService,
   userStateService: TelegramUserStateService,
   env: Environment
@@ -575,7 +574,7 @@ async function handleVerificationCodeInput(
   }
 
   // Code is correct - proceed with verification
-  const member = await memberSheetServices.getMemberByMembershipNumber(membershipNumber);
+  const member = await memberCrud.getMemberByMembershipNumber(membershipNumber);
   
   if (!member) {
     await telegramService.sendMessage(
@@ -587,7 +586,7 @@ async function handleVerificationCodeInput(
   }
 
   // Check if this telegram_id is already registered to any user
-  const existingMember = await memberSheetServices.getMemberByTelegramId(telegramId.toString());
+  const existingMember = await memberCrud.getMemberByTelegramId(telegramId.toString());
   if (existingMember) {
     await telegramService.sendMessage(
       telegramId,
@@ -598,7 +597,7 @@ async function handleVerificationCodeInput(
   }
 
   // Update member with Telegram information
-  await memberSheetServices.updateMember({
+  await memberCrud.updateMember({
     membership_number: membershipNumber,
     telegram_id: telegramId.toString(),
     telegram_username: username || storedUsername || ''
@@ -624,24 +623,24 @@ telegram.get('/verify', async (c) => {
       return c.html('<h1>رابط تحقق غير صالح</h1><p>المعاملات المطلوبة مفقودة.</p>');
     }
 
-    const memberSheetServices = new MemberSheetServices(c.env);
+    const memberCrud = new MemberCrud(c.env.MEMBERS_DB);
     const telegramService = new TelegramService(c.env);
     const userStateService = new TelegramUserStateService(c.env);
 
     // Check if the membership number exists
-    const member = await memberSheetServices.getMemberByMembershipNumber(membershipNumber);
+    const member = await memberCrud.getMemberByMembershipNumber(membershipNumber);
     if (!member) {
       return c.html('<h1>فشل التحقق</h1><p>لم يتم العثور على العضو. يرجى الاتصال بالدعم.</p>');
     }
 
     // Check if this telegram_id is already registered to any user
-    const existingMember = await memberSheetServices.getMemberByTelegramId(telegramId);
+    const existingMember = await memberCrud.getMemberByTelegramId(telegramId);
     if (existingMember) {
       return c.html('<h1>المستخدم موجود بالفعل</h1><p>حساب تيليجرام هذا مسجل بالفعل. يرجى الاتصال بالمسؤول.</p>');
     }
 
     // Update member with Telegram information
-    await memberSheetServices.updateMember({
+    await memberCrud.updateMember({
       membership_number: membershipNumber,
       telegram_id: telegramId,
       telegram_username: telegramUsername
