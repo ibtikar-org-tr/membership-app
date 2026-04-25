@@ -1,4 +1,5 @@
 import { Context } from 'hono'
+import { getClubById, updateClubById } from '../repositories/vms-clubs.repository'
 import { getEventById, updateEventById } from '../repositories/vms-events.repository'
 import type { AppBindings } from '../types/bindings'
 
@@ -153,6 +154,54 @@ export async function uploadEventBanner(c: Context<{ Bindings: AppBindings }>) {
   } catch (error) {
     console.error('Event banner upload error:', error)
     return c.json({ error: 'Failed to upload event banner.' }, 500)
+  }
+}
+
+export async function uploadClubBanner(c: Context<{ Bindings: AppBindings }>) {
+  const bucket = c.env.MY_BUCKET
+  const clubId = c.req.param('id')?.trim()
+
+  if (!bucket) {
+    return c.json({ error: 'R2 bucket not configured' }, 500)
+  }
+
+  if (!clubId) {
+    return c.json({ error: 'Club ID is required.' }, 400)
+  }
+
+  const club = await getClubById(c.env.VMS_DB, clubId)
+  if (!club) {
+    return c.json({ error: 'Club not found.' }, 404)
+  }
+
+  try {
+    const formData = await c.req.formData()
+    const fileEntry = formData.get('image')
+
+    if (!fileEntry || !(fileEntry instanceof File)) {
+      return c.json({ error: 'No image file provided.' }, 400)
+    }
+
+    if (fileEntry.size > MAX_FILE_SIZE) {
+      return c.json({ error: 'Image exceeds maximum size of 5MB.' }, 400)
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(fileEntry.type)) {
+      return c.json({ error: 'Unsupported image type. Allowed: JPEG, PNG, WebP, GIF.' }, 400)
+    }
+
+    const key = `clubs/${clubId}/banner/image.jpg`
+    await bucket.delete(key)
+    await bucket.put(key, await fileEntry.arrayBuffer())
+
+    const requestUrl = new URL(c.req.url)
+    const imageUrl = `${requestUrl.origin}/ms/membership-app/api/event-images/${key}`
+
+    const updatedClub = await updateClubById(c.env.VMS_DB, clubId, { imageUrl })
+    return c.json({ club: updatedClub })
+  } catch (error) {
+    console.error('Club banner upload error:', error)
+    return c.json({ error: 'Failed to upload club banner.' }, 500)
   }
 }
 

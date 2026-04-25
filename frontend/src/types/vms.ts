@@ -100,6 +100,12 @@ export interface VmsClub {
   name: string
   description: string | null
   projectId: string
+  imageUrl: string | null
+  telegramGroupId: string | null
+  country: string | null
+  region: string | null
+  city: string | null
+  address: string | null
   visibility: 'public' | 'private' | 'draft' | string
   joinPolicy: 'auto_approve' | 'request_to_join' | 'invite_only' | string
   skills: Record<string, string> | null

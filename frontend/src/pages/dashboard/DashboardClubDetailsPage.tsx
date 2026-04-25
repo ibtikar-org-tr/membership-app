@@ -11,9 +11,14 @@ import {
   fetchProjectMembers,
   updateClub,
   updateClubMember,
+  uploadClubBanner,
 } from '../../api/vms'
 import type { VmsClub, VmsClubMember, VmsProject, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
+import { ImageUploader } from '../../components/ImageUploader'
+import { LocationDetailsComponent } from '../../components/registration/sections/personal-info-section/LocationDetailsComponent'
+import { initialRegistrationFormData } from '../../types/registration'
+import type { RegistrationFormData } from '../../types/registration'
 
 const MEMBER_STATUS_LABEL: Record<string, string> = {
   active: 'نشط',
@@ -35,6 +40,11 @@ export function DashboardClubDetailsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [locationType, setLocationType] = useState<'online' | 'physical'>('physical')
+  const [locationData, setLocationData] = useState<RegistrationFormData>(initialRegistrationFormData)
+  const [telegramGroupId, setTelegramGroupId] = useState('')
+  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const [membershipNumberInput, setMembershipNumberInput] = useState('')
 
@@ -106,6 +116,22 @@ export function DashboardClubDetailsPage() {
     [clubMembers],
   )
 
+  useEffect(() => {
+    if (!club) {
+      return
+    }
+
+    setLocationType(club.address === 'online' ? 'online' : 'physical')
+    setLocationData((previous) => ({
+      ...previous,
+      country: club.country ?? '',
+      region: club.region ?? '',
+      city: club.city ?? '',
+      address: club.address === 'online' ? '' : (club.address ?? ''),
+    }))
+    setTelegramGroupId(club.telegramGroupId ?? '')
+  }, [club])
+
   const handleUpdateClub = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSaveError(null)
@@ -119,6 +145,10 @@ export function DashboardClubDetailsPage() {
     const description = String(formData.get('description') ?? '').trim()
     const visibility = String(formData.get('visibility') ?? 'public').trim()
     const joinPolicy = String(formData.get('joinPolicy') ?? 'auto_approve').trim()
+    const country = locationData.country.trim()
+    const region = locationData.region.trim()
+    const city = locationData.city.trim()
+    const address = locationData.address.trim()
 
     if (!name) {
       setSaveError('يرجى إدخال اسم النادي.')
@@ -137,13 +167,39 @@ export function DashboardClubDetailsPage() {
         {
           name,
           description: description || undefined,
+          ...(locationType === 'online'
+            ? { address: 'online' }
+            : {
+                country: country || undefined,
+                region: region || undefined,
+                city: city || undefined,
+                address: address || undefined,
+              }),
+          ...(telegramGroupId.trim() ? { telegramGroupId: telegramGroupId.trim() } : {}),
           visibility: normalizedVisibility,
           joinPolicy: normalizedJoinPolicy,
         },
         user.membershipNumber,
       )
 
-      setClub(payload.club)
+      let updatedClub = payload.club
+
+      if (selectedBannerFile) {
+        try {
+          const bannerPayload = await uploadClubBanner(club.id, selectedBannerFile)
+          updatedClub = bannerPayload.club
+          setSelectedBannerFile(null)
+          setUploadError(null)
+        } catch (bannerError) {
+          if (bannerError instanceof Error) {
+            setUploadError(bannerError.message)
+          } else {
+            setUploadError('تعذر رفع صورة النادي.')
+          }
+        }
+      }
+
+      setClub(updatedClub)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setSaveError(requestError.message)
@@ -289,6 +345,23 @@ export function DashboardClubDetailsPage() {
 
       {canManageClub ? (
         <form onSubmit={handleUpdateClub} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            {club.imageUrl ? (
+              <div className="mb-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+                <p className="mb-2 text-xs font-medium text-slate-600">الصورة الحالية</p>
+                <img src={club.imageUrl} alt="" className="h-36 w-full max-w-md rounded-md border border-slate-200 object-cover" />
+              </div>
+            ) : null}
+            <ImageUploader
+              onSelect={(file) => {
+                setSelectedBannerFile(file)
+                setUploadError(null)
+              }}
+              onError={(error) => setUploadError(error)}
+            />
+            {uploadError ? <p className="mt-2 text-sm text-red-600">{uploadError}</p> : null}
+          </div>
+
           <label className="space-y-1">
             <span className="text-xs font-medium text-slate-700">اسم النادي</span>
             <input
@@ -307,6 +380,46 @@ export function DashboardClubDetailsPage() {
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
             />
           </label>
+
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-slate-700">معرف مجموعة التلغرام</span>
+            <input
+              name="telegramGroupId"
+              value={telegramGroupId}
+              onChange={(event) => setTelegramGroupId(event.target.value)}
+              placeholder="مثال: -123456789"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+          </label>
+
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-slate-700">نوع موقع النادي</span>
+            <select
+              value={locationType}
+              onChange={(event) => setLocationType(event.target.value === 'online' ? 'online' : 'physical')}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            >
+              <option value="physical">نادي حضوري</option>
+              <option value="online">نادي أون لاين</option>
+            </select>
+          </div>
+
+          {locationType === 'physical' ? (
+            <div className="md:col-span-2 rounded-md border border-slate-200 bg-white p-3">
+              <LocationDetailsComponent
+                data={locationData}
+                onFieldChange={(field, value) => {
+                  setLocationData((previous) => ({ ...previous, [field]: value }))
+                }}
+              />
+            </div>
+          ) : (
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-700">العنوان</span>
+              <div className="w-full rounded-md border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">online</div>
+              <input name="address" type="hidden" value="online" />
+            </label>
+          )}
 
           <label className="space-y-1">
             <span className="text-xs font-medium text-slate-700">الظهور</span>

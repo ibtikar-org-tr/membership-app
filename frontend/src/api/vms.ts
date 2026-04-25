@@ -440,6 +440,12 @@ export function createClub(payload: {
   projectId: string
   name: string
   description?: string
+  imageUrl?: string
+  telegramGroupId?: string
+  country?: string
+  region?: string
+  city?: string
+  address?: string
   visibility: 'public' | 'private' | 'draft'
   joinPolicy: 'auto_approve' | 'request_to_join' | 'invite_only'
   skills?: Record<string, string>
@@ -455,6 +461,12 @@ export function updateClub(
   payload: Partial<{
     name: string
     description: string
+    imageUrl: string
+    telegramGroupId: string
+    country: string
+    region: string
+    city: string
+    address: string
     visibility: 'public' | 'private' | 'draft'
     joinPolicy: 'auto_approve' | 'request_to_join' | 'invite_only'
     skills: Record<string, string>
@@ -577,4 +589,32 @@ export async function uploadEventBanner(eventId: string, file: File) {
   }
 
   return (await response.json()) as { event: VmsEvent }
+}
+
+export async function uploadClubBanner(clubId: string, file: File) {
+  const formData = new FormData()
+  formData.append('image', file)
+
+  const response = await fetch(`${API_BASE}/clubs/${encodeURIComponent(clubId)}/banner`, {
+    method: 'PUT',
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const fallbackMessage = `Upload failed (${response.status})`
+    let message = fallbackMessage
+
+    try {
+      const body = (await response.json()) as { error?: unknown }
+      if (typeof body.error === 'string' && body.error.trim()) {
+        message = body.error
+      }
+    } catch {
+      // Ignore JSON parsing errors and keep fallback message.
+    }
+
+    throw new Error(message)
+  }
+
+  return (await response.json()) as { club: VmsClub }
 }

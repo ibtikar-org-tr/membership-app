@@ -235,11 +235,33 @@ export function DashboardProjectClubsPage() {
             {clubs.map((club) => (
               <li key={club.id}>
                 <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow">
+                  {club.imageUrl ? (
+                    <div className="mb-3 aspect-video overflow-hidden rounded-lg bg-slate-100">
+                      <img src={club.imageUrl} alt={club.name} className="h-full w-full object-cover" loading="lazy" />
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold text-slate-900">{club.name}</h3>
                     <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-700">
                       {VISIBILITY_LABEL[club.visibility] ?? club.visibility}
                     </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {club.country ? (
+                      <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700">
+                        {club.country}
+                      </span>
+                    ) : null}
+                    {club.region ? (
+                      <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+                        {club.region}
+                      </span>
+                    ) : null}
+                    {club.address === 'online' ? (
+                      <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                        أون لاين
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-2 text-xs text-slate-500">{JOIN_POLICY_LABEL[club.joinPolicy] ?? club.joinPolicy}</p>
                   <p className="mt-2 line-clamp-2 text-xs text-slate-600">{club.description ?? 'لا يوجد وصف.'}</p>
