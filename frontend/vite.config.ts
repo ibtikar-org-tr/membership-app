@@ -24,5 +24,11 @@ export default defineConfig(({ mode }) => {
         '@public': '/public',
       },
     },
+    server: {
+      watch: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
   }
 })
