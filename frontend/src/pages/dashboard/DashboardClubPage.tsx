@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { CalendarDays, Globe, MapPin, Users } from 'lucide-react'
+import { ArrowRight, Globe, MapPin, PencilLine, Users } from 'lucide-react'
 import {
   createClubMember,
   fetchClubById,
   fetchClubMembers,
+  fetchProjectById,
+  fetchProjectMembers,
 } from '../../api/vms'
-import type { VmsClub, VmsClubMember } from '../../types/vms'
+import type { VmsClub, VmsClubMember, VmsProject, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { UnallowedAccessPage } from './UnallowedAccessPage'
 
@@ -33,6 +35,8 @@ export function DashboardClubPage() {
   const user = useMemo(() => getStoredUser(), [])
 
   const [club, setClub] = useState<VmsClub | null>(null)
+  const [project, setProject] = useState<VmsProject | null>(null)
+  const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
   const [clubMembers, setClubMembers] = useState<VmsClubMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -86,6 +90,58 @@ export function DashboardClubPage() {
       controller.abort()
     }
   }, [clubID, user?.membershipNumber])
+
+  useEffect(() => {
+    const membershipNumber = user?.membershipNumber
+
+    if (!club?.projectId || !membershipNumber) {
+      setProject(null)
+      setProjectMembers([])
+      return
+    }
+
+    const currentProjectId = club.projectId
+    const controller = new AbortController()
+
+    async function loadProjectAccess() {
+      try {
+        const [projectPayload, membersPayload] = await Promise.all([
+          fetchProjectById(currentProjectId, membershipNumber),
+          fetchProjectMembers(currentProjectId),
+        ])
+
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setProject(projectPayload.project)
+        setProjectMembers(membersPayload.projectMembers)
+      } catch {
+        if (!controller.signal.aborted) {
+          setProject(null)
+          setProjectMembers([])
+        }
+      }
+    }
+
+    void loadProjectAccess()
+
+    return () => {
+      controller.abort()
+    }
+  }, [club?.projectId, user?.membershipNumber])
+
+  const canManageClub = useMemo(() => {
+    if (!project || !user) {
+      return false
+    }
+
+    const managerMembershipNumbers = new Set(
+      projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber),
+    )
+
+    return project.owner === user.membershipNumber || managerMembershipNumbers.has(user.membershipNumber)
+  }, [project, projectMembers, user])
 
   const currentMembership = useMemo(
     () => clubMembers.find((member) => member.membershipNumber === user?.membershipNumber) ?? null,
@@ -179,12 +235,21 @@ export function DashboardClubPage() {
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-stretch sm:gap-2 lg:flex-row">
+            {canManageClub ? (
+              <Link
+                to={`/dashboard/clubs/${club.id}/edit`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
+              >
+                <PencilLine className="h-4 w-4" />
+                تعديل النادي
+              </Link>
+            ) : null}
             <Link
-              to={`/dashboard/projects/${club.projectId}/clubs`}
+              to="/dashboard/clubs"
               className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
-              أندية المشروع
-              <CalendarDays className="h-4 w-4" />
+              العودة للأندية
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
