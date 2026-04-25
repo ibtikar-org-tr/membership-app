@@ -154,7 +154,8 @@ CREATE TABLE IF NOT EXISTS clubs (
     description TEXT,
     project_id TEXT NOT NULL REFERENCES projects(id), -- every clubs is associated with a project
     visibility TEXT NOT NULL, -- "public", "private", "draft"
-    join_policy TEXT NOT NULL, -- "auto_approve", "request_to_join", "invite_only"    
+    join_policy TEXT NOT NULL, -- "auto_approve", "request_to_join", "invite_only"
+    telegram_group_id TEXT UNIQUE, -- unique Telegram group ID associated with the club (e.g., "-123456789")
     skills TEXT -- JSON array of skill names relevant to the club (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
 );
 
