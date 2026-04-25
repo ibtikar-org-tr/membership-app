@@ -6,6 +6,7 @@ import {
   Users,
   FolderKanban,
   CalendarDays,
+  Shapes,
   UserCircle,
   Settings,
   LogOut,
@@ -27,6 +28,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { to: '/dashboard/community', label: 'المجتمع', helper: 'قنوات ومجموعات الأعضاء', icon: Users },
   { to: '/dashboard/projects', label: 'المشاريع', helper: 'متابعة المبادرات النشطة', icon: FolderKanban },
   { to: '/dashboard/events', label: 'الفعاليات', helper: 'اللقاءات والورش القادمة', icon: CalendarDays },
+  { to: '/dashboard/clubs', label: 'الأندية', helper: 'استكشاف أندية المشاريع', icon: Shapes },
   { to: '/dashboard/profile', label: 'الملف الشخصي', helper: 'بياناتك الشخصية', icon: UserCircle },
   { to: '/dashboard/settings', label: 'الإعدادات', helper: 'تفضيلات الحساب', icon: Settings },
 ]

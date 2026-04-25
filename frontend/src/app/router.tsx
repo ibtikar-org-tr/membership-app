@@ -113,11 +113,35 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: 'projects/:projectID/clubs',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardProjectClubsPage } = await import('../pages/dashboard/DashboardProjectClubsPage')
+          return { Component: DashboardProjectClubsPage }
+        },
+      },
+      {
         path: 'events',
         hydrateFallbackElement: <div />,
         lazy: async () => {
           const { DashboardEventsPage } = await import('../pages/dashboard/DashboardEventsPage')
           return { Component: DashboardEventsPage }
+        },
+      },
+      {
+        path: 'clubs',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardClubsPage } = await import('../pages/dashboard/DashboardClubsPage')
+          return { Component: DashboardClubsPage }
+        },
+      },
+      {
+        path: 'clubs/:clubID',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardClubDetailsPage } = await import('../pages/dashboard/DashboardClubDetailsPage')
+          return { Component: DashboardClubDetailsPage }
         },
       },
       {

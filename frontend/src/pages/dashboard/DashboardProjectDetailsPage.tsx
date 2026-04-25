@@ -513,6 +513,7 @@ export function DashboardProjectDetailsPage() {
         canManageProject={canManageProject}
         onOpenAddTask={() => setIsAddTaskOpen(true)}
         eventsPath={`/dashboard/projects/${project.id}/events`}
+        clubsPath={`/dashboard/projects/${project.id}/clubs`}
         subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}
         onOpenMembers={() => setIsMembersOpen(true)}
         onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}

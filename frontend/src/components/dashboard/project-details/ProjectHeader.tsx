@@ -18,6 +18,7 @@ interface ProjectHeaderProps {
   canManageProject: boolean
   onOpenAddTask: () => void
   eventsPath: string
+  clubsPath: string
   onOpenMembers: () => void
   onOpenProjectSettings: () => void
   subProjectsPath: string
@@ -37,6 +38,7 @@ export function ProjectHeader({
   canManageProject,
   onOpenAddTask,
   eventsPath,
+  clubsPath,
   onOpenMembers,
   onOpenProjectSettings,
   subProjectsPath,
@@ -101,6 +103,12 @@ export function ProjectHeader({
               className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
             >
               الفعاليات
+            </Link>
+            <Link
+              to={clubsPath}
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              الأندية
             </Link>
             <Link
               to={subProjectsPath}
