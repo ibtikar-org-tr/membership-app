@@ -139,7 +139,7 @@ export function DashboardProjectClubsPage() {
       setClubs((previous) => [payload.club, ...previous])
       form.reset()
       setIsCreateClubOpen(false)
-      navigate(`/dashboard/clubs/${payload.club.id}`)
+      navigate(`/dashboard/clubs/${payload.club.id}/edit`)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -270,7 +270,7 @@ export function DashboardProjectClubsPage() {
                       to={`/dashboard/clubs/${club.id}`}
                       className="inline-flex items-center rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                     >
-                      إدارة النادي
+                      عرض التفاصيل
                     </Link>
                   </div>
                 </article>

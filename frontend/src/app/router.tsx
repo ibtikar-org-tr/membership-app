@@ -140,6 +140,14 @@ const router = createBrowserRouter([
         path: 'clubs/:clubID',
         hydrateFallbackElement: <div />,
         lazy: async () => {
+          const { DashboardClubPage } = await import('../pages/dashboard/DashboardClubPage')
+          return { Component: DashboardClubPage }
+        },
+      },
+      {
+        path: 'clubs/:clubID/edit',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
           const { DashboardClubDetailsPage } = await import('../pages/dashboard/DashboardClubDetailsPage')
           return { Component: DashboardClubDetailsPage }
         },
