@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS events (
     image_url TEXT, -- banner image URL associated with the event (e.g., "https://example.com/banner.jpg")
     associated_urls TEXT, -- JSON array of URLs associated with the event (e.g., {"website": "https://example.com", "facebook": "https://facebook.com/example", "map": "https://www.openstreetmap.org/relation/1661399"})
     created_by TEXT NOT NULL, -- membership_number of the user who created the event
-    project_id TEXT REFERENCES projects(id), -- optional association with a project
+    project_id TEXT NOT NULL REFERENCES projects(id), -- association with a project
     status TEXT NOT NULL, -- "draft","public","archived"
     country TEXT, -- ISO 3166-1 alpha-2 country code (e.g., "US", "TR", etc.)
     region TEXT, -- state/region or province within the country (e.g., "Istanbul", "Aleppo", "California" etc.)
@@ -153,6 +153,11 @@ CREATE TABLE IF NOT EXISTS clubs (
     name TEXT NOT NULL,
     description TEXT,
     project_id TEXT NOT NULL REFERENCES projects(id), -- every clubs is associated with a project
+    image_url TEXT, -- banner image URL associated with the club (e.g., "https://example.com/banner.jpg")
+    country TEXT, -- ISO 3166-1 alpha-2 country code (e.g., "US", "TR", etc.)
+    region TEXT, -- state/region or province within the country (e.g., "Istanbul", "Aleppo", "California" etc.)
+    city TEXT, -- city of residence (e.g., "Fatih", "Al Bab", "Mezitli", "Azaz" etc.)
+    address TEXT, -- detailed address for the club location (e.g., "123 Main St, Building A, Door 4") | can be "online" for online events
     visibility TEXT NOT NULL, -- "public", "private", "draft"
     join_policy TEXT NOT NULL, -- "auto_approve", "request_to_join", "invite_only"
     telegram_group_id TEXT UNIQUE, -- unique Telegram group ID associated with the club (e.g., "-123456789")
