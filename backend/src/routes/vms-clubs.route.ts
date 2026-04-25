@@ -233,15 +233,9 @@ vmsClubsRoute.post('/club-members', zValidator('json', createClubMembershipSchem
     }
 
     const actorProjectMembership = await getProjectMember(c.env.VMS_DB, club.projectId, actorMembershipNumber)
-    const targetProjectMembership = await getProjectMember(c.env.VMS_DB, club.projectId, payload.membershipNumber)
     const isProjectOwner = project.owner === actorMembershipNumber
     const isManager = actorProjectMembership?.role === 'manager'
     const isSelfJoin = payload.membershipNumber === actorMembershipNumber
-    const targetIsProjectMember = Boolean(targetProjectMembership) || project.owner === payload.membershipNumber
-
-    if (!targetIsProjectMember) {
-      return c.json({ error: 'Only project members can join clubs.' }, 403)
-    }
 
     if (!isSelfJoin && !isProjectOwner && !isManager) {
       return c.json({ error: 'Only project owner or managers can add other members to clubs.' }, 403)
