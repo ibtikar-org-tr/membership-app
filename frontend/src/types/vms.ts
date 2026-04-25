@@ -93,6 +93,25 @@ export interface VmsProjectMember {
   displayName: string
 }
 
+export interface VmsClub {
+  id: string
+  createdAt: string
+  updatedAt: string
+  name: string
+  description: string | null
+  projectId: string
+  visibility: 'public' | 'private' | 'draft' | string
+  joinPolicy: 'auto_approve' | 'request_to_join' | 'invite_only' | string
+  skills: Record<string, string> | null
+}
+
+export interface VmsClubMember {
+  clubId: string
+  membershipNumber: string
+  status: 'active' | 'pending' | 'rejected' | string
+  displayName: string
+}
+
 export interface VmsPointTransaction {
   id: string
   createdAt: string

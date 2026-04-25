@@ -1,4 +1,6 @@
 import type {
+  VmsClub,
+  VmsClubMember,
   VmsEvent,
   VmsEventRegistration,
   VmsEventTicket,
@@ -422,6 +424,93 @@ export function createProjectMember(payload: {
   return postJson<{ projectMember: VmsProjectMember }, typeof payload>(
     `/project-members?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
     payload,
+  )
+}
+
+export function fetchClubs(projectId?: string) {
+  const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
+  return fetchJson<{ clubs: VmsClub[] }>(`/clubs${query}`)
+}
+
+export function fetchClubById(clubId: string) {
+  return fetchJson<{ club: VmsClub }>(`/clubs/${encodeURIComponent(clubId)}`)
+}
+
+export function createClub(payload: {
+  projectId: string
+  name: string
+  description?: string
+  visibility: 'public' | 'private' | 'draft'
+  joinPolicy: 'auto_approve' | 'request_to_join' | 'invite_only'
+  skills?: Record<string, string>
+}, actorMembershipNumber: string) {
+  return postJson<{ club: VmsClub }, typeof payload>(
+    `/clubs?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    payload,
+  )
+}
+
+export function updateClub(
+  clubId: string,
+  payload: Partial<{
+    name: string
+    description: string
+    visibility: 'public' | 'private' | 'draft'
+    joinPolicy: 'auto_approve' | 'request_to_join' | 'invite_only'
+    skills: Record<string, string>
+  }>,
+  actorMembershipNumber: string,
+) {
+  return putJson<{ club: VmsClub }, typeof payload>(
+    `/clubs/${encodeURIComponent(clubId)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    payload,
+  )
+}
+
+export function deleteClub(clubId: string, actorMembershipNumber: string) {
+  return deleteJson(`/clubs/${encodeURIComponent(clubId)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`)
+}
+
+export function fetchClubMembers(clubId?: string, status?: 'active' | 'pending' | 'rejected' | string) {
+  const params = new URLSearchParams()
+
+  if (clubId) {
+    params.set('clubId', clubId)
+  }
+
+  if (status) {
+    params.set('status', status)
+  }
+
+  const query = params.toString()
+  return fetchJson<{ clubMembers: VmsClubMember[] }>(`/club-members${query ? `?${query}` : ''}`)
+}
+
+export function createClubMember(payload: {
+  clubId: string
+  membershipNumber: string
+}, actorMembershipNumber: string) {
+  return postJson<{ clubMember: VmsClubMember }, typeof payload>(
+    `/club-members?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    payload,
+  )
+}
+
+export function updateClubMember(
+  clubId: string,
+  membershipNumber: string,
+  payload: { status: 'active' | 'pending' | 'rejected' },
+  actorMembershipNumber: string,
+) {
+  return putJson<{ clubMember: VmsClubMember }, typeof payload>(
+    `/club-members/${encodeURIComponent(clubId)}/${encodeURIComponent(membershipNumber)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    payload,
+  )
+}
+
+export function deleteClubMember(clubId: string, membershipNumber: string, actorMembershipNumber: string) {
+  return deleteJson(
+    `/club-members/${encodeURIComponent(clubId)}/${encodeURIComponent(membershipNumber)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
   )
 }
 

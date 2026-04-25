@@ -7,6 +7,7 @@ import { statsRoute } from './routes/stats.route'
 import { vmsEventRegistrationsRoute } from './routes/vms-event-registrations.route'
 import { vmsEventTicketsRoute } from './routes/vms-event-tickets.route'
 import { vmsEventsRoute } from './routes/vms-events.route'
+import { vmsClubsRoute } from './routes/vms-clubs.route'
 import { vmsPointTransactionsRoute } from './routes/vms-point-transactions.route'
 import { vmsProjectMembersRoute } from './routes/vms-project-members.route'
 import { vmsProjectsRoute } from './routes/vms-projects.route'
@@ -52,6 +53,7 @@ app.route('/ms/membership-app/api', vmsProjectsRoute)
 app.route('/ms/membership-app/api', vmsTasksRoute)
 app.route('/ms/membership-app/api', vmsProjectMembersRoute)
 app.route('/ms/membership-app/api', vmsEventsRoute)
+app.route('/ms/membership-app/api', vmsClubsRoute)
 app.route('/ms/membership-app/api', vmsEventTicketsRoute)
 app.route('/ms/membership-app/api', vmsEventRegistrationsRoute)
 app.route('/ms/membership-app/api', vmsSkillsRoute)
