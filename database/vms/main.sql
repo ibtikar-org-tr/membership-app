@@ -145,3 +145,28 @@ END;
 
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id);
+
+CREATE TABLE IF NOT EXISTS clubs (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    name TEXT NOT NULL,
+    description TEXT,
+    project_id TEXT NOT NULL REFERENCES projects(id), -- every clubs is associated with a project
+    visibility TEXT NOT NULL -- "public", "private", "draft"
+    join_policy TEXT NOT NULL -- "auto_approve", "request_to_join", "invite_only"    
+    skills TEXT -- JSON array of skill names relevant to the club (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
+);
+
+CREATE INDEX IF NOT EXISTS idx_clubs_project ON clubs(project_id);
+
+CREATE TABLE IF NOT EXISTS club_members (
+    club_id TEXT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+    membership_number TEXT NOT NULL,
+    status TEXT NOT NULL, -- "active", "pending", "rejected"
+    PRIMARY KEY (club_id, membership_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_club_members_membership_number ON club_members(membership_number);
+CREATE INDEX IF NOT EXISTS idx_club_members_club_id ON club_members(club_id);
+CREATE INDEX IF NOT EXISTS idx_club_members_status ON club_members(status);
