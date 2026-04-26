@@ -4,6 +4,7 @@ import { authRoute } from './routes/auth.route'
 import { profileRoute } from './routes/profile.route'
 import { registrationRoute } from './routes/registration.route'
 import { statsRoute } from './routes/stats.route'
+import { telegramNotificationRoute } from './routes/telegram-notification.route'
 import { vmsEventRegistrationsRoute } from './routes/vms-event-registrations.route'
 import { vmsEventTicketsRoute } from './routes/vms-event-tickets.route'
 import { vmsEventsRoute } from './routes/vms-events.route'
@@ -49,6 +50,7 @@ app.get('/ms/membership-app/health', (c) => {
 app.route('/ms/membership-app/api', registrationRoute)
 app.route('/ms/membership-app/api', statsRoute)
 app.route('/ms/membership-app/api', authRoute)
+app.route('/ms/membership-app/api', telegramNotificationRoute)
 app.route('/ms/membership-app/api', profileRoute)
 app.route('/ms/membership-app/api', vmsProjectsRoute)
 app.route('/ms/membership-app/api', vmsTasksRoute)

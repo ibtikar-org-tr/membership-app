@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowRight, Globe, MapPin, PencilLine, Users } from 'lucide-react'
+import { ArrowRight, Globe, MapPin, PencilLine, Send, Users } from 'lucide-react'
 import {
   createClubMember,
   fetchClubById,
   fetchClubMembers,
   fetchProjectById,
   fetchProjectMembers,
+  sendTelegramGroupInvite,
 } from '../../api/vms'
 import type { VmsClub, VmsClubMember, VmsProject, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
@@ -41,7 +42,10 @@ export function DashboardClubPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
+  const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
   const [isJoining, setIsJoining] = useState(false)
+  const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
 
   useEffect(() => {
     if (!clubID) {
@@ -150,6 +154,8 @@ export function DashboardClubPage() {
 
   const handleJoinClub = async () => {
     setActionError(null)
+    setTelegramInviteError(null)
+    setTelegramInviteSuccess(null)
 
     if (!club || !user?.membershipNumber) {
       return
@@ -181,6 +187,29 @@ export function DashboardClubPage() {
       }
     } finally {
       setIsJoining(false)
+    }
+  }
+
+  const handleSendTelegramInvite = async () => {
+    setTelegramInviteError(null)
+    setTelegramInviteSuccess(null)
+
+    if (!club?.telegramGroupId || !user?.membershipNumber) {
+      return
+    }
+
+    setIsSendingTelegramInvite(true)
+    try {
+      await sendTelegramGroupInvite(user.membershipNumber, club.telegramGroupId, `نادي ${club.name}`)
+      setTelegramInviteSuccess('تم إرسال دعوة مجموعة التلغرام عبر البوت.')
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTelegramInviteError(requestError.message)
+      } else {
+        setTelegramInviteError('تعذر إرسال دعوة مجموعة التلغرام.')
+      }
+    } finally {
+      setIsSendingTelegramInvite(false)
     }
   }
 
@@ -302,7 +331,19 @@ export function DashboardClubPage() {
             <Globe className="h-5 w-5 text-cyan-600" strokeWidth={1.5} />
             <h2 className="text-base font-semibold text-slate-900">مجموعة التلغرام</h2>
           </div>
-          <p className="mt-4 text-sm text-slate-600">{club.telegramGroupId}</p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void handleSendTelegramInvite()}
+              disabled={isSendingTelegramInvite}
+              className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <Send className="h-4 w-4" />
+              {isSendingTelegramInvite ? 'جار الإرسال...' : 'إرسال دعوة المجموعة عبر البوت'}
+            </button>
+          </div>
+          {telegramInviteError ? <p className="mt-3 text-sm text-red-600">{telegramInviteError}</p> : null}
+          {telegramInviteSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{telegramInviteSuccess}</p> : null}
         </article>
       ) : null}
 

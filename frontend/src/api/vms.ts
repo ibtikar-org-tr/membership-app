@@ -508,6 +508,45 @@ export function createClubMember(payload: {
   )
 }
 
+function toTelegramGroupLink(rawGroupId: string) {
+  const trimmed = rawGroupId.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed
+  }
+
+  if (trimmed.startsWith('@')) {
+    return `https://t.me/${trimmed.slice(1)}`
+  }
+
+  if (/^[a-zA-Z][a-zA-Z0-9_]{3,}$/.test(trimmed)) {
+    return `https://t.me/${trimmed}`
+  }
+
+  return null
+}
+
+export function sendTelegramGroupInvite(membershipNumber: string, rawGroupId: string, contextLabel: string) {
+  const normalizedGroupLink = toTelegramGroupLink(rawGroupId)
+  const message = `تم إرسال دعوة مجموعة التلغرام الخاصة بـ ${contextLabel}.`
+  const boxes = normalizedGroupLink
+    ? [{ text: 'الانضمام إلى مجموعة التلغرام', link: normalizedGroupLink }]
+    : undefined
+
+  return postJson<{ success: boolean; detail?: string; data?: unknown }, {
+    target: string
+    message: string
+    boxes?: Array<{ text: string; link: string }>
+  }>('/telegram/notify', {
+    target: membershipNumber,
+    message,
+    boxes,
+  })
+}
+
 export function updateClubMember(
   clubId: string,
   membershipNumber: string,

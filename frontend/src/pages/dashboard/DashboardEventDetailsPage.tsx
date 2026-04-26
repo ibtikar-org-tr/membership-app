@@ -12,6 +12,7 @@ import {
   Users,
   ArrowRight,
   ExternalLink,
+  Send,
 } from 'lucide-react'
 import Avatar from 'boring-avatars'
 import {
@@ -20,6 +21,7 @@ import {
   fetchEventRegistrations,
   fetchEventTickets,
   fetchProjectMembers,
+  sendTelegramGroupInvite,
 } from '../../api/vms'
 import type {
   VmsEvent,
@@ -50,6 +52,9 @@ export function DashboardEventDetailsPage() {
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<string | null>(null)
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
+  const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
+  const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
+  const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     if (!eventID) {
@@ -197,6 +202,29 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setIsApplying(false)
+    }
+  }
+
+  const handleSendTelegramInvite = async () => {
+    setTelegramInviteError(null)
+    setTelegramInviteSuccess(null)
+
+    if (!eventItem?.telegramGroupId || !user?.membershipNumber) {
+      return
+    }
+
+    setIsSendingTelegramInvite(true)
+    try {
+      await sendTelegramGroupInvite(user.membershipNumber, eventItem.telegramGroupId, `فعالية ${eventItem.name}`)
+      setTelegramInviteSuccess('تم إرسال دعوة مجموعة التلغرام عبر البوت.')
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTelegramInviteError(requestError.message)
+      } else {
+        setTelegramInviteError('تعذر إرسال دعوة مجموعة التلغرام.')
+      }
+    } finally {
+      setIsSendingTelegramInvite(false)
     }
   }
 
@@ -418,6 +446,28 @@ export function DashboardEventDetailsPage() {
               </a>
             ))}
           </div>
+        </article>
+      ) : null}
+
+      {eventItem.telegramGroupId ? (
+        <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 sm:p-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Link2 className="h-5 w-5 text-cyan-600" strokeWidth={1.5} />
+            <h2 className="text-base font-semibold text-slate-900">مجموعة التلغرام</h2>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void handleSendTelegramInvite()}
+              disabled={isSendingTelegramInvite}
+              className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <Send className="h-4 w-4" />
+              {isSendingTelegramInvite ? 'جار الإرسال...' : 'إرسال دعوة المجموعة عبر البوت'}
+            </button>
+          </div>
+          {telegramInviteError ? <p className="mt-3 text-sm text-red-600">{telegramInviteError}</p> : null}
+          {telegramInviteSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{telegramInviteSuccess}</p> : null}
         </article>
       ) : null}
 
