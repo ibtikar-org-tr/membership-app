@@ -201,6 +201,83 @@ api.post('/notify-member', async (c) => {
   }
 });
 
+api.post('/group-invite', async (c) => {
+  try {
+    const { member_id, group_id, context_label } = await c.req.json();
+
+    if (!member_id || typeof member_id !== 'string') {
+      return c.json({ error: 'member_id is required' }, 400);
+    }
+
+    if (!group_id || typeof group_id !== 'string') {
+      return c.json({ error: 'group_id is required' }, 400);
+    }
+
+    const memberCrud = new MemberCrud(c.env.MEMBERS_DB);
+    const telegramService = new TelegramService(c.env);
+    const member = await memberCrud.getMemberByMembershipNumber(member_id.trim());
+
+    if (!member) {
+      return c.json({ error: 'Member not found', error_code: 'MEMBER_NOT_FOUND' }, 404);
+    }
+
+    if (!member.telegram_id) {
+      return c.json(
+        { error: 'Member has not registered for Telegram notifications', error_code: 'NO_TELEGRAM_ID' },
+        400,
+      );
+    }
+
+    const inviteResult = await telegramService.createChatInviteLinkDetailed(
+      group_id.trim(),
+      Number(member.telegram_id),
+      member.en_name || member.membership_number,
+    );
+
+    if (!inviteResult.success) {
+      if (inviteResult.errorCode === 'INSUFFICIENT_RIGHTS') {
+        await telegramService.sendMessage(
+          member.telegram_id,
+          'تعذر إصدار رابط دعوة للمجموعة حالياً لأن البوت لا يملك صلاحية الإدارة. الرجاء إبلاغ المسؤول.',
+        );
+
+        return c.json(
+          {
+            error: 'Bot lacks admin rights to create invite links. Error message was sent to member.',
+            error_code: 'INSUFFICIENT_RIGHTS',
+          },
+          403,
+        );
+      }
+
+      return c.json(
+        {
+          error: 'Failed to create telegram group invite link',
+          error_code: inviteResult.errorCode,
+          details: inviteResult.error,
+        },
+        500,
+      );
+    }
+
+    const contextLabelText = typeof context_label === 'string' && context_label.trim() ? context_label.trim() : 'هذه المساحة';
+    const inviteMessage = `تم تجهيز رابط الانضمام لمجموعة التلغرام الخاصة بـ ${contextLabelText}.`;
+    await telegramService.sendMessageWithBoxes(member.telegram_id, inviteMessage, [
+      { text: 'الانضمام إلى مجموعة التلغرام', link: inviteResult.inviteLink },
+    ]);
+
+    return c.json({
+      success: true,
+      message: `Invite link sent to ${member.en_name || member.membership_number}`,
+      member_id: member.membership_number,
+      telegram_id: member.telegram_id,
+    });
+  } catch (error) {
+    console.error('Group invite error:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+});
+
 api.post('/webhook/setup', async (c) => {
   try {
     const telegramService = new TelegramService(c.env);

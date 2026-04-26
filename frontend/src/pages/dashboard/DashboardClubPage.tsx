@@ -7,7 +7,7 @@ import {
   fetchClubMembers,
   fetchProjectById,
   fetchProjectMembers,
-  sendTelegramGroupInvite,
+  requestTelegramGroupInvite,
 } from '../../api/vms'
 import type { VmsClub, VmsClubMember, VmsProject, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
@@ -200,7 +200,10 @@ export function DashboardClubPage() {
 
     setIsSendingTelegramInvite(true)
     try {
-      await sendTelegramGroupInvite(user.membershipNumber, club.telegramGroupId, `نادي ${club.name}`)
+      await requestTelegramGroupInvite(user.membershipNumber, {
+        resourceType: 'club',
+        resourceId: club.id,
+      })
       setTelegramInviteSuccess('تم إرسال دعوة مجموعة التلغرام عبر البوت.')
     } catch (requestError) {
       if (requestError instanceof Error) {

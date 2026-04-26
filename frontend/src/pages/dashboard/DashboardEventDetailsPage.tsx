@@ -21,7 +21,7 @@ import {
   fetchEventRegistrations,
   fetchEventTickets,
   fetchProjectMembers,
-  sendTelegramGroupInvite,
+  requestTelegramGroupInvite,
 } from '../../api/vms'
 import type {
   VmsEvent,
@@ -215,7 +215,10 @@ export function DashboardEventDetailsPage() {
 
     setIsSendingTelegramInvite(true)
     try {
-      await sendTelegramGroupInvite(user.membershipNumber, eventItem.telegramGroupId, `فعالية ${eventItem.name}`)
+      await requestTelegramGroupInvite(user.membershipNumber, {
+        resourceType: 'event',
+        resourceId: eventItem.id,
+      })
       setTelegramInviteSuccess('تم إرسال دعوة مجموعة التلغرام عبر البوت.')
     } catch (requestError) {
       if (requestError instanceof Error) {

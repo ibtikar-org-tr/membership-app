@@ -15,6 +15,12 @@ export interface TelegramNotificationResult {
   responseData?: unknown
 }
 
+export interface TelegramGroupInvitePayload {
+  membershipNumber: string
+  telegramGroupId: string
+  contextLabel: string
+}
+
 export async function sendBackendTelegramNotification(
   bindings: AppBindings,
   payload: TelegramNotificationPayload,
@@ -142,6 +148,107 @@ export async function sendBackendTelegramNotification(
       requestUrl: targetDescriptor,
       error: error instanceof Error ? error.message : error,
     })
+    return {
+      success: false,
+      status: 500,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      responseData: {
+        requestUrl: targetDescriptor,
+      },
+    }
+  }
+}
+
+export async function sendBackendTelegramGroupInvite(
+  bindings: AppBindings,
+  payload: TelegramGroupInvitePayload,
+): Promise<TelegramNotificationResult> {
+  const telegramMsService = bindings.TELEGRAM_MS_SERVICE
+  const telegramMsBaseUrl = bindings.TELEGRAM_MS?.trim()
+  const endpointPath = '/ms/telegram/api/group-invite'
+  const internalSecret = bindings.INTERNAL_SECRET?.trim()
+
+  if (!telegramMsService && !telegramMsBaseUrl) {
+    return {
+      success: false,
+      status: 500,
+      error: 'Neither TELEGRAM_MS_SERVICE binding nor TELEGRAM_MS URL is configured',
+    }
+  }
+
+  if (!internalSecret) {
+    return {
+      success: false,
+      status: 500,
+      error: 'INTERNAL_SECRET environment variable is not configured',
+    }
+  }
+
+  const baseUrl = telegramMsBaseUrl ? telegramMsBaseUrl.replace(/\/+$/, '') : undefined
+  const requestBody = {
+    member_id: payload.membershipNumber,
+    group_id: payload.telegramGroupId,
+    context_label: payload.contextLabel,
+  }
+
+  const requestUrl = baseUrl ? `${baseUrl}/api/group-invite` : undefined
+  const bindingRequestUrl = `https://telegram-ms.internal${endpointPath}`
+  const targetDescriptor = telegramMsService ? `service-binding:${endpointPath}` : requestUrl
+
+  try {
+    const response = telegramMsService
+      ? await telegramMsService.fetch(bindingRequestUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': internalSecret,
+          },
+          body: JSON.stringify(requestBody),
+        })
+      : await fetch(requestUrl!, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': internalSecret,
+          },
+          body: JSON.stringify(requestBody),
+        })
+
+    const responseText = await response.text().catch(() => '')
+    let responseData: unknown = null
+
+    if (responseText) {
+      try {
+        responseData = JSON.parse(responseText)
+      } catch {
+        responseData = responseText
+      }
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        status: response.status,
+        error: 'Failed to deliver group invite via telegram-ms',
+        responseData: {
+          requestUrl: targetDescriptor,
+          body: responseData,
+        },
+      }
+    }
+
+    return {
+      success: true,
+      status: response.status,
+      detail: 'Group invite delivered via telegram-ms',
+      responseData,
+    }
+  } catch (error) {
+    console.error('Telegram group invite request failed:', {
+      requestUrl: targetDescriptor,
+      error: error instanceof Error ? error.message : error,
+    })
+
     return {
       success: false,
       status: 500,
