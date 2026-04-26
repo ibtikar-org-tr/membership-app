@@ -1,5 +1,6 @@
 import type {
   VmsClub,
+  VmsClubDashboard,
   VmsClubMember,
   VmsEvent,
   VmsEventRegistration,
@@ -430,6 +431,11 @@ export function createProjectMember(payload: {
 export function fetchClubs(projectId?: string) {
   const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
   return fetchJson<{ clubs: VmsClub[] }>(`/clubs${query}`)
+}
+
+export function fetchClubsDashboard(membershipNumber?: string) {
+  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  return fetchJson<{ clubs: VmsClubDashboard[] }>(`/clubs-dashboard${query}`)
 }
 
 export function fetchClubById(clubId: string) {

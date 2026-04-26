@@ -37,6 +37,18 @@ export interface ClubRecord {
   skills: Record<string, string> | null
 }
 
+interface ClubDashboardRow extends ClubRow {
+  project_name: string | null
+  members_count: number
+  is_joined: number
+}
+
+export interface ClubDashboardRecord extends ClubRecord {
+  projectName: string | null
+  membersCount: number
+  isJoined: boolean
+}
+
 function parseSkills(skills: string | null): Record<string, string> | null {
   if (!skills) {
     return null
@@ -80,6 +92,15 @@ function mapClubRow(row: ClubRow): ClubRecord {
   }
 }
 
+function mapClubDashboardRow(row: ClubDashboardRow): ClubDashboardRecord {
+  return {
+    ...mapClubRow(row),
+    projectName: row.project_name,
+    membersCount: Number(row.members_count) || 0,
+    isJoined: Boolean(row.is_joined),
+  }
+}
+
 export async function listClubs(db: D1DatabaseLike, projectId?: string) {
   const query = projectId
     ? 'SELECT id, created_at, updated_at, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy, skills FROM clubs WHERE project_id = ? ORDER BY created_at DESC'
@@ -88,6 +109,59 @@ export async function listClubs(db: D1DatabaseLike, projectId?: string) {
   const statement = db.prepare(query)
   const result = projectId ? await statement.bind(projectId).all<ClubRow>() : await statement.bind().all<ClubRow>()
   return result.results.map(mapClubRow)
+}
+
+export async function listClubsDashboard(db: D1DatabaseLike, membershipNumber?: string) {
+  const safeMembershipNumber = membershipNumber ?? ''
+
+  const result = await db
+    .prepare(
+      `SELECT
+        c.id,
+        c.created_at,
+        c.updated_at,
+        c.name,
+        c.description,
+        c.project_id,
+        c.image_url,
+        c.telegram_group_id,
+        c.country,
+        c.region,
+        c.city,
+        c.address,
+        c.visibility,
+        c.join_policy,
+        c.skills,
+        p.name AS project_name,
+        COALESCE(SUM(CASE WHEN cm.status = 'active' THEN 1 ELSE 0 END), 0) AS members_count,
+        COALESCE(MAX(CASE WHEN cm.status = 'active' AND cm.membership_number = ? THEN 1 ELSE 0 END), 0) AS is_joined
+      FROM clubs c
+      LEFT JOIN projects p ON p.id = c.project_id
+      LEFT JOIN club_members cm ON cm.club_id = c.id
+      WHERE c.visibility = 'public'
+      GROUP BY
+        c.id,
+        c.created_at,
+        c.updated_at,
+        c.name,
+        c.description,
+        c.project_id,
+        c.image_url,
+        c.telegram_group_id,
+        c.country,
+        c.region,
+        c.city,
+        c.address,
+        c.visibility,
+        c.join_policy,
+        c.skills,
+        p.name
+      ORDER BY is_joined DESC, c.created_at DESC`,
+    )
+    .bind(safeMembershipNumber)
+    .all<ClubDashboardRow>()
+
+  return result.results.map(mapClubDashboardRow)
 }
 
 export async function getClubById(db: D1DatabaseLike, id: string) {

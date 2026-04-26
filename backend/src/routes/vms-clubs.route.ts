@@ -12,6 +12,7 @@ import {
   createClub,
   deleteClubById,
   getClubById,
+  listClubsDashboard,
   listClubs,
   updateClubById,
 } from '../repositories/vms-clubs.repository'
@@ -70,6 +71,17 @@ vmsClubsRoute.get('/clubs', async (c) => {
   } catch (error) {
     console.error('Failed to list clubs', error)
     return c.json({ error: 'Could not fetch clubs.' }, 500)
+  }
+})
+
+vmsClubsRoute.get('/clubs-dashboard', async (c) => {
+  try {
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const clubs = await listClubsDashboard(c.env.VMS_DB, membershipNumber)
+    return c.json({ clubs })
+  } catch (error) {
+    console.error('Failed to list dashboard clubs', error)
+    return c.json({ error: 'Could not fetch dashboard clubs.' }, 500)
   }
 })
 

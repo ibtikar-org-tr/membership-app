@@ -111,6 +111,12 @@ export interface VmsClub {
   skills: Record<string, string> | null
 }
 
+export interface VmsClubDashboard extends VmsClub {
+  projectName: string | null
+  membersCount: number
+  isJoined: boolean
+}
+
 export interface VmsClubMember {
   clubId: string
   membershipNumber: string

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fetchClubMembers, fetchClubs, fetchProjects } from '../../api/vms'
-import type { VmsClub } from '../../types/vms'
+import { fetchClubsDashboard } from '../../api/vms'
+import type { VmsClubDashboard } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 
 const VISIBILITY_LABEL: Record<string, string> = {
@@ -18,10 +18,7 @@ const JOIN_POLICY_LABEL: Record<string, string> = {
 
 export function DashboardClubsPage() {
   const user = useMemo(() => getStoredUser(), [])
-  const [clubs, setClubs] = useState<VmsClub[]>([])
-  const [projectNames, setProjectNames] = useState<Record<string, string>>({})
-  const [clubMemberCounts, setClubMemberCounts] = useState<Record<string, number>>({})
-  const [joinedClubIds, setJoinedClubIds] = useState<Set<string>>(new Set())
+  const [clubs, setClubs] = useState<VmsClubDashboard[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
@@ -31,13 +28,13 @@ export function DashboardClubsPage() {
   )
 
   const joinedPublicClubs = useMemo(
-    () => publicClubs.filter((club) => joinedClubIds.has(club.id)),
-    [publicClubs, joinedClubIds],
+    () => publicClubs.filter((club) => club.isJoined),
+    [publicClubs],
   )
 
   const otherPublicClubs = useMemo(
-    () => publicClubs.filter((club) => !joinedClubIds.has(club.id)),
-    [publicClubs, joinedClubIds],
+    () => publicClubs.filter((club) => !club.isJoined),
+    [publicClubs],
   )
 
   useEffect(() => {
@@ -45,43 +42,10 @@ export function DashboardClubsPage() {
 
     async function loadClubs() {
       try {
-        const [clubsPayload, projectsPayload] = await Promise.all([
-          fetchClubs(),
-          fetchProjects(user?.membershipNumber),
-        ])
-
-        const publicOnly = clubsPayload.clubs.filter((club) => club.visibility === 'public')
-        const clubMembersPayload = await Promise.all(
-          publicOnly.map(async (club) => {
-            const payload = await fetchClubMembers(club.id, 'active')
-            return { clubId: club.id, members: payload.clubMembers }
-          }),
-        )
-
-        const nextProjectNames: Record<string, string> = {}
-        for (const project of projectsPayload.projects) {
-          nextProjectNames[project.id] = project.name
-        }
-
-        const nextMemberCounts: Record<string, number> = {}
-        const nextJoinedClubIds = new Set<string>()
-
-        for (const entry of clubMembersPayload) {
-          nextMemberCounts[entry.clubId] = entry.members.length
-
-          if (
-            user?.membershipNumber &&
-            entry.members.some((member) => member.membershipNumber === user.membershipNumber)
-          ) {
-            nextJoinedClubIds.add(entry.clubId)
-          }
-        }
+        const clubsPayload = await fetchClubsDashboard(user?.membershipNumber)
 
         if (!controller.signal.aborted) {
           setClubs(clubsPayload.clubs)
-          setProjectNames(nextProjectNames)
-          setClubMemberCounts(nextMemberCounts)
-          setJoinedClubIds(nextJoinedClubIds)
           setHasError(false)
         }
       } catch {
@@ -102,7 +66,7 @@ export function DashboardClubsPage() {
     }
   }, [user?.membershipNumber])
 
-  const renderClubCard = (club: VmsClub) => {
+  const renderClubCard = (club: VmsClubDashboard) => {
     const description = club.description?.trim()
 
     return (
@@ -143,8 +107,8 @@ export function DashboardClubsPage() {
           {description ? <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-slate-600">{description}</p> : null}
 
           <div className="mt-3 flex flex-col gap-1 text-[11px] text-slate-500">
-            <span>المشروع: {projectNames[club.projectId] ?? club.projectId}</span>
-            <span>عدد الأعضاء: {clubMemberCounts[club.id] ?? 0}</span>
+            <span>المشروع: {club.projectName ?? club.projectId}</span>
+            <span>عدد الأعضاء: {club.membersCount}</span>
           </div>
 
           <div className="mt-3 text-left">
