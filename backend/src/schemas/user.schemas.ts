@@ -19,8 +19,6 @@ export interface CreateUserInfoParams {
   socialMediaLinks: string | null
   profilePictureUrl: string | null
   biography: string | null
-  interests: string | null
-  skills: string | null
   languages: string | null
 }
 

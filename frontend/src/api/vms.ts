@@ -408,8 +408,15 @@ export function approveRegistration(registrationId: string, approverMembershipNu
   )
 }
 
-export function fetchSkills() {
-  return fetchJson<{ skills: VmsSkill[] }>('/skills')
+export function fetchSkills(search?: string) {
+  const query = search ? `?search=${encodeURIComponent(search)}` : ''
+  return fetchJson<{ skills: VmsSkill[] }>(`/skills${query}`)
+}
+
+export function searchOrCreateSkill(skillName: string) {
+  return postJson<{ skill: VmsSkill }, { name: string }>('/skills/search-or-create', {
+    name: skillName,
+  })
 }
 
 export function fetchProjectMembers(projectId?: string) {

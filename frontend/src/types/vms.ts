@@ -77,6 +77,7 @@ export interface VmsEventRegistration {
 }
 
 export interface VmsSkill {
+  id: string
   name: string
   createdAt: string
   updatedAt: string

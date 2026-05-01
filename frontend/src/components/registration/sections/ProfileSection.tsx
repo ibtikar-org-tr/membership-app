@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react'
 import { SectionCard } from '../SectionCard.tsx'
 import { SearchableTagsField } from '../SearchableTagsField.tsx'
 import { SocialMediaLinksField } from './profile-section/SocialMediaLinksField.tsx'
 import { POPULAR_LANGUAGES_INITIAL_SUGGESTIONS, POPULAR_LANGUAGE_OPTIONS } from '../../../config/languages.ts'
-import { POPULAR_SKILLS, POPULAR_SKILLS_INITIAL_SUGGESTIONS } from '../../../config/popularSkills.ts'
+import { POPULAR_SKILLS_INITIAL_SUGGESTIONS } from '../../../config/popularSkills.ts'
+import { fetchSkills } from '../../../api/vms.ts'
 import type { RegistrationFormData } from '../../../types/registration.ts'
 
 type ProfileSectionProps = {
@@ -11,6 +13,26 @@ type ProfileSectionProps = {
 }
 
 export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
+  const [availableSkills, setAvailableSkills] = useState<string[]>([])
+  const [isLoadingSkills, setIsLoadingSkills] = useState(true)
+
+  useEffect(() => {
+    const loadSkills = async () => {
+      try {
+        const response = await fetchSkills()
+        const skillNames = response.skills.map((skill) => skill.name)
+        setAvailableSkills(skillNames)
+      } catch (error) {
+        console.error('Failed to load skills:', error)
+        setAvailableSkills([])
+      } finally {
+        setIsLoadingSkills(false)
+      }
+    }
+
+    loadSkills()
+  }, [])
+
   return (
     <SectionCard title="الملف الشخصي والبيانات" subtitle="روابط التواصل والمهارات.">
       <div className="grid gap-4 md:grid-cols-2">
@@ -26,9 +48,9 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           id="skills"
           label="المهارات (التي تُتقنها)"
           value={data.skills}
-          options={POPULAR_SKILLS}
+          options={availableSkills}
           initialSuggestions={POPULAR_SKILLS_INITIAL_SUGGESTIONS}
-          placeholder="ابحث عن مهارة أو أضف مهارة مخصصة"
+          placeholder={isLoadingSkills ? 'جاري التحميل...' : 'ابحث عن مهارة أو أضف مهارة مخصصة'}
           onChange={(value) => onFieldChange('skills', value)}
         />
         <SearchableTagsField
@@ -36,9 +58,9 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           label="الاهتمامات (التي تودّ تعلّمها)"
           required
           value={data.interests}
-          options={POPULAR_SKILLS}
+          options={availableSkills}
           initialSuggestions={POPULAR_SKILLS_INITIAL_SUGGESTIONS}
-          placeholder="ابحث عن اهتمام أو أضف اهتمامًا مخصصًا"
+          placeholder={isLoadingSkills ? 'جاري التحميل...' : 'ابحث عن اهتمام أو أضف اهتمامًا مخصصًا'}
           onChange={(value) => onFieldChange('interests', value)}
         />
         <div className="md:col-span-2">

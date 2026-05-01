@@ -24,8 +24,6 @@ interface UserProfileRow {
   socialMediaLinks: string | null
   profilePictureUrl: string | null
   biography: string | null
-  interests: string | null
-  skills: string | null
   languages: string | null
 }
 
@@ -47,8 +45,6 @@ export interface UpdateUserInfoParams {
   socialMediaLinks?: string | null
   profilePictureUrl?: string | null
   biography?: string | null
-  interests?: string | null
-  skills?: string | null
   languages?: string | null
 }
 
@@ -83,10 +79,8 @@ export async function createUserInfo(db: D1DatabaseLike, params: CreateUserInfoP
         social_media_links,
         profile_picture_url,
         biography,
-        interests,
-        skills,
         languages
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       params.membershipNumber,
@@ -109,8 +103,6 @@ export async function createUserInfo(db: D1DatabaseLike, params: CreateUserInfoP
       params.socialMediaLinks,
       params.profilePictureUrl,
       params.biography,
-      params.interests,
-      params.skills,
       params.languages,
     )
     .run()
@@ -192,14 +184,6 @@ export async function updateUserInfo(
     updates.push('biography = ?')
     values.push(params.biography)
   }
-  if (params.interests !== undefined) {
-    updates.push('interests = ?')
-    values.push(params.interests)
-  }
-  if (params.skills !== undefined) {
-    updates.push('skills = ?')
-    values.push(params.skills)
-  }
   if (params.languages !== undefined) {
     updates.push('languages = ?')
     values.push(params.languages)
@@ -258,8 +242,6 @@ export async function getUserProfileByMembershipNumber(
         ui.social_media_links AS socialMediaLinks,
         ui.profile_picture_url AS profilePictureUrl,
         ui.biography AS biography,
-        ui.interests AS interests,
-        ui.skills AS skills,
         ui.languages AS languages
       FROM users u
       LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
