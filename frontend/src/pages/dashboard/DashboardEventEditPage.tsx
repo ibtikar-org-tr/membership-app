@@ -143,7 +143,7 @@ export function DashboardEventEditPage() {
         url: String(url),
       })),
     )
-    setEventSkills(Object.keys(eventItem.skills ?? {}).join(', '))
+    setEventSkills(JSON.stringify(eventItem.skills ?? {}))
     setTelegramGroupId(eventItem.telegramGroupId ?? '')
   }, [eventItem])
 

@@ -132,7 +132,7 @@ export function DashboardClubDetailsPage() {
       address: club.address === 'online' ? '' : (club.address ?? ''),
     }))
     setTelegramGroupId(club.telegramGroupId ?? '')
-    setClubSkills(Object.keys(club.skills ?? {}).join(', '))
+    setClubSkills(JSON.stringify(club.skills ?? {}))
   }, [club])
 
   const handleUpdateClub = async (event: FormEvent<HTMLFormElement>) => {

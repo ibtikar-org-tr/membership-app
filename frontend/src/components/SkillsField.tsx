@@ -84,11 +84,6 @@ export function SkillsField({
     setSkillsMap(parseToMap(value))
   }, [value])
 
-  // when skillsMap changes, notify parent as JSON
-  useEffect(() => {
-    onChange(JSON.stringify(skillsMap))
-  }, [skillsMap])
-
   const handleTagsChange = (csv: string) => {
     const tags = csv
       .split(',')
@@ -100,12 +95,17 @@ export function SkillsField({
       for (const tag of tags) {
         next[tag] = prev[tag] ?? 'recommended'
       }
+      onChange(JSON.stringify(next))
       return next
     })
   }
 
   const handleLevelChange = (skill: string, level: SkillLevel) => {
-    setSkillsMap((prev) => ({ ...prev, [skill]: level }))
+    setSkillsMap((prev) => {
+      const next = { ...prev, [skill]: level }
+      onChange(JSON.stringify(next))
+      return next
+    })
   }
 
   return (
