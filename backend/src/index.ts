@@ -12,6 +12,7 @@ import { vmsClubsRoute } from './routes/vms-clubs.route'
 import { vmsPointTransactionsRoute } from './routes/vms-point-transactions.route'
 import { vmsProjectMembersRoute } from './routes/vms-project-members.route'
 import { vmsProjectsRoute } from './routes/vms-projects.route'
+import { vmsPositionsRoute } from './routes/vms-positions.route'
 import { vmsSkillsRoute } from './routes/vms-skills.route'
 import { vmsTasksRoute } from './routes/vms-tasks.route'
 import { uploadClubBanner, uploadEventBanner, uploadImages, serveImage } from './routes/images.route'
@@ -53,6 +54,7 @@ app.route('/ms/membership-app/api', authRoute)
 app.route('/ms/membership-app/api', telegramNotificationRoute)
 app.route('/ms/membership-app/api', profileRoute)
 app.route('/ms/membership-app/api', vmsProjectsRoute)
+app.route('/ms/membership-app/api', vmsPositionsRoute)
 app.route('/ms/membership-app/api', vmsTasksRoute)
 app.route('/ms/membership-app/api', vmsProjectMembersRoute)
 app.route('/ms/membership-app/api', vmsEventsRoute)

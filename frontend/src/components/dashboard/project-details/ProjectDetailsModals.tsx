@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import type { VmsEvent, VmsProject, VmsProjectMember } from '../../../types/vms'
+import type { VmsEvent, VmsPosition, VmsProject, VmsProjectMember } from '../../../types/vms'
 import { formatDateTimeEnCA } from '../../../utils/date-format'
 import { SkillsField } from '../../SkillsField'
 
@@ -237,106 +237,196 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
   )
 }
 
-interface AddMemberModalProps {
-  isAddingMember: boolean
-  memberError: string | null
-  memberOptions: VmsProjectMember[]
-  canManageProjectMembers: boolean
-  onClose: () => void
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void
-}
-
-export function AddMemberModal({
-  isAddingMember,
-  memberError,
-  memberOptions,
-  canManageProjectMembers,
-  onClose,
-  onSubmit,
-}: AddMemberModalProps) {
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
-      <article className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <p className="text-base font-semibold text-slate-950">إضافة عضو إلى المشروع</p>
-          <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
-        </div>
-        <form onSubmit={onSubmit} className="mt-4 space-y-3">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">رقم العضوية</label>
-            <input
-              name="membershipNumber"
-              list="project-member-assignee-options"
-              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-              required
-            />
-          </div>
-          <datalist id="project-member-assignee-options">
-            {memberOptions.map((member) => (
-              <option key={member.membershipNumber} value={member.membershipNumber} label={member.displayName} />
-            ))}
-          </datalist>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">الدور</label>
-            <select
-              name="role"
-              defaultValue="member"
-              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
-            >
-              <option value="member">عضو</option>
-              <option value="manager">مدير</option>
-              <option value="observer">مراقب</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            disabled={isAddingMember || !canManageProjectMembers}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {isAddingMember ? 'جار الإضافة...' : 'إضافة العضو'}
-          </button>
-        </form>
-        {!canManageProjectMembers ? <p className="mt-3 text-sm text-amber-700">إضافة الأعضاء متاحة فقط لمالك المشروع أو مديريه.</p> : null}
-        {memberError ? <p className="mt-3 text-sm text-red-600">{memberError}</p> : null}
-      </article>
-    </div>
-  )
-}
-
 interface MembersModalProps {
   projectMembers: VmsProjectMember[]
-  canManageProjectMembers: boolean
+  projectPositions: VmsPosition[]
+  canManageProjectPositions: boolean
+  currentMembershipNumber: string | null
+  isCreatingPosition: boolean
+  positionError: string | null
+  applicationError: string | null
   onClose: () => void
-  onOpenAddMember: () => void
+  onCreatePosition: (event: FormEvent<HTMLFormElement>) => void
+  onApplyToPosition: (positionId: string, event: FormEvent<HTMLFormElement>) => void
+  onReviewApplication: (applicationId: string, status: 'accepted' | 'rejected') => void
 }
 
-export function MembersModal({ projectMembers, canManageProjectMembers, onClose, onOpenAddMember }: MembersModalProps) {
+function positionStatusLabel(status: string) {
+  if (status === 'open') return 'مفتوحة'
+  if (status === 'filled') return 'مكتملة'
+  if (status === 'closed') return 'مغلقة'
+  return status
+}
+
+function applicationStatusLabel(status: string) {
+  if (status === 'pending') return 'قيد المراجعة'
+  if (status === 'accepted') return 'مقبولة'
+  if (status === 'rejected') return 'مرفوضة'
+  return status
+}
+
+export function MembersModal({
+  projectMembers,
+  projectPositions,
+  canManageProjectPositions,
+  currentMembershipNumber,
+  isCreatingPosition,
+  positionError,
+  applicationError,
+  onClose,
+  onCreatePosition,
+  onApplyToPosition,
+  onReviewApplication,
+}: MembersModalProps) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
-      <article className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
+      <article className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <p className="text-base font-semibold text-slate-950">أعضاء المشروع</p>
+          <p className="text-base font-semibold text-slate-950">الأعضاء والفرص التطوعية</p>
           <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
         </div>
-        {canManageProjectMembers ? (
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={onOpenAddMember}
-              className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+        {canManageProjectPositions ? (
+          <form onSubmit={onCreatePosition} className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-4">
+            <input
+              name="name"
+              placeholder="عنوان الفرصة التطوعية"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              required
+            />
+            <input
+              name="seats"
+              type="number"
+              min={1}
+              defaultValue={1}
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+            />
+            <select
+              name="status"
+              defaultValue="open"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
             >
-              + إضافة عضو
+              <option value="open">مفتوحة</option>
+              <option value="closed">مغلقة</option>
+            </select>
+            <button
+              type="submit"
+              disabled={isCreatingPosition}
+              className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {isCreatingPosition ? 'جار الإنشاء...' : 'إنشاء فرصة'}
             </button>
-          </div>
+            <textarea
+              name="description"
+              placeholder="وصف مختصر للمهام والمتطلبات"
+              className="md:col-span-4 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+              rows={2}
+            />
+          </form>
         ) : null}
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {projectMembers.length === 0 ? <p className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</p> : null}
-          {projectMembers.map((member) => (
-            <div key={`member-${member.projectId}-${member.membershipNumber}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-              <p className="font-semibold text-slate-900">{member.displayName}</p>
-              <p className="mt-1 text-xs text-slate-500">{member.role} • {member.membershipNumber}</p>
+
+        {positionError ? <p className="mt-3 text-sm text-red-600">{positionError}</p> : null}
+        {applicationError ? <p className="mt-1 text-sm text-red-600">{applicationError}</p> : null}
+
+        <div className="mt-5 space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">الفرص التطوعية</h3>
+            <div className="mt-3 space-y-3">
+              {projectPositions.length === 0 ? <p className="text-sm text-slate-500">لا توجد فرص تطوعية حالياً.</p> : null}
+              {projectPositions.map((position) => {
+                const hasApplied = Boolean(currentMembershipNumber && position.applications.some((application) => application.membershipNumber === currentMembershipNumber))
+
+                return (
+                  <article key={position.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-950">{position.name}</p>
+                        <p className="mt-1 text-xs text-slate-500">{position.createdByDisplayName} • {position.seats} مقعد • {position.acceptedApplicationsCount} تم قبولها</p>
+                      </div>
+                      <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                        {positionStatusLabel(position.status)}
+                      </span>
+                    </div>
+
+                    {position.description ? <p className="mt-2 text-sm leading-relaxed text-slate-600">{position.description}</p> : null}
+
+                    {!canManageProjectPositions ? (
+                      <form
+                        onSubmit={(event) => onApplyToPosition(position.id, event)}
+                        className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3"
+                      >
+                        <label className="block text-xs font-medium text-slate-600">رسالة التطوع</label>
+                        <textarea
+                          name="motivationLetter"
+                          placeholder="لماذا تريد التطوع في هذه الفرصة؟"
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-600"
+                          rows={3}
+                          disabled={hasApplied || position.status !== 'open'}
+                        />
+                        <button
+                          type="submit"
+                          disabled={hasApplied || position.status !== 'open'}
+                          className="inline-flex rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        >
+                          {hasApplied ? 'تم التقديم' : position.status === 'open' ? 'التقديم' : 'غير متاحة'}
+                        </button>
+                      </form>
+                    ) : null}
+
+                    {canManageProjectPositions ? (
+                      <div className="mt-4 space-y-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">طلبات التطوع</h4>
+                        {position.applications.length === 0 ? <p className="text-sm text-slate-500">لا توجد طلبات حتى الآن.</p> : null}
+                        {position.applications.map((application) => (
+                          <div key={application.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div>
+                                <p className="font-semibold text-slate-900">{application.displayName}</p>
+                                <p className="mt-1 text-xs text-slate-500">{application.membershipNumber} • {applicationStatusLabel(application.status)}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => onReviewApplication(application.id, 'accepted')}
+                                  disabled={application.status !== 'pending'}
+                                  className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-300"
+                                >
+                                  قبول
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onReviewApplication(application.id, 'rejected')}
+                                  disabled={application.status !== 'pending'}
+                                  className="rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300"
+                                >
+                                  رفض
+                                </button>
+                              </div>
+                            </div>
+                            {application.motivationLetter ? (
+                              <p className="mt-2 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{application.motivationLetter}</p>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                )
+              })}
             </div>
-          ))}
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">أعضاء المشروع الحاليون</h3>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {projectMembers.length === 0 ? <p className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</p> : null}
+              {projectMembers.map((member) => (
+                <div key={`member-${member.projectId}-${member.membershipNumber}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                  <p className="font-semibold text-slate-900">{member.displayName}</p>
+                  <p className="mt-1 text-xs text-slate-500">{member.role} • {member.membershipNumber}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </article>
     </div>

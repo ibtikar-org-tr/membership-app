@@ -1,10 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
-import { createProjectMember, createTask, fetchProfile, fetchProjectById, fetchProjectMembers, fetchTasks, updateProject, updateTask } from '../../api/vms'
-import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
+import {
+  createPositionApplication,
+  createProjectPosition,
+  createTask,
+  fetchProfile,
+  fetchProjectById,
+  fetchProjectMembers,
+  fetchProjectPositions,
+  fetchTasks,
+  reviewPositionApplication,
+  updateProject,
+  updateTask,
+} from '../../api/vms'
+import type { VmsPosition, VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
-import { AddMemberModal, AddTaskModal, MembersModal, ProjectSettingsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
+import { AddTaskModal, MembersModal, ProjectSettingsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
 import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
 import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
 import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
@@ -18,6 +30,7 @@ export function DashboardProjectDetailsPage() {
   const [ownerDisplayName, setOwnerDisplayName] = useState<string | null>(null)
   const [projectTasks, setProjectTasks] = useState<VmsTask[]>([])
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
+  const [projectPositions, setProjectPositions] = useState<VmsPosition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -27,15 +40,15 @@ export function DashboardProjectDetailsPage() {
   const [isCreatingTask, setIsCreatingTask] = useState(false)
   const [taskError, setTaskError] = useState<string | null>(null)
 
-  const [isAddingMember, setIsAddingMember] = useState(false)
-  const [memberError, setMemberError] = useState<string | null>(null)
+  const [isCreatingPosition, setIsCreatingPosition] = useState(false)
+  const [positionError, setPositionError] = useState<string | null>(null)
+  const [applicationError, setApplicationError] = useState<string | null>(null)
 
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isUpdatingTask, setIsUpdatingTask] = useState(false)
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
-  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
 
   useEffect(() => {
@@ -49,10 +62,11 @@ export function DashboardProjectDetailsPage() {
 
     async function loadProjectData() {
       try {
-        const [projectPayload, tasksPayload, membersPayload] = await Promise.all([
+        const [projectPayload, tasksPayload, membersPayload, positionsPayload] = await Promise.all([
           fetchProjectById(currentProjectId, currentUser.membershipNumber),
           fetchTasks(currentUser.membershipNumber),
           fetchProjectMembers(currentProjectId),
+          fetchProjectPositions(currentProjectId, currentUser.membershipNumber),
         ])
 
         if (controller.signal.aborted) {
@@ -62,6 +76,7 @@ export function DashboardProjectDetailsPage() {
         setProject(projectPayload.project)
         setProjectTasks(tasksPayload.tasks.filter((task) => task.projectId === currentProjectId))
         setProjectMembers(membersPayload.projectMembers)
+        setProjectPositions(positionsPayload.positions)
       } catch {
         if (!controller.signal.aborted) {
           setNotFound(true)
@@ -184,6 +199,7 @@ export function DashboardProjectDetailsPage() {
     return project.owner === currentMembershipNumber || projectManagerMembershipNumbers.has(currentMembershipNumber)
   }, [project, projectManagerMembershipNumbers, user])
   const canManageProject = canManageProjectMembers
+  const canManageProjectPositions = canManageProjectMembers
   const canCreateTask = useMemo(() => {
     if (!project || !user) {
       return false
@@ -364,58 +380,128 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
-  const handleAddMember = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setMemberError(null)
-    const form = event.currentTarget
+  const refreshPositions = async () => {
+    if (!projectID || !user) {
+      return
+    }
 
+    const payload = await fetchProjectPositions(projectID, user.membershipNumber)
+    setProjectPositions(payload.positions)
+  }
+
+  const refreshProjectMembers = async () => {
     if (!projectID) {
       return
     }
 
-    if (!user || !canManageProjectMembers) {
-      setMemberError('إضافة أعضاء المشروع متاحة فقط لمالك المشروع أو مديريه.')
+    const payload = await fetchProjectMembers(projectID)
+    setProjectMembers(payload.projectMembers)
+  }
+
+  const handleCreatePosition = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPositionError(null)
+
+    if (!projectID || !user || !canManageProjectPositions) {
+      setPositionError('إنشاء الفرص التطوعية متاح فقط لمالك المشروع أو مديريه.')
       return
     }
 
-    const formData = new FormData(form)
-    const membershipNumber = String(formData.get('membershipNumber') ?? '').trim()
-    const roleRaw = String(formData.get('role') ?? 'member').trim()
-    const role = roleRaw === 'manager' || roleRaw === 'observer' ? roleRaw : 'member'
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const seatsRaw = Number(formData.get('seats') ?? 1)
+    const statusRaw = String(formData.get('status') ?? 'open').trim()
+    const status = statusRaw === 'closed' ? 'closed' : 'open'
 
-    if (!membershipNumber) {
-      setMemberError('يرجى إدخال رقم العضوية.')
+    if (!name) {
+      setPositionError('يرجى إدخال عنوان الفرصة التطوعية.')
       return
     }
 
-    if (projectMembers.some((member) => member.membershipNumber === membershipNumber)) {
-      setMemberError('هذا العضو مضاف بالفعل إلى المشروع.')
+    if (Number.isNaN(seatsRaw) || seatsRaw < 1) {
+      setPositionError('عدد المقاعد يجب أن يكون 1 على الأقل.')
       return
     }
 
-    setIsAddingMember(true)
+    setIsCreatingPosition(true)
 
     try {
-      const payload = await createProjectMember({
-        projectId: projectID,
-        membershipNumber,
-        role,
-      }, user.membershipNumber)
+      await createProjectPosition(
+        {
+          projectId: projectID,
+          name,
+          description: description || undefined,
+          createdBy: user.membershipNumber,
+          seats: Math.max(1, Math.trunc(seatsRaw)),
+          status,
+        },
+        user.membershipNumber,
+      )
 
-      if (payload.projectMember) {
-        setProjectMembers((previous) => [payload.projectMember, ...previous])
-      }
-
-      form.reset()
-      setIsAddMemberOpen(false)
+      event.currentTarget.reset()
+      await refreshPositions()
     } catch (requestError) {
       if (requestError instanceof Error) {
-        setMemberError(requestError.message)
+        setPositionError(requestError.message)
       } else {
-        setMemberError('تعذر إضافة العضو.')
+        setPositionError('تعذر إنشاء الفرصة التطوعية.')
       }
     } finally {
-      setIsAddingMember(false)
+      setIsCreatingPosition(false)
+    }
+  }
+
+  const handleApplyToPosition = async (positionId: string, event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setApplicationError(null)
+
+    if (!user || !projectID) {
+      setApplicationError('يجب تسجيل الدخول أولاً.')
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const motivationLetter = String(formData.get('motivationLetter') ?? '').trim()
+
+    try {
+      await createPositionApplication(
+        positionId,
+        {
+          motivationLetter: motivationLetter || undefined,
+        },
+        user.membershipNumber,
+      )
+
+      event.currentTarget.reset()
+      await refreshPositions()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApplicationError(requestError.message)
+      } else {
+        setApplicationError('تعذر إرسال طلب التطوع.')
+      }
+    }
+  }
+
+  const handleReviewPositionApplication = async (applicationId: string, status: 'accepted' | 'rejected') => {
+    setApplicationError(null)
+
+    if (!user || !canManageProjectPositions) {
+      setApplicationError('لا تملك صلاحية مراجعة الطلبات.')
+      return
+    }
+
+    try {
+      await reviewPositionApplication(applicationId, { status }, user.membershipNumber)
+      await refreshPositions()
+      await refreshProjectMembers()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApplicationError(requestError.message)
+      } else {
+        setApplicationError('تعذر مراجعة الطلب.')
+      }
     }
   }
 
@@ -586,29 +672,19 @@ export function DashboardProjectDetailsPage() {
         />
       ) : null}
 
-      {isAddMemberOpen ? (
-        <AddMemberModal
-          isAddingMember={isAddingMember}
-          memberError={memberError}
-          memberOptions={memberOptions}
-          canManageProjectMembers={canManageProjectMembers}
-          onClose={() => setIsAddMemberOpen(false)}
-          onSubmit={handleAddMember}
-        />
-      ) : null}
-
       {isMembersOpen ? (
         <MembersModal
           projectMembers={projectMembers}
-          canManageProjectMembers={canManageProjectMembers}
+          projectPositions={projectPositions}
+          canManageProjectPositions={canManageProjectPositions}
+          currentMembershipNumber={user?.membershipNumber ?? null}
+          isCreatingPosition={isCreatingPosition}
+          positionError={positionError}
+          applicationError={applicationError}
           onClose={() => setIsMembersOpen(false)}
-          onOpenAddMember={() => {
-            if (!canManageProjectMembers) {
-              return
-            }
-            setIsMembersOpen(false)
-            setIsAddMemberOpen(true)
-          }}
+          onCreatePosition={handleCreatePosition}
+          onApplyToPosition={handleApplyToPosition}
+          onReviewApplication={handleReviewPositionApplication}
         />
       ) : null}
     </section>

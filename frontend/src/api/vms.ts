@@ -6,6 +6,8 @@ import type {
   VmsEventRegistration,
   VmsEventTicket,
   VmsPointTransaction,
+  VmsPosition,
+  VmsPositionApplication,
   VmsProject,
   VmsProjectMember,
   VmsSkill,
@@ -424,6 +426,76 @@ export function searchOrCreateSkill(skillName: string) {
 export function fetchProjectMembers(projectId?: string) {
   const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
   return fetchJson<{ projectMembers: VmsProjectMember[] }>(`/project-members${query}`)
+}
+
+export function fetchProjectPositions(projectId: string, membershipNumber: string) {
+  const query = `?projectId=${encodeURIComponent(projectId)}&membershipNumber=${encodeURIComponent(membershipNumber)}`
+  return fetchJson<{ positions: VmsPosition[] }>(`/positions${query}`)
+}
+
+export function createProjectPosition(
+  payload: {
+    projectId: string
+    name: string
+    description?: string
+    createdBy: string
+    seats?: number
+    status?: 'open' | 'filled' | 'closed'
+  },
+  membershipNumber: string,
+) {
+  return postJson<{ position: VmsPosition }, typeof payload>(
+    `/positions?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    payload,
+  )
+}
+
+export function updateProjectPosition(
+  positionId: string,
+  payload: Partial<{
+    projectId: string
+    name: string
+    description: string
+    createdBy: string
+    seats: number
+    status: 'open' | 'filled' | 'closed'
+  }>,
+  membershipNumber: string,
+) {
+  return putJson<{ position: VmsPosition }, typeof payload>(
+    `/positions/${encodeURIComponent(positionId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    payload,
+  )
+}
+
+export function deleteProjectPosition(positionId: string, membershipNumber: string) {
+  return deleteJson(`/positions/${encodeURIComponent(positionId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`)
+}
+
+export function createPositionApplication(
+  positionId: string,
+  payload: {
+    motivationLetter?: string
+  },
+  membershipNumber: string,
+) {
+  return postJson<{ positionApplication: VmsPositionApplication }, typeof payload>(
+    `/positions/${encodeURIComponent(positionId)}/applications?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    payload,
+  )
+}
+
+export function reviewPositionApplication(
+  applicationId: string,
+  payload: {
+    status: 'accepted' | 'rejected'
+  },
+  membershipNumber: string,
+) {
+  return putJson<{ position: VmsPosition; positionApplication: VmsPositionApplication }, typeof payload>(
+    `/position-applications/${encodeURIComponent(applicationId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    payload,
+  )
 }
 
 export function createProjectMember(payload: {

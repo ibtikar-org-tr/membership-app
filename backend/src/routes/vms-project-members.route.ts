@@ -86,32 +86,7 @@ vmsProjectMembersRoute.get(
 
 vmsProjectMembersRoute.post('/project-members', zValidator('json', createProjectMemberSchema), async (c) => {
   try {
-    const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
-
-    if (!actorMembershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
-
-    const payload = c.req.valid('json')
-    const authorization = await canManageProjectMembers(c.env.VMS_DB, payload.projectId, actorMembershipNumber)
-
-    if (!authorization.project) {
-      return c.json({ error: 'Project not found.' }, 404)
-    }
-
-    if (!authorization.isAuthorized) {
-      return c.json({ error: 'Only project owner or managers can add project members.' }, 403)
-    }
-
-    const projectMember = await createProjectMember(c.env.VMS_DB, payload)
-
-    if (!projectMember) {
-      return c.json({ error: 'Could not create project member.' }, 500)
-    }
-
-    const enriched = await enrichProjectMembersWithDisplayNames(c.env.MEMBERS_DB, [projectMember])
-
-    return c.json({ projectMember: enriched[0] }, 201)
+    return c.json({ error: 'Use volunteering positions and applications to add project members.' }, 403)
   } catch (error) {
     console.error('Failed to create project member', error)
     return c.json({ error: 'Could not create project member.' }, 500)
