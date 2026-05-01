@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     completed_by TEXT, -- membership_number of the user who marked the task as completed
     completed_at TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     -- completion_approval_status TEXT NOT NULL DEFAULT 'pending' -- "pending", "approved", "rejected" (removed for simplicity, now the task completion depends on the approved_by field)
-    approved_by TEXT, -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
+    approved_by TEXT -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
 );
 
 CREATE TRIGGER IF NOT EXISTS update_task_updated_at AFTER UPDATE ON tasks
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS event_registrations ( -- the registrations of users t
     ticket_id TEXT NOT NULL REFERENCES event_tickets(id) ON DELETE CASCADE,
     status TEXT NOT NULL, -- "registered", "attended", "cancelled", "no_show"
     payment_approved_by TEXT, -- membership_number of the user who approved the payment (e.g., "1234567890")
-    attendance_approved_by TEXT. -- membership_number of the user who approved the attendance status (e.g., marking as attended, marking as no_show etc.)
+    attendance_approved_by TEXT, -- membership_number of the user who approved the attendance status (e.g., marking as attended, marking as no_show etc.)
     PRIMARY KEY (event_id, membership_number) -- a user can only register once for an event, but can have multiple registrations for different events. TODO: check that the app doesn't run into issues
 );
 
@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS clubs (
     address TEXT, -- detailed address for the club location (e.g., "123 Main St, Building A, Door 4") | can be "online" for online events
     visibility TEXT NOT NULL, -- "public", "private", "draft"
     join_policy TEXT NOT NULL, -- "auto_approve", "request_to_join", "invite_only"
-    telegram_group_id TEXT UNIQUE, -- unique Telegram group ID associated with the club (e.g., "-123456789")
+    telegram_group_id TEXT UNIQUE -- unique Telegram group ID associated with the club (e.g., "-123456789")
 );
 
 CREATE INDEX IF NOT EXISTS idx_clubs_project ON clubs(project_id);
