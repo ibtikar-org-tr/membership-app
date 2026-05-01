@@ -37,8 +37,6 @@ CREATE TABLE IF NOT EXISTS user_info (
     social_media_links TEXT, -- JSON string for Dict<string, string> (e.g., {"github": "url", "linkedin": "url", ...})
     profile_picture_url TEXT,
     biography TEXT,
-    interests TEXT, -- comma-separated list of interests or hobbies
-    skills TEXT, -- comma-separated list of skills or expertise
     languages TEXT -- comma-separated list of languages spoken
 );
 
@@ -46,6 +44,10 @@ CREATE TRIGGER IF NOT EXISTS update_user_info_updated_at AFTER UPDATE ON user_in
 BEGIN
     UPDATE user_info SET updated_at = datetime('now') WHERE membership_number = NEW.membership_number;
 END;
+
+CREATE INDEX IF NOT EXISTS idx_user_info_phone_number ON user_info(phone_number);
+CREATE INDEX IF NOT EXISTS idx_user_info_telegram_id ON user_info(telegram_id);
+CREATE INDEX IF NOT EXISTS idx_user_info_telegram_username ON user_info(telegram_username);
 
 CREATE TABLE IF NOT EXISTS user_registration_info (
     membership_number TEXT PRIMARY KEY REFERENCES users(membership_number) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -61,4 +63,24 @@ CREATE TABLE IF NOT EXISTS user_registration_info (
 CREATE TRIGGER IF NOT EXISTS update_user_registration_info_updated_at AFTER UPDATE ON user_registration_info
 BEGIN
     UPDATE user_registration_info SET updated_at = datetime('now') WHERE membership_number = NEW.membership_number;
+END;
+
+CREATE TABLE IF NOT EXISTS user_skills (
+    membership_number TEXT NOT NULL REFERENCES users(membership_number) ON DELETE CASCADE ON UPDATE CASCADE,
+    skill_id TEXT NOT NULL,
+    proficiency_level TEXT CHECK (proficiency_level IN ('beginner', 'intermediate', 'expert')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    type TEXT NOT NULL CHECK (type IN ('skill', 'interest')),
+    PRIMARY KEY (membership_number, skill_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_skills_membership_number ON user_skills(membership_number);
+CREATE INDEX IF NOT EXISTS idx_user_skills_skill_id ON user_skills(skill_id);
+CREATE INDEX IF NOT EXISTS idx_user_skills_proficiency ON user_skills(proficiency_level);
+CREATE INDEX IF NOT EXISTS idx_user_skills_type ON user_skills(type);
+
+CREATE TRIGGER IF NOT EXISTS update_user_skills_updated_at AFTER UPDATE ON user_skills
+BEGIN
+    UPDATE user_skills SET updated_at = datetime('now') WHERE membership_number = NEW.membership_number AND skill_id = NEW.skill_id;
 END;

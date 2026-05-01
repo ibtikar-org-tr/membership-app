@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS tasks (
     completed_at TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     -- completion_approval_status TEXT NOT NULL DEFAULT 'pending' -- "pending", "approved", "rejected" (removed for simplicity, now the task completion depends on the approved_by field)
     approved_by TEXT, -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
-    skills TEXT -- JSON array of skill names required/recommended/aquired for the event (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
 );
 
 CREATE TRIGGER IF NOT EXISTS update_task_updated_at AFTER UPDATE ON tasks
@@ -80,10 +79,6 @@ CREATE TABLE IF NOT EXISTS events (
     region TEXT, -- state/region or province within the country (e.g., "Istanbul", "Aleppo", "California" etc.)
     city TEXT, -- city of residence (e.g., "Fatih", "Al Bab", "Mezitli", "Azaz" etc.)
     address TEXT, -- detailed address for the event location (e.g., "123 Main St, Building A, Door 4") | can be "online" for online events
-    -- required_skills TEXT, -- comma-separated list of skills required for the event (e.g., "python,project_management,design")
-    -- recommended_skills TEXT, -- comma-separated list of skills recommended for the event (e.g., "python,project_management,design")
-    -- aquired_skills TEXT, -- comma-separated list of skills that participants can acquire or improve by attending the event (e.g., "python,project_management,design")
-    skills TEXT, -- JSON array of skill names required/recommended/aquired for the event (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
     telegram_group_id TEXT UNIQUE -- unique Telegram group ID associated with the event for communication and updates (e.g., "-123456789"), this will be stored and used by the bot
 );
 
@@ -129,6 +124,7 @@ END;
 
 
 CREATE TABLE IF NOT EXISTS skills (
+    id TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE, -- skill name, must be lowercase, without spaces and latin characters only (e.g., "python", "project_management", "design")
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -146,6 +142,17 @@ END;
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id);
 
+CREATE TABLE IF NOT EXISTS skills_association (
+    skill_id TEXT NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
+    associated_id TEXT NOT NULL, -- can be project_id, event_id or task_id
+    associated_type TEXT NOT NULL CHECK (associated_type IN ('project', 'event', 'task')),
+    skill_level TEXT CHECK (skill_level IN ('required', 'recommended', 'aquired')),
+    PRIMARY KEY (skill_id, associated_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_skills_association_skill_id ON skills_association(skill_id);
+CREATE INDEX IF NOT EXISTS idx_skills_association_associated_id ON skills_association(associated_id);
+
 CREATE TABLE IF NOT EXISTS clubs (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -161,7 +168,6 @@ CREATE TABLE IF NOT EXISTS clubs (
     visibility TEXT NOT NULL, -- "public", "private", "draft"
     join_policy TEXT NOT NULL, -- "auto_approve", "request_to_join", "invite_only"
     telegram_group_id TEXT UNIQUE, -- unique Telegram group ID associated with the club (e.g., "-123456789")
-    skills TEXT -- JSON array of skill names relevant to the club (e.g., {"python": "required", "project_management": "recommended", "design": "aquired"} )
 );
 
 CREATE INDEX IF NOT EXISTS idx_clubs_project ON clubs(project_id);
