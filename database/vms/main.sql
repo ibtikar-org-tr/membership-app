@@ -23,6 +23,29 @@ CREATE TABLE IF NOT EXISTS project_members (
     PRIMARY KEY (project_id, membership_number)
 );
 
+CREATE TABLE IF NOT EXISTS positions (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT, -- MarkdownV2 formatted description
+    created_by TEXT NOT NULL, -- membership_number of the user who created the position
+    seats INTEGER NOT NULL DEFAULT 1, -- number of available seats for this position
+    status TEXT NOT NULL -- "open", "filled", "closed"
+);
+
+CREATE TABLE IF NOT EXISTS position_applications (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    position_id TEXT NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
+    membership_number TEXT NOT NULL, -- membership_number of the user who applied for the position
+    motivation_letter TEXT, -- user's motivation for applying to the position
+    status TEXT NOT NULL, -- "pending", "accepted", "rejected"
+    reviewed_by TEXT -- membership_number of the user who reviewed the application and made the decision
+);
+
 CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -144,8 +167,8 @@ CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id);
 
 CREATE TABLE IF NOT EXISTS skills_association (
     skill_id TEXT NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
-    associated_id TEXT NOT NULL, -- can be project_id, event_id or task_id
-    associated_type TEXT NOT NULL CHECK (associated_type IN ('project', 'event', 'task')),
+    associated_id TEXT NOT NULL, -- can be project_id, event_id, task_id, position_id, club_id
+    associated_type TEXT NOT NULL CHECK (associated_type IN ('project', 'event', 'task', 'position', 'club')),
     skill_level TEXT CHECK (skill_level IN ('required', 'recommended', 'aquired')),
     PRIMARY KEY (skill_id, associated_id)
 );
