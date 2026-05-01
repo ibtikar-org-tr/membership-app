@@ -36,7 +36,7 @@ function parseToMap(value: string): Record<string, SkillLevel> {
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean)
-      .map((item) => [item, 'required'] as [string, SkillLevel]),
+      .map((item) => [item, 'recommended'] as [string, SkillLevel]),
   )
 }
 
@@ -98,7 +98,7 @@ export function SkillsField({
     setSkillsMap((prev) => {
       const next: Record<string, SkillLevel> = {}
       for (const tag of tags) {
-        next[tag] = prev[tag] ?? 'required'
+        next[tag] = prev[tag] ?? 'recommended'
       }
       return next
     })
@@ -126,7 +126,7 @@ export function SkillsField({
         <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">
           <span>{tag}</span>
           <select
-            value={skillsMap[tag] ?? 'required'}
+            value={skillsMap[tag] ?? 'recommended'}
             onChange={(e) => handleLevelChange(tag, e.target.value as SkillLevel)}
             className="rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs text-slate-800"
             aria-label={`مستوى ${tag}`}
