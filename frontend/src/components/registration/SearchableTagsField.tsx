@@ -57,6 +57,8 @@ export function SearchableTagsField({
   allowCustom = true,
   placeholder = 'ابحث أو اكتب قيمة ثم اضغط Enter',
   helperText,
+  hiddenValue,
+  renderTag,
 }: SearchableTagsFieldProps) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
