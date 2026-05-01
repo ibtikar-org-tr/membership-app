@@ -3,7 +3,7 @@ import { SectionCard } from '../SectionCard.tsx'
 import { SearchableTagsField } from '../SearchableTagsField.tsx'
 import { SocialMediaLinksField } from './profile-section/SocialMediaLinksField.tsx'
 import { POPULAR_LANGUAGES_INITIAL_SUGGESTIONS, POPULAR_LANGUAGE_OPTIONS } from '../../../config/languages.ts'
-import { POPULAR_SKILLS_INITIAL_SUGGESTIONS } from '../../../config/popularSkills.ts'
+import { POPULAR_SKILLS, POPULAR_SKILLS_INITIAL_SUGGESTIONS } from '../../../config/popularSkills.ts'
 import { fetchSkills } from '../../../api/vms.ts'
 import type { RegistrationFormData } from '../../../types/registration.ts'
 
@@ -13,7 +13,7 @@ type ProfileSectionProps = {
 }
 
 export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
-  const [availableSkills, setAvailableSkills] = useState<string[]>([])
+  const [availableSkills, setAvailableSkills] = useState<string[]>(POPULAR_SKILLS)
   const [isLoadingSkills, setIsLoadingSkills] = useState(true)
 
   useEffect(() => {
@@ -21,10 +21,10 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
       try {
         const response = await fetchSkills()
         const skillNames = response.skills.map((skill) => skill.name)
-        setAvailableSkills(skillNames)
+        setAvailableSkills(Array.from(new Set([...POPULAR_SKILLS, ...skillNames])))
       } catch (error) {
         console.error('Failed to load skills:', error)
-        setAvailableSkills([])
+        setAvailableSkills(POPULAR_SKILLS)
       } finally {
         setIsLoadingSkills(false)
       }
