@@ -236,15 +236,21 @@ export function DashboardProjectDetailsPage() {
     const statusRaw = String(formData.get('status') ?? project.status).trim()
     const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
     const skillsRaw = String(formData.get('skills') ?? '').trim()
-    const skills = skillsRaw
-      ? Object.fromEntries(
+    let skills
+    if (skillsRaw) {
+      try {
+        const parsed = JSON.parse(skillsRaw)
+        skills = typeof parsed === 'object' && parsed !== null ? parsed : undefined
+      } catch {
+        skills = Object.fromEntries(
           skillsRaw
             .split(',')
             .map((item) => item.trim())
             .filter(Boolean)
             .map((item) => [item, 'required']),
         )
-      : undefined
+      }
+    }
 
     if (!name) {
       setSaveError('يرجى إدخال اسم المشروع.')

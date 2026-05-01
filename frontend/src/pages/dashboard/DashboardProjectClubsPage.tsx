@@ -120,15 +120,21 @@ export function DashboardProjectClubsPage() {
     const formData = new FormData(form)
     const name = String(formData.get('name') ?? '').trim()
     const skillsRaw = String(formData.get('skills') ?? '').trim()
-    const skills = skillsRaw
-      ? Object.fromEntries(
+    let skills
+    if (skillsRaw) {
+      try {
+        const parsed = JSON.parse(skillsRaw)
+        skills = typeof parsed === 'object' && parsed !== null ? parsed : undefined
+      } catch {
+        skills = Object.fromEntries(
           skillsRaw
             .split(',')
             .map((item) => item.trim())
             .filter(Boolean)
             .map((item) => [item, 'required']),
         )
-      : undefined
+      }
+    }
 
     if (!name) {
       setCreateError('يرجى إدخال اسم النادي.')

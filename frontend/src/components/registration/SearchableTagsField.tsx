@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 export type SearchableTagOption = {
@@ -19,6 +19,8 @@ type SearchableTagsFieldProps = {
   allowCustom?: boolean
   placeholder?: string
   helperText?: string
+  hiddenValue?: string
+  renderTag?: (tag: string, onRemove: () => void) => ReactNode
 }
 
 function parseValue(value: string) {
@@ -230,7 +232,7 @@ export function SearchableTagsField({
         name={name}
         tabIndex={-1}
         aria-hidden="true"
-        value={selected.join(', ')}
+        value={typeof hiddenValue === 'string' ? hiddenValue : selected.join(', ')}
         onChange={() => undefined}
         required={required}
         className="sr-only"
@@ -243,20 +245,25 @@ export function SearchableTagsField({
         {selected.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
             {selected.map((tag) => (
-              <span
-                key={tag.toLowerCase()}
-                className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => removeTag(tag)}
-                  className="inline-flex h-4 w-4 items-center justify-center rounded-full text-teal-700 hover:bg-teal-100"
-                  aria-label={`إزالة ${tag}`}
-                >
-                  x
-                </button>
-              </span>
+              <div key={tag.toLowerCase()}>
+                {renderTag ? (
+                  renderTag(tag, () => removeTag(tag))
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="inline-flex h-4 w-4 items-center justify-center rounded-full text-teal-700 hover:bg-teal-100"
+                      aria-label={`إزالة ${tag}`}
+                    >
+                      x
+                    </button>
+                  </span>
+                )}
+              </div>
             ))}
           </div>
         )}
