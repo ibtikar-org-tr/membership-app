@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { VmsProjectMember, VmsTask } from '../../../types/vms'
+import { SkillsField } from '../../SkillsField'
 import { formatDateEnCA } from '../../../utils/date-format'
 import { formatDueDate, priorityBadgeClass, statusBadgeClass, taskPriorityLabel, taskStatusLabel } from './helpers'
 
-type EditableTaskField = 'name' | 'description' | 'status' | 'priority' | 'points' | 'dueDate' | 'assignedTo'
+type EditableTaskField = 'name' | 'description' | 'status' | 'priority' | 'points' | 'dueDate' | 'assignedTo' | 'skills'
 
 interface TaskUpdatePatch {
   name?: string
@@ -13,6 +14,7 @@ interface TaskUpdatePatch {
   points?: number
   dueDate?: string
   assignedTo?: string
+  skills?: Record<string, string>
 }
 
 interface TaskDetailsModalProps {
@@ -51,6 +53,7 @@ function taskDraftFrom(selectedTask: VmsTask) {
     points: String(selectedTask.points),
     dueDate: selectedTask.dueDate ? formatDateEnCA(selectedTask.dueDate) : '',
     assignedTo: selectedTask.assignedTo ?? '',
+    skills: Object.keys(selectedTask.skills ?? {}).join(', '),
   }
 }
 
@@ -181,6 +184,28 @@ export function TaskDetailsModal({
       setDraft((current) => ({ ...current, assignedTo: nextAssignedTo }))
     }
 
+    if (field === 'skills') {
+      const nextSkills = value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .reduce<Record<string, string>>((accumulator, item) => {
+          accumulator[item] = 'required'
+          return accumulator
+        }, {})
+
+      const currentSkills = Object.keys(selectedTask.skills ?? {}).join(', ')
+      const nextSkillsText = Object.keys(nextSkills).join(', ')
+
+      if (nextSkillsText === currentSkills) {
+        setEditingField(null)
+        return
+      }
+
+      nextPatch.skills = nextSkills
+      setDraft((current) => ({ ...current, skills: nextSkillsText }))
+    }
+
     if (Object.keys(nextPatch).length === 0) {
       return
     }
@@ -215,6 +240,10 @@ export function TaskDetailsModal({
 
       if (field === 'assignedTo') {
         setDraft((current) => ({ ...current, assignedTo: selectedTask.assignedTo ?? '' }))
+      }
+
+      if (field === 'skills') {
+        setDraft((current) => ({ ...current, skills: Object.keys(selectedTask.skills ?? {}).join(', ') }))
       }
 
       setEditingField(null)
@@ -520,6 +549,19 @@ export function TaskDetailsModal({
                 </span>
               )}
             </button>
+
+            <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+              <SkillsField
+                id={`task-skills-${selectedTask.id}`}
+                label="المهارات المرتبطة بالمهمة"
+                value={draft.skills ?? ''}
+                onChange={(value) => {
+                  setDraft((current) => ({ ...current, skills: value }))
+                  void saveField('skills', value)
+                }}
+                placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+              />
+            </div>
           </section>
 
           <section className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">

@@ -9,6 +9,7 @@ export type SearchableTagOption = {
 
 type SearchableTagsFieldProps = {
   id: string
+  name?: string
   label: string
   required?: boolean
   value: string
@@ -44,6 +45,7 @@ function dedupe(values: string[]) {
 
 export function SearchableTagsField({
   id,
+  name,
   label,
   required = false,
   value,
@@ -225,6 +227,7 @@ export function SearchableTagsField({
       </label>
 
       <input
+        name={name}
         tabIndex={-1}
         aria-hidden="true"
         value={selected.join(', ')}

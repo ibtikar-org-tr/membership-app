@@ -16,6 +16,7 @@ import {
 import type { VmsEvent, VmsEventRegistration, VmsEventTicket, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { ImageUploader } from '../../components/ImageUploader'
+import { SkillsField } from '../../components/SkillsField'
 import { LocationDetailsComponent } from '../../components/registration/sections/personal-info-section/LocationDetailsComponent'
 import { initialRegistrationFormData } from '../../types/registration'
 import type { RegistrationFormData } from '../../types/registration'
@@ -61,6 +62,7 @@ export function DashboardEventEditPage() {
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [associatedUrls, setAssociatedUrls] = useState<{ label: string; url: string }[]>([])
+  const [eventSkills, setEventSkills] = useState('')
   const [newUrlLabel, setNewUrlLabel] = useState('')
   const [newUrlValue, setNewUrlValue] = useState('')
   const [locationData, setLocationData] = useState<RegistrationFormData>(initialRegistrationFormData)
@@ -141,6 +143,7 @@ export function DashboardEventEditPage() {
         url: String(url),
       })),
     )
+    setEventSkills(Object.keys(eventItem.skills ?? {}).join(', '))
     setTelegramGroupId(eventItem.telegramGroupId ?? '')
   }, [eventItem])
 
@@ -193,6 +196,16 @@ export function DashboardEventEditPage() {
     const region = locationData.region.trim()
     const city = locationData.city.trim()
     const address = locationData.address.trim()
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    const skills = skillsRaw
+      ? Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      : undefined
 
     if (!name) {
       setSaveError('يرجى إدخال اسم الفعالية.')
@@ -210,6 +223,7 @@ export function DashboardEventEditPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         status,
+        ...(skills ? { skills } : {}),
         ...(associatedUrlsObject ? { associatedUrls: associatedUrlsObject } : {}),
         ...(locationType === 'online'
           ? { address: 'online' }
@@ -486,6 +500,16 @@ export function DashboardEventEditPage() {
               rows={3}
             />
           </label>
+
+          <div className="md:col-span-4">
+            <SkillsField
+              id="event-skills"
+              label="المهارات المرتبطة بالفعالية"
+              value={eventSkills}
+              onChange={setEventSkills}
+              placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+            />
+          </div>
 
           {locationType === 'physical' ? (
             <div className="md:col-span-4">

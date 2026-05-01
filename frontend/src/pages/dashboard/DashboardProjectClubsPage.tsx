@@ -4,6 +4,7 @@ import type { FormEvent } from 'react'
 import { createClub, fetchClubs, fetchProjectById, fetchProjectMembers } from '../../api/vms'
 import type { VmsClub, VmsProject, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
+import { SkillsField } from '../../components/SkillsField'
 
 const VISIBILITY_LABEL: Record<string, string> = {
   public: 'عام',
@@ -33,6 +34,7 @@ export function DashboardProjectClubsPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [isCreateClubOpen, setIsCreateClubOpen] = useState(false)
+  const [clubSkills, setClubSkills] = useState('')
 
   useEffect(() => {
     if (!projectID) {
@@ -117,6 +119,16 @@ export function DashboardProjectClubsPage() {
     const form = event.currentTarget
     const formData = new FormData(form)
     const name = String(formData.get('name') ?? '').trim()
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    const skills = skillsRaw
+      ? Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      : undefined
 
     if (!name) {
       setCreateError('يرجى إدخال اسم النادي.')
@@ -132,12 +144,14 @@ export function DashboardProjectClubsPage() {
           projectId: projectID,
           visibility: 'draft',
           joinPolicy: 'request_to_join',
+          ...(skills ? { skills } : {}),
         },
         user.membershipNumber,
       )
 
       setClubs((previous) => [payload.club, ...previous])
       form.reset()
+      setClubSkills('')
       setIsCreateClubOpen(false)
       navigate(`/dashboard/clubs/${payload.club.id}/edit`)
     } catch (requestError) {
@@ -203,6 +217,15 @@ export function DashboardProjectClubsPage() {
               required
             />
           </label>
+          <div className="md:col-span-5">
+            <SkillsField
+              id="create-club-skills"
+              label="المهارات المرتبطة بالنادي"
+              value={clubSkills}
+              onChange={setClubSkills}
+              placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+            />
+          </div>
           <button
             type="submit"
             disabled={isCreating}

@@ -1,5 +1,6 @@
 import type { D1DatabaseLike } from '../types/bindings'
 import type { CreateProjectInput, UpdateProjectInput } from '../schemas/vms-project.schema'
+import { getAssociatedSkills, replaceAssociatedSkills } from './skills-association.repository'
 
 interface ProjectRow {
   id: string
@@ -22,6 +23,7 @@ export interface ProjectRecord {
   parentProjectId: string | null
   owner: string
   telegramGroupId: string | null
+  skills: Record<string, string> | null
   status: string
 }
 
@@ -34,6 +36,7 @@ export interface PublicProjectRecord {
   parentProjectId: string | null
   owner: string
   telegramGroupId: string | null
+  skills: Record<string, string> | null
 }
 
 function mapProjectRow(row: ProjectRow): ProjectRecord {
@@ -47,6 +50,7 @@ function mapProjectRow(row: ProjectRow): ProjectRecord {
     owner: row.owner,
     telegramGroupId: row.telegram_group_id,
     status: row.status,
+    skills: null,
   }
 }
 
@@ -60,6 +64,7 @@ function toPublicProjectRecord(project: ProjectRecord): PublicProjectRecord {
     parentProjectId: project.parentProjectId,
     owner: project.owner,
     telegramGroupId: project.telegramGroupId,
+    skills: project.skills,
   }
 }
 
@@ -69,7 +74,14 @@ async function listProjectRows(db: D1DatabaseLike): Promise<ProjectRecord[]> {
     .bind()
     .all<ProjectRow>()
 
-  return result.results.map(mapProjectRow)
+  const projects = result.results.map(mapProjectRow)
+
+  return Promise.all(
+    projects.map(async (project) => ({
+      ...project,
+      skills: await getAssociatedSkills(db, 'project', project.id),
+    })),
+  )
 }
 
 async function getDirectVisibleProjectIds(db: D1DatabaseLike, membershipNumber: string): Promise<Set<string>> {
@@ -174,10 +186,10 @@ export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber
   return projects
     .filter((project) => visibleIds.has(project.id))
     .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-    .map((project) => ({
-      ...toPublicProjectRecord(project),
-      status: project.status,
-    }))
+      .map((project) => ({
+        ...toPublicProjectRecord(project),
+        status: project.status,
+      }))
 }
 
 export async function listDirectProjectsForMember(db: D1DatabaseLike, membershipNumber: string) {
@@ -219,7 +231,15 @@ export async function getProjectById(db: D1DatabaseLike, id: string) {
     .bind(id)
     .first<ProjectRow>()
 
-  return row ? mapProjectRow(row) : null
+  if (!row) {
+    return null
+  }
+
+  const project = mapProjectRow(row)
+  return {
+    ...project,
+    skills: await getAssociatedSkills(db, 'project', project.id),
+  }
 }
 
 export async function getProjectByIdForMember(db: D1DatabaseLike, id: string, membershipNumber: string) {
@@ -256,6 +276,8 @@ export async function createProject(db: D1DatabaseLike, id: string, input: Creat
       input.status,
     )
     .run()
+
+  await replaceAssociatedSkills(db, 'project', id, input.skills ?? null)
 
   return getProjectById(db, id)
 }
@@ -304,6 +326,10 @@ export async function updateProjectById(db: D1DatabaseLike, id: string, input: U
     .prepare(`UPDATE projects SET ${updates.join(', ')} WHERE id = ?`)
     .bind(...values, id)
     .run()
+
+  if (input.skills !== undefined) {
+    await replaceAssociatedSkills(db, 'project', id, input.skills ?? null)
+  }
 
   return getProjectById(db, id)
 }

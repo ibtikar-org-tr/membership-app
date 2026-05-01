@@ -8,6 +8,7 @@ export interface VmsProject {
   owner: string
   telegramGroupId: string | null
   status: 'active' | 'completed' | 'archived' | string
+  skills: Record<string, string> | null
 }
 
 export interface VmsTask {

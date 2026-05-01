@@ -210,6 +210,7 @@ export function createProject(
     owner: string
     telegramGroupId?: string
     status: 'active' | 'completed' | 'archived'
+    skills?: Record<string, string>
   },
   membershipNumber: string,
 ) {
@@ -231,6 +232,7 @@ export function updateProject(
     owner: string
     telegramGroupId: string
     status: 'active' | 'completed' | 'archived'
+    skills: Record<string, string>
   }>,
   membershipNumber: string,
 ) {

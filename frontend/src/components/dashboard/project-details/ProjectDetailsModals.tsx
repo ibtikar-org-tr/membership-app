@@ -1,13 +1,19 @@
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../../types/vms'
 import { formatDateTimeEnCA } from '../../../utils/date-format'
+import { SkillsField } from '../../SkillsField'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
   if (status === 'public') return 'منشورة'
   if (status === 'archived') return 'مؤرشفة'
   return status
+}
+
+function skillsToCsv(skills: Record<string, string> | null | undefined) {
+  return Object.keys(skills ?? {}).join(', ')
 }
 
 interface ProjectSettingsModalProps {
@@ -19,6 +25,8 @@ interface ProjectSettingsModalProps {
 }
 
 export function ProjectSettingsModal({ project, isSaving, saveError, onClose, onSubmit }: ProjectSettingsModalProps) {
+  const [skillsValue, setSkillsValue] = useState(() => skillsToCsv(project.skills))
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <article className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
@@ -57,6 +65,13 @@ export function ProjectSettingsModal({ project, isSaving, saveError, onClose, on
               rows={4}
             />
           </div>
+          <SkillsField
+            id="project-skills"
+            label="المهارات المرتبطة بالمشروع"
+            value={skillsValue}
+            onChange={setSkillsValue}
+            placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+          />
           <button
             type="submit"
             disabled={isSaving}
@@ -80,6 +95,8 @@ interface AddTaskModalProps {
 }
 
 export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose, onSubmit }: AddTaskModalProps) {
+  const [skillsValue, setSkillsValue] = useState('')
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-[2px] sm:p-4" onClick={onClose}>
       <article className="w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
@@ -185,6 +202,14 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
               rows={3}
             />
           </div>
+
+          <SkillsField
+            id="task-skills"
+            label="المهارات المرتبطة بالمهمة"
+            value={skillsValue}
+            onChange={setSkillsValue}
+            placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+          />
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button

@@ -1,5 +1,6 @@
 import type { CreateClubInput, UpdateClubInput } from '../schemas/vms-club.schema'
 import type { D1DatabaseLike } from '../types/bindings'
+import { getAssociatedSkills, replaceAssociatedSkills } from './skills-association.repository'
 
 interface ClubRow {
   id: string
@@ -16,7 +17,6 @@ interface ClubRow {
   address: string | null
   visibility: string
   join_policy: string
-  skills: string | null
 }
 
 export interface ClubRecord {
@@ -49,29 +49,6 @@ export interface ClubDashboardRecord extends ClubRecord {
   isJoined: boolean
 }
 
-function parseSkills(skills: string | null): Record<string, string> | null {
-  if (!skills) {
-    return null
-  }
-
-  try {
-    const parsed = JSON.parse(skills)
-
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return null
-    }
-
-    return Object.fromEntries(
-      Object.entries(parsed).filter((entry): entry is [string, string] => {
-        const [key, value] = entry
-        return typeof key === 'string' && typeof value === 'string'
-      }),
-    )
-  } catch {
-    return null
-  }
-}
-
 function mapClubRow(row: ClubRow): ClubRecord {
   return {
     id: row.id,
@@ -88,7 +65,15 @@ function mapClubRow(row: ClubRow): ClubRecord {
     address: row.address,
     visibility: row.visibility,
     joinPolicy: row.join_policy,
-    skills: parseSkills(row.skills),
+    skills: null,
+  }
+}
+
+async function hydrateClubRow(db: D1DatabaseLike, row: ClubRow) {
+  const club = mapClubRow(row)
+  return {
+    ...club,
+    skills: await getAssociatedSkills(db, 'club', club.id),
   }
 }
 
@@ -103,12 +88,12 @@ function mapClubDashboardRow(row: ClubDashboardRow): ClubDashboardRecord {
 
 export async function listClubs(db: D1DatabaseLike, projectId?: string) {
   const query = projectId
-    ? 'SELECT id, created_at, updated_at, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy, skills FROM clubs WHERE project_id = ? ORDER BY created_at DESC'
-    : 'SELECT id, created_at, updated_at, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy, skills FROM clubs ORDER BY created_at DESC'
+    ? 'SELECT id, created_at, updated_at, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy FROM clubs WHERE project_id = ? ORDER BY created_at DESC'
+    : 'SELECT id, created_at, updated_at, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy FROM clubs ORDER BY created_at DESC'
 
   const statement = db.prepare(query)
   const result = projectId ? await statement.bind(projectId).all<ClubRow>() : await statement.bind().all<ClubRow>()
-  return result.results.map(mapClubRow)
+  return Promise.all(result.results.map((row) => hydrateClubRow(db, row)))
 }
 
 export async function listClubsDashboard(db: D1DatabaseLike, membershipNumber?: string) {
@@ -131,7 +116,6 @@ export async function listClubsDashboard(db: D1DatabaseLike, membershipNumber?: 
         c.address,
         c.visibility,
         c.join_policy,
-        c.skills,
         p.name AS project_name,
         COALESCE(SUM(CASE WHEN cm.status = 'active' THEN 1 ELSE 0 END), 0) AS members_count,
         COALESCE(MAX(CASE WHEN cm.status = 'active' AND cm.membership_number = ? THEN 1 ELSE 0 END), 0) AS is_joined
@@ -154,7 +138,6 @@ export async function listClubsDashboard(db: D1DatabaseLike, membershipNumber?: 
         c.address,
         c.visibility,
         c.join_policy,
-        c.skills,
         p.name
       ORDER BY is_joined DESC, c.created_at DESC`,
     )
@@ -166,17 +149,17 @@ export async function listClubsDashboard(db: D1DatabaseLike, membershipNumber?: 
 
 export async function getClubById(db: D1DatabaseLike, id: string) {
   const row = await db
-    .prepare('SELECT id, created_at, updated_at, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy, skills FROM clubs WHERE id = ?')
+    .prepare('SELECT id, created_at, updated_at, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy FROM clubs WHERE id = ?')
     .bind(id)
     .first<ClubRow>()
 
-  return row ? mapClubRow(row) : null
+  return row ? hydrateClubRow(db, row) : null
 }
 
 export async function createClub(db: D1DatabaseLike, id: string, input: CreateClubInput) {
   await db
     .prepare(
-      'INSERT INTO clubs (id, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy, skills) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO clubs (id, name, description, project_id, image_url, telegram_group_id, country, region, city, address, visibility, join_policy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -191,9 +174,10 @@ export async function createClub(db: D1DatabaseLike, id: string, input: CreateCl
       input.address ?? null,
       input.visibility,
       input.joinPolicy,
-      input.skills ? JSON.stringify(input.skills) : null,
     )
     .run()
+
+  await replaceAssociatedSkills(db, 'club', id, input.skills ?? null)
 
   return getClubById(db, id)
 }
@@ -252,11 +236,6 @@ export async function updateClubById(db: D1DatabaseLike, id: string, input: Upda
     values.push(input.joinPolicy)
   }
 
-  if (input.skills !== undefined) {
-    updates.push('skills = ?')
-    values.push(input.skills ? JSON.stringify(input.skills) : null)
-  }
-
   if (updates.length === 0) {
     return getClubById(db, id)
   }
@@ -267,6 +246,10 @@ export async function updateClubById(db: D1DatabaseLike, id: string, input: Upda
     .prepare(`UPDATE clubs SET ${updates.join(', ')} WHERE id = ?`)
     .bind(...values, id)
     .run()
+
+  if (input.skills !== undefined) {
+    await replaceAssociatedSkills(db, 'club', id, input.skills ?? null)
+  }
 
   return getClubById(db, id)
 }

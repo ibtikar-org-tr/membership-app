@@ -1,5 +1,6 @@
 import type { CreateEventInput, UpdateEventInput } from '../schemas/vms-event.schema'
 import type { D1DatabaseLike } from '../types/bindings'
+import { getAssociatedSkills, replaceAssociatedSkills } from './skills-association.repository'
 
 interface EventRow {
   id: string
@@ -16,35 +17,11 @@ interface EventRow {
   project_id: string | null
   project_name: string | null
   project_owner: string | null
-  skills: string | null
   telegram_group_id: string | null
   country: string | null
   region: string | null
   city: string | null
   address: string | null
-}
-
-function parseSkills(skills: string | null): Record<string, string> | null {
-  if (!skills) {
-    return null
-  }
-
-  try {
-    const parsed = JSON.parse(skills)
-
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return null
-    }
-
-    return Object.fromEntries(
-      Object.entries(parsed).filter((entry): entry is [string, string] => {
-        const [key, value] = entry
-        return typeof key === 'string' && typeof value === 'string'
-      }),
-    )
-  } catch {
-    return null
-  }
 }
 
 function parseJsonObject(data: string | null): Record<string, unknown> | null {
@@ -81,12 +58,20 @@ function mapEventRow(row: EventRow) {
     projectId: row.project_id,
     projectName: row.project_name,
     projectOwner: row.project_owner,
-    skills: parseSkills(row.skills),
+    skills: null,
     telegramGroupId: row.telegram_group_id,
     country: row.country,
     region: row.region,
     city: row.city,
     address: row.address,
+  }
+}
+
+async function hydrateEventRow(db: D1DatabaseLike, row: EventRow) {
+  const event = mapEventRow(row)
+  return {
+    ...event,
+    skills: await getAssociatedSkills(db, 'event', event.id),
   }
 }
 
@@ -108,7 +93,6 @@ export async function listEvents(db: D1DatabaseLike) {
          events.project_id,
          projects.name AS project_name,
          projects.owner AS project_owner,
-         events.skills,
          events.telegram_group_id,
          events.country,
          events.region,
@@ -121,7 +105,7 @@ export async function listEvents(db: D1DatabaseLike) {
     .bind()
     .all<EventRow>()
 
-  return result.results.map(mapEventRow)
+  return Promise.all(result.results.map((row) => hydrateEventRow(db, row)))
 }
 
 export async function getEventById(db: D1DatabaseLike, id: string) {
@@ -142,7 +126,6 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
          events.project_id,
          projects.name AS project_name,
          projects.owner AS project_owner,
-         events.skills,
          events.telegram_group_id,
          events.country,
          events.region,
@@ -155,13 +138,13 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
     .bind(id)
     .first<EventRow>()
 
-  return row ? mapEventRow(row) : null
+  return row ? hydrateEventRow(db, row) : null
 }
 
 export async function createEvent(db: D1DatabaseLike, id: string, input: CreateEventInput) {
   await db
     .prepare(
-      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, skills, telegram_group_id, country, region, city, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, telegram_group_id, country, region, city, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -174,7 +157,6 @@ export async function createEvent(db: D1DatabaseLike, id: string, input: CreateE
       input.createdBy,
       input.projectId ?? null,
       input.status,
-      input.skills ? JSON.stringify(input.skills) : null,
       input.telegramGroupId ?? null,
       input.country ?? null,
       input.region ?? null,
@@ -182,6 +164,8 @@ export async function createEvent(db: D1DatabaseLike, id: string, input: CreateE
       input.address ?? null,
     )
     .run()
+
+  await replaceAssociatedSkills(db, 'event', id, input.skills ?? null)
 
   return getEventById(db, id)
 }
@@ -235,11 +219,6 @@ export async function updateEventById(db: D1DatabaseLike, id: string, input: Upd
     values.push(input.projectId)
   }
 
-  if (input.skills !== undefined) {
-    updates.push('skills = ?')
-    values.push(input.skills ? JSON.stringify(input.skills) : null)
-  }
-
   if (input.telegramGroupId !== undefined) {
     updates.push('telegram_group_id = ?')
     values.push(input.telegramGroupId)
@@ -275,6 +254,10 @@ export async function updateEventById(db: D1DatabaseLike, id: string, input: Upd
     .prepare(`UPDATE events SET ${updates.join(', ')} WHERE id = ?`)
     .bind(...values, id)
     .run()
+
+  if (input.skills !== undefined) {
+    await replaceAssociatedSkills(db, 'event', id, input.skills ?? null)
+  }
 
   return getEventById(db, id)
 }

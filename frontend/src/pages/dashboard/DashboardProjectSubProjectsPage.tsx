@@ -7,6 +7,7 @@ import type { VmsProject, VmsProjectMember } from '../../types/vms'
 import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser } from '../../utils/auth'
 import { priorityTone, statusBadgeClass, statusLabel } from '../../components/dashboard/project-details/helpers'
+import { SkillsField } from '../../components/SkillsField'
 
 function buildChildrenByParentId(projects: VmsProject[]): Map<string, string[]> {
   const map = new Map<string, string[]>()
@@ -71,6 +72,7 @@ export function DashboardProjectSubProjectsPage() {
 
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [projectSkills, setProjectSkills] = useState('')
 
   useEffect(() => {
     if (!projectID || !user) {
@@ -188,6 +190,16 @@ export function DashboardProjectSubProjectsPage() {
     const description = String(formData.get('description') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? 'active').trim()
     const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    const skills = skillsRaw
+      ? Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      : undefined
 
     if (!name) {
       setCreateError('يرجى إدخال اسم المشروع الفرعي.')
@@ -206,12 +218,14 @@ export function DashboardProjectSubProjectsPage() {
           parentProjectId: projectID,
           owner: user.membershipNumber,
           status,
+          ...(skills ? { skills } : {}),
         },
         user.membershipNumber,
       )
 
       setAllProjects((previous) => [payload.project, ...previous])
       form.reset()
+      setProjectSkills('')
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -319,6 +333,15 @@ export function DashboardProjectSubProjectsPage() {
                   <option value="archived">مؤرشف</option>
                 </select>
               </label>
+              <div className="md:col-span-2">
+                <SkillsField
+                  id="create-sub-project-skills"
+                  label="المهارات المرتبطة بالمشروع الفرعي"
+                  value={projectSkills}
+                  onChange={setProjectSkills}
+                  placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+                />
+              </div>
               <div className="flex flex-col gap-2 md:col-span-2 md:flex-row md:items-center md:justify-between">
                 {createError ? <p className="text-sm text-red-600">{createError}</p> : null}
                 <button

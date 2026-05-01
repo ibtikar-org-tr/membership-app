@@ -8,6 +8,7 @@ import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser, isPlatformAdmin } from '../../utils/auth'
 import { ProjectHierarchyTree } from './ProjectHierarchyTree'
 import { priorityTone, statusBadgeClass, statusLabel } from '../../components/dashboard/project-details/helpers'
+import { SkillsField } from '../../components/SkillsField'
 
 export function DashboardProjectsPage() {
   const [projects, setProjects] = useState<VmsProject[]>([])
@@ -15,6 +16,7 @@ export function DashboardProjectsPage() {
   const [hasError, setHasError] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [projectSkills, setProjectSkills] = useState('')
 
   const user = useMemo(() => getStoredUser(), [])
 
@@ -85,6 +87,16 @@ export function DashboardProjectsPage() {
     const parentProjectIdRaw = String(formData.get('parentProjectId') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? 'active').trim()
     const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    const skills = skillsRaw
+      ? Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      : undefined
 
     if (!name) {
       setCreateError('يرجى إدخال اسم المشروع.')
@@ -103,12 +115,14 @@ export function DashboardProjectsPage() {
           parentProjectId: parentProjectIdRaw || undefined,
           owner: user.membershipNumber,
           status,
+          ...(skills ? { skills } : {}),
         },
         user.membershipNumber,
       )
 
       setProjects((previous) => [payload.project, ...previous])
       form.reset()
+      setProjectSkills('')
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -215,6 +229,15 @@ export function DashboardProjectsPage() {
                   <option value="archived">مؤرشف</option>
                 </select>
               </label>
+              <div className="md:col-span-2">
+                <SkillsField
+                  id="create-project-skills"
+                  label="المهارات المرتبطة بالمشروع"
+                  value={projectSkills}
+                  onChange={setProjectSkills}
+                  placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+                />
+              </div>
               <div className="flex flex-col gap-2 md:col-span-2 md:flex-row md:items-center md:justify-between">
                 {createError ? <p className="text-sm text-red-600">{createError}</p> : <span className="hidden text-xs text-slate-400 md:inline">سيتم ربط المشروع بحسابك كمالك.</span>}
                 <button

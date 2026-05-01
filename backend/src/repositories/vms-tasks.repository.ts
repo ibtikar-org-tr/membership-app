@@ -1,5 +1,6 @@
 import type { CreateTaskInput, UpdateTaskInput } from '../schemas/vms-task.schema'
 import type { D1DatabaseLike } from '../types/bindings'
+import { getAssociatedSkills, replaceAssociatedSkills } from './skills-association.repository'
 
 interface TaskRow {
   id: string
@@ -17,30 +18,6 @@ interface TaskRow {
   completed_by: string | null
   completed_at: string | null
   approved_by: string | null
-  skills: string | null
-}
-
-function parseSkills(skills: string | null): Record<string, string> | null {
-  if (!skills) {
-    return null
-  }
-
-  try {
-    const parsed = JSON.parse(skills)
-
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return null
-    }
-
-    return Object.fromEntries(
-      Object.entries(parsed).filter((entry): entry is [string, string] => {
-        const [key, value] = entry
-        return typeof key === 'string' && typeof value === 'string'
-      }),
-    )
-  } catch {
-    return null
-  }
 }
 
 function mapTaskRow(row: TaskRow) {
@@ -60,36 +37,44 @@ function mapTaskRow(row: TaskRow) {
     completedBy: row.completed_by,
     completedAt: row.completed_at,
     approvedBy: row.approved_by,
-    skills: parseSkills(row.skills),
+    skills: null,
+  }
+}
+
+async function hydrateTaskRow(db: D1DatabaseLike, row: TaskRow) {
+  const task = mapTaskRow(row)
+  return {
+    ...task,
+    skills: await getAssociatedSkills(db, 'task', task.id),
   }
 }
 
 export async function listTasks(db: D1DatabaseLike) {
   const result = await db
     .prepare(
-      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills FROM tasks ORDER BY created_at DESC',
+      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by FROM tasks ORDER BY created_at DESC',
     )
     .bind()
     .all<TaskRow>()
 
-  return result.results.map(mapTaskRow)
+  return Promise.all(result.results.map((row) => hydrateTaskRow(db, row)))
 }
 
 export async function getTaskById(db: D1DatabaseLike, id: string) {
   const row = await db
     .prepare(
-      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills FROM tasks WHERE id = ?',
+      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by FROM tasks WHERE id = ?',
     )
     .bind(id)
     .first<TaskRow>()
 
-  return row ? mapTaskRow(row) : null
+  return row ? hydrateTaskRow(db, row) : null
 }
 
 export async function createTask(db: D1DatabaseLike, id: string, input: CreateTaskInput) {
   await db
     .prepare(
-      'INSERT INTO tasks (id, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, skills) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO tasks (id, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -105,9 +90,10 @@ export async function createTask(db: D1DatabaseLike, id: string, input: CreateTa
       input.completedBy ?? null,
       input.completedAt ?? null,
       input.approvedBy ?? null,
-      input.skills ? JSON.stringify(input.skills) : null,
     )
     .run()
+
+  await replaceAssociatedSkills(db, 'task', id, input.skills ?? null)
 
   return getTaskById(db, id)
 }
@@ -176,11 +162,6 @@ export async function updateTaskById(db: D1DatabaseLike, id: string, input: Upda
     values.push(input.approvedBy)
   }
 
-  if (input.skills !== undefined) {
-    updates.push('skills = ?')
-    values.push(input.skills ? JSON.stringify(input.skills) : null)
-  }
-
   if (updates.length === 0) {
     return getTaskById(db, id)
   }
@@ -191,6 +172,10 @@ export async function updateTaskById(db: D1DatabaseLike, id: string, input: Upda
     .prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`)
     .bind(...values, id)
     .run()
+
+  if (input.skills !== undefined) {
+    await replaceAssociatedSkills(db, 'task', id, input.skills ?? null)
+  }
 
   return getTaskById(db, id)
 }

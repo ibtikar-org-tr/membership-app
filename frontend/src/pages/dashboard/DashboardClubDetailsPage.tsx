@@ -16,6 +16,7 @@ import {
 import type { VmsClub, VmsClubMember, VmsProject, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { ImageUploader } from '../../components/ImageUploader'
+import { SkillsField } from '../../components/SkillsField'
 import { LocationDetailsComponent } from '../../components/registration/sections/personal-info-section/LocationDetailsComponent'
 import { initialRegistrationFormData } from '../../types/registration'
 import type { RegistrationFormData } from '../../types/registration'
@@ -45,6 +46,7 @@ export function DashboardClubDetailsPage() {
   const [telegramGroupId, setTelegramGroupId] = useState('')
   const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [clubSkills, setClubSkills] = useState('')
 
   const [membershipNumberInput, setMembershipNumberInput] = useState('')
 
@@ -130,6 +132,7 @@ export function DashboardClubDetailsPage() {
       address: club.address === 'online' ? '' : (club.address ?? ''),
     }))
     setTelegramGroupId(club.telegramGroupId ?? '')
+    setClubSkills(Object.keys(club.skills ?? {}).join(', '))
   }, [club])
 
   const handleUpdateClub = async (event: FormEvent<HTMLFormElement>) => {
@@ -149,6 +152,16 @@ export function DashboardClubDetailsPage() {
     const region = locationData.region.trim()
     const city = locationData.city.trim()
     const address = locationData.address.trim()
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    const skills = skillsRaw
+      ? Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      : undefined
 
     if (!name) {
       setSaveError('يرجى إدخال اسم النادي.')
@@ -167,6 +180,7 @@ export function DashboardClubDetailsPage() {
         {
           name,
           description: description || undefined,
+          ...(skills ? { skills } : {}),
           ...(locationType === 'online'
             ? { address: 'online' }
             : {
@@ -420,6 +434,16 @@ export function DashboardClubDetailsPage() {
               <input name="address" type="hidden" value="online" />
             </label>
           )}
+
+          <div className="md:col-span-2">
+            <SkillsField
+              id="club-skills"
+              label="المهارات المرتبطة بالنادي"
+              value={clubSkills}
+              onChange={setClubSkills}
+              placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+            />
+          </div>
 
           <label className="space-y-1">
             <span className="text-xs font-medium text-slate-700">الظهور</span>

@@ -235,6 +235,16 @@ export function DashboardProjectDetailsPage() {
     const description = String(formData.get('description') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? project.status).trim()
     const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    const skills = skillsRaw
+      ? Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      : undefined
 
     if (!name) {
       setSaveError('يرجى إدخال اسم المشروع.')
@@ -248,6 +258,7 @@ export function DashboardProjectDetailsPage() {
         name,
         ...(description ? { description } : {}),
         status,
+        ...(skills ? { skills } : {}),
       }, user.membershipNumber)
       setProject(payload.project)
       setIsProjectSettingsOpen(false)
@@ -294,6 +305,16 @@ export function DashboardProjectDetailsPage() {
     const pointsRawValue = String(formData.get('points') ?? '').trim()
     const pointsRaw = pointsRawValue === '' ? 1 : Number(pointsRawValue)
     const assignedTo = String(formData.get('assignedTo') ?? '').trim()
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    const skills = skillsRaw
+      ? Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      : undefined
 
     if (!name) {
       setTaskError('يرجى إدخال اسم المهمة.')
@@ -320,6 +341,7 @@ export function DashboardProjectDetailsPage() {
         dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : undefined,
         points: Math.max(1, Math.trunc(pointsRaw)),
         assignedTo: assignedTo || undefined,
+        ...(skills ? { skills } : {}),
       }, currentUser.membershipNumber)
 
       setProjectTasks((previous) => [payload.task, ...previous])

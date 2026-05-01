@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const requiredTrimmedString = z.string().trim().min(1)
 const optionalTrimmedString = z.string().trim().min(1).optional()
+const projectSkillsSchema = z.record(z.string().trim().min(1), z.string().trim().min(1)).optional()
 
 export const projectStatusSchema = z.enum(['active', 'completed', 'archived'])
 
@@ -12,6 +13,7 @@ export const createProjectSchema = z.object({
   owner: requiredTrimmedString,
   telegramGroupId: optionalTrimmedString,
   status: projectStatusSchema,
+  skills: projectSkillsSchema,
 })
 
 export const updateProjectSchema =

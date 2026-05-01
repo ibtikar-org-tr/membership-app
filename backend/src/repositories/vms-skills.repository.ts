@@ -129,8 +129,23 @@ export async function deleteSkillById(db: D1DatabaseLike, id: string): Promise<b
     return false
   }
 
-  await db.prepare('DELETE FROM skills WHERE id = ?').bind(id).run()
-  return true
+  const result = (await db.prepare('DELETE FROM skills WHERE id = ?').bind(id).run()) as {
+    meta: { changes?: number }
+  }
+  return (result.meta.changes ?? 0) > 0
+}
+
+export async function getOrCreateSkillByName(db: D1DatabaseLike, name: string): Promise<Skill> {
+  const existing = await getSkillByName(db, name)
+  if (existing) {
+    return existing
+  }
+
+  const id = crypto.randomUUID()
+  return createSkill(db, {
+    id,
+    name,
+  })
 }
 
 export interface SkillAssociation {
