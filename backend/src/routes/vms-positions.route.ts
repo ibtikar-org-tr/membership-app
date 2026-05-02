@@ -117,6 +117,38 @@ vmsPositionsRoute.get('/positions', async (c) => {
   }
 })
 
+vmsPositionsRoute.get('/positions/:id', zValidator('param', positionParamsSchema), async (c) => {
+  try {
+    const { id } = c.req.valid('param')
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!membershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
+    const position = await getPositionByIdWithApplications(c.env.VMS_DB, id)
+    if (!position) {
+      return c.json({ error: 'Position not found.' }, 404)
+    }
+
+    const access = await canAccessProjectPositions(c.env.VMS_DB, position.projectId, membershipNumber)
+    if (!access.project) {
+      return c.json({ error: 'Project not found.' }, 404)
+    }
+
+    if (!access.isAuthorized) {
+      return c.json({ error: 'You do not have access to this project.' }, 403)
+    }
+
+    const enriched = await enrichPositionsWithDisplayNames(c.env.MEMBERS_DB, [position])
+
+    return c.json({ position: enriched[0] })
+  } catch (error) {
+    console.error('Failed to fetch position', error)
+    return c.json({ error: 'Could not fetch position.' }, 500)
+  }
+})
+
 vmsPositionsRoute.post('/positions', zValidator('json', createPositionSchema), async (c) => {
   try {
     const actorMembershipNumber = c.req.query('membershipNumber')?.trim()

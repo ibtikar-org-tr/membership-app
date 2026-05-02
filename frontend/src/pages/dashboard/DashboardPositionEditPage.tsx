@@ -96,7 +96,7 @@ export function DashboardPositionEditPage() {
       projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber),
     )
 
-    return position.createdByMembershipNumber === user.membershipNumber || managerMembershipNumbers.has(user.membershipNumber)
+    return position.createdBy === user.membershipNumber || managerMembershipNumbers.has(user.membershipNumber)
   }, [position, projectMembers, user])
 
   const handleSavePosition = async (event: FormEvent<HTMLFormElement>) => {
