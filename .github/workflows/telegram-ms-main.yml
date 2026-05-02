@@ -1,0 +1,75 @@
+name: (main) [telegram-ms] Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'telegram-ms/**'
+      - '.github/workflows/telegram-ms-main.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: main
+    defaults:
+      run:
+        working-directory: ./telegram-ms
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install project dependencies
+        run: npm install
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Update wrangler config with environment variables
+        run: |
+          jq_filter='.d1_databases[0].database_id = $dbid0
+          | .d1_databases[0].database_name = $dbname0
+          | .d1_databases[1].database_id = $dbid1
+          | .d1_databases[1].database_name = $dbname1
+          | .vars.MAIN_CHANNEL = $mainChannel
+          | .vars.SMTP_HOST = $smtpHost
+          | .vars.SMTP_PORT = $smtpPort
+          | .vars.SMTP_USER = $smtpUser
+          | .vars.TELEGRAM_MS = $telegramMs
+          | .account_id = $accountId
+          | del(.vars.SMTP_PASS, .vars.TELEGRAM_BOT_TOKEN, .vars.INTERNAL_SECRET, .vars.DEEPSEEK_API_KEY)'
+
+          jq \
+            --arg dbid0 "${{ vars.TELEGRAM_DB_ID }}" \
+            --arg dbname0 "${{ vars.TELEGRAM_DB_NAME }}" \
+            --arg dbid1 "${{ vars.TELEGRAM_MESSAGES_DB_ID }}" \
+            --arg dbname1 "${{ vars.TELEGRAM_MESSAGES_DB_NAME }}" \
+            --arg mainChannel "${{ vars.MAIN_CHANNEL }}" \
+            --arg smtpHost "${{ vars.SMTP_HOST }}" \
+            --arg smtpPort "${{ vars.SMTP_PORT }}" \
+            --arg smtpUser "${{ vars.SMTP_USER }}" \
+            --arg telegramMs "${{ vars.TELEGRAM_MS }}" \
+            --arg accountId "${{ vars.CLOUDFLARE_ACCOUNT_ID }}" \
+            "$jq_filter" \
+            wrangler.jsonc > wrangler.local.jsonc
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: wrangler deploy --config wrangler.local.jsonc --name vms-telegram-ms
+
+      - name: Set secrets in Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          echo "${{ secrets.INTERNAL_SECRET }}" | wrangler secret put INTERNAL_SECRET --config wrangler.local.jsonc --name vms-telegram-ms
+          echo "${{ secrets.SMTP_PASS }}" | wrangler secret put SMTP_PASS --config wrangler.local.jsonc --name vms-telegram-ms
+          echo "${{ secrets.TELEGRAM_BOT_TOKEN }}" | wrangler secret put TELEGRAM_BOT_TOKEN --config wrangler.local.jsonc --name vms-telegram-ms
+          echo "${{ secrets.DEEPSEEK_API_KEY }}" | wrangler secret put DEEPSEEK_API_KEY --config wrangler.local.jsonc --name vms-telegram-ms
+

@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "telegram-ms",
+  "name": "vms-telegram-ms",
   "main": "src/index.ts",
   "compatibility_date": "2026-04-15",
   "account_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
