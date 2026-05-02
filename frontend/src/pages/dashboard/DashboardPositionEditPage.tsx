@@ -135,7 +135,7 @@ export function DashboardPositionEditPage() {
           name,
           description: description || undefined,
           seats: Math.max(1, Math.trunc(seatsRaw)),
-          status: (statusRaw === 'open' || statusRaw === 'filled' || statusRaw === 'closed' ? statusRaw : position.status') as 'open' | 'filled' | 'closed',
+          status: (statusRaw === 'open' || statusRaw === 'filled' || statusRaw === 'closed' ? statusRaw : position.status) as 'open' | 'filled' | 'closed',
         },
         user.membershipNumber,
       )
