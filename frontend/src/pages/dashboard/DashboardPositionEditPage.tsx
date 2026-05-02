@@ -11,13 +11,6 @@ import {
 import type { VmsPosition, VmsProjectMember } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 
-function positionStatusLabel(status: string) {
-  if (status === 'open') return 'مفتوحة'
-  if (status === 'filled') return 'مكتملة'
-  if (status === 'closed') return 'مغلقة'
-  return status
-}
-
 function applicationStatusLabel(status: string) {
   if (status === 'pending') return 'قيد المراجعة'
   if (status === 'accepted') return 'مقبولة'
