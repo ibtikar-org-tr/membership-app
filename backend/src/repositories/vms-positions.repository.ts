@@ -74,7 +74,7 @@ export async function listProjectPositions(db: D1DatabaseLike, projectId: string
        FROM positions
        LEFT JOIN projects ON projects.id = positions.project_id
        WHERE project_id = ?
-       ORDER BY created_at DESC`,
+      ORDER BY positions.created_at DESC`,
     )
     .bind(projectId)
     .all<PositionRow>()
