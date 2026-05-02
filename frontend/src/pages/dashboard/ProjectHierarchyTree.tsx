@@ -69,7 +69,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
     }
 
     const projectNodes = new Map(projects.map((project) => [project.id, toMermaidNodeId(project.id)]))
-    const lines = ['flowchart TD', '  root["كل المشاريع"]']
+    const lines = ['flowchart TD']
 
     const sortedProjects = [...projects].sort((left, right) => {
       if (left.parentProjectId && !right.parentProjectId) {
@@ -101,8 +101,6 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
       const parentNodeId = project.parentProjectId ? projectNodes.get(project.parentProjectId) : null
       if (parentNodeId) {
         lines.push(`  ${parentNodeId} --> ${nodeId}`)
-      } else {
-        lines.push(`  root --> ${nodeId}`)
       }
     }
 
