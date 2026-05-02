@@ -1,0 +1,6 @@
+*.csv
+*.xlsx
+*.sql
+__pycache__/
+*.ods
+.env

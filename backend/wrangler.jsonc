@@ -3,12 +3,21 @@
   "name": "membership-app-backend",
   "main": "src/index.ts",
   "compatibility_date": "2026-03-31",
+  "account_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "d1_databases": [
     {
-      "binding": "MY_DB",
+      "binding": "MEMBERS_DB",
       "database_name": "membership-app-database",
-      "database_id": "",
-      "remote": true
+      "database_id": "bb86e7a4-11e2-4d80-88b8-c376a19994dd",
+      "remote": true,
+      "migrations_dir": "../database/members"
+    },
+    {
+      "binding": "VMS_DB",
+      "database_name": "vms-database",
+      "database_id": "bbd89415-677e-4991-bb11-ea1be7e2d095",
+      "remote": true,
+      "migrations_dir": "../database/vms"
     }
   ],
   "r2_buckets": [
@@ -18,8 +27,22 @@
       "remote": true
     }
   ],
+  "services": [
+    {
+      "binding": "TELEGRAM_MS_SERVICE",
+      "service": "telegram-ms",
+      "remote": true
+    }
+  ],
   "vars": {
-    "MEMBERSHIP_NUMBER_PREFIX": "2501"
+    "MEMBERSHIP_NUMBER_PREFIX": "2501",
+    "TELEGRAM_MS":"https://ibtikar.tr/ms/telegram",
+    "FRONTEND_BASE_URL":"https://ibtikar.tr",
+    "INTERNAL_SECRET":"delete-on-deployment",
+    "SMTP_HOST": "",
+    "SMTP_PORT": "587",
+    "SMTP_USER": "",
+    "SMTP_PASS": "delete-on-deployment"
   },
   "observability": {
     "enabled": true,

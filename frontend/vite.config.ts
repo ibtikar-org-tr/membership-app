@@ -16,5 +16,19 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: `dist${basePath}`,
     },
+    resolve: {
+      alias: {
+        '@': '/src',
+        '@components': '/src/components',
+        '@assets': '/src/assets',
+        '@public': '/public',
+      },
+    },
+    server: {
+      watch: {
+        usePolling: true,
+        interval: 1000,
+      },
+    },
   }
 })

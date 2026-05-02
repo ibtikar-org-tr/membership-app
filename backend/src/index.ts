@@ -1,9 +1,67 @@
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { authRoute } from './routes/auth.route'
+import { profileRoute } from './routes/profile.route'
+import { registrationRoute } from './routes/registration.route'
+import { statsRoute } from './routes/stats.route'
+import { telegramNotificationRoute } from './routes/telegram-notification.route'
+import { vmsEventRegistrationsRoute } from './routes/vms-event-registrations.route'
+import { vmsEventTicketsRoute } from './routes/vms-event-tickets.route'
+import { vmsEventsRoute } from './routes/vms-events.route'
+import { vmsClubsRoute } from './routes/vms-clubs.route'
+import { vmsPointTransactionsRoute } from './routes/vms-point-transactions.route'
+import { vmsProjectMembersRoute } from './routes/vms-project-members.route'
+import { vmsProjectsRoute } from './routes/vms-projects.route'
+import { vmsPositionsRoute } from './routes/vms-positions.route'
+import { vmsSkillsRoute } from './routes/vms-skills.route'
+import { vmsTasksRoute } from './routes/vms-tasks.route'
+import { uploadClubBanner, uploadEventBanner, uploadImages, serveImage } from './routes/images.route'
+import type { AppBindings } from './types/bindings'
 
-const app = new Hono()
+const app = new Hono<{ Bindings: AppBindings }>()
 
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
+app.use(
+  '/ms/membership-app/api/*',
+  cors({
+    origin: '*',
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization'],
+  }),
+)
+
+app.post('/ms/membership-app/api/images/upload', uploadImages)
+app.put('/ms/membership-app/api/events/:id/banner', uploadEventBanner)
+app.put('/ms/membership-app/api/clubs/:id/banner', uploadClubBanner)
+app.get('/ms/membership-app/api/event-images/*', serveImage)
+
+app.get('/ms/membership-app', (c) => {
+  return c.json({
+    service: 'membership-app-backend',
+    status: 'ok',
+  })
 })
+
+app.get('/ms/membership-app/health', (c) => {
+  return c.json({
+    service: 'membership-app-backend',
+    status: 'healthy',
+  })
+})
+
+app.route('/ms/membership-app/api', registrationRoute)
+app.route('/ms/membership-app/api', statsRoute)
+app.route('/ms/membership-app/api', authRoute)
+app.route('/ms/membership-app/api', telegramNotificationRoute)
+app.route('/ms/membership-app/api', profileRoute)
+app.route('/ms/membership-app/api', vmsProjectsRoute)
+app.route('/ms/membership-app/api', vmsPositionsRoute)
+app.route('/ms/membership-app/api', vmsTasksRoute)
+app.route('/ms/membership-app/api', vmsProjectMembersRoute)
+app.route('/ms/membership-app/api', vmsEventsRoute)
+app.route('/ms/membership-app/api', vmsClubsRoute)
+app.route('/ms/membership-app/api', vmsEventTicketsRoute)
+app.route('/ms/membership-app/api', vmsEventRegistrationsRoute)
+app.route('/ms/membership-app/api', vmsSkillsRoute)
+app.route('/ms/membership-app/api', vmsPointTransactionsRoute)
 
 export default app

@@ -1,40 +1,102 @@
-import { Link } from 'react-router-dom'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { HomeHeroSection } from '../components/main-page/HomeHeroSection'
+import { LazyReveal } from '../components/main-page/LazyReveal'
+import { useHomeStats } from '../hooks/useHomeStats'
+
+const MembersOverviewCard = lazy(() =>
+  import('../components/main-page/MembersOverviewCard').then((module) => ({ default: module.MembersOverviewCard })),
+)
+const GenderDistributionCard = lazy(() =>
+  import('../components/main-page/GenderDistributionCard').then((module) => ({ default: module.GenderDistributionCard })),
+)
+const AgeAnalyticsCard = lazy(() =>
+  import('../components/main-page/AgeAnalyticsCard').then((module) => ({ default: module.AgeAnalyticsCard })),
+)
+const YourMessagesFloating = lazy(() =>
+  import('../components/main-page/YourMessagesFloating').then((module) => ({ default: module.YourMessagesFloating })),
+)
+
+function StatsCardFallback() {
+  return (
+    <div className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white/75 p-4 shadow-lg">
+      <div className="h-4 w-28 rounded bg-slate-200/80" />
+      <div className="mt-4 h-8 w-40 rounded bg-slate-200/70" />
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="h-12 rounded bg-slate-200/70" />
+        <div className="h-12 rounded bg-slate-200/70" />
+      </div>
+    </div>
+  )
+}
 
 export function HomePage() {
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-amber-50 via-teal-50 to-sky-100 px-6 py-10 text-slate-800" dir="rtl">
-      <div className="mx-auto flex min-h-[80vh] w-full max-w-6xl items-center">
-        <section className="grid w-full gap-8 rounded-3xl border border-white/60 bg-white/70 p-8 shadow-2xl backdrop-blur md:grid-cols-2 md:p-12">
-          <div className="space-y-6">
-            <p className="inline-block rounded-full bg-teal-100 px-4 py-1 text-sm font-semibold text-teal-700">
-              تجمّع إبتكار
-            </p>
-            <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 md:text-5xl">
-              جيل يبتكر حلولاً مؤثرة
-            </h1>
-            <p className="text-lg leading-relaxed text-slate-600">
-              تطوير مهارات الطلاب التقنية وتحفيز الابتكار والإبداع لخدمة المجتمع. انضم إلى مجتمع من الطلاب الجامعيين الناطقين بالعربية المهتمّين بالابتكار والتكنولوجيا.
-            </p>
-            <Link
-              to="/registration"
-              className="inline-flex items-center rounded-xl bg-slate-900 px-6 py-3 text-base font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-700"
-            >
-              فتح نموذج التسجيل
-            </Link>
-          </div>
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const contentRef = useRef<HTMLDivElement | null>(null)
+  const [sectionHeight, setSectionHeight] = useState<number | null>(null)
+  const { stats } = useHomeStats()
 
-          <div className="grid gap-4">
-            <div className="rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">البيانات الشخصية</h2>
-              <p className="mt-1 text-sm text-teal-50">معلوماتك الأساسية والاتصال والخلفية الجغرافية</p>
-            </div>
-            <div className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">التعليم والمهارات</h2>
-              <p className="mt-1 text-sm text-amber-50">الخلفية الأكاديمية والمهارات والاهتمامات</p>
-            </div>
-            <div className="rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 p-5 text-white shadow-lg">
-              <h2 className="text-lg font-bold">الدافعية والمشاركة</h2>
-              <p className="mt-1 text-sm text-sky-50">رسالتك الدافعة والاهتمام بالتطوع</p>
+  useEffect(() => {
+    const sectionElement = sectionRef.current
+    const contentElement = contentRef.current
+    if (!sectionElement || !contentElement) {
+      return
+    }
+
+    const updateHeight = () => {
+      setSectionHeight(contentElement.scrollHeight)
+    }
+
+    updateHeight()
+    const t1 = window.setTimeout(updateHeight, 50)
+    const t2 = window.setTimeout(updateHeight, 250)
+    const t3 = window.setTimeout(updateHeight, 800)
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateHeight()
+    })
+
+    resizeObserver.observe(contentElement)
+    window.addEventListener('resize', updateHeight)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', updateHeight)
+      window.clearTimeout(t1)
+      window.clearTimeout(t2)
+      window.clearTimeout(t3)
+    }
+  }, [])
+
+  return (
+    <main className="min-h-screen overflow-x-clip bg-linear-to-br from-amber-50 via-teal-50 to-sky-100 px-2 py-4 text-slate-800 sm:px-4 sm:py-8 md:px-6 md:py-10" dir="rtl">
+      <div className="relative mx-auto flex min-h-[80vh] w-full max-w-6xl items-start md:items-center">
+        <Suspense fallback={null}>
+          <YourMessagesFloating />
+        </Suspense>
+        <section
+          ref={sectionRef}
+          className="relative z-10 w-full overflow-hidden rounded-2xl border border-white/60 bg-white/70 shadow-2xl backdrop-blur transition-[height] duration-1000 ease-out sm:rounded-3xl"
+          style={sectionHeight === null ? undefined : { height: `${sectionHeight}px` }}
+        >
+          <div ref={contentRef} className="grid gap-4 p-3 sm:gap-6 sm:p-6 md:grid-cols-2 md:gap-8 md:p-12">
+            <HomeHeroSection />
+
+            <div className="grid gap-4">
+              <Suspense fallback={<StatsCardFallback />}>
+                <LazyReveal delayMs={0}>
+                  <MembersOverviewCard overview={stats?.overview} />
+                </LazyReveal>
+              </Suspense>
+              <Suspense fallback={<StatsCardFallback />}>
+                <LazyReveal delayMs={90}>
+                  <GenderDistributionCard genderDistribution={stats?.genderDistribution} />
+                </LazyReveal>
+              </Suspense>
+              <Suspense fallback={<StatsCardFallback />}>
+                <LazyReveal delayMs={170}>
+                  <AgeAnalyticsCard ageDistribution={stats?.ageDistribution} />
+                </LazyReveal>
+              </Suspense>
             </div>
           </div>
         </section>

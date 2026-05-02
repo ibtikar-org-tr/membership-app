@@ -1,0 +1,692 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Navigate, useParams } from 'react-router-dom'
+import type { FormEvent } from 'react'
+import {
+  createPositionApplication,
+  createProjectPosition,
+  createTask,
+  fetchProfile,
+  fetchProjectById,
+  fetchProjectMembers,
+  fetchProjectPositions,
+  fetchTasks,
+  reviewPositionApplication,
+  updateProject,
+  updateTask,
+} from '../../api/vms'
+import type { VmsPosition, VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
+import { getStoredUser } from '../../utils/auth'
+import { AddTaskModal, MembersModal, ProjectSettingsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
+import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
+import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
+import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
+import { UnallowedAccessPage } from './UnallowedAccessPage'
+
+export function DashboardProjectDetailsPage() {
+  const { projectID } = useParams()
+  const user = useMemo(() => getStoredUser(), [])
+  const [project, setProject] = useState<VmsProject | null>(null)
+  const [parentProjectName, setParentProjectName] = useState<string | null>(null)
+  const [ownerDisplayName, setOwnerDisplayName] = useState<string | null>(null)
+  const [projectTasks, setProjectTasks] = useState<VmsTask[]>([])
+  const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
+  const [projectPositions, setProjectPositions] = useState<VmsPosition[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const [isCreatingTask, setIsCreatingTask] = useState(false)
+  const [taskError, setTaskError] = useState<string | null>(null)
+
+  const [isCreatingPosition, setIsCreatingPosition] = useState(false)
+  const [positionError, setPositionError] = useState<string | null>(null)
+  const [applicationError, setApplicationError] = useState<string | null>(null)
+
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isUpdatingTask, setIsUpdatingTask] = useState(false)
+  const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
+  const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
+  const [isMembersOpen, setIsMembersOpen] = useState(false)
+
+  useEffect(() => {
+    if (!projectID || !user) {
+      return
+    }
+
+    const currentProjectId = projectID
+    const currentUser = user
+    const controller = new AbortController()
+
+    async function loadProjectData() {
+      try {
+        const [projectPayload, tasksPayload, membersPayload, positionsPayload] = await Promise.all([
+          fetchProjectById(currentProjectId, currentUser.membershipNumber),
+          fetchTasks(currentUser.membershipNumber),
+          fetchProjectMembers(currentProjectId),
+          fetchProjectPositions(currentProjectId, currentUser.membershipNumber),
+        ])
+
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setProject(projectPayload.project)
+        setProjectTasks(tasksPayload.tasks.filter((task) => task.projectId === currentProjectId))
+        setProjectMembers(membersPayload.projectMembers)
+        setProjectPositions(positionsPayload.positions)
+      } catch {
+        if (!controller.signal.aborted) {
+          setNotFound(true)
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadProjectData()
+
+    return () => {
+      controller.abort()
+    }
+  }, [projectID, user])
+
+  useEffect(() => {
+    if (!project?.parentProjectId) {
+      setParentProjectName(null)
+      return
+    }
+
+    const parentId = project.parentProjectId
+    let isActive = true
+
+    async function loadParentProjectName() {
+      try {
+        const payload = await fetchProjectById(parentId, user?.membershipNumber)
+        if (!isActive) {
+          return
+        }
+
+        setParentProjectName(payload.project.name)
+      } catch {
+        if (isActive) {
+          setParentProjectName(null)
+        }
+      }
+    }
+
+    loadParentProjectName()
+
+    return () => {
+      isActive = false
+    }
+  }, [project?.parentProjectId])
+
+  useEffect(() => {
+    if (!project?.owner) {
+      setOwnerDisplayName(null)
+      return
+    }
+
+    const ownerMembershipNumber = project.owner
+    let isActive = true
+
+    async function loadOwnerDisplayName() {
+      try {
+        const payload = await fetchProfile(ownerMembershipNumber)
+        if (!isActive) {
+          return
+        }
+
+        const displayName =
+          payload.profile.arName?.trim() ||
+          payload.profile.enName?.trim() ||
+          payload.profile.membershipNumber
+
+        setOwnerDisplayName(displayName)
+      } catch {
+        if (isActive) {
+          setOwnerDisplayName(null)
+        }
+      }
+    }
+
+    loadOwnerDisplayName()
+
+    return () => {
+      isActive = false
+    }
+  }, [project?.owner])
+
+  const memberOptions = useMemo(() => projectMembers, [projectMembers])
+  const memberNameByMembership = useMemo(
+    () => new Map(projectMembers.map((member) => [member.membershipNumber, member.displayName])),
+    [projectMembers],
+  )
+  const memberCount = projectMembers.length
+  const previewMembers = useMemo(() => projectMembers.slice(0, 4), [projectMembers])
+  const hiddenMembersCount = Math.max(0, projectMembers.length - previewMembers.length)
+
+  const boardColumns = useMemo(
+    () => [
+      { key: 'open', label: 'مفتوحة', items: projectTasks.filter((task) => task.status === 'open') },
+      { key: 'in_progress', label: 'قيد التنفيذ', items: projectTasks.filter((task) => task.status === 'in_progress') },
+      { key: 'completed', label: 'مكتملة', items: projectTasks.filter((task) => task.status === 'completed') },
+      { key: 'archived', label: 'مؤرشفة', items: projectTasks.filter((task) => task.status === 'archived') },
+    ],
+    [projectTasks],
+  )
+
+  const selectedTask = useMemo(
+    () => (selectedTaskId ? projectTasks.find((task) => task.id === selectedTaskId) ?? null : null),
+    [projectTasks, selectedTaskId],
+  )
+
+  const projectManagerMembershipNumbers = useMemo(
+    () => new Set(projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber)),
+    [projectMembers],
+  )
+  const canManageProjectMembers = useMemo(() => {
+    if (!project || !user) {
+      return false
+    }
+
+    const currentMembershipNumber = user.membershipNumber
+    return project.owner === currentMembershipNumber || projectManagerMembershipNumbers.has(currentMembershipNumber)
+  }, [project, projectManagerMembershipNumbers, user])
+  const canManageProject = canManageProjectMembers
+  const canManageProjectPositions = canManageProjectMembers
+  const canCreateTask = useMemo(() => {
+    if (!project || !user) {
+      return false
+    }
+
+    if (project.owner === user.membershipNumber) {
+      return true
+    }
+
+    return projectMembers.some((member) => member.membershipNumber === user.membershipNumber)
+  }, [project, projectMembers, user])
+
+  const canEditSelectedTask = useMemo(() => {
+    if (!selectedTask || !project || !user) {
+      return false
+    }
+
+    const currentMembershipNumber = user.membershipNumber
+    return (
+      selectedTask.assignedTo === currentMembershipNumber ||
+      project.owner === currentMembershipNumber ||
+      projectManagerMembershipNumbers.has(currentMembershipNumber)
+    )
+  }, [project, projectManagerMembershipNumbers, selectedTask, user])
+
+  const formatAssignee = (membershipNumber: string | null) => {
+    if (!membershipNumber) {
+      return 'غير مسند'
+    }
+
+    return memberNameByMembership.get(membershipNumber) ?? membershipNumber
+  }
+
+  const closeTaskDetails = () => {
+    setTaskUpdateError(null)
+    setSelectedTaskId(null)
+  }
+
+  const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSaveError(null)
+
+    if (!projectID || !project || !user) {
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const statusRaw = String(formData.get('status') ?? project.status).trim()
+    const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    let skills
+    if (skillsRaw) {
+      try {
+        const parsed = JSON.parse(skillsRaw)
+        skills = typeof parsed === 'object' && parsed !== null ? parsed : undefined
+      } catch {
+        skills = Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      }
+    }
+
+    if (!name) {
+      setSaveError('يرجى إدخال اسم المشروع.')
+      return
+    }
+
+    setIsSaving(true)
+
+    try {
+      const payload = await updateProject(projectID, {
+        name,
+        ...(description ? { description } : {}),
+        status,
+        ...(skills ? { skills } : {}),
+      }, user.membershipNumber)
+      setProject(payload.project)
+      setIsProjectSettingsOpen(false)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setSaveError(requestError.message)
+      } else {
+        setSaveError('تعذر تحديث المشروع.')
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCreateTask = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setTaskError(null)
+    const form = event.currentTarget
+
+    if (!projectID) {
+      return
+    }
+
+    if (!user) {
+      setTaskError('يجب تسجيل الدخول لإضافة مهمة.')
+      return
+    }
+
+    if (!canCreateTask) {
+      setTaskError('إضافة المهام متاحة فقط لأعضاء المشروع المباشرين.')
+      return
+    }
+
+    const formData = new FormData(form)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const statusRaw = String(formData.get('status') ?? 'open').trim()
+    const status =
+      statusRaw === 'in_progress' || statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'open'
+    const priorityRaw = String(formData.get('priority') ?? 'medium').trim()
+    const priority =
+      priorityRaw === 'high' || priorityRaw === 'low' || priorityRaw === 'medium' ? priorityRaw : 'medium'
+    const dueDateRaw = String(formData.get('dueDate') ?? '').trim()
+    const pointsRawValue = String(formData.get('points') ?? '').trim()
+    const pointsRaw = pointsRawValue === '' ? 1 : Number(pointsRawValue)
+    const assignedTo = String(formData.get('assignedTo') ?? '').trim()
+    const skillsRaw = String(formData.get('skills') ?? '').trim()
+    const skills = skillsRaw
+      ? Object.fromEntries(
+          skillsRaw
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => [item, 'required']),
+        )
+      : undefined
+
+    if (!name) {
+      setTaskError('يرجى إدخال اسم المهمة.')
+      return
+    }
+
+    if (Number.isNaN(pointsRaw) || pointsRaw < 1) {
+      setTaskError('يجب أن تكون النقاط 1 على الأقل.')
+      return
+    }
+
+    setIsCreatingTask(true)
+
+    const currentUser = user
+
+    try {
+      const payload = await createTask({
+        projectId: projectID,
+        name,
+        description: description || undefined,
+        createdBy: currentUser.membershipNumber,
+        status,
+        priority,
+        dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : undefined,
+        points: Math.max(1, Math.trunc(pointsRaw)),
+        assignedTo: assignedTo || undefined,
+        ...(skills ? { skills } : {}),
+      }, currentUser.membershipNumber)
+
+      setProjectTasks((previous) => [payload.task, ...previous])
+      form.reset()
+      setIsAddTaskOpen(false)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTaskError(requestError.message)
+      } else {
+        setTaskError('تعذر إنشاء المهمة.')
+      }
+    } finally {
+      setIsCreatingTask(false)
+    }
+  }
+
+  const refreshPositions = async () => {
+    if (!projectID || !user) {
+      return
+    }
+
+    const payload = await fetchProjectPositions(projectID, user.membershipNumber)
+    setProjectPositions(payload.positions)
+  }
+
+  const refreshProjectMembers = async () => {
+    if (!projectID) {
+      return
+    }
+
+    const payload = await fetchProjectMembers(projectID)
+    setProjectMembers(payload.projectMembers)
+  }
+
+  const handleCreatePosition = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPositionError(null)
+
+    if (!projectID || !user || !canManageProjectPositions) {
+      setPositionError('إنشاء الفرص التطوعية متاح فقط لمالك المشروع أو مديريه.')
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const name = String(formData.get('name') ?? '').trim()
+    const description = String(formData.get('description') ?? '').trim()
+    const seatsRaw = Number(formData.get('seats') ?? 1)
+    const statusRaw = String(formData.get('status') ?? 'open').trim()
+    const status = statusRaw === 'closed' ? 'closed' : 'open'
+
+    if (!name) {
+      setPositionError('يرجى إدخال عنوان الفرصة التطوعية.')
+      return
+    }
+
+    if (Number.isNaN(seatsRaw) || seatsRaw < 1) {
+      setPositionError('عدد المقاعد يجب أن يكون 1 على الأقل.')
+      return
+    }
+
+    setIsCreatingPosition(true)
+
+    try {
+      await createProjectPosition(
+        {
+          projectId: projectID,
+          name,
+          description: description || undefined,
+          createdBy: user.membershipNumber,
+          seats: Math.max(1, Math.trunc(seatsRaw)),
+          status,
+        },
+        user.membershipNumber,
+      )
+
+      event.currentTarget.reset()
+      await refreshPositions()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setPositionError(requestError.message)
+      } else {
+        setPositionError('تعذر إنشاء الفرصة التطوعية.')
+      }
+    } finally {
+      setIsCreatingPosition(false)
+    }
+  }
+
+  const handleApplyToPosition = async (positionId: string, event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setApplicationError(null)
+
+    if (!user || !projectID) {
+      setApplicationError('يجب تسجيل الدخول أولاً.')
+      return
+    }
+
+    const formData = new FormData(event.currentTarget)
+    const motivationLetter = String(formData.get('motivationLetter') ?? '').trim()
+
+    try {
+      await createPositionApplication(
+        positionId,
+        {
+          motivationLetter: motivationLetter || undefined,
+        },
+        user.membershipNumber,
+      )
+
+      event.currentTarget.reset()
+      await refreshPositions()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApplicationError(requestError.message)
+      } else {
+        setApplicationError('تعذر إرسال طلب التطوع.')
+      }
+    }
+  }
+
+  const handleReviewPositionApplication = async (applicationId: string, status: 'accepted' | 'rejected') => {
+    setApplicationError(null)
+
+    if (!user || !canManageProjectPositions) {
+      setApplicationError('لا تملك صلاحية مراجعة الطلبات.')
+      return
+    }
+
+    try {
+      await reviewPositionApplication(applicationId, { status }, user.membershipNumber)
+      await refreshPositions()
+      await refreshProjectMembers()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApplicationError(requestError.message)
+      } else {
+        setApplicationError('تعذر مراجعة الطلب.')
+      }
+    }
+  }
+
+  const handleUpdateTask = async (
+    patch: Partial<{
+      name: string
+      description: string
+      status: 'open' | 'in_progress' | 'completed' | 'archived'
+      priority: 'low' | 'medium' | 'high'
+      dueDate: string
+      points: number
+      assignedTo: string
+    }>,
+  ) => {
+    setTaskUpdateError(null)
+
+    if (!selectedTask || !canEditSelectedTask || !user) {
+      throw new Error('لا يمكن تحديث المهمة في الوقت الحالي.')
+    }
+
+    const payload: Partial<{
+      name: string
+      description: string
+      status: 'open' | 'in_progress' | 'completed' | 'archived'
+      priority: 'low' | 'medium' | 'high'
+      dueDate: string
+      points: number
+      assignedTo: string
+    }> = {}
+
+    if (patch.name !== undefined) {
+      const nextName = patch.name.trim()
+      if (!nextName) {
+        setTaskUpdateError('يرجى إدخال اسم المهمة.')
+        throw new Error('يرجى إدخال اسم المهمة.')
+      }
+      payload.name = nextName
+    }
+
+    if (patch.description !== undefined) {
+      payload.description = patch.description.trim() || undefined
+    }
+
+    if (patch.status !== undefined) {
+      payload.status = patch.status
+    }
+
+    if (patch.priority !== undefined) {
+      payload.priority = patch.priority
+    }
+
+    if (patch.points !== undefined) {
+      if (Number.isNaN(patch.points) || patch.points < 1) {
+        setTaskUpdateError('يجب أن تكون النقاط 1 على الأقل.')
+        throw new Error('يجب أن تكون النقاط 1 على الأقل.')
+      }
+
+      payload.points = Math.max(1, Math.trunc(patch.points))
+    }
+
+    if (patch.dueDate !== undefined) {
+      payload.dueDate = patch.dueDate
+    }
+
+    if (patch.assignedTo !== undefined) {
+      payload.assignedTo = patch.assignedTo
+    }
+
+    if (Object.keys(payload).length === 0) {
+      return
+    }
+
+    const currentUser = user
+
+    setIsUpdatingTask(true)
+
+    try {
+      const response = await updateTask(selectedTask.id, payload, currentUser.membershipNumber)
+
+      setProjectTasks((previous) => previous.map((task) => (task.id === response.task.id ? response.task : task)))
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTaskUpdateError(requestError.message)
+        throw requestError
+      } else {
+        const fallbackError = new Error('تعذر تحديث المهمة.')
+        setTaskUpdateError(fallbackError.message)
+        throw fallbackError
+      }
+    } finally {
+      setIsUpdatingTask(false)
+    }
+  }
+
+  if (!projectID) {
+    return <Navigate to="/dashboard/projects" replace />
+  }
+
+  if (notFound) {
+    return <UnallowedAccessPage />
+  }
+
+  if (isLoading || !project) {
+    return (
+      <section className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm sm:p-6">
+        <p className="text-sm text-slate-500">جار تحميل تفاصيل المشروع...</p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="w-full space-y-3">
+      <ProjectHeader
+        project={project}
+        parentProjectName={parentProjectName}
+        ownerDisplayName={ownerDisplayName}
+        ownerFallbackName={formatAssignee(project.owner)}
+        memberCount={memberCount}
+        projectMembers={projectMembers}
+        previewMembers={previewMembers}
+        hiddenMembersCount={hiddenMembersCount}
+        canCreateTask={canCreateTask}
+        canManageProject={canManageProject}
+        onOpenAddTask={() => setIsAddTaskOpen(true)}
+        eventsPath={`/dashboard/projects/${project.id}/events`}
+        clubsPath={`/dashboard/projects/${project.id}/clubs`}
+        subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}
+        onOpenMembers={() => setIsMembersOpen(true)}
+        onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}
+      >
+        <TaskBoard
+          boardColumns={boardColumns}
+          onOpenTask={(taskId) => setSelectedTaskId(taskId)}
+          formatAssignee={formatAssignee}
+        />
+      </ProjectHeader>
+
+      {selectedTask ? (
+        <TaskDetailsModal
+          selectedTask={selectedTask}
+          canEditSelectedTask={canEditSelectedTask}
+          isUpdatingTask={isUpdatingTask}
+          taskUpdateError={taskUpdateError}
+          memberOptions={memberOptions}
+          formatAssignee={formatAssignee}
+          onClose={closeTaskDetails}
+          onUpdateTask={handleUpdateTask}
+        />
+      ) : null}
+
+      {isProjectSettingsOpen ? (
+        <ProjectSettingsModal
+          project={project}
+          isSaving={isSaving}
+          saveError={saveError}
+          onClose={() => setIsProjectSettingsOpen(false)}
+          onSubmit={handleUpdateProject}
+        />
+      ) : null}
+
+      {isAddTaskOpen ? (
+        <AddTaskModal
+          isCreatingTask={isCreatingTask}
+          taskError={taskError}
+          memberOptions={memberOptions}
+          onClose={() => setIsAddTaskOpen(false)}
+          onSubmit={handleCreateTask}
+        />
+      ) : null}
+
+      {isMembersOpen ? (
+        <MembersModal
+          projectMembers={projectMembers}
+          projectPositions={projectPositions}
+          canManageProjectPositions={canManageProjectPositions}
+          currentMembershipNumber={user?.membershipNumber ?? null}
+          isCreatingPosition={isCreatingPosition}
+          positionError={positionError}
+          applicationError={applicationError}
+          onClose={() => setIsMembersOpen(false)}
+          onCreatePosition={handleCreatePosition}
+          onApplyToPosition={handleApplyToPosition}
+          onReviewApplication={handleReviewPositionApplication}
+        />
+      ) : null}
+    </section>
+  )
+}
