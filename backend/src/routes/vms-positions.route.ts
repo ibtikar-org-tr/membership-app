@@ -10,6 +10,7 @@ import {
   getPositionApplicationById,
   getPositionById,
   getPositionByIdWithApplications,
+  listOpenPositions,
   listProjectPositions,
   syncPositionAfterReview,
   updatePosition,
@@ -95,20 +96,23 @@ vmsPositionsRoute.get('/positions', async (c) => {
       return c.json({ error: 'Membership number is required.' }, 400)
     }
 
-    if (!projectId) {
-      return c.json({ error: 'Project ID is required.' }, 400)
+    let positions: Awaited<ReturnType<typeof listProjectPositions | typeof listOpenPositions>>
+
+    if (projectId) {
+      const access = await canAccessProjectPositions(c.env.VMS_DB, projectId, membershipNumber)
+      if (!access.project) {
+        return c.json({ error: 'Project not found.' }, 404)
+      }
+
+      if (!access.isAuthorized) {
+        return c.json({ error: 'You do not have access to this project.' }, 403)
+      }
+
+      positions = await listProjectPositions(c.env.VMS_DB, projectId)
+    } else {
+      positions = await listOpenPositions(c.env.VMS_DB)
     }
 
-    const access = await canAccessProjectPositions(c.env.VMS_DB, projectId, membershipNumber)
-    if (!access.project) {
-      return c.json({ error: 'Project not found.' }, 404)
-    }
-
-    if (!access.isAuthorized) {
-      return c.json({ error: 'You do not have access to this project.' }, 403)
-    }
-
-    const positions = await listProjectPositions(c.env.VMS_DB, projectId)
     const enriched = await enrichPositionsWithDisplayNames(c.env.MEMBERS_DB, positions)
     return c.json({ positions: enriched })
   } catch (error) {

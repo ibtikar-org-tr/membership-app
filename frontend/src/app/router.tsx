@@ -129,6 +129,14 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: 'volunteering',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardVolunteeringPage } = await import('../pages/dashboard/DashboardVolunteeringPage')
+          return { Component: DashboardVolunteeringPage }
+        },
+      },
+      {
         path: 'events',
         hydrateFallbackElement: <div />,
         lazy: async () => {

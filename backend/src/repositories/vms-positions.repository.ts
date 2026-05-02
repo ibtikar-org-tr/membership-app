@@ -11,6 +11,7 @@ interface PositionRow {
   created_at: string
   updated_at: string
   project_id: string
+  project_name: string | null
   name: string
   description: string | null
   created_by: string
@@ -35,6 +36,7 @@ function mapPositionRow(row: PositionRow) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     projectId: row.project_id,
+    projectName: row.project_name,
     name: row.name,
     description: row.description,
     createdBy: row.created_by,
@@ -68,8 +70,9 @@ async function countAcceptedApplications(db: D1DatabaseLike, positionId: string)
 export async function listProjectPositions(db: D1DatabaseLike, projectId: string) {
   const result = await db
     .prepare(
-      `SELECT id, created_at, updated_at, project_id, name, description, created_by, seats, status
+      `SELECT positions.id, positions.created_at, positions.updated_at, positions.project_id, projects.name AS project_name, positions.name, positions.description, positions.created_by, positions.seats, positions.status
        FROM positions
+       LEFT JOIN projects ON projects.id = positions.project_id
        WHERE project_id = ?
        ORDER BY created_at DESC`,
     )
@@ -85,9 +88,32 @@ export async function listProjectPositions(db: D1DatabaseLike, projectId: string
   )
 }
 
+export async function listOpenPositions(db: D1DatabaseLike) {
+  const result = await db
+    .prepare(
+      `SELECT positions.id, positions.created_at, positions.updated_at, positions.project_id, projects.name AS project_name, positions.name, positions.description, positions.created_by, positions.seats, positions.status
+       FROM positions
+       LEFT JOIN projects ON projects.id = positions.project_id
+       WHERE positions.status = ?
+       ORDER BY positions.created_at DESC`,
+    )
+    .bind('open')
+    .all<PositionRow>()
+
+  return Promise.all(
+    result.results.map(async (row) => ({
+      ...mapPositionRow(row),
+      acceptedApplicationsCount: await countAcceptedApplications(db, row.id),
+      applications: await listPositionApplications(db, row.id),
+    })),
+  )
+}
+
 export async function getPositionById(db: D1DatabaseLike, id: string) {
   const row = await db
-    .prepare('SELECT id, created_at, updated_at, project_id, name, description, created_by, seats, status FROM positions WHERE id = ?')
+    .prepare(
+      'SELECT positions.id, positions.created_at, positions.updated_at, positions.project_id, projects.name AS project_name, positions.name, positions.description, positions.created_by, positions.seats, positions.status FROM positions LEFT JOIN projects ON projects.id = positions.project_id WHERE positions.id = ?',
+    )
     .bind(id)
     .first<PositionRow>()
 
