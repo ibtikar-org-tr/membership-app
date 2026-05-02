@@ -188,6 +188,7 @@ export function DashboardProjectSubProjectsPage() {
     const formData = new FormData(event.currentTarget)
     const name = String(formData.get('name') ?? '').trim()
     const description = String(formData.get('description') ?? '').trim()
+    const telegramGroupId = String(formData.get('telegramGroupId') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? 'active').trim()
     const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
     const skillsRaw = String(formData.get('skills') ?? '').trim()
@@ -223,6 +224,7 @@ export function DashboardProjectSubProjectsPage() {
           description: description || undefined,
           parentProjectId: projectID,
           owner: user.membershipNumber,
+          ...(telegramGroupId ? { telegramGroupId } : {}),
           status,
           ...(skills ? { skills } : {}),
         },
@@ -324,6 +326,14 @@ export function DashboardProjectSubProjectsPage() {
                 <input
                   name="description"
                   placeholder="اختياري"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
+                />
+              </label>
+              <label className="block space-y-1.5 md:col-span-1">
+                <span className="text-xs font-medium text-slate-600">معرّف مجموعة تلغرام</span>
+                <input
+                  name="telegramGroupId"
+                  placeholder="مثال: -1001234567890"
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                 />
               </label>

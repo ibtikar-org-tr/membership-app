@@ -45,6 +45,16 @@ export function ProjectSettingsModal({ project, isSaving, saveError, onClose, on
             />
           </div>
           <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">معرّف مجموعة تلغرام</label>
+            <input
+              name="telegramGroupId"
+              defaultValue={project.telegramGroupId ?? ''}
+              placeholder="مثال: -1001234567890"
+              className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:bg-white"
+            />
+            <p className="mt-1 text-xs text-slate-500">اتركه فارغاً إذا لم تكن تريد ربط مجموعة تلغرام بالمشروع.</p>
+          </div>
+          <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">حالة المشروع</label>
             <select
               name="status"

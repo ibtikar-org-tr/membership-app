@@ -237,6 +237,7 @@ export function DashboardProjectDetailsPage() {
     const formData = new FormData(event.currentTarget)
     const name = String(formData.get('name') ?? '').trim()
     const description = String(formData.get('description') ?? '').trim()
+    const telegramGroupId = String(formData.get('telegramGroupId') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? project.status).trim()
     const status = statusRaw === 'completed' || statusRaw === 'archived' ? statusRaw : 'active'
     const skillsRaw = String(formData.get('skills') ?? '').trim()
@@ -267,6 +268,7 @@ export function DashboardProjectDetailsPage() {
       const payload = await updateProject(projectID, {
         name,
         ...(description ? { description } : {}),
+        ...(telegramGroupId ? { telegramGroupId } : {}),
         status,
         ...(skills ? { skills } : {}),
       }, user.membershipNumber)
