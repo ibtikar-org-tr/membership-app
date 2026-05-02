@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { forgotPassword } from '../api/vms'
+import { Seo } from '../components/Seo'
 import { EmailField } from '../components/registration/sections/personal-info-section/EmailField'
 import { PhoneNumberField } from '../components/registration/sections/personal-info-section/PhoneNumberField'
 
@@ -92,9 +93,15 @@ export function IForgotPage() {
   }
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-sky-50 via-white to-emerald-50 px-6 py-10 text-slate-800" dir="rtl">
-      <div className="mx-auto flex min-h-[80vh] w-full max-w-4xl items-center justify-center">
-        <section className="w-full rounded-3xl border border-white/70 bg-white/85 p-8 shadow-2xl backdrop-blur md:p-10">
+    <>
+      <Seo
+        title="استرجاع بيانات العضوية"
+        description="استرجع بيانات العضوية أو كلمة المرور عبر البريد الإلكتروني أو رقم العضوية أو رقم الهاتف من منصة أعضاء إبتكار."
+        noIndex
+      />
+      <main className="min-h-screen bg-linear-to-br from-sky-50 via-white to-emerald-50 px-6 py-10 text-slate-800" dir="rtl">
+        <div className="mx-auto flex min-h-[80vh] w-full max-w-4xl items-center justify-center">
+          <section className="w-full rounded-3xl border border-white/70 bg-white/85 p-8 shadow-2xl backdrop-blur md:p-10">
           <p className="inline-block rounded-full bg-sky-100 px-4 py-1 text-sm font-semibold text-sky-700">
             استرجاع بيانات العضوية
           </p>
@@ -226,7 +233,8 @@ export function IForgotPage() {
             </p>
           </form>
         </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   )
 }

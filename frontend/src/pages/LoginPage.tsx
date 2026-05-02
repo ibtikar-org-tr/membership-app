@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../api/vms'
+import { Seo } from '../components/Seo'
 import { setStoredUser } from '../utils/auth'
 
 export function LoginPage() {
@@ -39,9 +40,15 @@ export function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-cyan-50 via-white to-amber-50 px-6 py-10 text-slate-800" dir="rtl">
-      <div className="mx-auto flex min-h-[80vh] w-full max-w-5xl items-center justify-center">
-        <section className="grid w-full overflow-hidden rounded-3xl border border-white/70 bg-white/80 shadow-2xl backdrop-blur md:grid-cols-2">
+    <>
+      <Seo
+        title="تسجيل الدخول"
+        description="سجّل الدخول إلى حسابك في منصة أعضاء إبتكار للوصول إلى لوحة التحكم والملف الشخصي والمشاريع والفعاليات."
+        noIndex
+      />
+      <main className="min-h-screen bg-linear-to-br from-cyan-50 via-white to-amber-50 px-6 py-10 text-slate-800" dir="rtl">
+        <div className="mx-auto flex min-h-[80vh] w-full max-w-5xl items-center justify-center">
+          <section className="grid w-full overflow-hidden rounded-3xl border border-white/70 bg-white/80 shadow-2xl backdrop-blur md:grid-cols-2">
           <div className="space-y-6 bg-linear-to-br from-slate-900 via-slate-800 to-cyan-900 p-8 text-white md:p-10">
             <p className="inline-block rounded-full bg-white/15 px-4 py-1 text-sm font-semibold text-cyan-100">
               بوابة الأعضاء
@@ -119,7 +126,8 @@ export function LoginPage() {
             </p>
           </form>
         </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   )
 }

@@ -1,5 +1,6 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom'
 import { useMemo, useState } from 'react'
+import { Seo } from '../components/Seo'
 import { clearStoredUser, getStoredUser } from '../utils/auth'
 import {
   LayoutDashboard,
@@ -48,9 +49,15 @@ export function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-slate-50 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
-      <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
-        <aside
+    <>
+      <Seo
+        title="لوحة التحكم"
+        description="لوحة التحكم الخاصة بالأعضاء في منصة أعضاء إبتكار لمتابعة المشاريع والفعاليات والأندية وإعدادات الحساب."
+        noIndex
+      />
+      <main className="min-h-screen w-full bg-slate-50 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
+        <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
+          <aside
           className={`relative z-40 w-full border-b border-slate-200 bg-white p-4 lg:fixed lg:inset-y-0 lg:right-0 lg:z-50 lg:flex lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-l lg:shadow-sm transition-all duration-300 ${
             isSidebarCollapsed ? 'lg:w-20' : 'lg:w-80'
           }`}
@@ -168,8 +175,9 @@ export function DashboardPage() {
           <div className="w-full">
             <Outlet />
           </div>
-        </section>
-      </div>
-    </main>
+          </section>
+        </div>
+      </main>
+    </>
   )
 }
