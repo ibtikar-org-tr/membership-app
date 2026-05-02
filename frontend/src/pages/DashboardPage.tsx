@@ -76,7 +76,7 @@ export function DashboardPage() {
         noIndex
       />
       <main className="min-h-screen w-full bg-slate-50 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
-        <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row-reverse">
+        <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row">
           <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
@@ -223,7 +223,7 @@ export function DashboardPage() {
 
           <section
             className={`relative z-0 w-full flex-1 p-3 pb-6 sm:p-4 md:p-6 lg:h-screen lg:overflow-y-auto transition-all duration-300 ${
-              isSidebarCollapsed ? 'lg:pr-22 lg:pl-8' : 'lg:pr-88 lg:pl-8'
+              isSidebarCollapsed ? 'lg:pl-22 lg:pr-8' : 'lg:pl-88 lg:pr-8'
             }`}
           >
             <div className="w-full">
