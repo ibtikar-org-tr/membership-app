@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { FiBookOpen, FiFileText } from 'react-icons/fi'
+import { Seo } from '../components/Seo'
 import { useRegistrationForm } from '../hooks/useRegistrationForm'
 import type { RegistrationFormData } from '../types/registration'
 
@@ -64,9 +65,14 @@ export function RegistrationPage() {
   const canShowBylawsAcknowledgementSection = hasCompletedNonOptionalFields(formData)
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
-      <div className="mx-auto w-full max-w-5xl">
-        <header className="relative mb-6 rounded-3xl bg-slate-900 p-6 text-white shadow-xl md:p-8">
+    <>
+      <Seo
+        title="الانتساب إلى تجمّع إبتكار"
+        description="قدّم طلب الانتساب إلى تجمّع إبتكار وابدأ رحلة المشاركة في المشاريع والفعاليات والفرص التطوعية المتاحة للأعضاء الجدد."
+      />
+      <main className="min-h-screen bg-linear-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
+        <div className="mx-auto w-full max-w-5xl">
+          <header className="relative mb-6 rounded-3xl bg-slate-900 p-6 text-white shadow-xl md:p-8">
           <img
             src="/white_long_logo.svg"
             alt="IBTIKAR"
@@ -203,7 +209,8 @@ export function RegistrationPage() {
             </div>
           </form>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   )
 }

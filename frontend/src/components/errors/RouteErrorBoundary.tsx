@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom'
+import { Seo } from '../Seo'
 
 function getErrorDetails(error: unknown): { title: string; message: string; status?: number } {
   if (isRouteErrorResponse(error)) {
@@ -30,9 +31,11 @@ export function RouteErrorBoundary() {
   const details = getErrorDetails(routeError)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-6 py-10">
-      <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">
-        <div className="w-full rounded-3xl border border-slate-200 bg-white p-6 text-right shadow-xl md:p-8">
+    <>
+      <Seo title={details.title} description={details.message} noIndex />
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-6 py-10">
+        <div className="mx-auto flex min-h-[70vh] max-w-2xl items-center justify-center">
+          <div className="w-full rounded-3xl border border-slate-200 bg-white p-6 text-right shadow-xl md:p-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">membership app</p>
           <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{details.title}</h1>
           <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">{details.message}</p>
@@ -62,8 +65,9 @@ export function RouteErrorBoundary() {
           {typeof details.status === 'number' && (
             <p className="mt-4 text-xs text-slate-500">Error code: {details.status}</p>
           )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

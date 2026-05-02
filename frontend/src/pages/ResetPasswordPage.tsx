@@ -1,6 +1,7 @@
 import { type FormEvent, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../api/vms'
+import { Seo } from '../components/Seo'
 
 interface ResetTokenPreview {
   membershipNumber: string
@@ -151,9 +152,15 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-cyan-50 via-white to-amber-50 px-6 py-10 text-slate-800" dir="rtl">
-      <div className="mx-auto flex min-h-[80vh] w-full max-w-4xl items-center justify-center">
-        <section className="w-full max-w-xl rounded-3xl border border-white/70 bg-white/90 p-8 shadow-2xl backdrop-blur md:p-10">
+    <>
+      <Seo
+        title="إعادة تعيين كلمة المرور"
+        description="أنشئ كلمة مرور جديدة لحسابك في منصة أعضاء إبتكار عبر رابط إعادة التعيين المؤقت."
+        noIndex
+      />
+      <main className="min-h-screen bg-linear-to-br from-cyan-50 via-white to-amber-50 px-6 py-10 text-slate-800" dir="rtl">
+        <div className="mx-auto flex min-h-[80vh] w-full max-w-4xl items-center justify-center">
+          <section className="w-full max-w-xl rounded-3xl border border-white/70 bg-white/90 p-8 shadow-2xl backdrop-blur md:p-10">
           <p className="inline-block rounded-full bg-cyan-100 px-4 py-1 text-sm font-semibold text-cyan-800">
             إعادة تعيين كلمة المرور
           </p>
@@ -256,7 +263,8 @@ export function ResetPasswordPage() {
             </Link>
           </p>
         </section>
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   )
 }
