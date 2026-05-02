@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS event_registrations ( -- the registrations of users t
     status TEXT NOT NULL, -- "registered", "attended", "cancelled", "no_show"
     payment_approved_by TEXT, -- membership_number of the user who approved the payment (e.g., "1234567890")
     attendance_approved_by TEXT, -- membership_number of the user who approved the attendance status (e.g., marking as attended, marking as no_show etc.)
-    PRIMARY KEY (event_id, membership_number) -- a user can only register once for an event, but can have multiple registrations for different events. TODO: check that the app doesn't run into issues
+    UNIQUE (event_id, membership_number) -- a user can only register once for an event, but can have multiple registrations for different events. TODO: check that the app doesn't run into issues
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_registration_updated_at AFTER UPDATE ON event_registrations
