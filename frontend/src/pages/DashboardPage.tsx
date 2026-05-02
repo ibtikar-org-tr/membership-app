@@ -107,7 +107,7 @@ export function DashboardPage() {
           ) : null}
 
           <aside
-            className={`fixed inset-y-0 right-0 z-50 flex w-[min(20rem,88vw)] flex-col overflow-y-auto border-l border-slate-200 bg-white p-4 shadow-2xl transition-transform duration-300 lg:relative lg:z-40 lg:w-auto lg:border-b-0 lg:shadow-none ${
+            className={`fixed inset-y-0 right-0 z-50 flex w-[min(20rem,88vw)] flex-col overflow-y-auto border-l border-slate-200 bg-white p-4 shadow-2xl transition-transform duration-300 lg:static lg:z-40 lg:flex-none lg:border-b-0 lg:shadow-none ${
               isMobileSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
             } ${isSidebarCollapsed ? 'lg:w-20' : 'lg:w-80'}`}
           >
@@ -222,9 +222,7 @@ export function DashboardPage() {
           </aside>
 
           <section
-            className={`relative z-0 w-full flex-1 p-3 pb-6 sm:p-4 md:p-6 lg:h-screen lg:overflow-y-auto transition-all duration-300 ${
-              isSidebarCollapsed ? 'lg:pl-22 lg:pr-8' : 'lg:pl-88 lg:pr-8'
-            }`}
+            className="relative z-0 w-full flex-1 p-3 pb-6 sm:p-4 md:p-6 lg:h-screen lg:overflow-y-auto lg:px-8 transition-all duration-300"
           >
             <div className="w-full">
               <Outlet />
