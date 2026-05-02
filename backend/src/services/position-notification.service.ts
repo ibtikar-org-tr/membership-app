@@ -40,7 +40,7 @@ export async function notifyPositionApplicationSubmitted(env: AppBindings, conte
   const ownerResult = await sendBackendTelegramNotification(env, {
     target: context.ownerMembershipNumber,
     message: [
-      '🆕 طلب تطوع جديد',
+      '💚 طلب تطوع جديد',
       `الفرصة: ${context.positionName}`, 
       `المشروع: ${projectLabel}`,
       `المتقدم: ${context.applicantDisplayName} (${context.applicantMembershipNumber})`,

@@ -25,6 +25,7 @@ import {
   updatePositionSchema,
 } from '../schemas/vms-position.schema'
 import { notifyPositionApplicationReviewed, notifyPositionApplicationSubmitted } from '../services/position-notification.service'
+import { sendBackendTelegramGroupInvite } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
 
 export const vmsPositionsRoute = new Hono<{ Bindings: AppBindings }>()
@@ -377,6 +378,23 @@ vmsPositionsRoute.put(
             membershipNumber: updated.membershipNumber,
             role: 'member',
           })
+        }
+
+        const projectTelegramGroupId = authorization.project?.telegramGroupId?.trim()
+        if (projectTelegramGroupId) {
+          try {
+            const inviteResult = await sendBackendTelegramGroupInvite(c.env, {
+              membershipNumber: updated.membershipNumber,
+              telegramGroupId: projectTelegramGroupId,
+              contextLabel: `project ${authorization.project?.name ?? position.projectId}`,
+            })
+
+            if (!inviteResult.success) {
+              console.warn('Failed to send project group invite after position acceptance:', inviteResult)
+            }
+          } catch (inviteError) {
+            console.warn('Project group invite threw after position acceptance:', inviteError)
+          }
         }
       }
 
