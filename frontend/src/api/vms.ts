@@ -433,6 +433,11 @@ export function fetchProjectPositions(projectId: string, membershipNumber: strin
   return fetchJson<{ positions: VmsPosition[] }>(`/positions${query}`)
 }
 
+export function fetchPositionById(positionId: string, membershipNumber?: string) {
+  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  return fetchJson<{ position: VmsPosition }>(`/positions/${encodeURIComponent(positionId)}${query}`)
+}
+
 export function createProjectPosition(
   payload: {
     projectId: string

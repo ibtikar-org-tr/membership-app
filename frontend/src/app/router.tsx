@@ -121,6 +121,14 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: 'projects/:projectID/positions',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardProjectPositionsPage } = await import('../pages/dashboard/DashboardProjectPositionsPage')
+          return { Component: DashboardProjectPositionsPage }
+        },
+      },
+      {
         path: 'events',
         hydrateFallbackElement: <div />,
         lazy: async () => {
@@ -182,6 +190,14 @@ const router = createBrowserRouter([
         lazy: async () => {
           const { DashboardEventAdminPage } = await import('../pages/dashboard/DashboardEventAdminPage')
           return { Component: DashboardEventAdminPage }
+        },
+      },
+      {
+        path: 'positions/:positionID/edit',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardPositionEditPage } = await import('../pages/dashboard/DashboardPositionEditPage')
+          return { Component: DashboardPositionEditPage }
         },
       },
       {
