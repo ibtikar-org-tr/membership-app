@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { clearStoredUser, getStoredUser } from '../utils/auth'
 import {
   LayoutDashboard,
+  HeartHandshake,
   Users,
   FolderKanban,
   CalendarDays,
@@ -29,6 +30,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { to: '/dashboard/projects', label: 'المشاريع', helper: 'متابعة المبادرات النشطة', icon: FolderKanban },
   { to: '/dashboard/events', label: 'الفعاليات', helper: 'اللقاءات والورش القادمة', icon: CalendarDays },
   { to: '/dashboard/clubs', label: 'الأندية', helper: 'استكشاف أندية المشاريع', icon: Shapes },
+  { to: '/dashboard/volunteering', label: 'التطوع', helper: 'الفرص التطوعية المفتوحة', icon: HeartHandshake },
   { to: '/dashboard/profile', label: 'الملف الشخصي', helper: 'بياناتك الشخصية', icon: UserCircle },
   { to: '/dashboard/settings', label: 'الإعدادات', helper: 'تفضيلات الحساب', icon: Settings },
 ]
@@ -66,7 +68,7 @@ export function DashboardPage() {
             )}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
               aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {isSidebarCollapsed ? (
@@ -91,13 +93,13 @@ export function DashboardPage() {
                       isSidebarCollapsed ? 'justify-center px-2' : ''
                     } ${
                       isActive
-                        ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm'
+                        ? 'border-blue-200 bg-linear-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm'
                         : 'border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'
                     }`
                   }
                   title={isSidebarCollapsed ? item.label : undefined}
                 >
-                  <IconComponent className="h-5 w-5 flex-shrink-0 transition-colors" />
+                  <IconComponent className="h-5 w-5 shrink-0 transition-colors" />
                   {!isSidebarCollapsed && (
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold">{item.label}</p>
@@ -117,19 +119,19 @@ export function DashboardPage() {
             }`}
             title={isSidebarCollapsed ? 'العودة إلى الرئيسية' : undefined}
           >
-            <Home className="h-4 w-4 flex-shrink-0" />
+            <Home className="h-4 w-4 shrink-0" />
             {!isSidebarCollapsed && <span>العودة إلى الرئيسية</span>}
           </Link>
 
           {/* User Profile Section */}
           <div className="mt-6 space-y-4 border-t border-slate-200 pt-5 lg:mt-auto">
             <div
-              className={`rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm ${
+              className={`rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-white p-4 shadow-sm ${
                 isSidebarCollapsed ? 'p-2' : ''
               }`}
             >
               <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-sm">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-500 text-white shadow-sm">
                   <UserCircle className="h-5 w-5" />
                 </div>
                 {!isSidebarCollapsed && (
@@ -152,7 +154,7 @@ export function DashboardPage() {
               }`}
               title={isSidebarCollapsed ? 'تسجيل الخروج' : undefined}
             >
-              <LogOut className="h-4 w-4 flex-shrink-0" />
+              <LogOut className="h-4 w-4 shrink-0" />
               {!isSidebarCollapsed && <span>تسجيل الخروج</span>}
             </Link>
           </div>
@@ -160,7 +162,7 @@ export function DashboardPage() {
 
         <section
           className={`relative z-0 w-full flex-1 p-4 md:p-6 lg:h-screen lg:overflow-y-auto transition-all duration-300 ${
-            isSidebarCollapsed ? 'lg:pr-[5.5rem] lg:pl-8' : 'lg:pr-[22rem] lg:pl-8'
+            isSidebarCollapsed ? 'lg:pr-22 lg:pl-8' : 'lg:pr-88 lg:pl-8'
           }`}
         >
           <div className="w-full">

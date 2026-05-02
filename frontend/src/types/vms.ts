@@ -113,6 +113,7 @@ export interface VmsPosition {
   createdAt: string
   updatedAt: string
   projectId: string
+  projectName: string | null
   name: string
   description: string | null
   createdBy: string

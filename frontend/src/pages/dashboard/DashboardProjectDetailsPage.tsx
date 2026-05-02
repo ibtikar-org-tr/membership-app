@@ -2,19 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import {
-  createPositionApplication,
-  createProjectPosition,
   createTask,
   fetchProfile,
   fetchProjectById,
   fetchProjectMembers,
-  fetchProjectPositions,
   fetchTasks,
-  reviewPositionApplication,
   updateProject,
   updateTask,
 } from '../../api/vms'
-import type { VmsPosition, VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
+import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { AddTaskModal, MembersModal, ProjectSettingsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
 import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
@@ -30,7 +26,6 @@ export function DashboardProjectDetailsPage() {
   const [ownerDisplayName, setOwnerDisplayName] = useState<string | null>(null)
   const [projectTasks, setProjectTasks] = useState<VmsTask[]>([])
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
-  const [projectPositions, setProjectPositions] = useState<VmsPosition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -39,10 +34,6 @@ export function DashboardProjectDetailsPage() {
 
   const [isCreatingTask, setIsCreatingTask] = useState(false)
   const [taskError, setTaskError] = useState<string | null>(null)
-
-  const [isCreatingPosition, setIsCreatingPosition] = useState(false)
-  const [positionError, setPositionError] = useState<string | null>(null)
-  const [applicationError, setApplicationError] = useState<string | null>(null)
 
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
@@ -62,11 +53,10 @@ export function DashboardProjectDetailsPage() {
 
     async function loadProjectData() {
       try {
-        const [projectPayload, tasksPayload, membersPayload, positionsPayload] = await Promise.all([
+        const [projectPayload, tasksPayload, membersPayload] = await Promise.all([
           fetchProjectById(currentProjectId, currentUser.membershipNumber),
           fetchTasks(currentUser.membershipNumber),
           fetchProjectMembers(currentProjectId),
-          fetchProjectPositions(currentProjectId, currentUser.membershipNumber),
         ])
 
         if (controller.signal.aborted) {
@@ -76,7 +66,6 @@ export function DashboardProjectDetailsPage() {
         setProject(projectPayload.project)
         setProjectTasks(tasksPayload.tasks.filter((task) => task.projectId === currentProjectId))
         setProjectMembers(membersPayload.projectMembers)
-        setProjectPositions(positionsPayload.positions)
       } catch {
         if (!controller.signal.aborted) {
           setNotFound(true)
@@ -199,7 +188,6 @@ export function DashboardProjectDetailsPage() {
     return project.owner === currentMembershipNumber || projectManagerMembershipNumbers.has(currentMembershipNumber)
   }, [project, projectManagerMembershipNumbers, user])
   const canManageProject = canManageProjectMembers
-  const canManageProjectPositions = canManageProjectMembers
   const canCreateTask = useMemo(() => {
     if (!project || !user) {
       return false
@@ -380,130 +368,6 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
-  const refreshPositions = async () => {
-    if (!projectID || !user) {
-      return
-    }
-
-    const payload = await fetchProjectPositions(projectID, user.membershipNumber)
-    setProjectPositions(payload.positions)
-  }
-
-  const refreshProjectMembers = async () => {
-    if (!projectID) {
-      return
-    }
-
-    const payload = await fetchProjectMembers(projectID)
-    setProjectMembers(payload.projectMembers)
-  }
-
-  const handleCreatePosition = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setPositionError(null)
-
-    if (!projectID || !user || !canManageProjectPositions) {
-      setPositionError('إنشاء الفرص التطوعية متاح فقط لمالك المشروع أو مديريه.')
-      return
-    }
-
-    const formData = new FormData(event.currentTarget)
-    const name = String(formData.get('name') ?? '').trim()
-    const description = String(formData.get('description') ?? '').trim()
-    const seatsRaw = Number(formData.get('seats') ?? 1)
-    const statusRaw = String(formData.get('status') ?? 'open').trim()
-    const status = statusRaw === 'closed' ? 'closed' : 'open'
-
-    if (!name) {
-      setPositionError('يرجى إدخال عنوان الفرصة التطوعية.')
-      return
-    }
-
-    if (Number.isNaN(seatsRaw) || seatsRaw < 1) {
-      setPositionError('عدد المقاعد يجب أن يكون 1 على الأقل.')
-      return
-    }
-
-    setIsCreatingPosition(true)
-
-    try {
-      await createProjectPosition(
-        {
-          projectId: projectID,
-          name,
-          description: description || undefined,
-          createdBy: user.membershipNumber,
-          seats: Math.max(1, Math.trunc(seatsRaw)),
-          status,
-        },
-        user.membershipNumber,
-      )
-
-      event.currentTarget.reset()
-      await refreshPositions()
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setPositionError(requestError.message)
-      } else {
-        setPositionError('تعذر إنشاء الفرصة التطوعية.')
-      }
-    } finally {
-      setIsCreatingPosition(false)
-    }
-  }
-
-  const handleApplyToPosition = async (positionId: string, event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setApplicationError(null)
-
-    if (!user || !projectID) {
-      setApplicationError('يجب تسجيل الدخول أولاً.')
-      return
-    }
-
-    const formData = new FormData(event.currentTarget)
-    const motivationLetter = String(formData.get('motivationLetter') ?? '').trim()
-
-    try {
-      await createPositionApplication(
-        positionId,
-        {
-          motivationLetter: motivationLetter || undefined,
-        },
-        user.membershipNumber,
-      )
-
-      event.currentTarget.reset()
-      await refreshPositions()
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setApplicationError(requestError.message)
-      } else {
-        setApplicationError('تعذر إرسال طلب التطوع.')
-      }
-    }
-  }
-
-  const handleReviewPositionApplication = async (applicationId: string, status: 'accepted' | 'rejected') => {
-    setApplicationError(null)
-
-    if (!user || !canManageProjectPositions) {
-      setApplicationError('لا تملك صلاحية مراجعة الطلبات.')
-      return
-    }
-
-    try {
-      await reviewPositionApplication(applicationId, { status }, user.membershipNumber)
-      await refreshPositions()
-      await refreshProjectMembers()
-    } catch (requestError) {
-      if (requestError instanceof Error) {
-        setApplicationError(requestError.message)
-      } else {
-        setApplicationError('تعذر مراجعة الطلب.')
-      }
-    }
-  }
 
   const handleUpdateTask = async (
     patch: Partial<{
@@ -628,6 +492,7 @@ export function DashboardProjectDetailsPage() {
         onOpenAddTask={() => setIsAddTaskOpen(true)}
         eventsPath={`/dashboard/projects/${project.id}/events`}
         clubsPath={`/dashboard/projects/${project.id}/clubs`}
+        positionsPath={`/dashboard/projects/${project.id}/positions`}
         subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}
         onOpenMembers={() => setIsMembersOpen(true)}
         onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}
@@ -675,16 +540,7 @@ export function DashboardProjectDetailsPage() {
       {isMembersOpen ? (
         <MembersModal
           projectMembers={projectMembers}
-          projectPositions={projectPositions}
-          canManageProjectPositions={canManageProjectPositions}
-          currentMembershipNumber={user?.membershipNumber ?? null}
-          isCreatingPosition={isCreatingPosition}
-          positionError={positionError}
-          applicationError={applicationError}
           onClose={() => setIsMembersOpen(false)}
-          onCreatePosition={handleCreatePosition}
-          onApplyToPosition={handleApplyToPosition}
-          onReviewApplication={handleReviewPositionApplication}
         />
       ) : null}
     </section>

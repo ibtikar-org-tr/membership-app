@@ -10,6 +10,7 @@ import {
   getPositionApplicationById,
   getPositionById,
   getPositionByIdWithApplications,
+  listOpenPositions,
   listProjectPositions,
   syncPositionAfterReview,
   updatePosition,
@@ -23,6 +24,8 @@ import {
   reviewPositionApplicationSchema,
   updatePositionSchema,
 } from '../schemas/vms-position.schema'
+import { notifyPositionApplicationReviewed, notifyPositionApplicationSubmitted } from '../services/position-notification.service'
+import { sendBackendTelegramGroupInvite } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
 
 export const vmsPositionsRoute = new Hono<{ Bindings: AppBindings }>()
@@ -95,11 +98,46 @@ vmsPositionsRoute.get('/positions', async (c) => {
       return c.json({ error: 'Membership number is required.' }, 400)
     }
 
-    if (!projectId) {
-      return c.json({ error: 'Project ID is required.' }, 400)
+    let positions: Awaited<ReturnType<typeof listProjectPositions | typeof listOpenPositions>>
+
+    if (projectId) {
+      const access = await canAccessProjectPositions(c.env.VMS_DB, projectId, membershipNumber)
+      if (!access.project) {
+        return c.json({ error: 'Project not found.' }, 404)
+      }
+
+      if (!access.isAuthorized) {
+        return c.json({ error: 'You do not have access to this project.' }, 403)
+      }
+
+      positions = await listProjectPositions(c.env.VMS_DB, projectId)
+    } else {
+      positions = await listOpenPositions(c.env.VMS_DB)
     }
 
-    const access = await canAccessProjectPositions(c.env.VMS_DB, projectId, membershipNumber)
+    const enriched = await enrichPositionsWithDisplayNames(c.env.MEMBERS_DB, positions)
+    return c.json({ positions: enriched })
+  } catch (error) {
+    console.error('Failed to list positions', error)
+    return c.json({ error: 'Could not fetch positions.' }, 500)
+  }
+})
+
+vmsPositionsRoute.get('/positions/:id', zValidator('param', positionParamsSchema), async (c) => {
+  try {
+    const { id } = c.req.valid('param')
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!membershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
+    const position = await getPositionByIdWithApplications(c.env.VMS_DB, id)
+    if (!position) {
+      return c.json({ error: 'Position not found.' }, 404)
+    }
+
+    const access = await canAccessProjectPositions(c.env.VMS_DB, position.projectId, membershipNumber)
     if (!access.project) {
       return c.json({ error: 'Project not found.' }, 404)
     }
@@ -108,12 +146,12 @@ vmsPositionsRoute.get('/positions', async (c) => {
       return c.json({ error: 'You do not have access to this project.' }, 403)
     }
 
-    const positions = await listProjectPositions(c.env.VMS_DB, projectId)
-    const enriched = await enrichPositionsWithDisplayNames(c.env.MEMBERS_DB, positions)
-    return c.json({ positions: enriched })
+    const enriched = await enrichPositionsWithDisplayNames(c.env.MEMBERS_DB, [position])
+
+    return c.json({ position: enriched[0] })
   } catch (error) {
-    console.error('Failed to list positions', error)
-    return c.json({ error: 'Could not fetch positions.' }, 500)
+    console.error('Failed to fetch position', error)
+    return c.json({ error: 'Could not fetch position.' }, 500)
   }
 })
 
@@ -251,11 +289,6 @@ vmsPositionsRoute.post(
         return c.json({ error: 'Position not found.' }, 404)
       }
 
-      const access = await canAccessProjectPositions(c.env.VMS_DB, position.projectId, membershipNumber)
-      if (!access.isAuthorized) {
-        return c.json({ error: 'You do not have access to this project.' }, 403)
-      }
-
       if (position.status !== 'open') {
         return c.json({ error: 'This position is not open for applications.' }, 400)
       }
@@ -270,7 +303,18 @@ vmsPositionsRoute.post(
         return c.json({ error: 'You have already applied to this position.' }, 409)
       }
 
-      const displayNameMap = await getUserDisplayNamesByMembershipNumbers(c.env.MEMBERS_DB, [membershipNumber])
+      const displayNameMap = await getUserDisplayNamesByMembershipNumbers(c.env.MEMBERS_DB, [membershipNumber, position.createdBy])
+
+      await notifyPositionApplicationSubmitted(c.env, {
+        frontendBaseUrl: c.env.FRONTEND_BASE_URL,
+        projectId: position.projectId,
+        projectName: position.projectName,
+        positionId: position.id,
+        positionName: position.name,
+        applicantMembershipNumber: membershipNumber,
+        applicantDisplayName: displayNameMap.get(membershipNumber) ?? membershipNumber,
+        ownerMembershipNumber: position.createdBy,
+      })
 
       return c.json(
         {
@@ -335,6 +379,23 @@ vmsPositionsRoute.put(
             role: 'member',
           })
         }
+
+        const projectTelegramGroupId = authorization.project?.telegramGroupId?.trim()
+        if (projectTelegramGroupId) {
+          try {
+            const inviteResult = await sendBackendTelegramGroupInvite(c.env, {
+              membershipNumber: updated.membershipNumber,
+              telegramGroupId: projectTelegramGroupId,
+              contextLabel: `project ${authorization.project?.name ?? position.projectId}`,
+            })
+
+            if (!inviteResult.success) {
+              console.warn('Failed to send project group invite after position acceptance:', inviteResult)
+            }
+          } catch (inviteError) {
+            console.warn('Project group invite threw after position acceptance:', inviteError)
+          }
+        }
       }
 
       const positionWithApplications = await syncPositionAfterReview(c.env.VMS_DB, position.id)
@@ -347,6 +408,16 @@ vmsPositionsRoute.put(
         updated.membershipNumber,
         updated.reviewedBy ?? actorMembershipNumber,
       ])
+
+      await notifyPositionApplicationReviewed(c.env, {
+        frontendBaseUrl: c.env.FRONTEND_BASE_URL,
+        projectId: position.projectId,
+        projectName: position.projectName,
+        positionId: position.id,
+        positionName: position.name,
+        applicantMembershipNumber: updated.membershipNumber,
+        decision: updated.status,
+      })
 
       return c.json({
         position: enriched[0],
