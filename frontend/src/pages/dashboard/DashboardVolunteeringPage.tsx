@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { fetchOpenPositions } from '../../api/vms'
+import { createPositionApplication, fetchOpenPositions } from '../../api/vms'
 import type { VmsPosition } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 
@@ -9,6 +8,8 @@ export function DashboardVolunteeringPage() {
   const [positions, setPositions] = useState<VmsPosition[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [applyingPositionId, setApplyingPositionId] = useState<string | null>(null)
+  const [applyError, setApplyError] = useState<string | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -39,13 +40,59 @@ export function DashboardVolunteeringPage() {
     }
   }, [user?.membershipNumber])
 
+  const handleApply = async (positionId: string) => {
+    if (!user) {
+      setApplyError('يجب تسجيل الدخول أولاً.')
+      return
+    }
+
+    setApplyError(null)
+    setApplyingPositionId(positionId)
+
+    try {
+      await createPositionApplication(positionId, {}, user.membershipNumber)
+      setPositions((previous) =>
+        previous.map((position) =>
+          position.id === positionId
+            ? {
+                ...position,
+                applications: [
+                  ...position.applications,
+                  {
+                    id: crypto.randomUUID(),
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    positionId,
+                    membershipNumber: user.membershipNumber,
+                    motivationLetter: null,
+                    status: 'pending',
+                    reviewedBy: null,
+                    displayName: user.email,
+                    reviewedByDisplayName: null,
+                  },
+                ],
+              }
+            : position,
+        ),
+      )
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApplyError(requestError.message)
+      } else {
+        setApplyError('تعذر التقديم على الفرصة.')
+      }
+    } finally {
+      setApplyingPositionId(null)
+    }
+  }
+
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">التطوع</h2>
           <p className="mt-1 text-sm text-slate-500">الفرص التطوعية المفتوحة عبر جميع المشاريع.</p>
-          <p className="mt-1 text-xs text-slate-500">استعرض الفرص المتاحة ثم انتقل إلى مشروع الفرصة لمزيد من التفاصيل.</p>
+          <p className="mt-1 text-xs text-slate-500">اضغط تطبيق للتقديم مباشرة على الفرصة المفتوحة.</p>
         </div>
         <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
           {positions.length} فرصة مفتوحة
@@ -54,6 +101,7 @@ export function DashboardVolunteeringPage() {
 
       {isLoading ? <p className="mt-6 text-center text-sm text-slate-500">جار تحميل الفرص التطوعية...</p> : null}
       {hasError ? <p className="mt-6 text-center text-sm text-red-600">تعذر تحميل الفرص التطوعية.</p> : null}
+      {applyError ? <p className="mt-3 text-sm text-red-600">{applyError}</p> : null}
 
       {!isLoading && !hasError ? (
         positions.length === 0 ? (
@@ -80,13 +128,20 @@ export function DashboardVolunteeringPage() {
                   <span className="rounded-full border border-slate-200 bg-white px-2 py-1">{position.applications.length} طلب</span>
                 </div>
 
-                <div className="mt-4 text-left">
-                  <Link
-                    to={`/dashboard/projects/${position.projectId}/positions`}
-                    className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                <div className="mt-4 flex items-center justify-between gap-3 text-left">
+                  <span className="text-xs text-slate-500">إذا لم تظهر لك فرصة مناسبة، راجع الصفحة لاحقاً.</span>
+                  <button
+                    type="button"
+                    onClick={() => void handleApply(position.id)}
+                    disabled={applyingPositionId === position.id || position.applications.some((application) => application.membershipNumber === user?.membershipNumber)}
+                    className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                   >
-                    عرض مشروع الفرصة
-                  </Link>
+                    {applyingPositionId === position.id
+                      ? 'جار التقديم...'
+                      : position.applications.some((application) => application.membershipNumber === user?.membershipNumber)
+                        ? 'تم التقديم'
+                        : 'تقديم'}
+                  </button>
                 </div>
               </article>
             ))}

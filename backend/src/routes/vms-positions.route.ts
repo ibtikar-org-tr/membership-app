@@ -287,11 +287,6 @@ vmsPositionsRoute.post(
         return c.json({ error: 'Position not found.' }, 404)
       }
 
-      const access = await canAccessProjectPositions(c.env.VMS_DB, position.projectId, membershipNumber)
-      if (!access.isAuthorized) {
-        return c.json({ error: 'You do not have access to this project.' }, 403)
-      }
-
       if (position.status !== 'open') {
         return c.json({ error: 'This position is not open for applications.' }, 400)
       }
