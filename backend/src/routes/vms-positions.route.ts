@@ -24,6 +24,7 @@ import {
   reviewPositionApplicationSchema,
   updatePositionSchema,
 } from '../schemas/vms-position.schema'
+import { notifyPositionApplicationReviewed, notifyPositionApplicationSubmitted } from '../services/position-notification.service'
 import type { AppBindings } from '../types/bindings'
 
 export const vmsPositionsRoute = new Hono<{ Bindings: AppBindings }>()
@@ -301,7 +302,18 @@ vmsPositionsRoute.post(
         return c.json({ error: 'You have already applied to this position.' }, 409)
       }
 
-      const displayNameMap = await getUserDisplayNamesByMembershipNumbers(c.env.MEMBERS_DB, [membershipNumber])
+      const displayNameMap = await getUserDisplayNamesByMembershipNumbers(c.env.MEMBERS_DB, [membershipNumber, position.createdBy])
+
+      await notifyPositionApplicationSubmitted(c.env, {
+        frontendBaseUrl: c.env.FRONTEND_BASE_URL,
+        projectId: position.projectId,
+        projectName: position.projectName,
+        positionId: position.id,
+        positionName: position.name,
+        applicantMembershipNumber: membershipNumber,
+        applicantDisplayName: displayNameMap.get(membershipNumber) ?? membershipNumber,
+        ownerMembershipNumber: position.createdBy,
+      })
 
       return c.json(
         {
@@ -378,6 +390,16 @@ vmsPositionsRoute.put(
         updated.membershipNumber,
         updated.reviewedBy ?? actorMembershipNumber,
       ])
+
+      await notifyPositionApplicationReviewed(c.env, {
+        frontendBaseUrl: c.env.FRONTEND_BASE_URL,
+        projectId: position.projectId,
+        projectName: position.projectName,
+        positionId: position.id,
+        positionName: position.name,
+        applicantMembershipNumber: updated.membershipNumber,
+        decision: updated.status,
+      })
 
       return c.json({
         position: enriched[0],
