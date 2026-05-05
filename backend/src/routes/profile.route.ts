@@ -8,25 +8,37 @@ const profileParamsSchema = z.object({
   membershipNumber: z.string().trim().min(1),
 })
 
+const nullableStringField = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+  z.string().nullable().optional(),
+)
+
 const updateProfileSchema = z.object({
-  enName: z.string().optional(),
-  arName: z.string().optional(),
-  sex: z.enum(['male', 'female']).optional(),
-  dateOfBirth: z.string().optional(),
-  country: z.string().optional(),
-  region: z.string().optional(),
-  city: z.string().optional(),
-  address: z.string().optional(),
-  educationLevel: z.string().optional(),
-  school: z.string().optional(),
+  enName: nullableStringField,
+  arName: nullableStringField,
+  phoneNumber: nullableStringField,
+  sex: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+    z.enum(['male', 'female']).nullable().optional(),
+  ),
+  dateOfBirth: nullableStringField,
+  country: nullableStringField,
+  region: nullableStringField,
+  city: nullableStringField,
+  address: nullableStringField,
+  educationLevel: nullableStringField,
+  school: nullableStringField,
   graduationYear: z.number().optional(),
-  fieldOfStudy: z.string().optional(),
-  bloodType: z.string().optional(),
-  socialMediaLinks: z.string().optional(),
-  biography: z.string().optional(),
-  interests: z.string().optional(),
-  skills: z.string().optional(),
-  languages: z.string().optional(),
+  fieldOfStudy: nullableStringField,
+  bloodType: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+    z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']).nullable().optional(),
+  ),
+  socialMediaLinks: nullableStringField,
+  biography: nullableStringField,
+  interests: nullableStringField,
+  skills: nullableStringField,
+  languages: nullableStringField,
 })
 
 export const profileRoute = new Hono<{ Bindings: AppBindings }>()
@@ -67,6 +79,16 @@ profileRoute.put(
       return c.json({ profile })
     } catch (error) {
       console.error('Failed to update profile', error)
+      const message = error instanceof Error ? error.message : ''
+
+      if (message.includes('UNIQUE constraint failed: user_info.phone_number')) {
+        return c.json({ error: 'Phone number is already used by another member.' }, 409)
+      }
+
+      if (message.includes('CHECK constraint failed')) {
+        return c.json({ error: 'One or more profile fields contain invalid values.' }, 400)
+      }
+
       return c.json({ error: 'Could not update profile.' }, 500)
     }
   },
