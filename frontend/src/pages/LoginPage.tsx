@@ -58,7 +58,7 @@ export function LoginPage() {
               استخدم بريدك الإلكتروني وكلمة المرور للوصول إلى لوحة التحكّم.
             </p>
             <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-cyan-50">
-              لسع عضواً في تجمّع إبتكار؟{' '}
+              لست عضواً في تجمّع إبتكار؟{' '}
               {' '}
               <Link to="/registration" className="font-semibold text-amber-200 underline-offset-4 hover:underline">
                 قم بالانتساب للتجمّع الآن

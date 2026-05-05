@@ -1,3 +1,4 @@
 .agents
 skills-lock.json
-copilot-instructions.md
+*.md
+!README.md
