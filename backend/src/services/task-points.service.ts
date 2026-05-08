@@ -42,6 +42,35 @@ async function applyPointsDelta({ membersDb, vmsDb, taskId, membershipNumber, de
   await addToUserPointBalance(membersDb, membershipNumber, delta)
 }
 
+/**
+ * For each member with a non-zero net sum of `task_reward` rows for this task,
+ * inserts one new row with amount = -sum and applies the same delta to `point_balance`.
+ */
+async function reverseNetTaskRewardsForTask(
+  membersDb: D1DatabaseLike,
+  vmsDb: D1DatabaseLike,
+  taskId: string,
+) {
+  const existingRewards = await listPointTransactionsByTask(vmsDb, taskId, 'task_reward')
+  const sumsByMember = new Map<string, number>()
+  for (const tx of existingRewards) {
+    sumsByMember.set(tx.membershipNumber, (sumsByMember.get(tx.membershipNumber) ?? 0) + tx.amount)
+  }
+
+  for (const [member, sum] of sumsByMember) {
+    if (sum === 0) {
+      continue
+    }
+    await applyPointsDelta({
+      membersDb,
+      vmsDb,
+      taskId,
+      membershipNumber: member,
+      delta: -sum,
+    })
+  }
+}
+
 function pickRecipient(state: TaskPointsState): string | null {
   const completedBy = state.completedBy?.trim()
   if (completedBy) {
@@ -69,17 +98,13 @@ function effectiveAward(state: TaskPointsState | null): number {
 }
 
 /**
- * Reconciles task_reward point transactions and the recipient's `users.point_balance`
- * with the current completion state of a task.
+ * Reconciles `task_reward` rows and the recipient's `users.point_balance` with task state.
  *
- * The trigger is `status === 'completed'`. Recipient resolution prefers `completed_by`
- * (the explicit "who completed it" audit column) and falls back to `assigned_to`.
+ * Triggers on `status === 'completed'`. Recipient: `completed_by` then `assigned_to`.
  *
- * Cases handled:
- *  - status flips to 'completed': credit `task.points` to `completed_by ?? assigned_to`
- *  - status flips away from 'completed': reverse all prior task_reward credits for the task
- *  - `points` changes while completed: insert a delta transaction so total awarded == new points
- *  - recipient changes while completed (rare): reverse prior recipients, then credit the new one
+ * - completed → not completed: one new negative `task_reward` per member (net), balance reduced
+ * - not completed → completed: credit to match `points`
+ * - still completed: delta if `points` or recipient changed
  */
 export async function syncTaskCompletionPoints(
   membersDb: D1DatabaseLike,
@@ -90,7 +115,12 @@ export async function syncTaskCompletionPoints(
   const wasCompleted = isCompleted(before)
   const completedNow = isCompleted(after)
 
-  if (!wasCompleted && !completedNow) {
+  if (wasCompleted && !completedNow) {
+    await reverseNetTaskRewardsForTask(membersDb, vmsDb, after.id)
+    return
+  }
+
+  if (!completedNow) {
     return
   }
 
@@ -98,22 +128,6 @@ export async function syncTaskCompletionPoints(
   const sumsByMember = new Map<string, number>()
   for (const tx of existingRewards) {
     sumsByMember.set(tx.membershipNumber, (sumsByMember.get(tx.membershipNumber) ?? 0) + tx.amount)
-  }
-
-  if (!completedNow) {
-    for (const [member, sum] of sumsByMember) {
-      if (sum === 0) {
-        continue
-      }
-      await applyPointsDelta({
-        membersDb,
-        vmsDb,
-        taskId: after.id,
-        membershipNumber: member,
-        delta: -sum,
-      })
-    }
-    return
   }
 
   const recipient = pickRecipient(after)
