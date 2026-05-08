@@ -7,11 +7,14 @@ import type { D1DatabaseLike } from '../types/bindings'
 
 export interface TaskPointsState {
   id: string
+  status: string
   points: number
   assignedTo: string | null
   completedBy: string | null
   approvedBy: string | null
 }
+
+const COMPLETED_STATUS = 'completed'
 
 interface ApplyDeltaParams {
   membersDb: D1DatabaseLike
@@ -49,8 +52,12 @@ function pickRecipient(state: TaskPointsState): string | null {
   return assignedTo || null
 }
 
+function isCompleted(state: TaskPointsState | null): boolean {
+  return state?.status === COMPLETED_STATUS
+}
+
 function effectiveAward(state: TaskPointsState | null): number {
-  if (!state || !state.approvedBy?.trim()) {
+  if (!isCompleted(state) || !state) {
     return 0
   }
 
@@ -63,13 +70,16 @@ function effectiveAward(state: TaskPointsState | null): number {
 
 /**
  * Reconciles task_reward point transactions and the recipient's `users.point_balance`
- * with the current approval state of a task.
+ * with the current completion state of a task.
+ *
+ * The trigger is `status === 'completed'`. Recipient resolution prefers `completed_by`
+ * (the explicit "who completed it" audit column) and falls back to `assigned_to`.
  *
  * Cases handled:
- *  - approval flips null -> set: credit `task.points` to `completed_by ?? assigned_to`
- *  - approval flips set -> null (rejection): reverse all prior task_reward credits for the task
- *  - `points` changes while approved: insert a delta transaction so total awarded == new points
- *  - recipient changes while approved (rare): reverse prior recipients, then credit the new one
+ *  - status flips to 'completed': credit `task.points` to `completed_by ?? assigned_to`
+ *  - status flips away from 'completed': reverse all prior task_reward credits for the task
+ *  - `points` changes while completed: insert a delta transaction so total awarded == new points
+ *  - recipient changes while completed (rare): reverse prior recipients, then credit the new one
  */
 export async function syncTaskCompletionPoints(
   membersDb: D1DatabaseLike,
@@ -77,10 +87,10 @@ export async function syncTaskCompletionPoints(
   before: TaskPointsState | null,
   after: TaskPointsState,
 ): Promise<void> {
-  const wasApproved = Boolean(before?.approvedBy?.trim())
-  const isApproved = Boolean(after.approvedBy?.trim())
+  const wasCompleted = isCompleted(before)
+  const completedNow = isCompleted(after)
 
-  if (!wasApproved && !isApproved) {
+  if (!wasCompleted && !completedNow) {
     return
   }
 
@@ -90,7 +100,7 @@ export async function syncTaskCompletionPoints(
     sumsByMember.set(tx.membershipNumber, (sumsByMember.get(tx.membershipNumber) ?? 0) + tx.amount)
   }
 
-  if (!isApproved) {
+  if (!completedNow) {
     for (const [member, sum] of sumsByMember) {
       if (sum === 0) {
         continue

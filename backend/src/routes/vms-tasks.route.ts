@@ -11,6 +11,7 @@ import type { AppBindings } from '../types/bindings'
 
 function toPointsState(task: {
   id: string
+  status: string
   points: number
   assignedTo: string | null
   completedBy: string | null
@@ -18,6 +19,7 @@ function toPointsState(task: {
 }): TaskPointsState {
   return {
     id: task.id,
+    status: task.status,
     points: task.points,
     assignedTo: task.assignedTo,
     completedBy: task.completedBy,
@@ -153,6 +155,17 @@ vmsTasksRoute.put(
       }
 
       const projectOwnerProfile = await getUserProfileByMembershipNumber(c.env.MEMBERS_DB, project.owner)
+
+      // Auto-stamp the completion audit columns when status is being flipped to 'completed'.
+      // Keeps `completed_by` / `completed_at` meaningful even when the UI only sends `{ status }`.
+      if (payload.status === 'completed' && existing.status !== 'completed') {
+        if (payload.completedBy === undefined && !existing.completedBy) {
+          payload.completedBy = membershipNumber
+        }
+        if (payload.completedAt === undefined && !existing.completedAt) {
+          payload.completedAt = new Date().toISOString()
+        }
+      }
 
       const task = await updateTaskById(c.env.VMS_DB, id, payload)
 
