@@ -45,6 +45,23 @@ export async function getPointTransactionById(db: D1DatabaseLike, id: string) {
   return row ? mapPointTransactionRow(row) : null
 }
 
+export async function listPointTransactionsByTask(
+  db: D1DatabaseLike,
+  taskId: string,
+  type?: string,
+) {
+  const baseQuery =
+    'SELECT id, created_at, updated_at, membership_number, task_id, amount, type FROM points_transactions WHERE task_id = ?'
+  const query = type ? `${baseQuery} AND type = ? ORDER BY created_at ASC` : `${baseQuery} ORDER BY created_at ASC`
+
+  const statement = db.prepare(query)
+  const result = type
+    ? await statement.bind(taskId, type).all<PointTransactionRow>()
+    : await statement.bind(taskId).all<PointTransactionRow>()
+
+  return result.results.map(mapPointTransactionRow)
+}
+
 export async function createPointTransaction(db: D1DatabaseLike, id: string, input: CreatePointTransactionInput) {
   await db
     .prepare('INSERT INTO points_transactions (id, membership_number, task_id, amount, type) VALUES (?, ?, ?, ?, ?)')

@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    role TEXT NOT NULL DEFAULT 'member'
+    role TEXT NOT NULL DEFAULT 'member',
+    point_balance INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TRIGGER IF NOT EXISTS update_user_updated_at AFTER UPDATE ON users

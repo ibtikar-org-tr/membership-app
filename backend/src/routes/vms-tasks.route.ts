@@ -5,8 +5,25 @@ import { createTask, deleteTaskById, getTaskById, listTasks, updateTaskById } fr
 import { getUserProfileByMembershipNumber } from '../repositories/user-info.repository'
 import { createTaskSchema, taskParamsSchema, updateTaskSchema } from '../schemas/vms-task.schema'
 import { notifyAssignedTask } from '../services/task-assignment-notification.service'
+import { syncTaskCompletionPoints, type TaskPointsState } from '../services/task-points.service'
 
 import type { AppBindings } from '../types/bindings'
+
+function toPointsState(task: {
+  id: string
+  points: number
+  assignedTo: string | null
+  completedBy: string | null
+  approvedBy: string | null
+}): TaskPointsState {
+  return {
+    id: task.id,
+    points: task.points,
+    assignedTo: task.assignedTo,
+    completedBy: task.completedBy,
+    approvedBy: task.approvedBy,
+  }
+}
 
 export const vmsTasksRoute = new Hono<{ Bindings: AppBindings }>()
 
@@ -78,6 +95,16 @@ vmsTasksRoute.post('/tasks', zValidator('json', createTaskSchema), async (c) => 
     const taskId = crypto.randomUUID()
     const task = await createTask(c.env.VMS_DB, taskId, payload)
 
+    if (!task) {
+      return c.json({ error: 'Could not create task.' }, 500)
+    }
+
+    try {
+      await syncTaskCompletionPoints(c.env.MEMBERS_DB, c.env.VMS_DB, null, toPointsState(task))
+    } catch (pointsError) {
+      console.error('Failed to sync task completion points on create', pointsError)
+    }
+
     if (payload.assignedTo?.trim()) {
       await notifyAssignedTask(c.env, {
         assignedTo: payload.assignedTo,
@@ -128,6 +155,21 @@ vmsTasksRoute.put(
       const projectOwnerProfile = await getUserProfileByMembershipNumber(c.env.MEMBERS_DB, project.owner)
 
       const task = await updateTaskById(c.env.VMS_DB, id, payload)
+
+      if (!task) {
+        return c.json({ error: 'Task not found.' }, 404)
+      }
+
+      try {
+        await syncTaskCompletionPoints(
+          c.env.MEMBERS_DB,
+          c.env.VMS_DB,
+          toPointsState(existing),
+          toPointsState(task),
+        )
+      } catch (pointsError) {
+        console.error('Failed to sync task completion points on update', pointsError)
+      }
 
       const newAssignee = payload.assignedTo?.trim()
       const currentAssignee = existing.assignedTo?.trim()
