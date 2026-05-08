@@ -16,6 +16,8 @@ export interface TaskPointsState {
 
 const COMPLETED_STATUS = 'completed'
 
+const TASK_REWARD_TYPES = ['task_reward', 'task_reward_reversal'] as const
+
 interface ApplyDeltaParams {
   membersDb: D1DatabaseLike
   vmsDb: D1DatabaseLike
@@ -29,33 +31,40 @@ async function applyPointsDelta({ membersDb, vmsDb, taskId, membershipNumber, de
     return
   }
 
+  const amount = Math.trunc(delta)
   const transactionId = crypto.randomUUID()
+  const type = amount > 0 ? 'task_reward' : 'task_reward_reversal'
 
   // Audit row first; if balance update fails we still have a record to reconcile from.
   await createPointTransaction(vmsDb, transactionId, {
     membershipNumber,
     taskId,
-    amount: Math.trunc(delta),
-    type: 'task_reward',
+    amount,
+    type,
   })
 
-  await addToUserPointBalance(membersDb, membershipNumber, delta)
+  await addToUserPointBalance(membersDb, membershipNumber, amount)
+}
+
+async function getNetRewardSumsByMember(vmsDb: D1DatabaseLike, taskId: string): Promise<Map<string, number>> {
+  const existing = await listPointTransactionsByTask(vmsDb, taskId, [...TASK_REWARD_TYPES])
+  const sums = new Map<string, number>()
+  for (const tx of existing) {
+    sums.set(tx.membershipNumber, (sums.get(tx.membershipNumber) ?? 0) + tx.amount)
+  }
+  return sums
 }
 
 /**
- * For each member with a non-zero net sum of `task_reward` rows for this task,
- * inserts one new row with amount = -sum and applies the same delta to `point_balance`.
+ * For each member with a non-zero net of award + reversal rows for this task,
+ * inserts a new `task_reward_reversal` row with amount = -sum and decrements `point_balance`.
  */
 async function reverseNetTaskRewardsForTask(
   membersDb: D1DatabaseLike,
   vmsDb: D1DatabaseLike,
   taskId: string,
 ) {
-  const existingRewards = await listPointTransactionsByTask(vmsDb, taskId, 'task_reward')
-  const sumsByMember = new Map<string, number>()
-  for (const tx of existingRewards) {
-    sumsByMember.set(tx.membershipNumber, (sumsByMember.get(tx.membershipNumber) ?? 0) + tx.amount)
-  }
+  const sumsByMember = await getNetRewardSumsByMember(vmsDb, taskId)
 
   for (const [member, sum] of sumsByMember) {
     if (sum === 0) {
@@ -98,13 +107,19 @@ function effectiveAward(state: TaskPointsState | null): number {
 }
 
 /**
- * Reconciles `task_reward` rows and the recipient's `users.point_balance` with task state.
+ * Reconciles `task_reward` / `task_reward_reversal` rows and the recipient's
+ * `users.point_balance` with the task's current state.
  *
  * Triggers on `status === 'completed'`. Recipient: `completed_by` then `assigned_to`.
  *
- * - completed → not completed: one new negative `task_reward` per member (net), balance reduced
- * - not completed → completed: credit to match `points`
- * - still completed: delta if `points` or recipient changed
+ * - completed → not completed: one new `task_reward_reversal` row per member
+ *   (amount = -net), and `point_balance` decremented by the same amount.
+ * - not completed → completed: a `task_reward` credit to match `points`.
+ * - still completed: a delta row if `points` or recipient changed (positives go
+ *   in as `task_reward`, negatives as `task_reward_reversal`).
+ *
+ * All sums are computed across both `task_reward` and `task_reward_reversal`,
+ * so toggling the task on and off repeatedly stays balanced.
  */
 export async function syncTaskCompletionPoints(
   membersDb: D1DatabaseLike,
@@ -124,11 +139,7 @@ export async function syncTaskCompletionPoints(
     return
   }
 
-  const existingRewards = await listPointTransactionsByTask(vmsDb, after.id, 'task_reward')
-  const sumsByMember = new Map<string, number>()
-  for (const tx of existingRewards) {
-    sumsByMember.set(tx.membershipNumber, (sumsByMember.get(tx.membershipNumber) ?? 0) + tx.amount)
-  }
+  const sumsByMember = await getNetRewardSumsByMember(vmsDb, after.id)
 
   const recipient = pickRecipient(after)
   const targetAmount = effectiveAward(after)

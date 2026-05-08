@@ -162,5 +162,5 @@ export interface VmsPointTransaction {
   membershipNumber: string
   taskId: string | null
   amount: number
-  type: 'task_reward' | 'purchase' | 'event_attendance' | 'other' | string
+  type: 'task_reward' | 'task_reward_reversal' | 'purchase' | 'event_attendance' | 'other' | string
 }

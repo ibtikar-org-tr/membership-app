@@ -48,16 +48,26 @@ export async function getPointTransactionById(db: D1DatabaseLike, id: string) {
 export async function listPointTransactionsByTask(
   db: D1DatabaseLike,
   taskId: string,
-  type?: string,
+  type?: string | string[],
 ) {
   const baseQuery =
     'SELECT id, created_at, updated_at, membership_number, task_id, amount, type FROM points_transactions WHERE task_id = ?'
-  const query = type ? `${baseQuery} AND type = ? ORDER BY created_at ASC` : `${baseQuery} ORDER BY created_at ASC`
 
-  const statement = db.prepare(query)
-  const result = type
-    ? await statement.bind(taskId, type).all<PointTransactionRow>()
-    : await statement.bind(taskId).all<PointTransactionRow>()
+  if (!type) {
+    const result = await db.prepare(`${baseQuery} ORDER BY created_at ASC`).bind(taskId).all<PointTransactionRow>()
+    return result.results.map(mapPointTransactionRow)
+  }
+
+  const types = Array.isArray(type) ? type : [type]
+  if (types.length === 0) {
+    return []
+  }
+
+  const placeholders = types.map(() => '?').join(', ')
+  const result = await db
+    .prepare(`${baseQuery} AND type IN (${placeholders}) ORDER BY created_at ASC`)
+    .bind(taskId, ...types)
+    .all<PointTransactionRow>()
 
   return result.results.map(mapPointTransactionRow)
 }
