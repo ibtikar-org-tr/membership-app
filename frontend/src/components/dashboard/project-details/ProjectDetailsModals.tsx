@@ -18,13 +18,23 @@ function skillsToCsv(skills: Record<string, string> | null | undefined) {
 
 interface ProjectSettingsModalProps {
   project: VmsProject
+  isProjectOwner: boolean
+  ownershipTransferOptions: VmsProjectMember[]
   isSaving: boolean
   saveError: string | null
   onClose: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }
 
-export function ProjectSettingsModal({ project, isSaving, saveError, onClose, onSubmit }: ProjectSettingsModalProps) {
+export function ProjectSettingsModal({
+  project,
+  isProjectOwner,
+  ownershipTransferOptions,
+  isSaving,
+  saveError,
+  onClose,
+  onSubmit,
+}: ProjectSettingsModalProps) {
   const [skillsValue, setSkillsValue] = useState(() => skillsToCsv(project.skills))
 
   return (
@@ -82,6 +92,33 @@ export function ProjectSettingsModal({ project, isSaving, saveError, onClose, on
             onChange={setSkillsValue}
             placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
           />
+          {isProjectOwner ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+              <p className="text-xs font-semibold text-amber-950">نقل ملكية المشروع</p>
+              <p className="mt-1 text-xs text-amber-900/80">
+                يمكنك تسليم المشروع لعضو مسجّل فيه. سيُحفظ لك دور &quot;عضو&quot; إن لم تكن مضافًا في قائمة الأعضاء.
+              </p>
+              {ownershipTransferOptions.length > 0 ? (
+                <label className="mt-3 block">
+                  <span className="mb-1 block text-xs font-medium text-amber-950/90">المالك الجديد (اختياري)</span>
+                  <select
+                    name="transferOwnerTo"
+                    defaultValue=""
+                    className="w-full rounded-2xl border border-amber-300/80 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-100"
+                  >
+                    <option value="">— بدون تغيير —</option>
+                    {ownershipTransferOptions.map((member) => (
+                      <option key={member.membershipNumber} value={member.membershipNumber}>
+                        {member.displayName} ({member.membershipNumber})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <p className="mt-2 text-xs text-amber-900/75">أضف عضوًا آخر إلى المشروع لتتمكن من نقل الملكية.</p>
+              )}
+            </div>
+          ) : null}
           <button
             type="submit"
             disabled={isSaving}

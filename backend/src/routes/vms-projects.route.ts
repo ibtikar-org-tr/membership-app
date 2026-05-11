@@ -11,7 +11,7 @@ import {
   listProjectsForMemberWithRedactedNames,
   updateProjectById,
 } from '../repositories/vms-projects.repository'
-import { getProjectMember } from '../repositories/vms-project-members.repository'
+import { createProjectMember, getProjectMember } from '../repositories/vms-project-members.repository'
 import { createProjectSchema, projectParamsSchema, updateProjectSchema } from '../schemas/vms-project.schema'
 import type { AppBindings } from '../types/bindings'
 
@@ -174,11 +174,46 @@ vmsProjectsRoute.put(
         return c.json({ error: 'Project not found.' }, 404)
       }
 
+      const projectBefore = authorization.project
+      let bodyForUpdate = { ...payload }
+
+      if (payload.owner !== undefined) {
+        if (projectBefore.owner !== membershipNumber) {
+          return c.json({ error: 'فقط مالك المشروع يمكنه نقل الملكية.' }, 403)
+        }
+
+        const nextOwner = payload.owner.trim()
+
+        if (nextOwner === projectBefore.owner) {
+          const { owner: _removed, ...rest } = bodyForUpdate
+          bodyForUpdate = rest
+        } else {
+          const nextOwnerMembership = await getProjectMember(c.env.VMS_DB, id, nextOwner)
+          if (!nextOwnerMembership) {
+            return c.json({ error: 'يجب أن يكون المالك الجديد عضوًا مسجّلًا في المشروع.' }, 400)
+          }
+        }
+      }
+
       if (!authorization.isAuthorized) {
         return c.json({ error: 'Only project owner or managers can update project settings.' }, 403)
       }
 
-      const project = await updateProjectById(c.env.VMS_DB, id, payload)
+      const transferringTo =
+        bodyForUpdate.owner !== undefined ? bodyForUpdate.owner.trim() : null
+
+      if (transferringTo && transferringTo !== projectBefore.owner) {
+        const formerOwnerMembership = await getProjectMember(c.env.VMS_DB, id, projectBefore.owner)
+        if (!formerOwnerMembership) {
+          await createProjectMember(c.env.VMS_DB, {
+            projectId: id,
+            membershipNumber: projectBefore.owner,
+            role: 'member',
+          })
+        }
+      }
+
+      const project = await updateProjectById(c.env.VMS_DB, id, bodyForUpdate)
       return c.json({ project })
     } catch (error) {
       console.error('Failed to update project', error)
