@@ -2,7 +2,13 @@ import { z } from 'zod'
 
 const requiredTrimmedString = z.string().trim().min(1)
 
-export const pointTransactionTypeSchema = z.enum(['task_reward', 'purchase', 'event_attendance', 'other'])
+export const pointTransactionTypeSchema = z.enum([
+  'task_reward',
+  'task_reward_reversal',
+  'purchase',
+  'event_attendance',
+  'other',
+])
 
 export const createPointTransactionSchema = z.object({
   membershipNumber: requiredTrimmedString,

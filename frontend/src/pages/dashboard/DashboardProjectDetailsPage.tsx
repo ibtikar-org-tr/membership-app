@@ -187,6 +187,17 @@ export function DashboardProjectDetailsPage() {
     const currentMembershipNumber = user.membershipNumber
     return project.owner === currentMembershipNumber || projectManagerMembershipNumbers.has(currentMembershipNumber)
   }, [project, projectManagerMembershipNumbers, user])
+  const isProjectOwner = useMemo(() => {
+    if (!project || !user) {
+      return false
+    }
+
+    return project.owner === user.membershipNumber
+  }, [project, user])
+  const ownershipTransferOptions = useMemo(
+    () => projectMembers.filter((member) => member.membershipNumber !== project?.owner),
+    [projectMembers, project?.owner],
+  )
   const canManageProject = canManageProjectMembers
   const canCreateTask = useMemo(() => {
     if (!project || !user) {
@@ -236,6 +247,7 @@ export function DashboardProjectDetailsPage() {
 
     const formData = new FormData(event.currentTarget)
     const name = String(formData.get('name') ?? '').trim()
+    const transferOwnerTo = String(formData.get('transferOwnerTo') ?? '').trim()
     const description = String(formData.get('description') ?? '').trim()
     const telegramGroupId = String(formData.get('telegramGroupId') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? project.status).trim()
@@ -267,12 +279,15 @@ export function DashboardProjectDetailsPage() {
     try {
       const payload = await updateProject(projectID, {
         name,
+        ...(transferOwnerTo ? { owner: transferOwnerTo } : {}),
         ...(description ? { description } : {}),
         ...(telegramGroupId ? { telegramGroupId } : {}),
         status,
         ...(skills ? { skills } : {}),
       }, user.membershipNumber)
       setProject(payload.project)
+      const membersPayload = await fetchProjectMembers(projectID)
+      setProjectMembers(membersPayload.projectMembers)
       setIsProjectSettingsOpen(false)
     } catch (requestError) {
       if (requestError instanceof Error) {
@@ -522,6 +537,8 @@ export function DashboardProjectDetailsPage() {
       {isProjectSettingsOpen ? (
         <ProjectSettingsModal
           project={project}
+          isProjectOwner={isProjectOwner}
+          ownershipTransferOptions={ownershipTransferOptions}
           isSaving={isSaving}
           saveError={saveError}
           onClose={() => setIsProjectSettingsOpen(false)}

@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS points_transactions (
     membership_number TEXT NOT NULL, -- membership_number of the user whose points are being changed
     task_id TEXT, -- task_id associated with the points change (can be NULL for non-task-related transactions)
     amount INTEGER NOT NULL,
-    type TEXT NOT NULL -- "task_reward", "purchase", "event_attendance", "other"
+    type TEXT NOT NULL -- "task_reward", "task_reward_reversal", "purchase", "event_attendance", "other"
 );
 
 CREATE TRIGGER IF NOT EXISTS update_points_transaction_updated_at AFTER UPDATE ON points_transactions

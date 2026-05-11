@@ -59,3 +59,30 @@ export async function updateUserPasswordHash(
     .bind(passwordHash, membershipNumber)
     .run()
 }
+
+export async function addToUserPointBalance(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+  delta: number,
+): Promise<void> {
+  if (!Number.isFinite(delta) || delta === 0) {
+    return
+  }
+
+  await db
+    .prepare('UPDATE users SET point_balance = point_balance + ? WHERE membership_number = ?')
+    .bind(Math.trunc(delta), membershipNumber.trim())
+    .run()
+}
+
+export async function getUserPointBalance(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+): Promise<number | null> {
+  const row = await db
+    .prepare('SELECT point_balance FROM users WHERE membership_number = ? LIMIT 1')
+    .bind(membershipNumber.trim())
+    .first<{ point_balance: number }>()
+
+  return row?.point_balance ?? null
+}
