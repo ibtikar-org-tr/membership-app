@@ -10,9 +10,3 @@ export function validateEmail(email: string): boolean {
 export function sanitizeInput(input: string): string {
   return input.trim().toLowerCase();
 }
-
-export function escapeMarkdownV2(text: string): string {
-  // Escape special characters for Telegram's MarkdownV2 format
-  // Characters that need to be escaped: _ * [ ] ( ) ~ ` > # + - = | { } . !
-  return text.replace(/[\_\*\[\]\(\)\~\`\>\#\+\-\=\|\{\}\.\!]/g, '\\$&');
-}

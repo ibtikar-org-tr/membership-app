@@ -7,7 +7,6 @@ import { TelegramUserStateService } from '../crud/telegram-user-state';
 import { AllMessagesPrivateCrud } from '../crud/all-messages-private';
 import { AllMessagesGroupsCrud } from '../crud/all-messages-groups';
 import { D1DatabaseConnection } from '../crud/database';
-import { escapeMarkdownV2 } from '../utils/helpers';
 import LLMService from '../services/ai-services/deepseek';
 import { AI_CONFIG } from '../utils/ai-config';
 import { GroupServices } from '../services/group-services';
@@ -49,12 +48,12 @@ telegram.post('/webhook', async (c) => {
             await telegramService.editMessage(
               telegramId,
               messageId,
-              `✅ تم التحقق من اشتراكك بنجاح\\!\n\nالآن يرجى إدخال رقم العضوية للتحقق من عضويتك`
+              `✅ تم التحقق من اشتراكك بنجاح!\n\nالآن يرجى إدخال رقم العضوية للتحقق من عضويتك`
             );
           } else {
             await telegramService.sendMessage(
               telegramId,
-              `✅ تم التحقق من اشتراكك بنجاح\\!\n\nالآن يرجى إدخال رقم العضوية للتحقق من عضويتك`
+              `✅ تم التحقق من اشتراكك بنجاح!\n\nالآن يرجى إدخال رقم العضوية للتحقق من عضويتك`
             );
           }
 
@@ -176,26 +175,25 @@ telegram.post('/webhook', async (c) => {
         const description = chatInfo?.description || null;
         const forumEnabled = Boolean(chatInfo?.is_forum || message.chat.is_forum);
 
-        let infoMessage = '*Group Info*\n\n';
-        infoMessage += `*Title:* ${escapeMarkdownV2(title)}\n`;
-        infoMessage += `*Chat ID:* ${escapeMarkdownV2(chatIdAsString)}\n`;
-        infoMessage += `*Type:* ${escapeMarkdownV2(type)}\n`;
-        infoMessage += `*Members:* ${escapeMarkdownV2(memberCount.toString())}\n`;
-        infoMessage += `*Admins:* ${escapeMarkdownV2(adminCount.toString())}\n`;
-        infoMessage += `*Forum Topics:* ${forumEnabled ? 'Enabled' : 'Disabled'}\n`;
+        let infoMessage = 'Group Info\n\n';
+        infoMessage += `Title: ${title}\n`;
+        infoMessage += `Chat ID: ${chatIdAsString}\n`;
+        infoMessage += `Type: ${type}\n`;
+        infoMessage += `Members: ${memberCount}\n`;
+        infoMessage += `Admins: ${adminCount}\n`;
+        infoMessage += `Forum Topics: ${forumEnabled ? 'Enabled' : 'Disabled'}\n`;
 
         if (username) {
-          infoMessage += `*Username:* @${escapeMarkdownV2(username)}\n`;
+          infoMessage += `Username: @${username}\n`;
         }
         if (description) {
-          infoMessage += `*Description:* ${escapeMarkdownV2(description)}\n`;
+          infoMessage += `Description: ${description}\n`;
         }
-
 
         await telegramService.sendMessage(
           chatId,
           infoMessage.trim(),
-          'MarkdownV2',
+          undefined,
           undefined,
           message.message_thread_id,
           message.message_id
@@ -251,7 +249,7 @@ telegram.post('/webhook', async (c) => {
         await userStateService.clearUserState(telegramId.toString());
         await telegramService.sendMessage(
           telegramId,
-          `أنت مسجل بالفعل برقم العضوية ${existingMember.membership_number}\n\nالاسم: ${escapeMarkdownV2(existingMember.en_name)}\n\nاستخدم /help لعرض الأوامر المتاحة`
+          `أنت مسجل بالفعل برقم العضوية ${existingMember.membership_number}\n\nالاسم: ${existingMember.en_name}\n\nاستخدم /help لعرض الأوامر المتاحة`
         );
         return c.json({ ok: true });
       }
@@ -279,8 +277,8 @@ telegram.post('/webhook', async (c) => {
 
         await telegramService.sendMessage(
           telegramId,
-          `للتحقق من عضويتك، يجب عليك أولاً الاشتراك في قناتنا الرسمية:\n\n${escapeMarkdownV2(channelLink)}\n\nبعد الاشتراك، اضغط على الزر أدناه للمتابعة`,
-          'MarkdownV2',
+          `للتحقق من عضويتك، يجب عليك أولاً الاشتراك في قناتنا الرسمية:\n\n${channelLink}\n\nبعد الاشتراك، اضغط على الزر أدناه للمتابعة`,
+          undefined,
           subscribeButton
         );
         return c.json({ ok: true });
@@ -309,22 +307,22 @@ telegram.post('/webhook', async (c) => {
       if (!existingMember) {
         await telegramService.sendMessage(
           telegramId,
-          'لم يتم العثور على معلومات العضوية\\. يرجى استخدام /verify لتسجيل حسابك'
+          'لم يتم العثور على معلومات العضوية. يرجى استخدام /verify لتسجيل حسابك'
         );
         return c.json({ ok: true });
       }
 
       // Build membership info message
       const infoText = `
-*معلومات العضوية* 📋
+معلومات العضوية 📋
 
-🆔 *رقم العضوية:* ${escapeMarkdownV2(existingMember.membership_number)}
-👤 *الاسم بالعربية:* ${escapeMarkdownV2(existingMember.ar_name || 'غير متوفر')}
-👤 *الاسم اللاتيني:* ${escapeMarkdownV2(existingMember.en_name || 'غير متوفر')}
-📧 *البريد الإلكتروني:* ${escapeMarkdownV2(existingMember.email || 'غير متوفر')}
-📱 *الهاتف:* ${escapeMarkdownV2(existingMember.phone || 'غير متوفر')}
+🆔 رقم العضوية: ${existingMember.membership_number}
+👤 الاسم بالعربية: ${existingMember.ar_name || 'غير متوفر'}
+👤 الاسم اللاتيني: ${existingMember.en_name || 'غير متوفر'}
+📧 البريد الإلكتروني: ${existingMember.email || 'غير متوفر'}
+📱 الهاتف: ${existingMember.phone || 'غير متوفر'}
 
-_هذه المعلومات مسجلة في نظامنا\\._
+هذه المعلومات مسجلة في نظامنا.
       `.trim();
 
       await telegramService.sendMessage(telegramId, infoText);
@@ -371,8 +369,8 @@ _هذه المعلومات مسجلة في نظامنا\\._
           try {
             // Send "Thinking..."
             const thinkingMessageId = await telegramService.sendMessage(
-              telegramId, 
-              '_جارٍ التفكير\\.\\.\\._'
+              telegramId,
+              '⏳ جارٍ التفكير...'
             );
 
             // Get today's conversation history for this user
@@ -435,11 +433,11 @@ _هذه المعلومات مسجلة في نظامنا\\._
               await telegramService.editMessage(
                 telegramId,
                 thinkingMessageId,
-                escapeMarkdownV2(aiResponse)
+                aiResponse
               );
             } else {
               // Fallback: send as new message if editing fails
-              await telegramService.sendMessage(telegramId, escapeMarkdownV2(aiResponse));
+              await telegramService.sendMessage(telegramId, aiResponse);
             }
           } catch (aiError) {
             console.error('AI error:', aiError);
@@ -477,7 +475,7 @@ async function handleMembershipNumberInput(
   if (!member) {
     await telegramService.sendMessage(
       telegramId,
-      'رقم العضوية غير موجود في قاعدة البيانات\\. يرجى التحقق من رقم عضويتك والمحاولة مرة أخرى\\، أو الاتصال بالدعم\\.\n\nاستخدم /help للأوامر المتاحة'
+      'رقم العضوية غير موجود في قاعدة البيانات. يرجى التحقق من رقم عضويتك والمحاولة مرة أخرى، أو الاتصال بالدعم.\n\nاستخدم /help للأوامر المتاحة'
     );
     // Clear state so user can try again or use other commands
     await userStateService.clearUserState(telegramId.toString());
@@ -488,7 +486,7 @@ async function handleMembershipNumberInput(
   if (!member.email) {
     await telegramService.sendMessage(
       telegramId,
-      'لم يتم العثور على عنوان بريد إلكتروني لهذه العضوية\\. يرجى الاتصال بالدعم لتحديث عنوان بريدك الإلكتروني'
+      'لم يتم العثور على عنوان بريد إلكتروني لهذه العضوية. يرجى الاتصال بالدعم لتحديث عنوان بريدك الإلكتروني'
     );
     await userStateService.clearUserState(telegramId.toString());
     return;
@@ -499,7 +497,7 @@ async function handleMembershipNumberInput(
   if (existingMember) {
     await telegramService.sendMessage(
       telegramId,
-      'حساب تيليجرام هذا مسجل بالفعل\\. يرجى الاتصال بالمسؤول إذا كنت بحاجة إلى مساعدة'
+      'حساب تيليجرام هذا مسجل بالفعل. يرجى الاتصال بالمسؤول إذا كنت بحاجة إلى مساعدة'
     );
     await userStateService.clearUserState(telegramId.toString());
     return;
@@ -509,7 +507,7 @@ async function handleMembershipNumberInput(
   if (member.telegram_id && member.telegram_id !== telegramId.toString()) {
     await telegramService.sendMessage(
       telegramId,
-      'رقم العضوية هذا مسجل بالفعل مع حساب تيليجرام آخر\\. إذا كنت تعتقد أن هذا خطأ\\، يرجى الاتصال بالدعم للحصول على المساعدة'
+      'رقم العضوية هذا مسجل بالفعل مع حساب تيليجرام آخر. إذا كنت تعتقد أن هذا خطأ، يرجى الاتصال بالدعم للحصول على المساعدة'
     );
     await userStateService.clearUserState(telegramId.toString());
     return;
@@ -534,7 +532,7 @@ async function handleMembershipNumberInput(
   
   await telegramService.sendMessage(
     telegramId,
-    `تم إرسال بريد التحقق إلى ${escapeMarkdownV2(maskedEmail)}\n\nيمكنك:\n1\\. إدخال الرمز المكون من 6 أرقام من البريد الإلكتروني هنا في المحادثة\n2\\. النقر على رابط التحقق في البريد الإلكتروني\n\nسينتهي صلاحية الرمز خلال 10 دقائق`
+    `تم إرسال بريد التحقق إلى ${maskedEmail}\n\nيمكنك:\n1. إدخال الرمز المكون من 6 أرقام من البريد الإلكتروني هنا في المحادثة\n2. النقر على رابط التحقق في البريد الإلكتروني\n\nسينتهي صلاحية الرمز خلال 10 دقائق`
   );
 }
 
@@ -554,7 +552,7 @@ async function handleVerificationCodeInput(
   if (!stateNotes) {
     await telegramService.sendMessage(
       telegramId,
-      'انتهت صلاحية جلسة التحقق أو لم يتم العثور عليها\\. يرجى استخدام /verify للبدء من جديد'
+      'انتهت صلاحية جلسة التحقق أو لم يتم العثور عليها. يرجى استخدام /verify للبدء من جديد'
     );
     await userStateService.clearUserState(telegramId.toString());
     return;
@@ -567,7 +565,7 @@ async function handleVerificationCodeInput(
   if (code !== storedCode) {
     await telegramService.sendMessage(
       telegramId,
-      'رمز التحقق غير صحيح\\. يرجى التحقق والمحاولة مرة أخرى\\، أو استخدام الرابط من بريدك الإلكتروني\n\nاستخدم /verify لطلب رمز جديد'
+      'رمز التحقق غير صحيح. يرجى التحقق والمحاولة مرة أخرى، أو استخدام الرابط من بريدك الإلكتروني\n\nاستخدم /verify لطلب رمز جديد'
     );
     // Don't clear state - let user try again or wait for timeout
     return;
@@ -579,7 +577,7 @@ async function handleVerificationCodeInput(
   if (!member) {
     await telegramService.sendMessage(
       telegramId,
-      'لم يتم العثور على العضو\\. يرجى الاتصال بالدعم'
+      'لم يتم العثور على العضو. يرجى الاتصال بالدعم'
     );
     await userStateService.clearUserState(telegramId.toString());
     return;
@@ -590,7 +588,7 @@ async function handleVerificationCodeInput(
   if (existingMember) {
     await telegramService.sendMessage(
       telegramId,
-      'حساب تيليجرام هذا مسجل بالفعل\\. يرجى الاتصال بالمسؤول'
+      'حساب تيليجرام هذا مسجل بالفعل. يرجى الاتصال بالمسؤول'
     );
     await userStateService.clearUserState(telegramId.toString());
     return;
@@ -609,7 +607,7 @@ async function handleVerificationCodeInput(
   // Send confirmation message
   await telegramService.sendMessage(
     telegramId,
-    `✅ تم التحقق بنجاح\\!\n\nأنت الآن مسجل لتلقي الرسائل من منظمتنا\\.\n\nعضويتك: ${escapeMarkdownV2(member.en_name)} \\- ${escapeMarkdownV2(membershipNumber)}\n\nاستخدم /help لعرض الأوامر المتاحة`
+    `✅ تم التحقق بنجاح!\n\nأنت الآن مسجل لتلقي الرسائل من منظمتنا.\n\nعضويتك: ${member.en_name} - ${membershipNumber}\n\nاستخدم /help لعرض الأوامر المتاحة`
   );
 }
 
@@ -652,7 +650,7 @@ telegram.get('/verify', async (c) => {
     // Send confirmation message
     await telegramService.sendMessage(
       parseInt(telegramId),
-      `تم التحقق بنجاح\\. أنت الآن مسجل لتلقي الرسائل من منظمتنا\\.\n\nعضويتك: ${escapeMarkdownV2(member.en_name)} \\، ${escapeMarkdownV2(membershipNumber)}\n\nاستخدم /help لعرض الأوامر المتاحة`
+      `تم التحقق بنجاح. أنت الآن مسجل لتلقي الرسائل من منظمتنا.\n\nعضويتك: ${member.en_name}، ${membershipNumber}\n\nاستخدم /help لعرض الأوامر المتاحة`
     );
 
     return c.html(`

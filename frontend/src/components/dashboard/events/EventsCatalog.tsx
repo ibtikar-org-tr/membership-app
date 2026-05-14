@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { VmsEvent } from '../../../types/vms'
 import { EventCard } from './EventCard'
+import { normalizeToAsciiLower } from '../../../utils/normalizeText'
 
 type GroupKey = 'started' | 'ongoing' | 'ended'
 
@@ -35,7 +36,7 @@ export function EventsCatalog({
   const [regionFilter, setRegionFilter] = useState('all')
 
   const now = new Date()
-  const normalizedQuery = query.trim().toLowerCase()
+  const normalizedQuery = normalizeToAsciiLower(query.trim())
 
   const countryOptions = useMemo(() => {
     return Array.from(new Set(events.map((eventItem) => (eventItem.country ?? '').trim()).filter(Boolean))).sort((a, b) =>
@@ -55,8 +56,8 @@ export function EventsCatalog({
       const matchesRegion = regionFilter === 'all' || (eventItem.region ?? '').trim() === regionFilter
       const matchesSearch =
         !normalizedQuery ||
-        eventItem.name.toLowerCase().includes(normalizedQuery) ||
-        (eventItem.description ?? '').toLowerCase().includes(normalizedQuery)
+        normalizeToAsciiLower(eventItem.name).includes(normalizedQuery) ||
+        normalizeToAsciiLower(eventItem.description ?? '').includes(normalizedQuery)
 
       return matchesCountry && matchesRegion && matchesSearch
     })

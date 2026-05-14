@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { normalizeToAsciiLower } from '../../utils/normalizeText'
 
 type SearchableOption = {
   value: string
@@ -49,14 +50,15 @@ export function SearchableSelectField({
   const selectedOption = useMemo(() => options.find((option) => option.value === value), [options, value])
 
   const filteredOptions = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
+    const query = normalizeToAsciiLower(searchQuery.trim())
     if (!query) {
       return options
     }
 
     return options.filter((option) => {
-      const haystack = `${option.label} ${option.searchText ?? ''}`.toLowerCase()
-      return haystack.includes(query)
+      const haystack = `${option.label} ${option.searchText ?? ''}`
+      const haystackNormalized = normalizeToAsciiLower(haystack)
+      return haystackNormalized.includes(query)
     })
   }, [options, searchQuery])
 

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS projects (
     description TEXT,
     parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL, -- allows for nesting projects, technically the whole application can be one big project with multiple levels of sub-projects
     owner TEXT NOT NULL, -- membership_number of the user who owns the project (only one owner per project, but managers can be multiple)
-    telegram_group_id TEXT UNIQUE, -- unique Telegram group ID associated with the project for communication and updates (e.g., "-123456789"), this will be stored and used by the bot
+    telegram_group_id TEXT, -- Telegram group ID for project communication (e.g., "-123456789"); the same group may be linked to multiple projects
     status TEXT NOT NULL -- "active", "completed", "archived"
 );
 
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS events (
     region TEXT, -- state/region or province within the country (e.g., "Istanbul", "Aleppo", "California" etc.)
     city TEXT, -- city of residence (e.g., "Fatih", "Al Bab", "Mezitli", "Azaz" etc.)
     address TEXT, -- detailed address for the event location (e.g., "123 Main St, Building A, Door 4") | can be "online" for online events
-    telegram_group_id TEXT UNIQUE -- unique Telegram group ID associated with the event for communication and updates (e.g., "-123456789"), this will be stored and used by the bot
+    telegram_group_id TEXT -- Telegram group ID for event communication (e.g., "-123456789"); the same group may be linked to multiple events
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_updated_at AFTER UPDATE ON events
@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS clubs (
     address TEXT, -- detailed address for the club location (e.g., "123 Main St, Building A, Door 4") | can be "online" for online events
     visibility TEXT NOT NULL, -- "public", "private", "draft"
     join_policy TEXT NOT NULL, -- "auto_approve", "request_to_join", "invite_only"
-    telegram_group_id TEXT UNIQUE -- unique Telegram group ID associated with the club (e.g., "-123456789")
+    telegram_group_id TEXT -- Telegram group ID for the club (e.g., "-123456789"); the same group may be linked to multiple clubs
 );
 
 CREATE INDEX IF NOT EXISTS idx_clubs_project ON clubs(project_id);
