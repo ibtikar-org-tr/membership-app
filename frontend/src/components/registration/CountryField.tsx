@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { defaultCountries, parseCountry } from 'react-international-phone'
 import type { CountryIso2 } from 'react-international-phone'
 import syriaModernFlag from '@assets/flags/syria-modern.svg'
+import { normalizeToAsciiLower } from '../../utils/normalizeText'
 
 type CountryFieldProps = {
   id: string
@@ -61,19 +62,23 @@ export function CountryField({
   }, [countries])
 
   const filteredCountries = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    if (!query) return countries
-    const isoQuery = query.replace(/[^a-z]/g, '')
+    const rawQuery = searchQuery.trim()
+    if (!rawQuery) return countries
+
+    const queryLower = rawQuery.toLowerCase()
+    const normalizedQuery = normalizeToAsciiLower(rawQuery)
+    const isoQuery = normalizedQuery.replace(/[^a-z]/g, '')
 
     return countries.filter((country) => {
       const arabicName = (arabicCountryNames.get(country.iso2) ?? '').toLowerCase()
       const iso2 = country.iso2.toLowerCase()
+      const countryNameNormalized = normalizeToAsciiLower(country.name)
 
       return (
-        arabicName.includes(query) ||
-        country.name.toLowerCase().includes(query) ||
+        arabicName.includes(queryLower) ||
+        countryNameNormalized.includes(normalizedQuery) ||
         (isoQuery.length > 0 && iso2.includes(isoQuery)) ||
-        country.dialCode.includes(query.replace('+', ''))
+        country.dialCode.includes(rawQuery.replace('+', ''))
       )
     })
   }, [arabicCountryNames, countries, searchQuery])
