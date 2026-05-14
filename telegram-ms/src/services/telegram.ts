@@ -1,24 +1,22 @@
 import { Environment, TelegramUpdate, SendMessageRequest, SendPhotoRequest, InlineKeyboardButton, InlineKeyboardMarkup } from '../types';
 // import { escapeMarkdownV2 } from '../utils/helpers';
 
-// MarkdownV2 special characters that need escaping
-const MARKDOWN_V2_RESERVED_CHARS = /[.!(){}[\]#+\-=|~`>\\]/g;
+// MarkdownV2 specials we auto-escape in outgoing text. Intentionally excludes \ * _
+// - Backslash: escaping it would break sequences like \_ and \. produced by helpers.escapeMarkdownV2
+// - * and _: preserved so templates can use *bold* and _italic_
+const MARKDOWN_V2_RESERVED_CHARS = /[.!(){}[\]#+\-=|~`>]/g;
 
 /**
- * Escape text for MarkdownV2 format - escapes ALL reserved characters
- * In MarkdownV2, these characters must be escaped: . ! - ( ) [ ] { } # + = | ~ ` >
+ * Escape a subset of MarkdownV2 reserved characters (see MARKDOWN_V2_RESERVED_CHARS).
  */
 function escapeMarkdownV2(text: string): string {
   return text.replace(MARKDOWN_V2_RESERVED_CHARS, '\\$&');
 }
 
 /**
- * Smart escape for MarkdownV2 - escapes reserved chars but preserves formatting syntax
- * Allows basic *bold* and _italic_ formatting while escaping problematic characters
+ * Auto-escape for MarkdownV2: punctuation that must be escaped, without touching * _ or \.
  */
 function smartEscapeMarkdownV2(text: string): string {
-  // Simply escape all reserved characters
-  // The formatting with *text* and _text_ will still work because * and _ are NOT in MARKDOWN_V2_RESERVED_CHARS
   return text.replace(MARKDOWN_V2_RESERVED_CHARS, '\\$&');
 }
 
@@ -67,11 +65,11 @@ export class TelegramService {
     if (!parseMode) {
       parseMode = 'MarkdownV2';
       compatibleText = smartEscapeMarkdownV2(text);
-      console.log(`   - Smart-escaped for MarkdownV2 (preserves *bold* and _italic_)`);
+      console.log(`   - Auto-escaped MarkdownV2 punctuation (preserves *bold*, _italic_, and \\-escapes)`);
     } else if (parseMode === 'MarkdownV2') {
       // Always escape when MarkdownV2 is used, regardless of whether explicit or default
       compatibleText = smartEscapeMarkdownV2(text);
-      console.log(`   - Smart-escaped for MarkdownV2 (preserves *bold* and _italic_)`);
+      console.log(`   - Auto-escaped MarkdownV2 punctuation (preserves *bold*, _italic_, and \\-escapes)`);
     } else if (parseMode === 'HTML') {
       console.log(`   - Using HTML format (<b>bold</b>, <i>italic</i>)`);
     }
