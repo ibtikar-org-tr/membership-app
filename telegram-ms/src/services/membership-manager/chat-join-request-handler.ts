@@ -4,7 +4,6 @@ import { TelegramService } from '../telegram';
 import { MemberCrud } from '../../crud/member';
 import { AllMessagesGroupsCrud } from '../../crud/all-messages-groups';
 import { D1DatabaseConnection } from '../../crud/database';
-import { escapeMarkdownV2 } from '../../utils/helpers';
 
 /**
  * Handler for Telegram chat join requests
@@ -151,11 +150,11 @@ async function sendPrivateInviteLink(
       // Send the private invite link to the user
       await telegramService.sendMessage(
         telegramId,
-        `مرحباً ${escapeMarkdownV2(fullName)}\\! 🎉\n\n` +
-        `تم التحقق من عضويتك بنجاح\\.\n\n` +
+        `مرحباً ${fullName}! 🎉\n\n` +
+        `تم التحقق من عضويتك بنجاح.\n\n` +
         `إليك رابط الانضمام الخاص بك:\n` +
-        `${escapeMarkdownV2(inviteLink)}\n\n` +
-        `⚠️ *ملاحظة مهمة:*\n` +
+        `${inviteLink}\n\n` +
+        `⚠️ ملاحظة مهمة:\n` +
         `• هذا الرابط خاص بك فقط\n` +
         `• يمكن استخدامه مرة واحدة فقط\n` +
         `• لا تشاركه مع أي شخص آخر`
@@ -169,8 +168,8 @@ async function sendPrivateInviteLink(
       // Failed to create invite link - fall back to manual approval
       await telegramService.sendMessage(
         telegramId,
-        `مرحباً ${escapeMarkdownV2(fullName)}\\!\n\n` +
-        `تم التحقق من عضويتك\\. سيتم الموافقة على طلبك قريباً\\.`
+        `مرحباً ${fullName}!\n\n` +
+        `تم التحقق من عضويتك. سيتم الموافقة على طلبك قريباً.`
       );
       console.log(`Failed to create invite link, sent confirmation to user ${telegramId}`);
     }
@@ -190,9 +189,9 @@ async function sendVerificationPrompt(
   try {
     await telegramService.sendMessage(
       telegramId,
-      `مرحباً ${escapeMarkdownV2(fullName)}\\!\n\n` +
-      `لقد تلقينا طلب انضمامك إلى المجموعة\\.\n\n` +
-      `يرجى استخدام الأمر /verify للتحقق من عضويتك حتى تتمكن من الوصول إلى المجموعة\\.`
+      `مرحباً ${fullName}!\n\n` +
+      `لقد تلقينا طلب انضمامك إلى المجموعة.\n\n` +
+      `يرجى استخدام الأمر /verify للتحقق من عضويتك حتى تتمكن من الوصول إلى المجموعة.`
     );
     console.log(`Sent verification message to unverified user ${telegramId}`);
   } catch (error) {
@@ -213,14 +212,14 @@ async function handleUserWithoutBot(
   c: Context<{ Bindings: Environment }>
 ): Promise<void> {
   try {
-    const usernameText = username ? `@${escapeMarkdownV2(username)}` : '';
-    const messageText = `عزيزي/عزيزتي ${escapeMarkdownV2(fullName)} ${usernameText}\n\n` +
-      `يرجى التواصل مع هذا البوت على الخاص حتى تتمكن من الانضمام إلى المجموعة\\.`;
+    const usernameText = username ? `@${username}` : '';
+    const messageText = `عزيزي/عزيزتي ${fullName} ${usernameText}\n\n` +
+      `يرجى التواصل مع هذا البوت على الخاص حتى تتمكن من الانضمام إلى المجموعة.`;
     
     const sentMessageId = await telegramService.sendMessage(
       chatId,
       messageText,
-      'MarkdownV2',
+      undefined,
       undefined,
       undefined,
       undefined,

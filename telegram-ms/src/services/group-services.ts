@@ -2,7 +2,6 @@ import { Environment } from '../types';
 import { TelegramService } from './telegram';
 import { AllMessagesGroupsCrud } from '../crud/all-messages-groups';
 import { D1DatabaseConnection } from '../crud/database';
-import { escapeMarkdownV2 } from '../utils/helpers';
 import LLMService from './ai-services/deepseek';
 
 export class GroupServices {
@@ -233,9 +232,8 @@ Format the summary in a clear, readable way with bullet points or sections if ap
     commandMessageId?: number
   ): Promise<void> {
     const context = isTopicSpecific ? 'this topic' : 'conversation';
-    const summaryText = escapeMarkdownV2(
-      `📝 Summary of ${context} from last ${hours} hour${hours !== 1 ? 's' : ''}:\n\n${summary}`
-    );
+    const summaryText =
+      `📝 Summary of ${context} from last ${hours} hour${hours !== 1 ? 's' : ''}:\n\n${summary}`;
     
     if (statusMessageId) {
       await this.telegramService.editMessage(
