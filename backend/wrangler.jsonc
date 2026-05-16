@@ -18,8 +18,18 @@
       "database_id": "bbd89415-677e-4991-bb11-ea1be7e2d095",
       "remote": true,
       "migrations_dir": "../database/vms"
+    },
+    {
+      "binding": "VMS_LOGS_DB",
+      "database_name": "vms-logs-database",
+      "database_id": "00000000-0000-0000-0000-000000000002",
+      "remote": true,
+      "migrations_dir": "../database/logs"
     }
   ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
   "r2_buckets": [
     {
       "binding": "MY_BUCKET",
@@ -42,7 +52,9 @@
     "SMTP_HOST": "",
     "SMTP_PORT": "587",
     "SMTP_USER": "",
-    "SMTP_PASS": "delete-on-deployment"
+    "SMTP_PASS": "delete-on-deployment",
+    "CRON_TIMEZONE": "Europe/Istanbul",
+    "CRON_DRY_RUN": "false"
   },
   "observability": {
     "enabled": true,
