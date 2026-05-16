@@ -8,6 +8,7 @@ import {
   fetchProjectMembers,
   fetchTasks,
   leaveProject,
+  removeProjectMember,
   requestTelegramGroupInvite,
   updateProject,
   updateTask,
@@ -19,6 +20,7 @@ import {
   LeaveProjectConfirmModal,
   MembersModal,
   ProjectSettingsModal,
+  RemoveProjectMemberConfirmModal,
 } from '../../components/dashboard/project-details/ProjectDetailsModals'
 import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
 import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
@@ -52,6 +54,10 @@ export function DashboardProjectDetailsPage() {
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false)
   const [isLeavingProject, setIsLeavingProject] = useState(false)
   const [leaveError, setLeaveError] = useState<string | null>(null)
+  const [memberPendingRemoval, setMemberPendingRemoval] = useState<VmsProjectMember | null>(null)
+  const [isRemovingMember, setIsRemovingMember] = useState(false)
+  const [removeMemberError, setRemoveMemberError] = useState<string | null>(null)
+  const [removingMembershipNumber, setRemovingMembershipNumber] = useState<string | null>(null)
   const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
   const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
   const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
@@ -499,6 +505,34 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
+  const handleRemoveProjectMember = async () => {
+    setRemoveMemberError(null)
+
+    if (!projectID || !user || !memberPendingRemoval) {
+      return
+    }
+
+    const targetMembershipNumber = memberPendingRemoval.membershipNumber
+    setIsRemovingMember(true)
+    setRemovingMembershipNumber(targetMembershipNumber)
+
+    try {
+      await removeProjectMember(projectID, targetMembershipNumber, user.membershipNumber)
+      const membersPayload = await fetchProjectMembers(projectID)
+      setProjectMembers(membersPayload.projectMembers)
+      setMemberPendingRemoval(null)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setRemoveMemberError(requestError.message)
+      } else {
+        setRemoveMemberError('تعذر إزالة العضو من المشروع.')
+      }
+    } finally {
+      setIsRemovingMember(false)
+      setRemovingMembershipNumber(null)
+    }
+  }
+
   const handleLeaveProject = async () => {
     setLeaveError(null)
 
@@ -642,7 +676,37 @@ export function DashboardProjectDetailsPage() {
       {isMembersOpen ? (
         <MembersModal
           projectMembers={projectMembers}
-          onClose={() => setIsMembersOpen(false)}
+          projectOwnerMembershipNumber={project.owner}
+          actorMembershipNumber={user?.membershipNumber ?? null}
+          canManageMembers={canManageProjectMembers}
+          removingMembershipNumber={removingMembershipNumber}
+          onRequestRemove={(member) => {
+            setRemoveMemberError(null)
+            setMemberPendingRemoval(member)
+          }}
+          onClose={() => {
+            if (!isRemovingMember) {
+              setIsMembersOpen(false)
+              setMemberPendingRemoval(null)
+              setRemoveMemberError(null)
+            }
+          }}
+        />
+      ) : null}
+
+      {memberPendingRemoval ? (
+        <RemoveProjectMemberConfirmModal
+          memberDisplayName={memberPendingRemoval.displayName}
+          membershipNumber={memberPendingRemoval.membershipNumber}
+          isRemoving={isRemovingMember}
+          removeError={removeMemberError}
+          onClose={() => {
+            if (!isRemovingMember) {
+              setMemberPendingRemoval(null)
+              setRemoveMemberError(null)
+            }
+          }}
+          onConfirm={() => void handleRemoveProjectMember()}
         />
       ) : null}
 

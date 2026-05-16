@@ -175,7 +175,7 @@ vmsProjectMembersRoute.delete(
         const authorization = await canManageProjectMembers(c.env.VMS_DB, projectId, actorMembershipNumber)
 
         if (!authorization.isAuthorized) {
-          return c.json({ error: 'Only project owner or managers can remove project members.' }, 403)
+          return c.json({ error: 'فقط مالك المشروع أو المدراء يمكنهم إزالة الأعضاء.' }, 403)
         }
       }
 

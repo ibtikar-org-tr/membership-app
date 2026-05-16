@@ -519,8 +519,16 @@ export function createProjectMember(payload: {
 }
 
 export function leaveProject(projectId: string, membershipNumber: string) {
+  return removeProjectMember(projectId, membershipNumber, membershipNumber)
+}
+
+export function removeProjectMember(
+  projectId: string,
+  targetMembershipNumber: string,
+  actorMembershipNumber: string,
+) {
   return deleteJson(
-    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(membershipNumber)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
   )
 }
 
