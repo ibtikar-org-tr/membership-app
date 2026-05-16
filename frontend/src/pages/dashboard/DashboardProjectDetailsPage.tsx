@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import {
   createTask,
@@ -7,13 +7,19 @@ import {
   fetchProjectById,
   fetchProjectMembers,
   fetchTasks,
+  leaveProject,
   requestTelegramGroupInvite,
   updateProject,
   updateTask,
 } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
-import { AddTaskModal, MembersModal, ProjectSettingsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
+import {
+  AddTaskModal,
+  LeaveProjectConfirmModal,
+  MembersModal,
+  ProjectSettingsModal,
+} from '../../components/dashboard/project-details/ProjectDetailsModals'
 import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
 import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
 import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
@@ -21,6 +27,7 @@ import { UnallowedAccessPage } from './UnallowedAccessPage'
 
 export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
+  const navigate = useNavigate()
   const user = useMemo(() => getStoredUser(), [])
   const [project, setProject] = useState<VmsProject | null>(null)
   const [parentProjectName, setParentProjectName] = useState<string | null>(null)
@@ -42,6 +49,9 @@ export function DashboardProjectDetailsPage() {
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false)
+  const [isLeavingProject, setIsLeavingProject] = useState(false)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
   const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
   const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
   const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
@@ -198,6 +208,14 @@ export function DashboardProjectDetailsPage() {
 
     return project.owner === user.membershipNumber
   }, [project, user])
+  const isProjectMember = useMemo(() => {
+    if (!user) {
+      return false
+    }
+
+    return projectMembers.some((member) => member.membershipNumber === user.membershipNumber)
+  }, [projectMembers, user])
+  const canLeaveProject = isProjectMember && !isProjectOwner
   const ownershipTransferOptions = useMemo(
     () => projectMembers.filter((member) => member.membershipNumber !== project?.owner),
     [projectMembers, project?.owner],
@@ -481,6 +499,29 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
+  const handleLeaveProject = async () => {
+    setLeaveError(null)
+
+    if (!projectID || !user) {
+      return
+    }
+
+    setIsLeavingProject(true)
+
+    try {
+      await leaveProject(projectID, user.membershipNumber)
+      navigate('/dashboard/projects', { replace: true })
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setLeaveError(requestError.message)
+      } else {
+        setLeaveError('تعذر مغادرة المشروع.')
+      }
+    } finally {
+      setIsLeavingProject(false)
+    }
+  }
+
   const handleSendTelegramInvite = async () => {
     setTelegramInviteError(null)
     setTelegramInviteSuccess(null)
@@ -550,6 +591,11 @@ export function DashboardProjectDetailsPage() {
         onSendTelegramInvite={() => void handleSendTelegramInvite()}
         telegramInviteFeedback={telegramInviteFeedback}
         telegramInviteFeedbackIsError={Boolean(telegramInviteError)}
+        canLeaveProject={canLeaveProject}
+        onLeaveProject={() => {
+          setLeaveError(null)
+          setIsLeaveConfirmOpen(true)
+        }}
       >
         <TaskBoard
           boardColumns={boardColumns}
@@ -597,6 +643,21 @@ export function DashboardProjectDetailsPage() {
         <MembersModal
           projectMembers={projectMembers}
           onClose={() => setIsMembersOpen(false)}
+        />
+      ) : null}
+
+      {isLeaveConfirmOpen ? (
+        <LeaveProjectConfirmModal
+          projectName={project.name}
+          isLeaving={isLeavingProject}
+          leaveError={leaveError}
+          onClose={() => {
+            if (!isLeavingProject) {
+              setIsLeaveConfirmOpen(false)
+              setLeaveError(null)
+            }
+          }}
+          onConfirm={() => void handleLeaveProject()}
         />
       ) : null}
     </section>

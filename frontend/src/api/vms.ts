@@ -518,6 +518,12 @@ export function createProjectMember(payload: {
   )
 }
 
+export function leaveProject(projectId: string, membershipNumber: string) {
+  return deleteJson(
+    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(membershipNumber)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+  )
+}
+
 export function fetchClubs(projectId?: string) {
   const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
   return fetchJson<{ clubs: VmsClub[] }>(`/clubs${query}`)

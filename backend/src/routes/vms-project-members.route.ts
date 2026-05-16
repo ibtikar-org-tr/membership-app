@@ -143,6 +143,42 @@ vmsProjectMembersRoute.delete(
   async (c) => {
     try {
       const { projectId, membershipNumber } = c.req.valid('param')
+      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+
+      if (!actorMembershipNumber) {
+        return c.json({ error: 'Membership number is required.' }, 400)
+      }
+
+      const project = await getProjectById(c.env.VMS_DB, projectId)
+
+      if (!project) {
+        return c.json({ error: 'Project not found.' }, 404)
+      }
+
+      if (project.owner === membershipNumber) {
+        return c.json(
+          {
+            error:
+              'لا يمكن إزالة مالك المشروع. انقل الملكية إلى عضو آخر أولاً إذا أردت مغادرة المشروع.',
+          },
+          403,
+        )
+      }
+
+      const isSelfLeave = actorMembershipNumber === membershipNumber
+
+      if (isSelfLeave) {
+        if (membershipNumber !== actorMembershipNumber) {
+          return c.json({ error: 'يمكنك مغادرة المشروع لحسابك فقط.' }, 403)
+        }
+      } else {
+        const authorization = await canManageProjectMembers(c.env.VMS_DB, projectId, actorMembershipNumber)
+
+        if (!authorization.isAuthorized) {
+          return c.json({ error: 'Only project owner or managers can remove project members.' }, 403)
+        }
+      }
+
       const deleted = await deleteProjectMember(c.env.VMS_DB, projectId, membershipNumber)
 
       if (!deleted) {

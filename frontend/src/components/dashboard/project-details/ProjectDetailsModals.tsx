@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../../types/vms'
 import { formatDateTimeEnCA } from '../../../utils/date-format'
+import { projectMemberRoleLabel } from './helpers'
 import { SkillsField } from '../../SkillsField'
 
 function eventStatusLabel(status: string) {
@@ -96,7 +97,8 @@ export function ProjectSettingsModal({
             <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
               <p className="text-xs font-semibold text-amber-950">نقل ملكية المشروع</p>
               <p className="mt-1 text-xs text-amber-900/80">
-                يمكنك تسليم المشروع لعضو مسجّل فيه. سيُحفظ لك دور &quot;عضو&quot; إن لم تكن مضافًا في قائمة الأعضاء.
+                يمكنك تسليم المشروع لعضو مسجّل فيه. لا يمكن لمالك المشروع مغادرته دون نقل الملكية أولاً؛ سيُحفظ لك دور
+                &quot;عضو&quot; بعد النقل إن لم تكن مضافًا في قائمة الأعضاء.
               </p>
               {ownershipTransferOptions.length > 0 ? (
                 <label className="mt-3 block">
@@ -284,6 +286,58 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
   )
 }
 
+interface LeaveProjectConfirmModalProps {
+  projectName: string
+  isLeaving: boolean
+  leaveError: string | null
+  onClose: () => void
+  onConfirm: () => void
+}
+
+export function LeaveProjectConfirmModal({
+  projectName,
+  isLeaving,
+  leaveError,
+  onClose,
+  onConfirm,
+}: LeaveProjectConfirmModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+      <article
+        className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <p className="text-base font-semibold text-slate-950">مغادرة المشروع</p>
+        <p className="mt-3 text-sm leading-6 text-slate-700">
+          هل أنت متأكد من مغادرة المشروع «{projectName}»؟ لن تتمكن من الوصول إلى مهامه وفعالياته وأنديته حتى تنضم
+          إليه مجدداً.
+        </p>
+        {leaveError ? (
+          <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{leaveError}</p>
+        ) : null}
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLeaving}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            إلغاء
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isLeaving}
+            className="rounded-xl border border-red-200 bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+          >
+            {isLeaving ? 'جار المغادرة...' : 'نعم، مغادرة المشروع'}
+          </button>
+        </div>
+      </article>
+    </div>
+  )
+}
+
 interface MembersModalProps {
   projectMembers: VmsProjectMember[]
   onClose: () => void
@@ -307,7 +361,9 @@ export function MembersModal({
             {projectMembers.map((member) => (
               <div key={`member-${member.projectId}-${member.membershipNumber}`} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
                 <p className="font-semibold text-slate-900">{member.displayName}</p>
-                <p className="mt-1 text-xs text-slate-500">{member.role} • {member.membershipNumber}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {projectMemberRoleLabel(member.role)} • {member.membershipNumber}
+                </p>
               </div>
             ))}
           </div>

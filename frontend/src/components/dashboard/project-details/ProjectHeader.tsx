@@ -3,6 +3,7 @@ import {
   FiCalendar,
   FiGitBranch,
   FiHeart,
+  FiLogOut,
   FiPlus,
   FiSend,
   FiSettings,
@@ -19,6 +20,8 @@ const toolbarBtnPrimary =
   'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-slate-950 px-3.5 text-xs font-semibold text-white transition hover:bg-slate-800'
 const toolbarBtnCyan =
   'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60'
+const toolbarBtnDanger =
+  'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-100'
 const toolbarIcon = 'h-3.5 w-3.5 shrink-0 opacity-80'
 
 interface ProjectHeaderProps {
@@ -44,6 +47,8 @@ interface ProjectHeaderProps {
   onSendTelegramInvite?: () => void
   telegramInviteFeedback?: string | null
   telegramInviteFeedbackIsError?: boolean
+  canLeaveProject?: boolean
+  onLeaveProject?: () => void
   children?: ReactNode
 }
 
@@ -70,6 +75,8 @@ export function ProjectHeader({
   onSendTelegramInvite,
   telegramInviteFeedback = null,
   telegramInviteFeedbackIsError = false,
+  canLeaveProject = false,
+  onLeaveProject,
   children,
 }: ProjectHeaderProps) {
   return (
@@ -190,6 +197,17 @@ export function ProjectHeader({
               >
                 {telegramInviteFeedback}
               </span>
+            ) : null}
+            {canLeaveProject && onLeaveProject ? (
+              <button
+                type="button"
+                onClick={onLeaveProject}
+                className={toolbarBtnDanger}
+                title="مغادرة المشروع"
+              >
+                <FiLogOut className={toolbarIcon} aria-hidden />
+                <span className="hidden sm:inline">مغادرة المشروع</span>
+              </button>
             ) : null}
             {canManageProject ? (
               <button
