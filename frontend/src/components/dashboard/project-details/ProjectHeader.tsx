@@ -1,10 +1,25 @@
 import { Link } from 'react-router-dom'
-import { FiGitBranch, FiSettings } from 'react-icons/fi'
-import { Send } from 'lucide-react'
+import {
+  FiCalendar,
+  FiGitBranch,
+  FiHeart,
+  FiPlus,
+  FiSend,
+  FiSettings,
+  FiUsers,
+} from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import type { VmsProject, VmsProjectMember } from '../../../types/vms'
 import { formatDateEnCA } from '../../../utils/date-format'
 import { memberAvatarTone, memberInitials, statusBadgeClass, statusLabel } from './helpers'
+
+const toolbarBtn =
+  'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50'
+const toolbarBtnPrimary =
+  'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-slate-950 px-3.5 text-xs font-semibold text-white transition hover:bg-slate-800'
+const toolbarBtnCyan =
+  'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60'
+const toolbarIcon = 'h-3.5 w-3.5 shrink-0 opacity-80'
 
 interface ProjectHeaderProps {
   project: VmsProject
@@ -105,61 +120,49 @@ export function ProjectHeader({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/85 p-2 backdrop-blur-sm">
           <div className="flex flex-wrap items-center gap-2">
             {canCreateTask ? (
-              <button
-                type="button"
-                onClick={onOpenAddTask}
-                className="inline-flex items-center rounded-xl bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
-              >
-                + إضافة مهمة
+              <button type="button" onClick={onOpenAddTask} className={toolbarBtnPrimary}>
+                <FiPlus className={toolbarIcon} aria-hidden />
+                إضافة مهمة
               </button>
             ) : null}
-            <Link
-              to={eventsPath}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
+            <Link to={eventsPath} className={toolbarBtn}>
+              <FiCalendar className={toolbarIcon} aria-hidden />
               الفعاليات
             </Link>
-            <Link
-              to={clubsPath}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
+            <Link to={clubsPath} className={toolbarBtn}>
+              <FiUsers className={toolbarIcon} aria-hidden />
               الأندية
             </Link>
-            <Link
-              to={positionsPath}
-              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
+            <Link to={positionsPath} className={toolbarBtn}>
+              <FiHeart className={toolbarIcon} aria-hidden />
               الفرص التطوعية
             </Link>
-            <Link
-              to={subProjectsPath}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              <FiGitBranch className="h-3.5 w-3.5 opacity-80" aria-hidden />
+            <Link to={subProjectsPath} className={toolbarBtn}>
+              <FiGitBranch className={toolbarIcon} aria-hidden />
               المشاريع الفرعية
             </Link>
             <button
               type="button"
               onClick={onOpenMembers}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className={toolbarBtn}
               title="عرض أعضاء المشروع"
             >
-              <div className="flex -space-x-2">
+              <div className="flex -space-x-1.5">
                 {previewMembers.map((member) => (
                   <span
                     key={`member-preview-${member.projectId}-${member.membershipNumber}`}
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full border text-[11px] font-semibold shadow-sm ${memberAvatarTone(member.membershipNumber)}`}
+                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-semibold shadow-sm ${memberAvatarTone(member.membershipNumber)}`}
                   >
                     {memberInitials(member.displayName, member.membershipNumber)}
                   </span>
                 ))}
                 {hiddenMembersCount > 0 ? (
-                  <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-700 shadow-sm">
-                    (+{hiddenMembersCount})
+                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1 text-[10px] font-semibold text-slate-700 shadow-sm">
+                    +{hiddenMembersCount}
                   </span>
                 ) : null}
                 {projectMembers.length === 0 ? (
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[11px] font-semibold text-slate-600 shadow-sm">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[10px] font-semibold text-slate-600 shadow-sm">
                     0
                   </span>
                 ) : null}
@@ -172,14 +175,14 @@ export function ProjectHeader({
                 onClick={onSendTelegramInvite}
                 disabled={isSendingTelegramInvite}
                 title="إرسال دعوة مجموعة التلغرام عبر البوت"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className={toolbarBtnCyan}
               >
-                <Send className="h-3.5 w-3.5" aria-hidden />
+                <FiSend className={toolbarIcon} aria-hidden />
                 <span className="hidden sm:inline">{isSendingTelegramInvite ? 'جار الإرسال...' : 'دعوة تلغرام'}</span>
               </button>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex h-9 flex-wrap items-center justify-end gap-2">
             {telegramInviteFeedback ? (
               <span
                 className={`max-w-[12rem] truncate text-xs sm:max-w-xs ${telegramInviteFeedbackIsError ? 'text-red-600' : 'text-emerald-700'}`}
@@ -194,12 +197,12 @@ export function ProjectHeader({
                 onClick={onOpenProjectSettings}
                 aria-label="إعدادات المشروع"
                 title="إعدادات المشروع"
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-700 transition hover:bg-slate-50"
+                className={`${toolbarBtn} w-9 justify-center px-0`}
               >
-                <FiSettings className="h-3.5 w-3.5" />
+                <FiSettings className={toolbarIcon} />
               </button>
             ) : null}
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">
+            <span className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700">
               آخر تحديث: {formatDateEnCA(project.updatedAt)}
             </span>
           </div>
