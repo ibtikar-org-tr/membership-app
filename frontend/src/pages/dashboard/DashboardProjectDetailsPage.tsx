@@ -7,6 +7,7 @@ import {
   fetchProjectById,
   fetchProjectMembers,
   fetchTasks,
+  requestTelegramGroupInvite,
   updateProject,
   updateTask,
 } from '../../api/vms'
@@ -41,6 +42,9 @@ export function DashboardProjectDetailsPage() {
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
+  const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
+  const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
 
   useEffect(() => {
     if (!projectID || !user) {
@@ -477,6 +481,32 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
+  const handleSendTelegramInvite = async () => {
+    setTelegramInviteError(null)
+    setTelegramInviteSuccess(null)
+
+    if (!project?.telegramGroupId || !user?.membershipNumber) {
+      return
+    }
+
+    setIsSendingTelegramInvite(true)
+    try {
+      await requestTelegramGroupInvite(user.membershipNumber, {
+        resourceType: 'project',
+        resourceId: project.id,
+      })
+      setTelegramInviteSuccess('تم إرسال دعوة مجموعة التلغرام عبر البوت.')
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTelegramInviteError(requestError.message)
+      } else {
+        setTelegramInviteError('تعذر إرسال دعوة مجموعة التلغرام.')
+      }
+    } finally {
+      setIsSendingTelegramInvite(false)
+    }
+  }
+
   if (!projectID) {
     return <Navigate to="/dashboard/projects" replace />
   }
@@ -492,6 +522,8 @@ export function DashboardProjectDetailsPage() {
       </section>
     )
   }
+
+  const telegramInviteFeedback = telegramInviteError ?? telegramInviteSuccess
 
   return (
     <section className="w-full space-y-3">
@@ -513,6 +545,11 @@ export function DashboardProjectDetailsPage() {
         subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}
         onOpenMembers={() => setIsMembersOpen(true)}
         onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}
+        showTelegramInvite={Boolean(project.telegramGroupId)}
+        isSendingTelegramInvite={isSendingTelegramInvite}
+        onSendTelegramInvite={() => void handleSendTelegramInvite()}
+        telegramInviteFeedback={telegramInviteFeedback}
+        telegramInviteFeedbackIsError={Boolean(telegramInviteError)}
       >
         <TaskBoard
           boardColumns={boardColumns}
