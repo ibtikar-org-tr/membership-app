@@ -14,6 +14,7 @@ import {
   projectMemberParamsSchema,
   updateProjectMemberSchema,
 } from '../schemas/vms-project-member.schema'
+import { notifyProjectMemberRemoved } from '../services/project-member-notification.service'
 import type { AppBindings } from '../types/bindings'
 
 export const vmsProjectMembersRoute = new Hono<{ Bindings: AppBindings }>()
@@ -179,11 +180,34 @@ vmsProjectMembersRoute.delete(
         }
       }
 
+      const existingMember = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
+
+      if (!existingMember) {
+        return c.json({ error: 'Project member not found.' }, 404)
+      }
+
       const deleted = await deleteProjectMember(c.env.VMS_DB, projectId, membershipNumber)
 
       if (!deleted) {
         return c.json({ error: 'Project member not found.' }, 404)
       }
+
+      const displayNameMap = await getUserDisplayNamesByMembershipNumbers(c.env.MEMBERS_DB, [
+        membershipNumber,
+        actorMembershipNumber,
+      ])
+
+      await notifyProjectMemberRemoved(c.env, {
+        frontendBaseUrl: c.env.FRONTEND_BASE_URL,
+        projectId,
+        projectName: project.name,
+        actorMembershipNumber,
+        removedMembershipNumber: membershipNumber,
+        actorDisplayName: displayNameMap.get(actorMembershipNumber) ?? actorMembershipNumber,
+        removedDisplayName: displayNameMap.get(membershipNumber) ?? membershipNumber,
+        isSelfLeave,
+        projectOwnerMembershipNumber: project.owner,
+      })
 
       return c.json({ message: 'Project member deleted successfully.' })
     } catch (error) {
