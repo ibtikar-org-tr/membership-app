@@ -8,6 +8,7 @@ import {
   fetchProjectMembers,
   fetchTasks,
   leaveProject,
+  remindTask,
   removeProjectMember,
   requestTelegramGroupInvite,
   updateProject,
@@ -48,7 +49,10 @@ export function DashboardProjectDetailsPage() {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isUpdatingTask, setIsUpdatingTask] = useState(false)
+  const [isRemindingTask, setIsRemindingTask] = useState(false)
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
+  const [taskRemindError, setTaskRemindError] = useState<string | null>(null)
+  const [taskRemindSuccess, setTaskRemindSuccess] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false)
@@ -252,6 +256,19 @@ export function DashboardProjectDetailsPage() {
     )
   }, [project, projectManagerMembershipNumbers, selectedTask, user])
 
+  const canRemindSelectedTask = useMemo(() => {
+    if (!selectedTask || !canManageProjectMembers) {
+      return false
+    }
+
+    const assignee = selectedTask.assignedTo?.trim()
+    if (!assignee) {
+      return false
+    }
+
+    return selectedTask.status === 'open' || selectedTask.status === 'in_progress'
+  }, [canManageProjectMembers, selectedTask])
+
   const formatAssignee = (membershipNumber: string | null) => {
     if (!membershipNumber) {
       return 'غير مسند'
@@ -260,9 +277,43 @@ export function DashboardProjectDetailsPage() {
     return memberNameByMembership.get(membershipNumber) ?? membershipNumber
   }
 
+  useEffect(() => {
+    setTaskRemindError(null)
+    setTaskRemindSuccess(null)
+  }, [selectedTaskId])
+
   const closeTaskDetails = () => {
     setTaskUpdateError(null)
+    setTaskRemindError(null)
+    setTaskRemindSuccess(null)
     setSelectedTaskId(null)
+  }
+
+  const handleRemindTask = async () => {
+    setTaskRemindError(null)
+    setTaskRemindSuccess(null)
+
+    if (!selectedTask || !user?.membershipNumber || !canRemindSelectedTask) {
+      return
+    }
+
+    setIsRemindingTask(true)
+
+    try {
+      const payload = await remindTask(selectedTask.id, user.membershipNumber)
+      setProjectTasks((previous) =>
+        previous.map((task) => (task.id === payload.task.id ? payload.task : task)),
+      )
+      setTaskRemindSuccess('تم إرسال التذكير إلى المكلّف عبر تيليجرام.')
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTaskRemindError(requestError.message)
+      } else {
+        setTaskRemindError('تعذر إرسال التذكير.')
+      }
+    } finally {
+      setIsRemindingTask(false)
+    }
   }
 
   const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
@@ -642,12 +693,17 @@ export function DashboardProjectDetailsPage() {
         <TaskDetailsModal
           selectedTask={selectedTask}
           canEditSelectedTask={canEditSelectedTask}
+          canRemindTask={canRemindSelectedTask}
           isUpdatingTask={isUpdatingTask}
+          isRemindingTask={isRemindingTask}
           taskUpdateError={taskUpdateError}
+          taskRemindError={taskRemindError}
+          taskRemindSuccess={taskRemindSuccess}
           memberOptions={memberOptions}
           formatAssignee={formatAssignee}
           onClose={closeTaskDetails}
           onUpdateTask={handleUpdateTask}
+          onRemindTask={handleRemindTask}
         />
       ) : null}
 

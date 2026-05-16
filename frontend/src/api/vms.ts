@@ -266,6 +266,13 @@ export function createTask(payload: {
   )
 }
 
+export function remindTask(taskId: string, membershipNumber: string) {
+  return postJson<{ task: VmsTask; remindedAt: string }, Record<string, never>>(
+    `/tasks/${encodeURIComponent(taskId)}/remind?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    {},
+  )
+}
+
 export function updateTask(
   taskId: string,
   payload: Partial<{

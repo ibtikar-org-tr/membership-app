@@ -27,6 +27,7 @@ export interface VmsTask {
   completedBy: string | null
   completedAt: string | null
   approvedBy: string | null
+  lastRemindedAt: string | null
   skills: Record<string, string> | null
 }
 

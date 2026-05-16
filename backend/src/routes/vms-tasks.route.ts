@@ -1,10 +1,18 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { getDirectProjectByIdForMember, listDirectProjectsForMember } from '../repositories/vms-projects.repository'
-import { createTask, deleteTaskById, getTaskById, listTasks, updateTaskById } from '../repositories/vms-tasks.repository'
+import { getProjectMember } from '../repositories/vms-project-members.repository'
+import { getDirectProjectByIdForMember, getProjectById, listDirectProjectsForMember } from '../repositories/vms-projects.repository'
+import {
+  createTask,
+  deleteTaskById,
+  getTaskById,
+  listTasks,
+  updateTaskById,
+  updateTaskLastRemindedAt,
+} from '../repositories/vms-tasks.repository'
 import { getUserProfileByMembershipNumber } from '../repositories/user-info.repository'
 import { createTaskSchema, taskParamsSchema, updateTaskSchema } from '../schemas/vms-task.schema'
-import { notifyAssignedTask } from '../services/task-assignment-notification.service'
+import { notifyAssignedTask, notifyTaskReminder } from '../services/task-assignment-notification.service'
 import { syncTaskCompletionPoints, type TaskPointsState } from '../services/task-points.service'
 
 import type { AppBindings } from '../types/bindings'
@@ -28,6 +36,24 @@ function toPointsState(task: {
 }
 
 export const vmsTasksRoute = new Hono<{ Bindings: AppBindings }>()
+
+async function canManageProjectTasks(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
+  const project = await getProjectById(db, projectId)
+
+  if (!project) {
+    return { project: null, isAuthorized: false }
+  }
+
+  if (project.owner === membershipNumber) {
+    return { project, isAuthorized: true }
+  }
+
+  const projectMember = await getProjectMember(db, projectId, membershipNumber)
+  return {
+    project,
+    isAuthorized: projectMember?.role === 'manager',
+  }
+}
 
 vmsTasksRoute.get('/tasks', async (c) => {
   try {
@@ -208,6 +234,76 @@ vmsTasksRoute.put(
     }
   },
 )
+
+vmsTasksRoute.post('/tasks/:id/remind', zValidator('param', taskParamsSchema), async (c) => {
+  try {
+    const { id } = c.req.valid('param')
+    const membershipNumber = c.req.query('membershipNumber')?.trim()
+
+    if (!membershipNumber) {
+      return c.json({ error: 'Membership number is required.' }, 400)
+    }
+
+    const task = await getTaskById(c.env.VMS_DB, id)
+
+    if (!task) {
+      return c.json({ error: 'Task not found.' }, 404)
+    }
+
+    const project = await getDirectProjectByIdForMember(c.env.VMS_DB, task.projectId, membershipNumber)
+
+    if (!project) {
+      return c.json({ error: 'Task not found.' }, 404)
+    }
+
+    const authorization = await canManageProjectTasks(c.env.VMS_DB, task.projectId, membershipNumber)
+
+    if (!authorization.isAuthorized) {
+      return c.json({ error: 'فقط مالك المشروع أو المدراء يمكنهم إرسال تذكير للمهمة.' }, 403)
+    }
+
+    const assignee = task.assignedTo?.trim()
+
+    if (!assignee) {
+      return c.json({ error: 'لا يمكن إرسال تذكير لمهمة غير مسندة.' }, 400)
+    }
+
+    if (task.status !== 'open' && task.status !== 'in_progress') {
+      return c.json({ error: 'يمكن إرسال التذكير للمهام المفتوحة أو قيد التنفيذ فقط.' }, 400)
+    }
+
+    const projectOwnerProfile = await getUserProfileByMembershipNumber(c.env.MEMBERS_DB, project.owner)
+
+    const notification = await notifyTaskReminder(c.env, {
+      assignedTo: assignee,
+      projectId: project.id,
+      projectName: project.name,
+      taskName: task.name,
+      projectOwnerTelegramId: projectOwnerProfile?.telegramId,
+      projectOwnerTelegramUsername: projectOwnerProfile?.telegramUsername,
+      dueDate: task.dueDate,
+      description: task.description,
+      priority: task.priority,
+      points: task.points,
+    })
+
+    if (!notification.success) {
+      return c.json({ error: 'تعذر إرسال التذكير عبر تيليجرام.' }, 502)
+    }
+
+    const remindedAt = new Date().toISOString()
+    const updatedTask = await updateTaskLastRemindedAt(c.env.VMS_DB, id, remindedAt)
+
+    if (!updatedTask) {
+      return c.json({ error: 'Task not found.' }, 404)
+    }
+
+    return c.json({ task: updatedTask, remindedAt })
+  } catch (error) {
+    console.error('Failed to send task reminder', error)
+    return c.json({ error: 'Could not send task reminder.' }, 500)
+  }
+})
 
 vmsTasksRoute.delete('/tasks/:id', zValidator('param', taskParamsSchema), async (c) => {
   try {

@@ -18,6 +18,7 @@ interface TaskRow {
   completed_by: string | null
   completed_at: string | null
   approved_by: string | null
+  last_reminded_at: string | null
 }
 
 function mapTaskRow(row: TaskRow) {
@@ -37,6 +38,7 @@ function mapTaskRow(row: TaskRow) {
     completedBy: row.completed_by,
     completedAt: row.completed_at,
     approvedBy: row.approved_by,
+    lastRemindedAt: row.last_reminded_at,
     skills: null,
   }
 }
@@ -52,7 +54,7 @@ async function hydrateTaskRow(db: D1DatabaseLike, row: TaskRow) {
 export async function listTasks(db: D1DatabaseLike) {
   const result = await db
     .prepare(
-      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by FROM tasks ORDER BY created_at DESC',
+      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, last_reminded_at FROM tasks ORDER BY created_at DESC',
     )
     .bind()
     .all<TaskRow>()
@@ -63,7 +65,7 @@ export async function listTasks(db: D1DatabaseLike) {
 export async function getTaskById(db: D1DatabaseLike, id: string) {
   const row = await db
     .prepare(
-      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by FROM tasks WHERE id = ?',
+      'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, last_reminded_at FROM tasks WHERE id = ?',
     )
     .bind(id)
     .first<TaskRow>()
@@ -176,6 +178,15 @@ export async function updateTaskById(db: D1DatabaseLike, id: string, input: Upda
   if (input.skills !== undefined) {
     await replaceAssociatedSkills(db, 'task', id, input.skills ?? null)
   }
+
+  return getTaskById(db, id)
+}
+
+export async function updateTaskLastRemindedAt(db: D1DatabaseLike, id: string, remindedAt: string) {
+  await db
+    .prepare("UPDATE tasks SET last_reminded_at = ?, updated_at = datetime('now') WHERE id = ?")
+    .bind(remindedAt, id)
+    .run()
 
   return getTaskById(db, id)
 }
