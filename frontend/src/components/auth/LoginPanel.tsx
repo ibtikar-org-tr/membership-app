@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { login } from '../../api/vms'
 import { setStoredUser } from '../../utils/auth'
@@ -10,6 +11,7 @@ interface LoginPanelProps {
 export function LoginPanel({ onSuccess }: LoginPanelProps) {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -82,16 +84,26 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
               <label htmlFor="password" className="mb-2 block text-sm font-semibold text-slate-700">
                 كلمة المرور
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                dir="ltr"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
-                placeholder="********"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  dir="ltr"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 ps-4 pe-11 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+                  placeholder="********"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute inset-y-0 end-3 flex items-center text-slate-500 transition hover:text-slate-800"
+                  aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between text-sm">
