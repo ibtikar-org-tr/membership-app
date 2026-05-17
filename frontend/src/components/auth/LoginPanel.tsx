@@ -92,13 +92,13 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
                   autoComplete="current-password"
                   required
                   dir="ltr"
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 ps-4 pe-11 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-11 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
                   placeholder="********"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  className="absolute inset-y-0 end-3 flex items-center text-slate-500 transition hover:text-slate-800"
+                  className="absolute inset-y-0 right-3 flex items-center text-slate-500 transition hover:text-slate-800"
                   aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
