@@ -2,6 +2,7 @@ import type { AppBindings } from '../types/bindings'
 import {
   buildMemberContactFallbackLines,
   buildMemberTelegramDmLink,
+  memberHasTelegramWithoutUsername,
   type TelegramMemberContact,
 } from '../utils/telegram-links'
 import { sendBackendTelegramNotification } from './telegram-notification.service'
@@ -154,10 +155,19 @@ export async function notifyManagerAboutAcceptedApplicant(
       : 'تمت إضافة العضو للمشروع.',
   ]
 
-  if (!dmLink && contactFallback.length > 0) {
-    messageLines.push('', 'بيانات التواصل (لا يوجد حساب تيليجرام مرتبط):', ...contactFallback)
-  } else if (!dmLink) {
-    messageLines.push('', 'لا يوجد حساب تيليجرام مرتبط بهذا العضو.')
+  if (!dmLink) {
+    if (memberHasTelegramWithoutUsername(context.applicantContact)) {
+      messageLines.push(
+        '',
+        'العضو مرتبط بتيليجرام لكن لا يوجد اسم مستخدم — لا يمكن إرسال زر مراسلة مباشرة.',
+      )
+    }
+
+    if (contactFallback.length > 0) {
+      messageLines.push('', 'بيانات التواصل:', ...contactFallback)
+    } else if (!memberHasTelegramWithoutUsername(context.applicantContact)) {
+      messageLines.push('', 'لا يوجد حساب تيليجرام مرتبط بهذا العضو.')
+    }
   }
 
   const projectPositionsLink = buildProjectPositionsLink(context.frontendBaseUrl, context.projectId)
