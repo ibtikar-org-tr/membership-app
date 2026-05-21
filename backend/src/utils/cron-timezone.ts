@@ -3,31 +3,12 @@ const FIFTEEN_MINUTES_MS = 15 * 60 * 1000
 export const DEFAULT_CRON_TIMEZONE = 'Europe/Istanbul'
 const ISTANBUL_OFFSET = '+03:00'
 
+/** No Telegram sends between 22:00 and 07:00 (Istanbul local time). */
+export const CRON_SILENCE_HOURS = { start: 22, end: 7 } as const
+
 export function getCronTimezone(timezone?: string): string {
   const value = timezone?.trim()
   return value || DEFAULT_CRON_TIMEZONE
-}
-
-export function getCronSilenceHours(
-  startHour?: string,
-  endHour?: string,
-): { start: number; end: number } {
-  const start = parseHour(startHour, 22)
-  const end = parseHour(endHour, 7)
-  return { start, end }
-}
-
-function parseHour(value: string | undefined, fallback: number): number {
-  if (!value?.trim()) {
-    return fallback
-  }
-
-  const parsed = Number.parseInt(value.trim(), 10)
-  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 23) {
-    return fallback
-  }
-
-  return parsed
 }
 
 export function isCronDryRun(dryRun?: string): boolean {

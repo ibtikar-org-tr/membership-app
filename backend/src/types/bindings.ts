@@ -60,6 +60,4 @@ export interface AppBindings {
   INTERNAL_SECRET: string
   CRON_TIMEZONE?: string
   CRON_DRY_RUN?: string
-  CRON_SILENCE_START_HOUR?: string
-  CRON_SILENCE_END_HOUR?: string
 }
