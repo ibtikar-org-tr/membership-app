@@ -3,9 +3,6 @@ const FIFTEEN_MINUTES_MS = 15 * 60 * 1000
 export const DEFAULT_CRON_TIMEZONE = 'Europe/Istanbul'
 const ISTANBUL_OFFSET = '+03:00'
 
-/** No Telegram sends between 22:00 and 07:00 (Istanbul local time). */
-export const CRON_SILENCE_HOURS = { start: 22, end: 7 } as const
-
 export function getCronTimezone(timezone?: string): string {
   const value = timezone?.trim()
   return value || DEFAULT_CRON_TIMEZONE
@@ -88,29 +85,6 @@ export function alreadySentOwnerReportToday(
   }
 
   return getLocalYmd(new Date(lastReportedAt), timeZone) === getLocalYmd(now, timeZone)
-}
-
-/**
- * Silence window in local time. Default 22:00–07:00 crosses midnight:
- * quiet when hour >= start OR hour < end.
- */
-export function isSilenceHours(
-  now: Date,
-  timeZone: string,
-  startHour: number,
-  endHour: number,
-): boolean {
-  const hour = getLocalHour(now, timeZone)
-
-  if (startHour === endHour) {
-    return false
-  }
-
-  if (startHour < endHour) {
-    return hour >= startHour && hour < endHour
-  }
-
-  return hour >= startHour || hour < endHour
 }
 
 /** UTC ISO bounds for [ymd 00:00, next day 00:00) in the given IANA timezone. */

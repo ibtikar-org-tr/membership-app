@@ -1,11 +1,5 @@
 import type { AppBindings } from '../types/bindings'
-import {
-  CRON_SILENCE_HOURS,
-  getCronTimezone,
-  getLocalHour,
-  isCronDryRun,
-  isSilenceHours,
-} from '../utils/cron-timezone'
+import { getCronTimezone, getLocalHour, isCronDryRun } from '../utils/cron-timezone'
 import { runEventReminders } from './event-reminders'
 import { runOwnerDailyReports } from './owner-daily-report'
 import { runTaskReminders } from './task-reminders'
@@ -27,7 +21,6 @@ export async function handleCron(bindings: AppBindings): Promise<CronRunStats> {
     now,
     timeZone,
     dryRun: isCronDryRun(bindings.CRON_DRY_RUN),
-    silenceHours: CRON_SILENCE_HOURS,
   }
 
   const stats = emptyStats()
@@ -36,16 +29,8 @@ export async function handleCron(bindings: AppBindings): Promise<CronRunStats> {
     startedAt,
     timeZone: ctx.timeZone,
     localHour: getLocalHour(now, timeZone),
-    silenceHours: `${CRON_SILENCE_HOURS.start}:00–${CRON_SILENCE_HOURS.end}:00`,
     dryRun: ctx.dryRun,
   })
-
-  if (isSilenceHours(now, timeZone, CRON_SILENCE_HOURS.start, CRON_SILENCE_HOURS.end)) {
-    console.log('[cron] silence hours — skipping all notifications', {
-      localHour: getLocalHour(now, timeZone),
-    })
-    return stats
-  }
 
   try {
     await runTaskReminders(bindings, ctx, stats)
