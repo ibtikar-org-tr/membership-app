@@ -1,6 +1,8 @@
-import { Link, NavLink, Navigate, Outlet } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { LoginPanel } from '../components/auth/LoginPanel'
 import { Seo } from '../components/Seo'
+import type { AuthUser } from '../types/auth'
 import { clearStoredUser, getStoredUser } from '../utils/auth'
 import {
   LayoutDashboard,
@@ -39,7 +41,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 ]
 
 export function DashboardPage() {
-  const user = useMemo(() => getStoredUser(), [])
+  const [user, setUser] = useState<AuthUser | null>(() => getStoredUser())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
@@ -57,7 +59,16 @@ export function DashboardPage() {
   }, [isMobileSidebarOpen])
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return (
+      <>
+        <Seo
+          title="تسجيل الدخول"
+          description="سجّل الدخول للوصول إلى لوحة التحكم ومتابعة المشاريع والفعاليات والأندية."
+          noIndex
+        />
+        <LoginPanel onSuccess={() => setUser(getStoredUser())} />
+      </>
+    )
   }
 
   const handleLogout = () => {

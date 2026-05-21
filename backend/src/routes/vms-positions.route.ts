@@ -1,6 +1,6 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
+import { getUserDisplayNamesByMembershipNumbers, getUserProfileByMembershipNumber } from '../repositories/user-info.repository'
 import { createProjectMember, getProjectMember } from '../repositories/vms-project-members.repository'
 import { getProjectById } from '../repositories/vms-projects.repository'
 import {
@@ -24,7 +24,11 @@ import {
   reviewPositionApplicationSchema,
   updatePositionSchema,
 } from '../schemas/vms-position.schema'
-import { notifyPositionApplicationReviewed, notifyPositionApplicationSubmitted } from '../services/position-notification.service'
+import {
+  notifyManagerAboutAcceptedApplicant,
+  notifyPositionApplicationReviewed,
+  notifyPositionApplicationSubmitted,
+} from '../services/position-notification.service'
 import { sendBackendTelegramGroupInvite } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
 
@@ -370,6 +374,8 @@ vmsPositionsRoute.put(
         return c.json({ error: 'Could not update application.' }, 500)
       }
 
+      let groupInviteSent = false
+
       if (updated.status === 'accepted') {
         const existingMember = await getProjectMember(c.env.VMS_DB, position.projectId, updated.membershipNumber)
         if (!existingMember) {
@@ -388,6 +394,8 @@ vmsPositionsRoute.put(
               telegramGroupId: projectTelegramGroupId,
               contextLabel: `project ${authorization.project?.name ?? position.projectId}`,
             })
+
+            groupInviteSent = inviteResult.success
 
             if (!inviteResult.success) {
               console.warn('Failed to send project group invite after position acceptance:', inviteResult)
@@ -418,6 +426,29 @@ vmsPositionsRoute.put(
         applicantMembershipNumber: updated.membershipNumber,
         decision: updated.status,
       })
+
+      if (updated.status === 'accepted') {
+        const applicantProfile = await getUserProfileByMembershipNumber(c.env.MEMBERS_DB, updated.membershipNumber)
+
+        await notifyManagerAboutAcceptedApplicant(c.env, {
+          frontendBaseUrl: c.env.FRONTEND_BASE_URL,
+          projectId: position.projectId,
+          projectName: position.projectName,
+          positionId: position.id,
+          positionName: position.name,
+          managerMembershipNumber: actorMembershipNumber,
+          applicantMembershipNumber: updated.membershipNumber,
+          applicantDisplayName:
+            displayNameMap.get(updated.membershipNumber) ?? updated.membershipNumber,
+          applicantContact: {
+            telegramId: applicantProfile?.telegramId ?? null,
+            telegramUsername: applicantProfile?.telegramUsername ?? null,
+            email: applicantProfile?.email ?? null,
+            phoneNumber: applicantProfile?.phoneNumber ?? null,
+          },
+          groupInviteSent,
+        })
+      }
 
       return c.json({
         position: enriched[0],

@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS projects (
     parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL, -- allows for nesting projects, technically the whole application can be one big project with multiple levels of sub-projects
     owner TEXT NOT NULL, -- membership_number of the user who owns the project (only one owner per project, but managers can be multiple)
     telegram_group_id TEXT, -- Telegram group ID for project communication (e.g., "-123456789"); the same group may be linked to multiple projects
-    status TEXT NOT NULL -- "active", "completed", "archived"
+    status TEXT NOT NULL, -- "active", "completed", "archived"
+    last_reported_at TEXT -- ISO 8601; last owner daily report sent (cron)
 );
 
 -- This will be handled in the backend to avoid sql looping
@@ -62,7 +63,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     completed_by TEXT, -- membership_number of the user who marked the task as completed
     completed_at TEXT, -- stored as ISO 8601 string (e.g., "1990-01-01T12:00:00Z")
     -- completion_approval_status TEXT NOT NULL DEFAULT 'pending' -- "pending", "approved", "rejected" (removed for simplicity, now the task completion depends on the approved_by field)
-    approved_by TEXT -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
+    approved_by TEXT, -- membership_number of the user who approved the task completion (set when approved, rejection will reset the completed_by and completed_at fields to NULL)
+    last_reminded_at TEXT -- ISO 8601; last task reminder sent to assignee (cron)
 );
 
 CREATE TRIGGER IF NOT EXISTS update_task_updated_at AFTER UPDATE ON tasks

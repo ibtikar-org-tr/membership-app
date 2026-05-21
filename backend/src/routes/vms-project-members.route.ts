@@ -14,6 +14,7 @@ import {
   projectMemberParamsSchema,
   updateProjectMemberSchema,
 } from '../schemas/vms-project-member.schema'
+import { notifyProjectMemberRemoved } from '../services/project-member-notification.service'
 import type { AppBindings } from '../types/bindings'
 
 export const vmsProjectMembersRoute = new Hono<{ Bindings: AppBindings }>()
@@ -143,11 +144,70 @@ vmsProjectMembersRoute.delete(
   async (c) => {
     try {
       const { projectId, membershipNumber } = c.req.valid('param')
+      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+
+      if (!actorMembershipNumber) {
+        return c.json({ error: 'Membership number is required.' }, 400)
+      }
+
+      const project = await getProjectById(c.env.VMS_DB, projectId)
+
+      if (!project) {
+        return c.json({ error: 'Project not found.' }, 404)
+      }
+
+      if (project.owner === membershipNumber) {
+        return c.json(
+          {
+            error:
+              'لا يمكن إزالة مالك المشروع. انقل الملكية إلى عضو آخر أولاً إذا أردت مغادرة المشروع.',
+          },
+          403,
+        )
+      }
+
+      const isSelfLeave = actorMembershipNumber === membershipNumber
+
+      if (isSelfLeave) {
+        if (membershipNumber !== actorMembershipNumber) {
+          return c.json({ error: 'يمكنك مغادرة المشروع لحسابك فقط.' }, 403)
+        }
+      } else {
+        const authorization = await canManageProjectMembers(c.env.VMS_DB, projectId, actorMembershipNumber)
+
+        if (!authorization.isAuthorized) {
+          return c.json({ error: 'فقط مالك المشروع أو المدراء يمكنهم إزالة الأعضاء.' }, 403)
+        }
+      }
+
+      const existingMember = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
+
+      if (!existingMember) {
+        return c.json({ error: 'Project member not found.' }, 404)
+      }
+
       const deleted = await deleteProjectMember(c.env.VMS_DB, projectId, membershipNumber)
 
       if (!deleted) {
         return c.json({ error: 'Project member not found.' }, 404)
       }
+
+      const displayNameMap = await getUserDisplayNamesByMembershipNumbers(c.env.MEMBERS_DB, [
+        membershipNumber,
+        actorMembershipNumber,
+      ])
+
+      await notifyProjectMemberRemoved(c.env, {
+        frontendBaseUrl: c.env.FRONTEND_BASE_URL,
+        projectId,
+        projectName: project.name,
+        actorMembershipNumber,
+        removedMembershipNumber: membershipNumber,
+        actorDisplayName: displayNameMap.get(actorMembershipNumber) ?? actorMembershipNumber,
+        removedDisplayName: displayNameMap.get(membershipNumber) ?? membershipNumber,
+        isSelfLeave,
+        projectOwnerMembershipNumber: project.owner,
+      })
 
       return c.json({ message: 'Project member deleted successfully.' })
     } catch (error) {

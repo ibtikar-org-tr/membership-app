@@ -266,6 +266,13 @@ export function createTask(payload: {
   )
 }
 
+export function remindTask(taskId: string, membershipNumber: string) {
+  return postJson<{ task: VmsTask; remindedAt: string }, Record<string, never>>(
+    `/tasks/${encodeURIComponent(taskId)}/remind?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    {},
+  )
+}
+
 export function updateTask(
   taskId: string,
   payload: Partial<{
@@ -515,6 +522,20 @@ export function createProjectMember(payload: {
   return postJson<{ projectMember: VmsProjectMember }, typeof payload>(
     `/project-members?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
     payload,
+  )
+}
+
+export function leaveProject(projectId: string, membershipNumber: string) {
+  return removeProjectMember(projectId, membershipNumber, membershipNumber)
+}
+
+export function removeProjectMember(
+  projectId: string,
+  targetMembershipNumber: string,
+  actorMembershipNumber: string,
+) {
+  return deleteJson(
+    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
   )
 }
 

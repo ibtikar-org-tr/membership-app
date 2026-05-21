@@ -57,3 +57,22 @@ export function clearStoredUser() {
 
   window.localStorage.removeItem(AUTH_STORAGE_KEY)
 }
+
+/** Accepts only same-app relative paths; blocks open redirects and login loops. */
+export function getSafeRedirectPath(path: string | null | undefined): string | null {
+  if (!path) {
+    return null
+  }
+
+  const trimmed = path.trim()
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) {
+    return null
+  }
+
+  const pathname = trimmed.split(/[?#]/)[0]
+  if (pathname === '/login' || pathname.startsWith('/login/')) {
+    return null
+  }
+
+  return trimmed
+}

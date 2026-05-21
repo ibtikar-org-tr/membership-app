@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import {
   createTask,
@@ -7,12 +7,22 @@ import {
   fetchProjectById,
   fetchProjectMembers,
   fetchTasks,
+  leaveProject,
+  remindTask,
+  removeProjectMember,
+  requestTelegramGroupInvite,
   updateProject,
   updateTask,
 } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
-import { AddTaskModal, MembersModal, ProjectSettingsModal } from '../../components/dashboard/project-details/ProjectDetailsModals'
+import {
+  AddTaskModal,
+  LeaveProjectConfirmModal,
+  MembersModal,
+  ProjectSettingsModal,
+  RemoveProjectMemberConfirmModal,
+} from '../../components/dashboard/project-details/ProjectDetailsModals'
 import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
 import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
 import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
@@ -20,6 +30,7 @@ import { UnallowedAccessPage } from './UnallowedAccessPage'
 
 export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
+  const navigate = useNavigate()
   const user = useMemo(() => getStoredUser(), [])
   const [project, setProject] = useState<VmsProject | null>(null)
   const [parentProjectName, setParentProjectName] = useState<string | null>(null)
@@ -38,9 +49,22 @@ export function DashboardProjectDetailsPage() {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isUpdatingTask, setIsUpdatingTask] = useState(false)
+  const [isRemindingTask, setIsRemindingTask] = useState(false)
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
+  const [taskRemindError, setTaskRemindError] = useState<string | null>(null)
+  const [taskRemindSuccess, setTaskRemindSuccess] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false)
+  const [isLeavingProject, setIsLeavingProject] = useState(false)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
+  const [memberPendingRemoval, setMemberPendingRemoval] = useState<VmsProjectMember | null>(null)
+  const [isRemovingMember, setIsRemovingMember] = useState(false)
+  const [removeMemberError, setRemoveMemberError] = useState<string | null>(null)
+  const [removingMembershipNumber, setRemovingMembershipNumber] = useState<string | null>(null)
+  const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
+  const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
+  const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
 
   useEffect(() => {
     if (!projectID || !user) {
@@ -194,6 +218,14 @@ export function DashboardProjectDetailsPage() {
 
     return project.owner === user.membershipNumber
   }, [project, user])
+  const isProjectMember = useMemo(() => {
+    if (!user) {
+      return false
+    }
+
+    return projectMembers.some((member) => member.membershipNumber === user.membershipNumber)
+  }, [projectMembers, user])
+  const canLeaveProject = isProjectMember && !isProjectOwner
   const ownershipTransferOptions = useMemo(
     () => projectMembers.filter((member) => member.membershipNumber !== project?.owner),
     [projectMembers, project?.owner],
@@ -224,6 +256,19 @@ export function DashboardProjectDetailsPage() {
     )
   }, [project, projectManagerMembershipNumbers, selectedTask, user])
 
+  const canRemindSelectedTask = useMemo(() => {
+    if (!selectedTask || !canManageProjectMembers) {
+      return false
+    }
+
+    const assignee = selectedTask.assignedTo?.trim()
+    if (!assignee) {
+      return false
+    }
+
+    return selectedTask.status === 'open' || selectedTask.status === 'in_progress'
+  }, [canManageProjectMembers, selectedTask])
+
   const formatAssignee = (membershipNumber: string | null) => {
     if (!membershipNumber) {
       return 'غير مسند'
@@ -232,9 +277,43 @@ export function DashboardProjectDetailsPage() {
     return memberNameByMembership.get(membershipNumber) ?? membershipNumber
   }
 
+  useEffect(() => {
+    setTaskRemindError(null)
+    setTaskRemindSuccess(null)
+  }, [selectedTaskId])
+
   const closeTaskDetails = () => {
     setTaskUpdateError(null)
+    setTaskRemindError(null)
+    setTaskRemindSuccess(null)
     setSelectedTaskId(null)
+  }
+
+  const handleRemindTask = async () => {
+    setTaskRemindError(null)
+    setTaskRemindSuccess(null)
+
+    if (!selectedTask || !user?.membershipNumber || !canRemindSelectedTask) {
+      return
+    }
+
+    setIsRemindingTask(true)
+
+    try {
+      const payload = await remindTask(selectedTask.id, user.membershipNumber)
+      setProjectTasks((previous) =>
+        previous.map((task) => (task.id === payload.task.id ? payload.task : task)),
+      )
+      setTaskRemindSuccess('تم إرسال التذكير إلى المكلّف عبر تيليجرام.')
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTaskRemindError(requestError.message)
+      } else {
+        setTaskRemindError('تعذر إرسال التذكير.')
+      }
+    } finally {
+      setIsRemindingTask(false)
+    }
   }
 
   const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
@@ -477,6 +556,83 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
+  const handleRemoveProjectMember = async () => {
+    setRemoveMemberError(null)
+
+    if (!projectID || !user || !memberPendingRemoval) {
+      return
+    }
+
+    const targetMembershipNumber = memberPendingRemoval.membershipNumber
+    setIsRemovingMember(true)
+    setRemovingMembershipNumber(targetMembershipNumber)
+
+    try {
+      await removeProjectMember(projectID, targetMembershipNumber, user.membershipNumber)
+      const membersPayload = await fetchProjectMembers(projectID)
+      setProjectMembers(membersPayload.projectMembers)
+      setMemberPendingRemoval(null)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setRemoveMemberError(requestError.message)
+      } else {
+        setRemoveMemberError('تعذر إزالة العضو من المشروع.')
+      }
+    } finally {
+      setIsRemovingMember(false)
+      setRemovingMembershipNumber(null)
+    }
+  }
+
+  const handleLeaveProject = async () => {
+    setLeaveError(null)
+
+    if (!projectID || !user) {
+      return
+    }
+
+    setIsLeavingProject(true)
+
+    try {
+      await leaveProject(projectID, user.membershipNumber)
+      navigate('/dashboard/projects', { replace: true })
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setLeaveError(requestError.message)
+      } else {
+        setLeaveError('تعذر مغادرة المشروع.')
+      }
+    } finally {
+      setIsLeavingProject(false)
+    }
+  }
+
+  const handleSendTelegramInvite = async () => {
+    setTelegramInviteError(null)
+    setTelegramInviteSuccess(null)
+
+    if (!project?.telegramGroupId || !user?.membershipNumber) {
+      return
+    }
+
+    setIsSendingTelegramInvite(true)
+    try {
+      await requestTelegramGroupInvite(user.membershipNumber, {
+        resourceType: 'project',
+        resourceId: project.id,
+      })
+      setTelegramInviteSuccess('تم إرسال دعوة مجموعة التلغرام عبر البوت.')
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setTelegramInviteError(requestError.message)
+      } else {
+        setTelegramInviteError('تعذر إرسال دعوة مجموعة التلغرام.')
+      }
+    } finally {
+      setIsSendingTelegramInvite(false)
+    }
+  }
+
   if (!projectID) {
     return <Navigate to="/dashboard/projects" replace />
   }
@@ -492,6 +648,8 @@ export function DashboardProjectDetailsPage() {
       </section>
     )
   }
+
+  const telegramInviteFeedback = telegramInviteError ?? telegramInviteSuccess
 
   return (
     <section className="w-full space-y-3">
@@ -513,6 +671,16 @@ export function DashboardProjectDetailsPage() {
         subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}
         onOpenMembers={() => setIsMembersOpen(true)}
         onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}
+        showTelegramInvite={Boolean(project.telegramGroupId)}
+        isSendingTelegramInvite={isSendingTelegramInvite}
+        onSendTelegramInvite={() => void handleSendTelegramInvite()}
+        telegramInviteFeedback={telegramInviteFeedback}
+        telegramInviteFeedbackIsError={Boolean(telegramInviteError)}
+        canLeaveProject={canLeaveProject}
+        onLeaveProject={() => {
+          setLeaveError(null)
+          setIsLeaveConfirmOpen(true)
+        }}
       >
         <TaskBoard
           boardColumns={boardColumns}
@@ -525,12 +693,17 @@ export function DashboardProjectDetailsPage() {
         <TaskDetailsModal
           selectedTask={selectedTask}
           canEditSelectedTask={canEditSelectedTask}
+          canRemindTask={canRemindSelectedTask}
           isUpdatingTask={isUpdatingTask}
+          isRemindingTask={isRemindingTask}
           taskUpdateError={taskUpdateError}
+          taskRemindError={taskRemindError}
+          taskRemindSuccess={taskRemindSuccess}
           memberOptions={memberOptions}
           formatAssignee={formatAssignee}
           onClose={closeTaskDetails}
           onUpdateTask={handleUpdateTask}
+          onRemindTask={handleRemindTask}
         />
       ) : null}
 
@@ -559,7 +732,52 @@ export function DashboardProjectDetailsPage() {
       {isMembersOpen ? (
         <MembersModal
           projectMembers={projectMembers}
-          onClose={() => setIsMembersOpen(false)}
+          projectOwnerMembershipNumber={project.owner}
+          actorMembershipNumber={user?.membershipNumber ?? null}
+          canManageMembers={canManageProjectMembers}
+          removingMembershipNumber={removingMembershipNumber}
+          onRequestRemove={(member) => {
+            setRemoveMemberError(null)
+            setMemberPendingRemoval(member)
+          }}
+          onClose={() => {
+            if (!isRemovingMember) {
+              setIsMembersOpen(false)
+              setMemberPendingRemoval(null)
+              setRemoveMemberError(null)
+            }
+          }}
+        />
+      ) : null}
+
+      {memberPendingRemoval ? (
+        <RemoveProjectMemberConfirmModal
+          memberDisplayName={memberPendingRemoval.displayName}
+          membershipNumber={memberPendingRemoval.membershipNumber}
+          isRemoving={isRemovingMember}
+          removeError={removeMemberError}
+          onClose={() => {
+            if (!isRemovingMember) {
+              setMemberPendingRemoval(null)
+              setRemoveMemberError(null)
+            }
+          }}
+          onConfirm={() => void handleRemoveProjectMember()}
+        />
+      ) : null}
+
+      {isLeaveConfirmOpen ? (
+        <LeaveProjectConfirmModal
+          projectName={project.name}
+          isLeaving={isLeavingProject}
+          leaveError={leaveError}
+          onClose={() => {
+            if (!isLeavingProject) {
+              setIsLeaveConfirmOpen(false)
+              setLeaveError(null)
+            }
+          }}
+          onConfirm={() => void handleLeaveProject()}
         />
       ) : null}
     </section>

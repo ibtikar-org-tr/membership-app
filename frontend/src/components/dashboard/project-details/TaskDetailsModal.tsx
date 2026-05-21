@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { VmsProjectMember, VmsTask } from '../../../types/vms'
 import { SkillsField } from '../../SkillsField'
-import { formatDateEnCA } from '../../../utils/date-format'
+import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
 import { formatDueDate, priorityBadgeClass, statusBadgeClass, taskPriorityLabel, taskStatusLabel } from './helpers'
 
 type EditableTaskField = 'name' | 'description' | 'status' | 'priority' | 'points' | 'dueDate' | 'assignedTo' | 'skills'
@@ -20,12 +20,17 @@ interface TaskUpdatePatch {
 interface TaskDetailsModalProps {
   selectedTask: VmsTask
   canEditSelectedTask: boolean
+  canRemindTask: boolean
   isUpdatingTask: boolean
+  isRemindingTask: boolean
   taskUpdateError: string | null
+  taskRemindError: string | null
+  taskRemindSuccess: string | null
   memberOptions: VmsProjectMember[]
   formatAssignee: (membershipNumber: string | null) => string
   onClose: () => void
   onUpdateTask: (patch: TaskUpdatePatch) => Promise<void>
+  onRemindTask: () => Promise<void>
 }
 
 function normalizeTaskPriority(priority: string) {
@@ -60,12 +65,17 @@ function taskDraftFrom(selectedTask: VmsTask) {
 export function TaskDetailsModal({
   selectedTask,
   canEditSelectedTask,
+  canRemindTask,
   isUpdatingTask,
+  isRemindingTask,
   taskUpdateError,
+  taskRemindError,
+  taskRemindSuccess,
   memberOptions,
   formatAssignee,
   onClose,
   onUpdateTask,
+  onRemindTask,
 }: TaskDetailsModalProps) {
   const [draft, setDraft] = useState(() => taskDraftFrom(selectedTask))
   const [editingField, setEditingField] = useState<EditableTaskField | null>(null)
@@ -568,7 +578,25 @@ export function TaskDetailsModal({
             <p className="rounded-2xl border border-slate-200 bg-white px-3 py-2">أنشئت بواسطة: {formatAssignee(selectedTask.createdBy)}</p>
             <p className="rounded-2xl border border-slate-200 bg-white px-3 py-2">تاريخ الإنشاء: {formatDateEnCA(selectedTask.createdAt)}</p>
             <p className="rounded-2xl border border-slate-200 bg-white px-3 py-2 sm:col-span-2">آخر تحديث: {formatDateEnCA(selectedTask.updatedAt)}</p>
+            <p className="rounded-2xl border border-slate-200 bg-white px-3 py-2 sm:col-span-2">
+              آخر تذكير: {selectedTask.lastRemindedAt ? formatDateTimeEnCA(selectedTask.lastRemindedAt) : 'لم يُرسل بعد'}
+            </p>
           </section>
+
+          {canRemindTask ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void onRemindTask()}
+                disabled={isRemindingTask || isUpdatingTask}
+                className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isRemindingTask ? 'جار إرسال التذكير...' : 'إرسال تذكير عبر تيليجرام'}
+              </button>
+              {taskRemindSuccess ? <p className="text-sm text-emerald-700">{taskRemindSuccess}</p> : null}
+              {taskRemindError ? <p className="text-sm text-red-600">{taskRemindError}</p> : null}
+            </div>
+          ) : null}
 
           {canEditSelectedTask ? (
             <p className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">

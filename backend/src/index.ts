@@ -16,6 +16,7 @@ import { vmsPositionsRoute } from './routes/vms-positions.route'
 import { vmsSkillsRoute } from './routes/vms-skills.route'
 import { vmsTasksRoute } from './routes/vms-tasks.route'
 import { uploadClubBanner, uploadEventBanner, uploadImages, serveImage } from './routes/images.route'
+import { handleCron } from './cron'
 import type { AppBindings } from './types/bindings'
 
 const app = new Hono<{ Bindings: AppBindings }>()
@@ -48,6 +49,18 @@ app.get('/ms/membership-app/health', (c) => {
   })
 })
 
+app.post('/ms/membership-app/api/internal/cron', async (c) => {
+  const apiKey = c.req.header('X-API-Key')?.trim()
+  const expected = c.env.INTERNAL_SECRET?.trim()
+
+  if (!expected || apiKey !== expected) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const stats = await handleCron(c.env)
+  return c.json({ ok: true, stats })
+})
+
 app.route('/ms/membership-app/api', registrationRoute)
 app.route('/ms/membership-app/api', statsRoute)
 app.route('/ms/membership-app/api', authRoute)
@@ -64,4 +77,13 @@ app.route('/ms/membership-app/api', vmsEventRegistrationsRoute)
 app.route('/ms/membership-app/api', vmsSkillsRoute)
 app.route('/ms/membership-app/api', vmsPointTransactionsRoute)
 
-export default app
+export default {
+  fetch: app.fetch,
+  async scheduled(
+    _event: ScheduledEvent,
+    env: AppBindings,
+    ctx: ExecutionContext,
+  ) {
+    ctx.waitUntil(handleCron(env))
+  },
+}

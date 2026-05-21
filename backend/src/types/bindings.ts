@@ -47,6 +47,7 @@ export interface R2HttpMetadata {
 export interface AppBindings {
   MEMBERS_DB: D1DatabaseLike
   VMS_DB: D1DatabaseLike
+  VMS_LOGS_DB: D1DatabaseLike
   MY_BUCKET: R2BucketLike
   TELEGRAM_MS_SERVICE?: Fetcher
   MEMBERSHIP_NUMBER_PREFIX: string
@@ -57,4 +58,6 @@ export interface AppBindings {
   TELEGRAM_MS: string
   FRONTEND_BASE_URL: string
   INTERNAL_SECRET: string
+  CRON_TIMEZONE?: string
+  CRON_DRY_RUN?: string
 }

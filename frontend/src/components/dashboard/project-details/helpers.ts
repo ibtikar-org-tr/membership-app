@@ -1,5 +1,21 @@
 import { formatDateEnCA } from '../../../utils/date-format'
 
+export function projectMemberRoleLabel(role: string) {
+  if (role === 'manager') {
+    return 'مدير'
+  }
+
+  if (role === 'observer') {
+    return 'مراقب'
+  }
+
+  if (role === 'member') {
+    return 'عضو'
+  }
+
+  return role
+}
+
 export function statusLabel(status: string) {
   if (status === 'completed') {
     return 'مكتمل'
