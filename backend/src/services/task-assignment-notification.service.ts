@@ -1,3 +1,4 @@
+import { buildMemberTelegramDmLink, type TelegramMemberContact } from '../utils/telegram-links'
 import { sendBackendTelegramNotification } from './telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
 
@@ -27,18 +28,11 @@ function sanitizeBoldValue(value: string) {
   return value.replace(/[*_]/g, '').trim()
 }
 
-function buildOwnerTelegramDmLink(options: TaskAssignmentNotificationOptions) {
-  const username = options.projectOwnerTelegramUsername?.trim().replace(/^@+/, '')
-  if (username) {
-    return `https://t.me/${encodeURIComponent(username)}`
+function buildProjectOwnerContact(options: TaskAssignmentNotificationOptions): TelegramMemberContact {
+  return {
+    telegramId: options.projectOwnerTelegramId,
+    telegramUsername: options.projectOwnerTelegramUsername,
   }
-
-  const telegramId = options.projectOwnerTelegramId?.trim()
-  if (telegramId) {
-    return `tg://user?id=${encodeURIComponent(telegramId)}`
-  }
-
-  return null
 }
 
 function buildTaskAssignmentMessage(options: TaskAssignmentNotificationOptions) {
@@ -102,7 +96,7 @@ export async function notifyTaskReminder(env: AppBindings, options: TaskAssignme
   const projectUrl = frontendBaseUrl
     ? `${frontendBaseUrl}/dashboard/projects/${encodeURIComponent(options.projectId)}`
     : null
-  const ownerDmLink = buildOwnerTelegramDmLink(options)
+  const ownerDmLink = buildMemberTelegramDmLink(buildProjectOwnerContact(options))
 
   const result = await sendBackendTelegramNotification(env, {
     target: assignee,
@@ -145,7 +139,7 @@ export async function notifyAssignedTask(env: AppBindings, options: TaskAssignme
   const projectUrl = frontendBaseUrl
     ? `${frontendBaseUrl}/dashboard/projects/${encodeURIComponent(options.projectId)}`
     : null
-  const ownerDmLink = buildOwnerTelegramDmLink(options)
+  const ownerDmLink = buildMemberTelegramDmLink(buildProjectOwnerContact(options))
 
   const result = await sendBackendTelegramNotification(env, {
     target: options.assignedTo.trim(),

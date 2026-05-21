@@ -1,4 +1,9 @@
 import type { AppBindings } from '../types/bindings'
+import {
+  buildMemberContactFallbackLines,
+  buildMemberTelegramDmLink,
+  type TelegramMemberContact,
+} from '../utils/telegram-links'
 import { sendBackendTelegramNotification } from './telegram-notification.service'
 
 interface PositionNotificationContext {
@@ -18,6 +23,14 @@ interface PositionApplicationSubmittedNotification extends PositionNotificationC
 interface PositionApplicationReviewedNotification extends PositionNotificationContext {
   applicantMembershipNumber: string
   decision: 'accepted' | 'rejected'
+}
+
+interface PositionApplicationAcceptedManagerNotification extends PositionNotificationContext {
+  managerMembershipNumber: string
+  applicantMembershipNumber: string
+  applicantDisplayName: string
+  applicantContact: TelegramMemberContact
+  groupInviteSent: boolean
 }
 
 function trimLabel(value: string | null | undefined) {
@@ -119,5 +132,58 @@ export async function notifyPositionApplicationReviewed(env: AppBindings, contex
 
   if (!result.success) {
     console.warn('Failed to notify applicant about position review:', result)
+  }
+}
+
+export async function notifyManagerAboutAcceptedApplicant(
+  env: AppBindings,
+  context: PositionApplicationAcceptedManagerNotification,
+) {
+  const projectLabel = trimLabel(context.projectName)
+  const applicantLabel = `${context.applicantDisplayName} (${context.applicantMembershipNumber})`
+  const dmLink = buildMemberTelegramDmLink(context.applicantContact)
+  const contactFallback = buildMemberContactFallbackLines(context.applicantContact)
+
+  const messageLines = [
+    '✅ تم قبول طلب تطوع',
+    `العضو: ${applicantLabel}`,
+    `الفرصة: ${context.positionName}`,
+    `المشروع: ${projectLabel}`,
+    context.groupInviteSent
+      ? 'تمت إضافة العضو للمشروع وإرسال دعوة مجموعة التلغرام إليه.'
+      : 'تمت إضافة العضو للمشروع.',
+  ]
+
+  if (!dmLink && contactFallback.length > 0) {
+    messageLines.push('', 'بيانات التواصل (لا يوجد حساب تيليجرام مرتبط):', ...contactFallback)
+  } else if (!dmLink) {
+    messageLines.push('', 'لا يوجد حساب تيليجرام مرتبط بهذا العضو.')
+  }
+
+  const projectPositionsLink = buildProjectPositionsLink(context.frontendBaseUrl, context.projectId)
+  const boxes: Array<{ text: string; link: string }> = []
+
+  if (dmLink) {
+    boxes.push({
+      text: 'مراسلة العضو على تيليجرام 👤',
+      link: dmLink,
+    })
+  }
+
+  if (projectPositionsLink) {
+    boxes.push({
+      text: 'فتح الفرص التطوعية',
+      link: projectPositionsLink,
+    })
+  }
+
+  const result = await sendBackendTelegramNotification(env, {
+    target: context.managerMembershipNumber,
+    message: messageLines.join('\n'),
+    ...(boxes.length > 0 ? { boxes } : {}),
+  })
+
+  if (!result.success) {
+    console.warn('Failed to notify manager about accepted applicant:', result)
   }
 }
