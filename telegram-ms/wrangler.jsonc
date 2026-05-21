@@ -8,21 +8,21 @@
     {
       "binding": "TELEGRAM_DB",
       "database_name": "telegram-ms-database",
-      "database_id": "383415c6-91c5-4b14-83e5-1e03cf7618c9",
+      "database_id": "00000000-0000-0000-0000-000000000004",
       "remote": true,
       "migrations_dir": "../database/telegram"
     },
     {
       "binding": "TELEGRAM_MESSAGES_DB",
       "database_name": "telegram-messages-database",
-      "database_id": "27ef8f20-f80f-49e2-92e8-da368e65e1fe",
+      "database_id": "00000000-0000-0000-0000-000000000005",
       "remote": true,
       "migrations_dir": "../database/telegram-messages"
     },
     {
       "binding": "MEMBERS_DB",
       "database_name": "membership-app-database",
-      "database_id": "bb86e7a4-11e2-4d80-88b8-c376a19994dd",
+      "database_id": "00000000-0000-0000-0000-000000000000",
       "remote": true
     }
   ],

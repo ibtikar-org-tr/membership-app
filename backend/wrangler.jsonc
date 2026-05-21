@@ -8,14 +8,14 @@
     {
       "binding": "MEMBERS_DB",
       "database_name": "membership-app-database",
-      "database_id": "bb86e7a4-11e2-4d80-88b8-c376a19994dd",
+      "database_id": "00000000-0000-0000-0000-000000000000",
       "remote": true,
       "migrations_dir": "../database/members"
     },
     {
       "binding": "VMS_DB",
       "database_name": "vms-database",
-      "database_id": "bbd89415-677e-4991-bb11-ea1be7e2d095",
+      "database_id": "00000000-0000-0000-0000-000000000001",
       "remote": true,
       "migrations_dir": "../database/vms"
     },
