@@ -1,9 +1,33 @@
 const MS_PER_DAY = 86_400_000
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000
+export const DEFAULT_CRON_TIMEZONE = 'Europe/Istanbul'
+const ISTANBUL_OFFSET = '+03:00'
 
 export function getCronTimezone(timezone?: string): string {
   const value = timezone?.trim()
-  return value || 'UTC'
+  return value || DEFAULT_CRON_TIMEZONE
+}
+
+export function getCronSilenceHours(
+  startHour?: string,
+  endHour?: string,
+): { start: number; end: number } {
+  const start = parseHour(startHour, 22)
+  const end = parseHour(endHour, 7)
+  return { start, end }
+}
+
+function parseHour(value: string | undefined, fallback: number): number {
+  if (!value?.trim()) {
+    return fallback
+  }
+
+  const parsed = Number.parseInt(value.trim(), 10)
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 23) {
+    return fallback
+  }
+
+  return parsed
 }
 
 export function isCronDryRun(dryRun?: string): boolean {
@@ -20,13 +44,16 @@ export function getYesterdayYmd(now: Date, timeZone: string): string {
 
 export function addDaysToYmd(ymd: string, days: number): string {
   const [year, month, day] = ymd.split('-').map(Number)
-  const utc = new Date(Date.UTC(year, month - 1, day + days))
+  const utc = Date.UTC(year, month - 1, day + days)
   return utc.toISOString().slice(0, 10)
 }
 
+/** Whole calendar days between two YYYY-MM-DD strings (timezone-agnostic date math). */
 export function daysBetweenYmd(fromYmd: string, toYmd: string): number {
-  const from = Date.parse(`${fromYmd}T00:00:00Z`)
-  const to = Date.parse(`${toYmd}T00:00:00Z`)
+  const [fy, fm, fd] = fromYmd.split('-').map(Number)
+  const [ty, tm, td] = toYmd.split('-').map(Number)
+  const from = Date.UTC(fy, fm - 1, fd)
+  const to = Date.UTC(ty, tm - 1, td)
   return Math.floor((to - from) / MS_PER_DAY)
 }
 
@@ -82,36 +109,58 @@ export function alreadySentOwnerReportToday(
   return getLocalYmd(new Date(lastReportedAt), timeZone) === getLocalYmd(now, timeZone)
 }
 
+/**
+ * Silence window in local time. Default 22:00–07:00 crosses midnight:
+ * quiet when hour >= start OR hour < end.
+ */
+export function isSilenceHours(
+  now: Date,
+  timeZone: string,
+  startHour: number,
+  endHour: number,
+): boolean {
+  const hour = getLocalHour(now, timeZone)
+
+  if (startHour === endHour) {
+    return false
+  }
+
+  if (startHour < endHour) {
+    return hour >= startHour && hour < endHour
+  }
+
+  return hour >= startHour || hour < endHour
+}
+
 /** UTC ISO bounds for [ymd 00:00, next day 00:00) in the given IANA timezone. */
 export function getLocalDayUtcBounds(ymd: string, timeZone: string): { start: string; end: string } {
   const start = findZonedMidnightUtc(ymd, timeZone)
-  const nextYmd = addDaysToYmd(ymd, 1)
-  const end = findZonedMidnightUtc(nextYmd, timeZone)
+  const end = findZonedMidnightUtc(addDaysToYmd(ymd, 1), timeZone)
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
 function findZonedMidnightUtc(ymd: string, timeZone: string): Date {
-  const [year, month, day] = ymd.split('-').map(Number)
-  let candidate = Date.UTC(year, month - 1, day, 12, 0, 0)
+  if (timeZone === DEFAULT_CRON_TIMEZONE) {
+    const istanbul = new Date(`${ymd}T00:00:00${ISTANBUL_OFFSET}`)
+    if (!Number.isNaN(istanbul.getTime())) {
+      return istanbul
+    }
+  }
 
-  for (let offsetHours = -36; offsetHours <= 36; offsetHours++) {
-    const probe = new Date(candidate + offsetHours * 3_600_000)
+  const [year, month, day] = ymd.split('-').map(Number)
+  const noonUtc = Date.UTC(year, month - 1, day, 12, 0, 0)
+
+  for (let offsetHours = -18; offsetHours <= 18; offsetHours++) {
+    const probe = new Date(noonUtc + offsetHours * 3_600_000)
     if (getLocalYmd(probe, timeZone) === ymd && getLocalHour(probe, timeZone) === 0) {
       return probe
     }
   }
 
-  for (let offsetHours = -36; offsetHours <= 36; offsetHours++) {
-    const probe = new Date(candidate + offsetHours * 3_600_000)
-    if (getLocalYmd(probe, timeZone) === ymd) {
-      return probe
-    }
-  }
-
-  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0))
+  return new Date(`${ymd}T00:00:00${ISTANBUL_OFFSET}`)
 }
 
-function getLocalHour(date: Date, timeZone: string): number {
+export function getLocalHour(date: Date, timeZone: string): number {
   const hour = new Intl.DateTimeFormat('en-GB', {
     timeZone,
     hour: '2-digit',
@@ -120,6 +169,7 @@ function getLocalHour(date: Date, timeZone: string): number {
   return Number(hour)
 }
 
+/** Formats an instant in the cron timezone (shows +03:00 for Istanbul). */
 export function formatLocalDateTime(iso: string, timeZone: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) {
@@ -130,6 +180,7 @@ export function formatLocalDateTime(iso: string, timeZone: string): string {
     timeZone,
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZoneName: 'shortOffset',
   }).format(date)
 }
 

@@ -54,7 +54,9 @@
     "SMTP_USER": "",
     "SMTP_PASS": "delete-on-deployment",
     "CRON_TIMEZONE": "Europe/Istanbul",
-    "CRON_DRY_RUN": "false"
+    "CRON_DRY_RUN": "false",
+    "CRON_SILENCE_START_HOUR": "22",
+    "CRON_SILENCE_END_HOUR": "7"
   },
   "observability": {
     "enabled": true,

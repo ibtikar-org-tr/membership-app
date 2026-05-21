@@ -4,6 +4,7 @@ export interface CronContext {
   now: Date
   timeZone: string
   dryRun: boolean
+  silenceHours: { start: number; end: number }
 }
 
 export interface CronRunStats {
