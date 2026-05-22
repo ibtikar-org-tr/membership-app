@@ -23,6 +23,7 @@ import {
   ProjectSettingsModal,
   RemoveProjectMemberConfirmModal,
 } from '../../components/dashboard/project-details/ProjectDetailsModals'
+import { MemberInfoModal } from '../../components/dashboard/project-details/MemberInfoModal'
 import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
 import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
 import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
@@ -55,6 +56,7 @@ export function DashboardProjectDetailsPage() {
   const [taskRemindSuccess, setTaskRemindSuccess] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
+  const [memberInfoTarget, setMemberInfoTarget] = useState<VmsProjectMember | null>(null)
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false)
   const [isLeavingProject, setIsLeavingProject] = useState(false)
   const [leaveError, setLeaveError] = useState<string | null>(null)
@@ -736,6 +738,7 @@ export function DashboardProjectDetailsPage() {
           actorMembershipNumber={user?.membershipNumber ?? null}
           canManageMembers={canManageProjectMembers}
           removingMembershipNumber={removingMembershipNumber}
+          onSelectMember={(member) => setMemberInfoTarget(member)}
           onRequestRemove={(member) => {
             setRemoveMemberError(null)
             setMemberPendingRemoval(member)
@@ -747,6 +750,14 @@ export function DashboardProjectDetailsPage() {
               setRemoveMemberError(null)
             }
           }}
+        />
+      ) : null}
+
+      {memberInfoTarget ? (
+        <MemberInfoModal
+          membershipNumber={memberInfoTarget.membershipNumber}
+          displayName={memberInfoTarget.displayName}
+          onClose={() => setMemberInfoTarget(null)}
         />
       ) : null}
 
