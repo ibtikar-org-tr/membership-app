@@ -213,6 +213,37 @@ export async function phoneNumberExists(db: D1DatabaseLike, phoneNumber: string)
   return !!result
 }
 
+export interface MemberContactInfoRow {
+  membershipNumber: string
+  email: string
+  enName: string | null
+  arName: string | null
+  phoneNumber: string | null
+  telegramUsername: string | null
+}
+
+export async function getMemberContactInfoByMembershipNumber(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+): Promise<MemberContactInfoRow | null> {
+  return db
+    .prepare(
+      `SELECT
+        u.membership_number AS membershipNumber,
+        u.email AS email,
+        ui.en_name AS enName,
+        ui.ar_name AS arName,
+        ui.phone_number AS phoneNumber,
+        ui.telegram_username AS telegramUsername
+      FROM users u
+      LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
+      WHERE u.membership_number = ?
+      LIMIT 1`,
+    )
+    .bind(membershipNumber)
+    .first<MemberContactInfoRow>()
+}
+
 export async function getUserProfileByMembershipNumber(
   db: D1DatabaseLike,
   membershipNumber: string,
