@@ -96,6 +96,15 @@ export interface VmsProjectMember {
   displayName: string
 }
 
+export interface VmsProjectMemberContact {
+  membershipNumber: string
+  email: string
+  enName: string | null
+  arName: string | null
+  phoneNumber: string | null
+  telegramUsername: string | null
+}
+
 export interface VmsPositionApplication {
   id: string
   createdAt: string

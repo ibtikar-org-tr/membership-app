@@ -8,8 +8,11 @@ import {
   loginSchema,
   resetPasswordSchema,
 } from '../schemas/auth.schema'
+import { createRefreshToken, findValidRefreshToken, revokeRefreshToken, revokeRefreshTokenById } from '../repositories/refresh-tokens.repository'
 import { sendBackendTelegramNotification } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
+import { clearRefreshTokenCookie, getRefreshTokenFromCookie, setRefreshTokenCookie } from '../utils/auth-cookies'
+import { createAccessToken } from '../utils/jwt'
 import { hashPassword, verifyPassword } from '../utils/password'
 
 export const authRoute = new Hono<{ Bindings: AppBindings }>()
@@ -332,16 +335,82 @@ authRoute.post('/login', zValidator('json', loginSchema), async (c) => {
       return c.json({ error: 'Invalid email or password.' }, 401)
     }
 
+    const authUser = {
+      membershipNumber: user.membership_number,
+      email: user.email,
+      role: user.role,
+    }
+
+    const accessToken = await createAccessToken(c.env, authUser)
+    const refresh = await createRefreshToken(c.env.VMS_LOGS_DB, authUser.membershipNumber)
+    setRefreshTokenCookie(c, refresh.token, refresh.expiresAt)
+
     return c.json({
-      user: {
-        membershipNumber: user.membership_number,
-        email: user.email,
-        role: user.role,
-      },
+      accessToken,
+      expiresIn: 60 * 60 * 24,
+      user: authUser,
     })
   } catch (error) {
     console.error('Failed to login', error)
     return c.json({ error: 'Could not log in.' }, 500)
+  }
+})
+
+authRoute.post('/refresh', async (c) => {
+  try {
+    const refreshToken = getRefreshTokenFromCookie(c)
+    if (!refreshToken) {
+      return c.json({ error: 'Refresh token is required.' }, 401)
+    }
+
+    const stored = await findValidRefreshToken(c.env.VMS_LOGS_DB, refreshToken)
+    if (!stored) {
+      clearRefreshTokenCookie(c)
+      return c.json({ error: 'Invalid or expired refresh token.' }, 401)
+    }
+
+    const user = await getUserByMembershipNumber(c.env.MEMBERS_DB, stored.membership_number)
+    if (!user) {
+      await revokeRefreshTokenById(c.env.VMS_LOGS_DB, stored.id)
+      clearRefreshTokenCookie(c)
+      return c.json({ error: 'Invalid or expired refresh token.' }, 401)
+    }
+
+    await revokeRefreshTokenById(c.env.VMS_LOGS_DB, stored.id)
+
+    const authUser = {
+      membershipNumber: user.membership_number,
+      email: user.email,
+      role: user.role,
+    }
+
+    const accessToken = await createAccessToken(c.env, authUser)
+    const nextRefresh = await createRefreshToken(c.env.VMS_LOGS_DB, authUser.membershipNumber)
+    setRefreshTokenCookie(c, nextRefresh.token, nextRefresh.expiresAt)
+
+    return c.json({
+      accessToken,
+      expiresIn: 60 * 60 * 24,
+      user: authUser,
+    })
+  } catch (error) {
+    console.error('Failed to refresh session', error)
+    return c.json({ error: 'Could not refresh session.' }, 500)
+  }
+})
+
+authRoute.post('/logout', async (c) => {
+  try {
+    const refreshToken = getRefreshTokenFromCookie(c)
+    if (refreshToken) {
+      await revokeRefreshToken(c.env.VMS_LOGS_DB, refreshToken)
+    }
+
+    clearRefreshTokenCookie(c)
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('Failed to logout', error)
+    return c.json({ error: 'Could not log out.' }, 500)
   }
 })
 

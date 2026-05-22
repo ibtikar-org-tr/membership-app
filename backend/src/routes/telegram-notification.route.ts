@@ -9,8 +9,10 @@ import { getProjectMember } from '../repositories/vms-project-members.repository
 import { getProjectById } from '../repositories/vms-projects.repository'
 import { sendBackendTelegramGroupInvite, sendBackendTelegramNotification } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
-export const telegramNotificationRoute = new Hono<{ Bindings: AppBindings }>()
+export const telegramNotificationRoute = new Hono<AppEnv>()
 
 const notifyTelegramSchema = z.object({
   target: z.string().trim().min(1).optional(),
@@ -129,7 +131,7 @@ telegramNotificationRoute.post(
   zValidator('json', groupInviteSchema),
   async (c) => {
     try {
-      const membershipNumber = c.req.query('membershipNumber')?.trim()
+      const membershipNumber = getActorMembershipNumber(c)
       if (!membershipNumber) {
         return c.json({ error: 'Membership number is required.' }, 400)
       }

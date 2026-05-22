@@ -13,12 +13,14 @@ import {
   updatePointTransactionSchema,
 } from '../schemas/vms-point-transaction.schema'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
-export const vmsPointTransactionsRoute = new Hono<{ Bindings: AppBindings }>()
+export const vmsPointTransactionsRoute = new Hono<AppEnv>()
 
 vmsPointTransactionsRoute.get('/point-transactions', async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')
+    const membershipNumber = getActorMembershipNumber(c)
     const pointTransactions = await listPointTransactions(c.env.VMS_DB, membershipNumber)
     return c.json({ pointTransactions })
   } catch (error) {

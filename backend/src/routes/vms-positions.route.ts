@@ -31,8 +31,10 @@ import {
 } from '../services/position-notification.service'
 import { sendBackendTelegramGroupInvite } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
-export const vmsPositionsRoute = new Hono<{ Bindings: AppBindings }>()
+export const vmsPositionsRoute = new Hono<AppEnv>()
 
 async function canManageProjectPositions(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
   const project = await getProjectById(db, projectId)
@@ -95,7 +97,7 @@ async function enrichPositionsWithDisplayNames(
 
 vmsPositionsRoute.get('/positions', async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
     const projectId = c.req.query('projectId')?.trim()
 
     if (!membershipNumber) {
@@ -130,11 +132,8 @@ vmsPositionsRoute.get('/positions', async (c) => {
 vmsPositionsRoute.get('/positions/:id', zValidator('param', positionParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const position = await getPositionByIdWithApplications(c.env.VMS_DB, id)
     if (!position) {
@@ -161,7 +160,7 @@ vmsPositionsRoute.get('/positions/:id', zValidator('param', positionParamsSchema
 
 vmsPositionsRoute.post('/positions', zValidator('json', createPositionSchema), async (c) => {
   try {
-    const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+    const actorMembershipNumber = getActorMembershipNumber(c)
     if (!actorMembershipNumber) {
       return c.json({ error: 'Membership number is required.' }, 400)
     }
@@ -207,11 +206,8 @@ vmsPositionsRoute.put(
   async (c) => {
     try {
       const { id } = c.req.valid('param')
-      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+      const actorMembershipNumber = getActorMembershipNumber(c)
 
-      if (!actorMembershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
 
       const position = await getPositionById(c.env.VMS_DB, id)
       if (!position) {
@@ -247,11 +243,8 @@ vmsPositionsRoute.put(
 vmsPositionsRoute.delete('/positions/:id', zValidator('param', positionParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+    const actorMembershipNumber = getActorMembershipNumber(c)
 
-    if (!actorMembershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const position = await getPositionById(c.env.VMS_DB, id)
     if (!position) {
@@ -282,11 +275,8 @@ vmsPositionsRoute.post(
   async (c) => {
     try {
       const { id } = c.req.valid('param')
-      const membershipNumber = c.req.query('membershipNumber')?.trim()
+      const membershipNumber = getActorMembershipNumber(c)
 
-      if (!membershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
 
       const position = await getPositionById(c.env.VMS_DB, id)
       if (!position) {
@@ -344,11 +334,8 @@ vmsPositionsRoute.put(
   async (c) => {
     try {
       const { id } = c.req.valid('param')
-      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+      const actorMembershipNumber = getActorMembershipNumber(c)
 
-      if (!actorMembershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
 
       const existing = await getPositionApplicationById(c.env.VMS_DB, id)
       if (!existing) {

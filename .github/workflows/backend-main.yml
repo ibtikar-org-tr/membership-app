@@ -48,7 +48,7 @@ jobs:
           | .vars.FRONTEND_BASE_URL = $frontendBaseUrl
           | .services[0].service = $telegramMsName
           | .account_id = $accountId
-          | del(.vars.INTERNAL_SECRET, .vars.SMTP_PASS)'
+          | del(.vars.INTERNAL_SECRET, .vars.SMTP_PASS, .vars.JWT_SECRET)'
 
           jq \
             --arg dbid0 "${{ vars.MEMBERS_DB_ID }}" \

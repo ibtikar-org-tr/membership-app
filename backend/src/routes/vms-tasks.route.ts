@@ -16,6 +16,8 @@ import { notifyAssignedTask, notifyTaskReminder } from '../services/task-assignm
 import { syncTaskCompletionPoints, type TaskPointsState } from '../services/task-points.service'
 
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
 function toPointsState(task: {
   id: string
@@ -35,7 +37,7 @@ function toPointsState(task: {
   }
 }
 
-export const vmsTasksRoute = new Hono<{ Bindings: AppBindings }>()
+export const vmsTasksRoute = new Hono<AppEnv>()
 
 async function canManageProjectTasks(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
   const project = await getProjectById(db, projectId)
@@ -57,11 +59,8 @@ async function canManageProjectTasks(db: AppBindings['VMS_DB'], projectId: strin
 
 vmsTasksRoute.get('/tasks', async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const directProjects = await listDirectProjectsForMember(c.env.VMS_DB, membershipNumber)
     const directProjectIds = new Set(directProjects.map((project) => project.id))
@@ -76,11 +75,8 @@ vmsTasksRoute.get('/tasks', async (c) => {
 vmsTasksRoute.get('/tasks/:id', zValidator('param', taskParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const task = await getTaskById(c.env.VMS_DB, id)
 
@@ -102,11 +98,8 @@ vmsTasksRoute.get('/tasks/:id', zValidator('param', taskParamsSchema), async (c)
 
 vmsTasksRoute.post('/tasks', zValidator('json', createTaskSchema), async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const payload = c.req.valid('json')
     if (payload.createdBy.trim() !== membershipNumber) {
@@ -162,11 +155,8 @@ vmsTasksRoute.put(
   async (c) => {
     try {
       const { id } = c.req.valid('param')
-      const membershipNumber = c.req.query('membershipNumber')?.trim()
+      const membershipNumber = getActorMembershipNumber(c)
 
-      if (!membershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
 
       const payload = c.req.valid('json')
 
@@ -238,11 +228,8 @@ vmsTasksRoute.put(
 vmsTasksRoute.post('/tasks/:id/remind', zValidator('param', taskParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const task = await getTaskById(c.env.VMS_DB, id)
 
@@ -308,11 +295,8 @@ vmsTasksRoute.post('/tasks/:id/remind', zValidator('param', taskParamsSchema), a
 vmsTasksRoute.delete('/tasks/:id', zValidator('param', taskParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const existing = await getTaskById(c.env.VMS_DB, id)
     if (!existing) {

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
-import { cors } from 'hono/cors'
+import { membershipAppCors } from './utils/cors'
+import { authMiddleware } from './middleware/auth.middleware'
 import { authRoute } from './routes/auth.route'
 import { profileRoute } from './routes/profile.route'
 import { registrationRoute } from './routes/registration.route'
@@ -18,21 +19,12 @@ import { vmsTasksRoute } from './routes/vms-tasks.route'
 import { uploadClubBanner, uploadEventBanner, uploadImages, serveImage } from './routes/images.route'
 import { handleCron } from './cron'
 import type { AppBindings } from './types/bindings'
+import type { AppEnv } from './types/hono'
 
 const app = new Hono<{ Bindings: AppBindings }>()
 
-app.use(
-  '/ms/membership-app/api/*',
-  cors({
-    origin: '*',
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
-  }),
-)
+app.use('/ms/membership-app/api/*', membershipAppCors())
 
-app.post('/ms/membership-app/api/images/upload', uploadImages)
-app.put('/ms/membership-app/api/events/:id/banner', uploadEventBanner)
-app.put('/ms/membership-app/api/clubs/:id/banner', uploadClubBanner)
 app.get('/ms/membership-app/api/event-images/*', serveImage)
 
 app.get('/ms/membership-app', (c) => {
@@ -61,21 +53,31 @@ app.post('/ms/membership-app/api/internal/cron', async (c) => {
   return c.json({ ok: true, stats })
 })
 
-app.route('/ms/membership-app/api', registrationRoute)
-app.route('/ms/membership-app/api', statsRoute)
-app.route('/ms/membership-app/api', authRoute)
-app.route('/ms/membership-app/api', telegramNotificationRoute)
-app.route('/ms/membership-app/api', profileRoute)
-app.route('/ms/membership-app/api', vmsProjectsRoute)
-app.route('/ms/membership-app/api', vmsPositionsRoute)
-app.route('/ms/membership-app/api', vmsTasksRoute)
-app.route('/ms/membership-app/api', vmsProjectMembersRoute)
-app.route('/ms/membership-app/api', vmsEventsRoute)
-app.route('/ms/membership-app/api', vmsClubsRoute)
-app.route('/ms/membership-app/api', vmsEventTicketsRoute)
-app.route('/ms/membership-app/api', vmsEventRegistrationsRoute)
-app.route('/ms/membership-app/api', vmsSkillsRoute)
-app.route('/ms/membership-app/api', vmsPointTransactionsRoute)
+const publicApi = new Hono<{ Bindings: AppBindings }>()
+publicApi.route('/', registrationRoute)
+publicApi.route('/', statsRoute)
+publicApi.route('/', authRoute)
+
+const securedApi = new Hono<AppEnv>()
+securedApi.use('*', authMiddleware)
+securedApi.route('/', profileRoute)
+securedApi.route('/', telegramNotificationRoute)
+securedApi.route('/', vmsProjectsRoute)
+securedApi.route('/', vmsPositionsRoute)
+securedApi.route('/', vmsTasksRoute)
+securedApi.route('/', vmsProjectMembersRoute)
+securedApi.route('/', vmsEventsRoute)
+securedApi.route('/', vmsClubsRoute)
+securedApi.route('/', vmsEventTicketsRoute)
+securedApi.route('/', vmsEventRegistrationsRoute)
+securedApi.route('/', vmsSkillsRoute)
+securedApi.route('/', vmsPointTransactionsRoute)
+securedApi.post('/images/upload', uploadImages)
+securedApi.put('/events/:id/banner', uploadEventBanner)
+securedApi.put('/clubs/:id/banner', uploadClubBanner)
+
+app.route('/ms/membership-app/api', publicApi)
+app.route('/ms/membership-app/api', securedApi)
 
 export default {
   fetch: app.fetch,

@@ -3,6 +3,8 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { getUserProfileByMembershipNumber, updateUserInfo } from '../repositories/user-info.repository'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
 const profileParamsSchema = z.object({
   membershipNumber: z.string().trim().min(1),
@@ -41,11 +43,17 @@ const updateProfileSchema = z.object({
   languages: nullableStringField,
 })
 
-export const profileRoute = new Hono<{ Bindings: AppBindings }>()
+export const profileRoute = new Hono<AppEnv>()
 
 profileRoute.get('/profile/:membershipNumber', zValidator('param', profileParamsSchema), async (c) => {
   try {
     const { membershipNumber } = c.req.valid('param')
+    const actorMembershipNumber = getActorMembershipNumber(c)
+
+    if (membershipNumber !== actorMembershipNumber) {
+      return c.json({ error: 'Forbidden' }, 403)
+    }
+
     const profile = await getUserProfileByMembershipNumber(c.env.MEMBERS_DB, membershipNumber)
 
     if (!profile) {
@@ -66,6 +74,12 @@ profileRoute.put(
   async (c) => {
     try {
       const { membershipNumber } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      if (membershipNumber !== actorMembershipNumber) {
+        return c.json({ error: 'Forbidden' }, 403)
+      }
+
       const payload = c.req.valid('json')
 
       await updateUserInfo(c.env.MEMBERS_DB, membershipNumber, payload)
