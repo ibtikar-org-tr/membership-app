@@ -1,6 +1,9 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
+import {
+  getMemberContactInfoByMembershipNumber,
+  getUserDisplayNamesByMembershipNumbers,
+} from '../repositories/user-info.repository'
 import { getProjectById } from '../repositories/vms-projects.repository'
 import {
   createProjectMember,
@@ -16,8 +19,28 @@ import {
 } from '../schemas/vms-project-member.schema'
 import { notifyProjectMemberRemoved } from '../services/project-member-notification.service'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
-export const vmsProjectMembersRoute = new Hono<{ Bindings: AppBindings }>()
+export const vmsProjectMembersRoute = new Hono<AppEnv>()
+
+async function hasProjectMembership(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
+  const project = await getProjectById(db, projectId)
+
+  if (!project) {
+    return { project: null, isMember: false }
+  }
+
+  if (project.owner === membershipNumber) {
+    return { project, isMember: true }
+  }
+
+  const projectMember = await getProjectMember(db, projectId, membershipNumber)
+  return {
+    project,
+    isMember: Boolean(projectMember),
+  }
+}
 
 async function canManageProjectMembers(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
   const project = await getProjectById(db, projectId)
@@ -65,6 +88,40 @@ vmsProjectMembersRoute.get('/project-members', async (c) => {
 })
 
 vmsProjectMembersRoute.get(
+  '/project-members/:projectId/:membershipNumber/contact',
+  zValidator('param', projectMemberParamsSchema),
+  async (c) => {
+    try {
+      const { projectId, membershipNumber } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      const actorAccess = await hasProjectMembership(c.env.VMS_DB, projectId, actorMembershipNumber)
+      if (!actorAccess.project) {
+        return c.json({ error: 'Project not found.' }, 404)
+      }
+      if (!actorAccess.isMember) {
+        return c.json({ error: 'Only project members can view member contact info.' }, 403)
+      }
+
+      const targetAccess = await hasProjectMembership(c.env.VMS_DB, projectId, membershipNumber)
+      if (!targetAccess.isMember) {
+        return c.json({ error: 'Project member not found.' }, 404)
+      }
+
+      const contact = await getMemberContactInfoByMembershipNumber(c.env.MEMBERS_DB, membershipNumber)
+      if (!contact) {
+        return c.json({ error: 'Member contact info not found.' }, 404)
+      }
+
+      return c.json({ contact })
+    } catch (error) {
+      console.error('Failed to fetch project member contact info', error)
+      return c.json({ error: 'Could not fetch project member contact info.' }, 500)
+    }
+  },
+)
+
+vmsProjectMembersRoute.get(
   '/project-members/:projectId/:membershipNumber',
   zValidator('param', projectMemberParamsSchema),
   async (c) => {
@@ -73,10 +130,22 @@ vmsProjectMembersRoute.get(
       const projectMember = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
 
       if (!projectMember) {
-        return c.json({ error: 'Project member not found.' }, 404)
+        const targetAccess = await hasProjectMembership(c.env.VMS_DB, projectId, membershipNumber)
+        if (!targetAccess.isMember) {
+          return c.json({ error: 'Project member not found.' }, 404)
+        }
       }
 
-      const enriched = await enrichProjectMembersWithDisplayNames(c.env.MEMBERS_DB, [projectMember])
+      const member =
+        projectMember ??
+        ({
+          projectId,
+          membershipNumber,
+          role: 'owner',
+          displayName: membershipNumber,
+        } as const)
+
+      const enriched = await enrichProjectMembersWithDisplayNames(c.env.MEMBERS_DB, [member])
       return c.json({ projectMember: enriched[0] })
     } catch (error) {
       console.error('Failed to fetch project member', error)
