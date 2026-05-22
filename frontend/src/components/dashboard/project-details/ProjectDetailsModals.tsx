@@ -398,6 +398,7 @@ interface MembersModalProps {
   actorMembershipNumber: string | null
   canManageMembers: boolean
   removingMembershipNumber: string | null
+  onSelectMember: (member: VmsProjectMember) => void
   onRequestRemove: (member: VmsProjectMember) => void
   onClose: () => void
 }
@@ -408,6 +409,7 @@ export function MembersModal({
   actorMembershipNumber,
   canManageMembers,
   removingMembershipNumber,
+  onSelectMember,
   onRequestRemove,
   onClose,
 }: MembersModalProps) {
@@ -431,28 +433,31 @@ export function MembersModal({
               return (
                 <div
                   key={`member-${member.projectId}-${member.membershipNumber}`}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
+                  className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-sm"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-900">{member.displayName}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {projectMemberRoleLabel(member.role)} • {member.membershipNumber}
-                        {isOwner ? ' • مالك المشروع' : null}
-                      </p>
-                    </div>
-                    {canRemove ? (
-                      <button
-                        type="button"
-                        onClick={() => onRequestRemove(member)}
-                        className="shrink-0 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
-                      >
-                        إزالة
-                      </button>
-                    ) : removingMembershipNumber === member.membershipNumber ? (
-                      <span className="shrink-0 text-[11px] text-slate-500">جار الإزالة...</span>
-                    ) : null}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSelectMember(member)}
+                    className="min-w-0 flex-1 rounded-2xl px-4 py-3 text-right transition hover:bg-slate-100/80"
+                    title="عرض معلومات العضو"
+                  >
+                    <p className="font-semibold text-slate-900">{member.displayName}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {projectMemberRoleLabel(member.role)} • {member.membershipNumber}
+                      {isOwner ? ' • مالك المشروع' : null}
+                    </p>
+                  </button>
+                  {canRemove ? (
+                    <button
+                      type="button"
+                      onClick={() => onRequestRemove(member)}
+                      className="m-2 shrink-0 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
+                    >
+                      إزالة
+                    </button>
+                  ) : removingMembershipNumber === member.membershipNumber ? (
+                    <span className="m-2 shrink-0 text-[11px] text-slate-500">جار الإزالة...</span>
+                  ) : null}
                 </div>
               )
             })}
