@@ -438,7 +438,7 @@ export function MembersModal({
                   <button
                     type="button"
                     onClick={() => onSelectMember(member)}
-                    className="min-w-0 flex-1 rounded-2xl px-4 py-3 text-right transition hover:bg-slate-100/80"
+                    className="min-w-0 flex-1 rounded-2xl px-4 py-3 text-right transition hover:cursor-pointer hover:bg-slate-100/80"
                     title="عرض معلومات العضو"
                   >
                     <p className="font-semibold text-slate-900">{member.displayName}</p>

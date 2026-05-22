@@ -99,7 +99,7 @@ export function MemberInfoModal({ membershipNumber, displayName, onClose }: Memb
                   profile.email.trim() ? (
                     <a
                       href={`mailto:${profile.email.trim()}`}
-                      className="font-medium text-blue-700 underline-offset-2 hover:underline"
+                      className="font-medium text-blue-700 underline-offset-2 hover:cursor-pointer hover:underline"
                     >
                       {profile.email.trim()}
                     </a>
@@ -119,7 +119,7 @@ export function MemberInfoModal({ membershipNumber, displayName, onClose }: Memb
                       href={telegramProfileUrl(telegramUsername)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-blue-700 underline-offset-2 hover:underline"
+                      className="font-medium text-blue-700 underline-offset-2 hover:cursor-pointer hover:underline"
                     >
                       {formatTelegramLabel(telegramUsername)}
                     </a>
