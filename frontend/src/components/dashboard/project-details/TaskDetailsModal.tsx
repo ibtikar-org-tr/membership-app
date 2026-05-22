@@ -264,10 +264,22 @@ export function TaskDetailsModal({
     return value.trim() ? value : fallback
   }
 
+  const fieldButtonClass = (field: EditableTaskField, spanClass = '') =>
+    `group w-full rounded-2xl border px-4 py-3 text-right transition ${spanClass} ${
+      editingField === field
+        ? 'border-cyan-300 bg-white shadow-sm ring-2 ring-cyan-500/15'
+        : canEditSelectedTask
+          ? 'border-transparent bg-transparent hover:border-cyan-200 hover:bg-cyan-50/60'
+          : 'border-transparent bg-transparent'
+    }`
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
-      <article className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-start justify-between gap-3">
+      <article
+        className="flex max-h-[min(90vh,52rem)] w-full max-w-4xl flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">بطاقة المهمة</p>
             <p className="mt-1 text-base font-semibold text-slate-950">تفاصيل المهمة</p>
@@ -277,18 +289,12 @@ export function TaskDetailsModal({
           </button>
         </div>
 
-        <div className="mt-4 space-y-4">
-          <section className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-2">
+        <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+          <section className="space-y-3 rounded-3xl border border-slate-200 bg-slate-50/60 p-4">
             <button
               type="button"
               onClick={() => canEditSelectedTask && setEditingField('name')}
-              className={`group rounded-2xl border px-4 py-3 text-right transition ${
-                editingField === 'name'
-                  ? 'border-cyan-300 bg-white shadow-sm ring-2 ring-cyan-500/15'
-                  : canEditSelectedTask
-                    ? 'border-transparent bg-transparent hover:border-cyan-200 hover:bg-cyan-50/60'
-                    : 'border-transparent bg-transparent'
-              }`}
+              className={fieldButtonClass('name')}
             >
               <span className="block text-xs font-semibold text-slate-500">عنوان المهمة</span>
               {editingField === 'name' && canEditSelectedTask ? (
@@ -319,14 +325,62 @@ export function TaskDetailsModal({
 
             <button
               type="button"
+              onClick={() => canEditSelectedTask && setEditingField('description')}
+              className={fieldButtonClass('description')}
+            >
+              <span className="block text-xs font-semibold text-slate-500">الوصف</span>
+              {editingField === 'description' && canEditSelectedTask ? (
+                <textarea
+                  autoFocus
+                  value={draft.description}
+                  onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
+                  onBlur={(event) => {
+                    void saveField('description', event.currentTarget.value)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      setDraft((current) => ({ ...current, description: selectedTask.description ?? '' }))
+                      setEditingField(null)
+                    }
+                    if (event.key === 'Enter' && event.shiftKey) {
+                      return
+                    }
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault()
+                      void saveField('description', event.currentTarget.value)
+                    }
+                  }}
+                  disabled={isUpdatingTask}
+                  rows={5}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+                />
+              ) : (
+                <span className={`mt-2 block text-sm leading-6 ${draft.description.trim() ? 'text-slate-700' : 'text-slate-500'} group-hover:text-cyan-700`}>
+                  {draft.description.trim() || 'لا يوجد وصف للمهمة.'}
+                </span>
+              )}
+            </button>
+
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+              <SkillsField
+                id={`task-skills-${selectedTask.id}`}
+                label="المهارات المرتبطة بالمهمة"
+                value={draft.skills ?? ''}
+                onChange={(value) => {
+                  setDraft((current) => ({ ...current, skills: value }))
+                  void saveField('skills', value)
+                }}
+                placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
+              />
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <div className="grid gap-3 rounded-3xl border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-2">
+            <button
+              type="button"
               onClick={() => canEditSelectedTask && setEditingField('status')}
-              className={`group rounded-2xl border px-4 py-3 text-right transition ${
-                editingField === 'status'
-                  ? 'border-cyan-300 bg-white shadow-sm ring-2 ring-cyan-500/15'
-                  : canEditSelectedTask
-                    ? 'border-transparent bg-transparent hover:border-cyan-200 hover:bg-cyan-50/60'
-                    : 'border-transparent bg-transparent'
-              }`}
+              className={fieldButtonClass('status')}
             >
               <span className="block text-xs font-semibold text-slate-500">الحالة</span>
               {editingField === 'status' && canEditSelectedTask ? (
@@ -358,13 +412,7 @@ export function TaskDetailsModal({
             <button
               type="button"
               onClick={() => canEditSelectedTask && setEditingField('priority')}
-              className={`group rounded-2xl border px-4 py-3 text-right transition ${
-                editingField === 'priority'
-                  ? 'border-cyan-300 bg-white shadow-sm ring-2 ring-cyan-500/15'
-                  : canEditSelectedTask
-                    ? 'border-transparent bg-transparent hover:border-cyan-200 hover:bg-cyan-50/60'
-                    : 'border-transparent bg-transparent'
-              }`}
+              className={fieldButtonClass('priority')}
             >
               <span className="block text-xs font-semibold text-slate-500">الأولوية</span>
               {editingField === 'priority' && canEditSelectedTask ? (
@@ -395,13 +443,7 @@ export function TaskDetailsModal({
             <button
               type="button"
               onClick={() => canEditSelectedTask && setEditingField('points')}
-              className={`group rounded-2xl border px-4 py-3 text-right transition ${
-                editingField === 'points'
-                  ? 'border-cyan-300 bg-white shadow-sm ring-2 ring-cyan-500/15'
-                  : canEditSelectedTask
-                    ? 'border-transparent bg-transparent hover:border-cyan-200 hover:bg-cyan-50/60'
-                    : 'border-transparent bg-transparent'
-              }`}
+              className={fieldButtonClass('points')}
             >
               <span className="block text-xs font-semibold text-slate-500">النقاط</span>
               {editingField === 'points' && canEditSelectedTask ? (
@@ -435,13 +477,7 @@ export function TaskDetailsModal({
             <button
               type="button"
               onClick={() => canEditSelectedTask && setEditingField('dueDate')}
-              className={`group rounded-2xl border px-4 py-3 text-right transition ${
-                editingField === 'dueDate'
-                  ? 'border-cyan-300 bg-white shadow-sm ring-2 ring-cyan-500/15'
-                  : canEditSelectedTask
-                    ? 'border-transparent bg-transparent hover:border-cyan-200 hover:bg-cyan-50/60'
-                    : 'border-transparent bg-transparent'
-              }`}
+              className={fieldButtonClass('dueDate')}
             >
               <span className="block text-xs font-semibold text-slate-500">الموعد</span>
               {editingField === 'dueDate' && canEditSelectedTask ? (
@@ -474,13 +510,7 @@ export function TaskDetailsModal({
             <button
               type="button"
               onClick={() => canEditSelectedTask && setEditingField('assignedTo')}
-              className={`group rounded-2xl border px-4 py-3 text-right transition sm:col-span-2 ${
-                editingField === 'assignedTo'
-                  ? 'border-cyan-300 bg-white shadow-sm ring-2 ring-cyan-500/15'
-                  : canEditSelectedTask
-                    ? 'border-transparent bg-transparent hover:border-cyan-200 hover:bg-cyan-50/60'
-                    : 'border-transparent bg-transparent'
-              }`}
+              className={fieldButtonClass('assignedTo', 'sm:col-span-2')}
             >
               <span className="block text-xs font-semibold text-slate-500">التكليف</span>
               {editingField === 'assignedTo' && canEditSelectedTask ? (
@@ -515,73 +545,16 @@ export function TaskDetailsModal({
                 <span className="mt-2 block text-sm font-medium text-slate-700 group-hover:text-cyan-700">{renderValue(formatAssignee(selectedTask.assignedTo), 'غير مسند')}</span>
               )}
             </button>
-
-            <button
-              type="button"
-              onClick={() => canEditSelectedTask && setEditingField('description')}
-              className={`group rounded-2xl border px-4 py-3 text-right transition sm:col-span-2 ${
-                editingField === 'description'
-                  ? 'border-cyan-300 bg-white shadow-sm ring-2 ring-cyan-500/15'
-                  : canEditSelectedTask
-                    ? 'border-transparent bg-transparent hover:border-cyan-200 hover:bg-cyan-50/60'
-                    : 'border-transparent bg-transparent'
-              }`}
-            >
-              <span className="block text-xs font-semibold text-slate-500">الوصف</span>
-              {editingField === 'description' && canEditSelectedTask ? (
-                <textarea
-                  autoFocus
-                  value={draft.description}
-                  onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
-                  onBlur={(event) => {
-                    void saveField('description', event.currentTarget.value)
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape') {
-                      setDraft((current) => ({ ...current, description: selectedTask.description ?? '' }))
-                      setEditingField(null)
-                    }
-                    if (event.key === 'Enter' && event.shiftKey) {
-                      return
-                    }
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault()
-                      void saveField('description', event.currentTarget.value)
-                    }
-                  }}
-                  disabled={isUpdatingTask}
-                  rows={4}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
-                />
-              ) : (
-                <span className={`mt-2 block text-sm leading-6 ${draft.description.trim() ? 'text-slate-700' : 'text-slate-500'} group-hover:text-cyan-700`}>
-                  {draft.description.trim() || 'لا يوجد وصف للمهمة.'}
-                </span>
-              )}
-            </button>
-
-            <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-              <SkillsField
-                id={`task-skills-${selectedTask.id}`}
-                label="المهارات المرتبطة بالمهمة"
-                value={draft.skills ?? ''}
-                onChange={(value) => {
-                  setDraft((current) => ({ ...current, skills: value }))
-                  void saveField('skills', value)
-                }}
-                placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
-              />
             </div>
-          </section>
 
-          <section className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+            <section className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
             <p className="rounded-2xl border border-slate-200 bg-white px-3 py-2">أنشئت بواسطة: {formatAssignee(selectedTask.createdBy)}</p>
             <p className="rounded-2xl border border-slate-200 bg-white px-3 py-2">تاريخ الإنشاء: {formatDateEnCA(selectedTask.createdAt)}</p>
             <p className="rounded-2xl border border-slate-200 bg-white px-3 py-2 sm:col-span-2">آخر تحديث: {formatDateEnCA(selectedTask.updatedAt)}</p>
             <p className="rounded-2xl border border-slate-200 bg-white px-3 py-2 sm:col-span-2">
               آخر تذكير: {selectedTask.lastRemindedAt ? formatDateTimeEnCA(selectedTask.lastRemindedAt) : 'لم يُرسل بعد'}
             </p>
-          </section>
+            </section>
 
           {canRemindTask ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -609,6 +582,7 @@ export function TaskDetailsModal({
           )}
 
           {taskUpdateError ? <p className="text-sm text-red-600">{taskUpdateError}</p> : null}
+          </section>
         </div>
       </article>
     </div>
