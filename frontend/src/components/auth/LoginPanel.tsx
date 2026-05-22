@@ -124,7 +124,18 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
               {isSubmitting ? 'جار تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
 
-            {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
+            {error ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p>{error}</p>
+                {error.includes('تليغرام') ? (
+                  <p className="mt-2">
+                    <Link to="/telegram-bot" className="font-semibold underline-offset-4 hover:underline">
+                      دليل تفعيل بوت تيليغرام
+                    </Link>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <p className="text-center text-sm text-slate-600">
               <Link to="/" className="font-semibold text-slate-800 underline-offset-4 hover:underline">
