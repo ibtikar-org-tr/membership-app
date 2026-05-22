@@ -13,8 +13,10 @@ import {
   updateEventRegistrationSchema,
 } from '../schemas/vms-event-registration.schema'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
-export const vmsEventRegistrationsRoute = new Hono<{ Bindings: AppBindings }>()
+export const vmsEventRegistrationsRoute = new Hono<AppEnv>()
 
 vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
   try {
@@ -105,12 +107,8 @@ vmsEventRegistrationsRoute.post(
   async (c) => {
     try {
       const { id } = c.req.valid('param')
-      const approver = c.req.query('approver')
+      const approver = getActorMembershipNumber(c)
       const type = c.req.query('type')
-
-      if (!approver) {
-        return c.json({ error: 'Approver membership number is required.' }, 400)
-      }
 
       const existing = await getEventRegistrationById(c.env.VMS_DB, id)
       if (!existing) {

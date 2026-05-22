@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import {
   createTask,
-  fetchProfile,
+  fetchProjectMemberContact,
   fetchProjectById,
   fetchProjectMembers,
   fetchTasks,
@@ -142,25 +142,26 @@ export function DashboardProjectDetailsPage() {
   }, [project?.parentProjectId])
 
   useEffect(() => {
-    if (!project?.owner) {
+    if (!project?.owner || !project.id) {
       setOwnerDisplayName(null)
       return
     }
 
     const ownerMembershipNumber = project.owner
+    const currentProjectId = project.id
     let isActive = true
 
     async function loadOwnerDisplayName() {
       try {
-        const payload = await fetchProfile(ownerMembershipNumber)
+        const payload = await fetchProjectMemberContact(currentProjectId, ownerMembershipNumber)
         if (!isActive) {
           return
         }
 
         const displayName =
-          payload.profile.arName?.trim() ||
-          payload.profile.enName?.trim() ||
-          payload.profile.membershipNumber
+          payload.contact.arName?.trim() ||
+          payload.contact.enName?.trim() ||
+          payload.contact.membershipNumber
 
         setOwnerDisplayName(displayName)
       } catch {
@@ -175,7 +176,7 @@ export function DashboardProjectDetailsPage() {
     return () => {
       isActive = false
     }
-  }, [project?.owner])
+  }, [project?.id, project?.owner])
 
   const memberOptions = useMemo(() => projectMembers, [projectMembers])
   const memberNameByMembership = useMemo(
@@ -755,6 +756,7 @@ export function DashboardProjectDetailsPage() {
 
       {memberInfoTarget ? (
         <MemberInfoModal
+          projectId={project.id}
           membershipNumber={memberInfoTarget.membershipNumber}
           displayName={memberInfoTarget.displayName}
           onClose={() => setMemberInfoTarget(null)}

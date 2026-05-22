@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { LoginPanel } from '../components/auth/LoginPanel'
 import { Seo } from '../components/Seo'
 import type { AuthUser } from '../types/auth'
-import { clearStoredUser, getStoredUser } from '../utils/auth'
+import { getStoredUser } from '../utils/auth'
+import { logout } from '../api/vms'
 import {
   LayoutDashboard,
   HeartHandshake,
@@ -72,7 +73,9 @@ export function DashboardPage() {
   }
 
   const handleLogout = () => {
-    clearStoredUser()
+    void logout().finally(() => {
+      setUser(null)
+    })
   }
 
   const handleMobileNavigation = () => {

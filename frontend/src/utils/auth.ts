@@ -1,9 +1,27 @@
 import type { AuthUser } from '../types/auth'
 
-const AUTH_STORAGE_KEY = 'membership-auth-user-v1'
+const AUTH_USER_STORAGE_KEY = 'membership-auth-user-v1'
+const AUTH_ACCESS_STORAGE_KEY = 'membership-auth-access-v1'
 
 export function isPlatformAdmin(user: AuthUser | null): boolean {
   return user?.role?.trim().toLowerCase() === 'admin'
+}
+
+export function getAccessToken(): string | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const token = window.sessionStorage.getItem(AUTH_ACCESS_STORAGE_KEY)?.trim()
+  return token || null
+}
+
+export function setAccessToken(token: string) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.sessionStorage.setItem(AUTH_ACCESS_STORAGE_KEY, token)
 }
 
 export function getStoredUser(): AuthUser | null {
@@ -11,7 +29,7 @@ export function getStoredUser(): AuthUser | null {
     return null
   }
 
-  const raw = window.localStorage.getItem(AUTH_STORAGE_KEY)
+  const raw = window.sessionStorage.getItem(AUTH_USER_STORAGE_KEY)
   if (!raw) {
     return null
   }
@@ -27,7 +45,7 @@ export function getStoredUser(): AuthUser | null {
       !parsed.email.trim() ||
       !parsed.role.trim()
     ) {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY)
+      clearStoredAuth()
       return null
     }
 
@@ -37,7 +55,7 @@ export function getStoredUser(): AuthUser | null {
       role: parsed.role,
     }
   } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY)
+    clearStoredAuth()
     return null
   }
 }
@@ -47,15 +65,26 @@ export function setStoredUser(user: AuthUser) {
     return
   }
 
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user))
+  window.sessionStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user))
 }
 
-export function clearStoredUser() {
+export function setStoredSession(user: AuthUser, accessToken: string) {
+  setStoredUser(user)
+  setAccessToken(accessToken)
+}
+
+export function clearStoredAuth() {
   if (typeof window === 'undefined') {
     return
   }
 
-  window.localStorage.removeItem(AUTH_STORAGE_KEY)
+  window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY)
+  window.sessionStorage.removeItem(AUTH_ACCESS_STORAGE_KEY)
+}
+
+/** @deprecated Use clearStoredAuth */
+export function clearStoredUser() {
+  clearStoredAuth()
 }
 
 /** Accepts only same-app relative paths; blocks open redirects and login loops. */

@@ -27,8 +27,10 @@ import {
   updateClubSchema,
 } from '../schemas/vms-club.schema'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
-export const vmsClubsRoute = new Hono<{ Bindings: AppBindings }>()
+export const vmsClubsRoute = new Hono<AppEnv>()
 
 async function canManageProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
   const project = await getProjectById(db, projectId)
@@ -76,7 +78,7 @@ vmsClubsRoute.get('/clubs', async (c) => {
 
 vmsClubsRoute.get('/clubs-dashboard', async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
     const clubs = await listClubsDashboard(c.env.VMS_DB, membershipNumber)
     return c.json({ clubs })
   } catch (error) {
@@ -103,11 +105,8 @@ vmsClubsRoute.get('/clubs/:id', zValidator('param', clubParamsSchema), async (c)
 
 vmsClubsRoute.post('/clubs', zValidator('json', createClubSchema), async (c) => {
   try {
-    const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+    const actorMembershipNumber = getActorMembershipNumber(c)
 
-    if (!actorMembershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const payload = c.req.valid('json')
     const authorization = await canManageProject(c.env.VMS_DB, payload.projectId, actorMembershipNumber)
@@ -136,11 +135,8 @@ vmsClubsRoute.put(
   async (c) => {
     try {
       const { id } = c.req.valid('param')
-      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+      const actorMembershipNumber = getActorMembershipNumber(c)
 
-      if (!actorMembershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
 
       const club = await getClubById(c.env.VMS_DB, id)
       if (!club) {
@@ -165,11 +161,8 @@ vmsClubsRoute.put(
 vmsClubsRoute.delete('/clubs/:id', zValidator('param', clubParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+    const actorMembershipNumber = getActorMembershipNumber(c)
 
-    if (!actorMembershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const club = await getClubById(c.env.VMS_DB, id)
     if (!club) {
@@ -226,11 +219,8 @@ vmsClubsRoute.get(
 
 vmsClubsRoute.post('/club-members', zValidator('json', createClubMembershipSchema), async (c) => {
   try {
-    const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+    const actorMembershipNumber = getActorMembershipNumber(c)
 
-    if (!actorMembershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const payload = c.req.valid('json')
     const club = await getClubById(c.env.VMS_DB, payload.clubId)
@@ -288,11 +278,8 @@ vmsClubsRoute.put(
   async (c) => {
     try {
       const { clubId, membershipNumber } = c.req.valid('param')
-      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+      const actorMembershipNumber = getActorMembershipNumber(c)
 
-      if (!actorMembershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
 
       const club = await getClubById(c.env.VMS_DB, clubId)
       if (!club) {
@@ -331,11 +318,8 @@ vmsClubsRoute.delete(
   async (c) => {
     try {
       const { clubId, membershipNumber } = c.req.valid('param')
-      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
+      const actorMembershipNumber = getActorMembershipNumber(c)
 
-      if (!actorMembershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
 
       const club = await getClubById(c.env.VMS_DB, clubId)
       if (!club) {

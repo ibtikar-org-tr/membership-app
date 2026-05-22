@@ -2,7 +2,7 @@ import { type FormEvent, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { login } from '../../api/vms'
-import { setStoredUser } from '../../utils/auth'
+import { setStoredSession } from '../../utils/auth'
 
 interface LoginPanelProps {
   onSuccess?: () => void
@@ -30,7 +30,7 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
 
     try {
       const payload = await login({ identifier, password })
-      setStoredUser(payload.user)
+      setStoredSession(payload.user, payload.accessToken)
       onSuccess?.()
     } catch (requestError) {
       if (requestError instanceof Error) {

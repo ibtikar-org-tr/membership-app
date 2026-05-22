@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { fetchProfile } from '../../../api/vms'
-import type { MemberProfile } from '../../../types/profile'
+import { fetchProjectMemberContact } from '../../../api/vms'
+import type { VmsProjectMemberContact } from '../../../types/vms'
 
 function displayValue(value: string | null | undefined) {
   const trimmed = value?.trim()
@@ -18,32 +18,33 @@ function formatTelegramLabel(username: string) {
 }
 
 interface MemberInfoModalProps {
+  projectId: string
   membershipNumber: string
   displayName: string
   onClose: () => void
 }
 
-export function MemberInfoModal({ membershipNumber, displayName, onClose }: MemberInfoModalProps) {
-  const [profile, setProfile] = useState<MemberProfile | null>(null)
+export function MemberInfoModal({ projectId, membershipNumber, displayName, onClose }: MemberInfoModalProps) {
+  const [contact, setContact] = useState<VmsProjectMemberContact | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
 
-    async function loadProfile() {
+    async function loadContact() {
       setIsLoading(true)
       setHasError(false)
 
       try {
-        const payload = await fetchProfile(membershipNumber)
+        const payload = await fetchProjectMemberContact(projectId, membershipNumber)
 
         if (!controller.signal.aborted) {
-          setProfile(payload.profile)
+          setContact(payload.contact)
         }
       } catch {
         if (!controller.signal.aborted) {
-          setProfile(null)
+          setContact(null)
           setHasError(true)
         }
       } finally {
@@ -53,14 +54,14 @@ export function MemberInfoModal({ membershipNumber, displayName, onClose }: Memb
       }
     }
 
-    void loadProfile()
+    void loadContact()
 
     return () => {
       controller.abort()
     }
-  }, [membershipNumber])
+  }, [membershipNumber, projectId])
 
-  const telegramUsername = profile?.telegramUsername?.trim() ?? ''
+  const telegramUsername = contact?.telegramUsername?.trim() ?? ''
 
   return (
     <div
@@ -90,27 +91,27 @@ export function MemberInfoModal({ membershipNumber, displayName, onClose }: Memb
             <p className="text-slate-500">جار تحميل البيانات...</p>
           ) : hasError ? (
             <p className="text-red-600">تعذر تحميل معلومات العضو.</p>
-          ) : profile ? (
+          ) : contact ? (
             <>
-              <InfoRow label="رقم العضوية" value={displayValue(profile.membershipNumber)} />
+              <InfoRow label="رقم العضوية" value={displayValue(contact.membershipNumber)} />
               <InfoRow
                 label="البريد الإلكتروني"
                 value={
-                  profile.email.trim() ? (
+                  contact.email.trim() ? (
                     <a
-                      href={`mailto:${profile.email.trim()}`}
+                      href={`mailto:${contact.email.trim()}`}
                       className="font-medium text-blue-700 underline-offset-2 hover:cursor-pointer hover:underline"
                     >
-                      {profile.email.trim()}
+                      {contact.email.trim()}
                     </a>
                   ) : (
                     '—'
                   )
                 }
               />
-              <InfoRow label="الاسم بالإنكليزية" value={displayValue(profile.enName)} />
-              <InfoRow label="الاسم بالعربية" value={displayValue(profile.arName)} />
-              <InfoRow label="رقم الهاتف" value={displayValue(profile.phoneNumber)} />
+              <InfoRow label="الاسم بالإنكليزية" value={displayValue(contact.enName)} />
+              <InfoRow label="الاسم بالعربية" value={displayValue(contact.arName)} />
+              <InfoRow label="رقم الهاتف" value={displayValue(contact.phoneNumber)} />
               {telegramUsername ? (
                 <InfoRow
                   label="تلغرام"

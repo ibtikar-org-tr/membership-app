@@ -10,14 +10,14 @@ import type {
   VmsPositionApplication,
   VmsProject,
   VmsProjectMember,
+  VmsProjectMemberContact,
   VmsSkill,
   VmsTask,
 } from '../types/vms'
 import type { ForgotPasswordResponse, LoginResponse, ResetPasswordResponse } from '../types/auth'
 import type { MemberProfile } from '../types/profile'
 
-const MEMBER_MS_BASE_URL = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
-const API_BASE = MEMBER_MS_BASE_URL ? `${MEMBER_MS_BASE_URL.replace(/\/+$/, '')}/api` : '/ms/membership-app/api'
+import { API_BASE, apiDelete, apiFetch, apiGetJson, apiPostJson, apiPutJson, logoutRequest } from './client'
 
 const GET_CACHE_TTL_MS = 1500
 const inFlightGetRequests = new Map<string, Promise<unknown>>()
@@ -26,122 +26,37 @@ const recentGetResponses = new Map<string, { expiresAt: number; data: unknown }>
 async function fetchJson<T>(path: string): Promise<T> {
   const requestKey = path
   const now = Date.now()
-
   const cached = recentGetResponses.get(requestKey)
-  if (cached && cached.expiresAt > now) {
-    return cached.data as T
-  }
-
+  if (cached && cached.expiresAt > now) return cached.data as T
   const inFlight = inFlightGetRequests.get(requestKey)
-  if (inFlight) {
-    return inFlight as Promise<T>
-  }
-
+  if (inFlight) return inFlight as Promise<T>
   const requestPromise = (async () => {
-    const response = await fetch(`${API_BASE}${path}`, { method: 'GET' })
-
-    if (!response.ok) {
-      throw new Error(`Request failed (${response.status})`)
-    }
-
-    const payload = (await response.json()) as T
-    recentGetResponses.set(requestKey, {
-      data: payload,
-      expiresAt: Date.now() + GET_CACHE_TTL_MS,
-    })
-
+    const payload = await apiGetJson<T>(path)
+    recentGetResponses.set(requestKey, { data: payload, expiresAt: Date.now() + GET_CACHE_TTL_MS })
     return payload
   })()
-
   inFlightGetRequests.set(requestKey, requestPromise)
-
-  try {
-    return await requestPromise
-  } finally {
-    inFlightGetRequests.delete(requestKey)
-  }
+  try { return await requestPromise } finally { inFlightGetRequests.delete(requestKey) }
 }
 
-async function postJson<TResponse, TPayload>(path: string, payload: TPayload): Promise<TResponse> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    const fallbackMessage = `Request failed (${response.status})`
-    let message = fallbackMessage
-
-    try {
-      const body = (await response.json()) as { error?: unknown }
-      if (typeof body.error === 'string' && body.error.trim()) {
-        message = body.error
-      }
-    } catch {
-      // Ignore JSON parsing errors and keep fallback message.
-    }
-
-    throw new Error(message)
-  }
-
-  return (await response.json()) as TResponse
+async function postJson<TResponse, TPayload>(path: string, payload: TPayload, options?: { auth?: boolean }): Promise<TResponse> {
+  return apiPostJson<TResponse, TPayload>(path, payload, options)
 }
 
 async function putJson<TResponse, TPayload>(path: string, payload: TPayload): Promise<TResponse> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    const fallbackMessage = `Request failed (${response.status})`
-    let message = fallbackMessage
-
-    try {
-      const body = (await response.json()) as { error?: unknown }
-      if (typeof body.error === 'string' && body.error.trim()) {
-        message = body.error
-      }
-    } catch {
-      // Ignore JSON parsing errors and keep fallback message.
-    }
-
-    throw new Error(message)
-  }
-
-  return (await response.json()) as TResponse
+  return apiPutJson<TResponse, TPayload>(path, payload)
 }
 
 async function deleteJson(path: string): Promise<void> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'DELETE',
-  })
-
-  if (!response.ok) {
-    const fallbackMessage = `Request failed (${response.status})`
-    let message = fallbackMessage
-
-    try {
-      const body = (await response.json()) as { error?: unknown }
-      if (typeof body.error === 'string' && body.error.trim()) {
-        message = body.error
-      }
-    } catch {
-      // Ignore JSON parsing errors and keep fallback message.
-    }
-
-    throw new Error(message)
-  }
+  return apiDelete(path)
 }
 
 export function login(payload: { identifier: string; password: string }) {
-  return postJson<LoginResponse, { identifier: string; password: string }>('/login', payload)
+  return postJson<LoginResponse, { identifier: string; password: string }>('/login', payload, { auth: false })
+}
+
+export function logout() {
+  return logoutRequest()
 }
 
 export function forgotPassword(payload: { type: 'email' | 'phone' | 'membership_number'; value: string }) {
@@ -152,7 +67,7 @@ export function forgotPassword(payload: { type: 'email' | 'phone' | 'membership_
 }
 
 export function resetPassword(payload: { token: string; newPassword: string }) {
-  return postJson<ResetPasswordResponse, { token: string; newPassword: string }>('/reset-password', payload)
+  return postJson<ResetPasswordResponse, { token: string; newPassword: string }>('/reset-password', payload, { auth: false })
 }
 
 export function fetchProfile(membershipNumber: string) {
@@ -190,17 +105,17 @@ export function updateProfile(
 }
 
 export function fetchProjects(membershipNumber?: string) {
-  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  const query = membershipNumber ? `` : ''
   return fetchJson<{ projects: VmsProject[] }>(`/projects${query}`)
 }
 
 export function fetchDirectProjects(membershipNumber?: string) {
-  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  const query = membershipNumber ? `` : ''
   return fetchJson<{ projects: VmsProject[] }>(`/projects/direct${query}`)
 }
 
 export function fetchPlatformProjects(membershipNumber?: string) {
-  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  const query = membershipNumber ? `` : ''
   return fetchJson<{ projects: VmsProject[] }>(`/projects/platform${query}`)
 }
 
@@ -216,12 +131,12 @@ export function createProject(
   },
   membershipNumber: string,
 ) {
-  const query = `?membershipNumber=${encodeURIComponent(membershipNumber)}`
+  const query = ``
   return postJson<{ project: VmsProject }, typeof payload>(`/projects${query}`, payload)
 }
 
 export function fetchProjectById(projectId: string, membershipNumber?: string) {
-  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  const query = membershipNumber ? `` : ''
   return fetchJson<{ project: VmsProject }>(`/projects/${encodeURIComponent(projectId)}${query}`)
 }
 
@@ -239,13 +154,13 @@ export function updateProject(
   membershipNumber: string,
 ) {
   return putJson<{ project: VmsProject }, typeof payload>(
-    `/projects/${encodeURIComponent(projectId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/projects/${encodeURIComponent(projectId)}`,
     payload,
   )
 }
 
 export function fetchTasks(membershipNumber: string) {
-  return fetchJson<{ tasks: VmsTask[] }>(`/tasks?membershipNumber=${encodeURIComponent(membershipNumber)}`)
+  return fetchJson<{ tasks: VmsTask[] }>(`/tasks`)
 }
 
 export function createTask(payload: {
@@ -261,14 +176,14 @@ export function createTask(payload: {
   skills?: Record<string, string>
 }, membershipNumber: string) {
   return postJson<{ task: VmsTask }, typeof payload>(
-    `/tasks?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/tasks`,
     payload,
   )
 }
 
 export function remindTask(taskId: string, membershipNumber: string) {
   return postJson<{ task: VmsTask; remindedAt: string }, Record<string, never>>(
-    `/tasks/${encodeURIComponent(taskId)}/remind?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/tasks/${encodeURIComponent(taskId)}/remind`,
     {},
   )
 }
@@ -293,7 +208,7 @@ export function updateTask(
   membershipNumber: string,
 ) {
   return putJson<{ task: VmsTask }, typeof payload>(
-    `/tasks/${encodeURIComponent(taskId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/tasks/${encodeURIComponent(taskId)}`,
     payload,
   )
 }
@@ -414,7 +329,7 @@ export function deleteEventRegistration(registrationId: string) {
 
 export function approveRegistration(registrationId: string, approverMembershipNumber: string, type: 'payment' | 'attendance') {
   return postJson<{ eventRegistration: VmsEventRegistration }, unknown>(
-    `/event-registrations/${encodeURIComponent(registrationId)}/approve?approver=${encodeURIComponent(approverMembershipNumber)}&type=${type}`,
+    `/event-registrations/${encodeURIComponent(registrationId)}/approve?type=${type}`,
     {},
   )
 }
@@ -430,22 +345,28 @@ export function searchOrCreateSkill(skillName: string) {
   })
 }
 
+export function fetchProjectMemberContact(projectId: string, targetMembershipNumber: string) {
+  return fetchJson<{ contact: VmsProjectMemberContact }>(
+    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}/contact`,
+  )
+}
+
 export function fetchProjectMembers(projectId?: string) {
   const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
   return fetchJson<{ projectMembers: VmsProjectMember[] }>(`/project-members${query}`)
 }
 
 export function fetchProjectPositions(projectId: string, membershipNumber: string) {
-  const query = `?projectId=${encodeURIComponent(projectId)}&membershipNumber=${encodeURIComponent(membershipNumber)}`
+  const query = `?projectId=${encodeURIComponent(projectId)}`
   return fetchJson<{ positions: VmsPosition[] }>(`/positions${query}`)
 }
 
 export function fetchOpenPositions(membershipNumber: string) {
-  return fetchJson<{ positions: VmsPosition[] }>(`/positions?membershipNumber=${encodeURIComponent(membershipNumber)}`)
+  return fetchJson<{ positions: VmsPosition[] }>(`/positions`)
 }
 
 export function fetchPositionById(positionId: string, membershipNumber?: string) {
-  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  const query = membershipNumber ? `` : ''
   return fetchJson<{ position: VmsPosition }>(`/positions/${encodeURIComponent(positionId)}${query}`)
 }
 
@@ -461,7 +382,7 @@ export function createProjectPosition(
   membershipNumber: string,
 ) {
   return postJson<{ position: VmsPosition }, typeof payload>(
-    `/positions?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/positions`,
     payload,
   )
 }
@@ -479,13 +400,13 @@ export function updateProjectPosition(
   membershipNumber: string,
 ) {
   return putJson<{ position: VmsPosition }, typeof payload>(
-    `/positions/${encodeURIComponent(positionId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/positions/${encodeURIComponent(positionId)}`,
     payload,
   )
 }
 
 export function deleteProjectPosition(positionId: string, membershipNumber: string) {
-  return deleteJson(`/positions/${encodeURIComponent(positionId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`)
+  return deleteJson(`/positions/${encodeURIComponent(positionId)}`)
 }
 
 export function createPositionApplication(
@@ -496,7 +417,7 @@ export function createPositionApplication(
   membershipNumber: string,
 ) {
   return postJson<{ positionApplication: VmsPositionApplication }, typeof payload>(
-    `/positions/${encodeURIComponent(positionId)}/applications?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/positions/${encodeURIComponent(positionId)}/applications`,
     payload,
   )
 }
@@ -509,7 +430,7 @@ export function reviewPositionApplication(
   membershipNumber: string,
 ) {
   return putJson<{ position: VmsPosition; positionApplication: VmsPositionApplication }, typeof payload>(
-    `/position-applications/${encodeURIComponent(applicationId)}?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/position-applications/${encodeURIComponent(applicationId)}`,
     payload,
   )
 }
@@ -520,7 +441,7 @@ export function createProjectMember(payload: {
   role: 'member' | 'manager' | 'observer'
 }, actorMembershipNumber: string) {
   return postJson<{ projectMember: VmsProjectMember }, typeof payload>(
-    `/project-members?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    `/project-members`,
     payload,
   )
 }
@@ -535,7 +456,7 @@ export function removeProjectMember(
   actorMembershipNumber: string,
 ) {
   return deleteJson(
-    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}`,
   )
 }
 
@@ -545,7 +466,7 @@ export function fetchClubs(projectId?: string) {
 }
 
 export function fetchClubsDashboard(membershipNumber?: string) {
-  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  const query = membershipNumber ? `` : ''
   return fetchJson<{ clubs: VmsClubDashboard[] }>(`/clubs-dashboard${query}`)
 }
 
@@ -568,7 +489,7 @@ export function createClub(payload: {
   skills?: Record<string, string>
 }, actorMembershipNumber: string) {
   return postJson<{ club: VmsClub }, typeof payload>(
-    `/clubs?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    `/clubs`,
     payload,
   )
 }
@@ -591,13 +512,13 @@ export function updateClub(
   actorMembershipNumber: string,
 ) {
   return putJson<{ club: VmsClub }, typeof payload>(
-    `/clubs/${encodeURIComponent(clubId)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    `/clubs/${encodeURIComponent(clubId)}`,
     payload,
   )
 }
 
 export function deleteClub(clubId: string, actorMembershipNumber: string) {
-  return deleteJson(`/clubs/${encodeURIComponent(clubId)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`)
+  return deleteJson(`/clubs/${encodeURIComponent(clubId)}`)
 }
 
 export function fetchClubMembers(clubId?: string, status?: 'active' | 'pending' | 'rejected' | string) {
@@ -620,7 +541,7 @@ export function createClubMember(payload: {
   membershipNumber: string
 }, actorMembershipNumber: string) {
   return postJson<{ clubMember: VmsClubMember }, typeof payload>(
-    `/club-members?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    `/club-members`,
     payload,
   )
 }
@@ -633,7 +554,7 @@ export function requestTelegramGroupInvite(
   },
 ) {
   return postJson<{ success: boolean; detail?: string; data?: unknown }, typeof payload>(
-    `/telegram/group-invite?membershipNumber=${encodeURIComponent(membershipNumber)}`,
+    `/telegram/group-invite`,
     payload,
   )
 }
@@ -645,19 +566,19 @@ export function updateClubMember(
   actorMembershipNumber: string,
 ) {
   return putJson<{ clubMember: VmsClubMember }, typeof payload>(
-    `/club-members/${encodeURIComponent(clubId)}/${encodeURIComponent(membershipNumber)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    `/club-members/${encodeURIComponent(clubId)}/${encodeURIComponent(membershipNumber)}`,
     payload,
   )
 }
 
 export function deleteClubMember(clubId: string, membershipNumber: string, actorMembershipNumber: string) {
   return deleteJson(
-    `/club-members/${encodeURIComponent(clubId)}/${encodeURIComponent(membershipNumber)}?membershipNumber=${encodeURIComponent(actorMembershipNumber)}`,
+    `/club-members/${encodeURIComponent(clubId)}/${encodeURIComponent(membershipNumber)}`,
   )
 }
 
 export function fetchPointTransactions(membershipNumber?: string) {
-  const query = membershipNumber ? `?membershipNumber=${encodeURIComponent(membershipNumber)}` : ''
+  const query = membershipNumber ? `` : ''
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)
 }
 
@@ -668,10 +589,7 @@ export async function uploadImages(files: File[]): Promise<{ images: string[] }>
     formData.append('images', file)
   }
 
-  const response = await fetch(`${API_BASE}/images/upload`, {
-    method: 'POST',
-    body: formData,
-  })
+  const response = await apiFetch('/images/upload', { method: 'POST', body: formData })
 
   if (!response.ok) {
     const fallbackMessage = `Upload failed (${response.status})`

@@ -5,6 +5,14 @@ export interface AuthUser {
 }
 
 export interface LoginResponse {
+  accessToken: string
+  expiresIn: number
+  user: AuthUser
+}
+
+export interface RefreshResponse {
+  accessToken: string
+  expiresIn: number
   user: AuthUser
 }
 

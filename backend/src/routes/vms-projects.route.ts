@@ -14,8 +14,10 @@ import {
 import { createProjectMember, getProjectMember } from '../repositories/vms-project-members.repository'
 import { createProjectSchema, projectParamsSchema, updateProjectSchema } from '../schemas/vms-project.schema'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 
-export const vmsProjectsRoute = new Hono<{ Bindings: AppBindings }>()
+export const vmsProjectsRoute = new Hono<AppEnv>()
 
 async function canManageProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
   const project = await getProjectById(db, projectId)
@@ -34,11 +36,8 @@ async function canManageProject(db: AppBindings['VMS_DB'], projectId: string, me
 
 vmsProjectsRoute.get('/projects', async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const projects = await listProjectsForMember(c.env.VMS_DB, membershipNumber)
     return c.json({ projects })
@@ -50,11 +49,8 @@ vmsProjectsRoute.get('/projects', async (c) => {
 
 vmsProjectsRoute.get('/projects/direct', async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const projects = await listDirectProjectsForMember(c.env.VMS_DB, membershipNumber)
     return c.json({ projects })
@@ -66,11 +62,8 @@ vmsProjectsRoute.get('/projects/direct', async (c) => {
 
 vmsProjectsRoute.get('/projects/platform', async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const projects = await listProjectsForMemberWithRedactedNames(c.env.VMS_DB, membershipNumber)
     return c.json({ projects })
@@ -83,11 +76,8 @@ vmsProjectsRoute.get('/projects/platform', async (c) => {
 vmsProjectsRoute.get('/projects/:id', zValidator('param', projectParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const project = await getDirectProjectByIdForMember(c.env.VMS_DB, id, membershipNumber)
 
@@ -104,11 +94,8 @@ vmsProjectsRoute.get('/projects/:id', zValidator('param', projectParamsSchema), 
 
 vmsProjectsRoute.post('/projects', zValidator('json', createProjectSchema), async (c) => {
   try {
-    const membershipNumber = c.req.query('membershipNumber')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
 
-    if (!membershipNumber) {
-      return c.json({ error: 'Membership number is required.' }, 400)
-    }
 
     const payload = c.req.valid('json')
 
@@ -162,11 +149,8 @@ vmsProjectsRoute.put(
   async (c) => {
     try {
       const { id } = c.req.valid('param')
-      const membershipNumber = c.req.query('membershipNumber')?.trim()
+      const membershipNumber = getActorMembershipNumber(c)
 
-      if (!membershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
 
       const payload = c.req.valid('json')
       const authorization = await canManageProject(c.env.VMS_DB, id, membershipNumber)
