@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { cors } from 'hono/cors'
+import { membershipAppCors } from './utils/cors'
 import { authMiddleware } from './middleware/auth.middleware'
 import { authRoute } from './routes/auth.route'
 import { profileRoute } from './routes/profile.route'
@@ -23,16 +23,7 @@ import type { AppEnv } from './types/hono'
 
 const app = new Hono<{ Bindings: AppBindings }>()
 
-app.use('/ms/membership-app/api/*', async (c, next) => {
-  const allowedOrigin = c.env.FRONTEND_BASE_URL?.trim() || new URL(c.req.url).origin
-
-  return cors({
-    origin: allowedOrigin,
-    credentials: true,
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
-  })(c, next)
-})
+app.use('/ms/membership-app/api/*', membershipAppCors())
 
 app.get('/ms/membership-app/api/event-images/*', serveImage)
 
