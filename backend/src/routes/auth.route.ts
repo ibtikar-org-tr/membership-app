@@ -336,18 +336,15 @@ authRoute.post('/login', zValidator('json', loginSchema), async (c) => {
       return c.json({ error: 'Invalid email or password.' }, 401)
     }
 
-    const isAdmin = user.role.trim().toLowerCase() === 'admin'
-    if (!isAdmin) {
-      const hasTelegram = await memberHasTelegramId(c.env.MEMBERS_DB, user.membership_number)
-      if (!hasTelegram) {
-        return c.json(
-          {
-            error:
-              'يجب تفعيل بوت تيليغرام قبل تسجيل الدخول. افتح البوت وأرسل /verify ثم أكمل التحقق. للتعليمات: /telegram-bot',
-          },
-          403,
-        )
-      }
+    const hasTelegram = await memberHasTelegramId(c.env.MEMBERS_DB, user.membership_number)
+    if (!hasTelegram) {
+      return c.json(
+        {
+          error: 'يجب تفعيل بوت تيليغرام قبل تسجيل الدخول. افتح البوت وأرسل /verify ثم أكمل التحقق.',
+          code: 'TELEGRAM_BOT_REQUIRED',
+        },
+        403,
+      )
     }
 
     const authUser = {

@@ -18,6 +18,7 @@ import type { ForgotPasswordResponse, LoginResponse, ResetPasswordResponse } fro
 import type { MemberProfile } from '../types/profile'
 
 import { API_BASE, apiDelete, apiFetch, apiGetJson, apiPostJson, apiPutJson, logoutRequest } from './client'
+import { TelegramActivationRequiredError } from '../utils/login-errors'
 
 const GET_CACHE_TTL_MS = 1500
 const inFlightGetRequests = new Map<string, Promise<unknown>>()
@@ -51,8 +52,37 @@ async function deleteJson(path: string): Promise<void> {
   return apiDelete(path)
 }
 
-export function login(payload: { identifier: string; password: string }) {
-  return postJson<LoginResponse, { identifier: string; password: string }>('/login', payload, { auth: false })
+export async function login(payload: { identifier: string; password: string }): Promise<LoginResponse> {
+  const response = await fetch(`${API_BASE}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    try {
+      const body = (await response.json()) as { error?: unknown; code?: unknown }
+      if (body.code === 'TELEGRAM_BOT_REQUIRED') {
+        const message =
+          typeof body.error === 'string' && body.error.trim()
+            ? body.error
+            : 'يجب تفعيل بوت تيليغرام قبل تسجيل الدخول.'
+        throw new TelegramActivationRequiredError(message)
+      }
+      if (typeof body.error === 'string' && body.error.trim()) {
+        throw new Error(body.error)
+      }
+    } catch (parseError) {
+      if (parseError instanceof TelegramActivationRequiredError || parseError instanceof Error) {
+        throw parseError
+      }
+    }
+
+    throw new Error(`Request failed (${response.status})`)
+  }
+
+  return (await response.json()) as LoginResponse
 }
 
 export function logout() {
