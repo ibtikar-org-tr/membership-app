@@ -1,5 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   Clock,
@@ -13,6 +13,7 @@ import {
   ArrowRight,
   ExternalLink,
   Send,
+  ArrowLeft,
 } from 'lucide-react'
 import Avatar from 'boring-avatars'
 import {
@@ -42,6 +43,7 @@ function eventStatusLabel(status: string) {
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
   const user = useMemo(() => getStoredUser(), [])
+  const ticketBuyingSectionRef = useRef<HTMLDivElement | null>(null)
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
   const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
@@ -55,6 +57,10 @@ export function DashboardEventDetailsPage() {
   const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
   const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
   const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
+
+  function scrollToTicketBuyingSection() {
+    ticketBuyingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     if (!eventID) {
@@ -154,6 +160,12 @@ export function DashboardEventDetailsPage() {
 
     return registrations.some((registration) => registration.membershipNumber === user.membershipNumber)
   }, [registrations, user])
+  const canSendTelegramInvite = Boolean(eventItem?.telegramGroupId && user?.membershipNumber && hasUserRegistered)
+  const telegramInviteHelperText = !user
+    ? 'سجّل الدخول أولاً ثم سجّل في هذه الفعالية لإرسال دعوة مجموعة التلغرام.'
+    : !hasUserRegistered
+      ? 'أرسل دعوة مجموعة التلغرام متاح فقط للمسجلين في هذه الفعالية.'
+      : null
 
   const handleApplyToEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -253,6 +265,16 @@ export function DashboardEventDetailsPage() {
 
   return (
     <section className="mx-auto max-w-5xl space-y-6 pb-10">
+      <div className="flex justify-start">
+        <Link
+          to="/dashboard/events"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+        >
+          العودة للفعاليات
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+
       {/* Hero: banner + title */}
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
         {eventItem.imageUrl ? (
@@ -298,13 +320,14 @@ export function DashboardEventDetailsPage() {
                 </Link>
               </>
             ) : null}
-            <Link
-              to="/dashboard/events"
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            <button
+              type="button"
+              onClick={scrollToTicketBuyingSection}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-cyan-200 bg-transparent px-4 py-2.5 text-sm font-medium text-cyan-700 shadow-sm transition hover:bg-cyan-50 hover:text-cyan-800"
             >
-              العودة للفعاليات
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+              سجّل الآن
+              <ArrowLeft className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -462,13 +485,15 @@ export function DashboardEventDetailsPage() {
             <button
               type="button"
               onClick={() => void handleSendTelegramInvite()}
-              disabled={isSendingTelegramInvite}
+              disabled={isSendingTelegramInvite || !canSendTelegramInvite}
+              title={!canSendTelegramInvite ? telegramInviteHelperText ?? undefined : undefined}
               className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
             >
               <Send className="h-4 w-4" />
               {isSendingTelegramInvite ? 'جار الإرسال...' : 'إرسال دعوة المجموعة عبر البوت'}
             </button>
           </div>
+          {telegramInviteHelperText ? <p className="mt-3 text-sm text-slate-600">{telegramInviteHelperText}</p> : null}
           {telegramInviteError ? <p className="mt-3 text-sm text-red-600">{telegramInviteError}</p> : null}
           {telegramInviteSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{telegramInviteSuccess}</p> : null}
         </article>
@@ -491,8 +516,9 @@ export function DashboardEventDetailsPage() {
             </p>
           ) : null}
 
-          {tickets.length > 0 && !hasUserRegistered ? (
-            <div className="mt-5">
+          <div ref={ticketBuyingSectionRef} className="scroll-mt-24">
+            {tickets.length > 0 && !hasUserRegistered ? (
+              <div className="mt-5">
               <p className="mb-3 text-sm font-medium text-slate-700">اختر تذكرة للتقديم:</p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {tickets.map((ticket) => {
@@ -504,7 +530,7 @@ export function DashboardEventDetailsPage() {
                       type="button"
                       onClick={() => !isDisabled && setSelectedTicketId(isSelected ? null : ticket.id)}
                       disabled={isDisabled}
-                      className={`rounded-xl border-2 p-4 text-left shadow-sm transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
+                      className={`group rounded-xl border-2 p-4 text-left shadow-sm transition-all duration-200 hover:scale-[1.01] hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
                         isSelected
                           ? 'border-cyan-600 bg-cyan-50 shadow-cyan-100'
                           : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
@@ -517,10 +543,12 @@ export function DashboardEventDetailsPage() {
                             <p className="mt-1 text-xs text-slate-500 line-clamp-2">{ticket.description}</p>
                           ) : null}
                         </div>
-                        {isSelected && (
+                        {isSelected ? (
                           <svg className="h-5 w-5 shrink-0 text-cyan-600" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
+                        ) : (
+                          <ArrowLeft className="h-5 w-5 shrink-0 text-slate-400 transition-colors group-hover:text-slate-600" />
                         )}
                       </div>
                       <div className="mt-3 flex items-center gap-2 text-xs">
@@ -556,17 +584,18 @@ export function DashboardEventDetailsPage() {
                 </form>
               )}
             </div>
-          ) : null}
-          {hasUserRegistered ? (
-            <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-              <p className="text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
-            </div>
-          ) : null}
-          {tickets.length === 0 ? (
-            <p className="mt-5 text-center text-sm text-slate-500">لا توجد تذاكر متاحة لهذه الفعالية بعد.</p>
-          ) : null}
-          {applyError ? <p className="mt-3 text-sm text-red-600">{applyError}</p> : null}
-          {applySuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{applySuccess}</p> : null}
+            ) : null}
+            {hasUserRegistered ? (
+              <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                <p className="text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
+              </div>
+            ) : null}
+            {tickets.length === 0 ? (
+              <p className="mt-5 text-center text-sm text-slate-500">لا توجد تذاكر متاحة لهذه الفعالية بعد.</p>
+            ) : null}
+            {applyError ? <p className="mt-3 text-sm text-red-600">{applyError}</p> : null}
+            {applySuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{applySuccess}</p> : null}
+          </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <div>
