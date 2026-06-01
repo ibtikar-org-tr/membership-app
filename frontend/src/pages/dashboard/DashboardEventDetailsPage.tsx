@@ -154,6 +154,12 @@ export function DashboardEventDetailsPage() {
 
     return registrations.some((registration) => registration.membershipNumber === user.membershipNumber)
   }, [registrations, user])
+  const canSendTelegramInvite = Boolean(eventItem?.telegramGroupId && user?.membershipNumber && hasUserRegistered)
+  const telegramInviteHelperText = !user
+    ? 'سجّل الدخول أولاً ثم سجّل في هذه الفعالية لإرسال دعوة مجموعة التلغرام.'
+    : !hasUserRegistered
+      ? 'أرسل دعوة مجموعة التلغرام متاح فقط للمسجلين في هذه الفعالية.'
+      : null
 
   const handleApplyToEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -462,13 +468,15 @@ export function DashboardEventDetailsPage() {
             <button
               type="button"
               onClick={() => void handleSendTelegramInvite()}
-              disabled={isSendingTelegramInvite}
+              disabled={isSendingTelegramInvite || !canSendTelegramInvite}
+              title={!canSendTelegramInvite ? telegramInviteHelperText ?? undefined : undefined}
               className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
             >
               <Send className="h-4 w-4" />
               {isSendingTelegramInvite ? 'جار الإرسال...' : 'إرسال دعوة المجموعة عبر البوت'}
             </button>
           </div>
+          {telegramInviteHelperText ? <p className="mt-3 text-sm text-slate-600">{telegramInviteHelperText}</p> : null}
           {telegramInviteError ? <p className="mt-3 text-sm text-red-600">{telegramInviteError}</p> : null}
           {telegramInviteSuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{telegramInviteSuccess}</p> : null}
         </article>
