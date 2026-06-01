@@ -49,3 +49,29 @@ export function formatDateTimeEnCA(input: string | Date | null | undefined): str
 
   return `${datePart} ${hours}:${minutes} ${timezoneString}`
 }
+
+export function formatTimeEnCA(input: string | Date | null | undefined): string {
+  const date = parseDate(input)
+
+  if (!date) {
+    return '-'
+  }
+
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+export function formatTimezoneEnCA(input: string | Date | null | undefined): string {
+  const date = parseDate(input)
+
+  if (!date) {
+    return '-'
+  }
+
+  const timezoneOffset = -date.getTimezoneOffset()
+  const sign = timezoneOffset >= 0 ? '+' : '-'
+  const absoluteOffset = Math.abs(timezoneOffset)
+  const offsetHours = Math.floor(absoluteOffset / 60)
+  const offsetMinutes = absoluteOffset % 60
+
+  return `GMT${sign}${offsetHours}${offsetMinutes !== 0 ? `:${pad(offsetMinutes)}` : ''}`
+}

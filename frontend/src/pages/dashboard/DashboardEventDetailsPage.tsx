@@ -31,7 +31,7 @@ import type {
   VmsProjectMember,
 } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
-import { formatDateTimeEnCA } from '../../utils/date-format'
+import { formatDateEnCA, formatTimeEnCA, formatTimezoneEnCA } from '../../utils/date-format'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -361,18 +361,26 @@ export function DashboardEventDetailsPage() {
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
             <Calendar className="h-5 w-5" strokeWidth={1.75} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 space-y-1">
             <p className="text-xs font-medium text-slate-500">البداية</p>
-            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{formatDateTimeEnCA(eventItem.startTime)}</p>
+            <p className="text-sm font-semibold leading-snug text-slate-900">{formatDateEnCA(eventItem.startTime)}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
+              <span className="rounded-lg bg-slate-100 px-2 py-1">{formatTimeEnCA(eventItem.startTime)}</span>
+              <span className="rounded-lg bg-slate-100 px-2 py-1">{formatTimezoneEnCA(eventItem.startTime)}</span>
+            </div>
           </div>
         </div>
         <div className="group flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-cyan-200/80 hover:shadow-md">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
             <Clock className="h-5 w-5" strokeWidth={1.75} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 space-y-1">
             <p className="text-xs font-medium text-slate-500">النهاية</p>
-            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{formatDateTimeEnCA(eventItem.endTime)}</p>
+            <p className="text-sm font-semibold leading-snug text-slate-900">{formatDateEnCA(eventItem.endTime)}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
+              <span className="rounded-lg bg-slate-100 px-2 py-1">{formatTimeEnCA(eventItem.endTime)}</span>
+              <span className="rounded-lg bg-slate-100 px-2 py-1">{formatTimezoneEnCA(eventItem.endTime)}</span>
+            </div>
           </div>
         </div>
         <div className="group flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-cyan-200/80 hover:shadow-md sm:col-span-1">
