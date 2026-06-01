@@ -265,6 +265,16 @@ export function DashboardEventDetailsPage() {
 
   return (
     <section className="mx-auto max-w-5xl space-y-6 pb-10">
+      <div className="flex justify-start">
+        <Link
+          to="/dashboard/events"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+        >
+          العودة للفعاليات
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+
       {/* Hero: banner + title */}
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
         {eventItem.imageUrl ? (
@@ -310,13 +320,6 @@ export function DashboardEventDetailsPage() {
                 </Link>
               </>
             ) : null}
-            <Link
-              to="/dashboard/events"
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-            >
-              العودة للفعاليات
-              <ArrowRight className="h-4 w-4" />
-            </Link>
             <button
               type="button"
               onClick={scrollToTicketBuyingSection}
