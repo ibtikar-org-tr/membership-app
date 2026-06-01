@@ -645,7 +645,7 @@ export async function uploadEventBanner(eventId: string, file: File) {
   const formData = new FormData()
   formData.append('image', file)
 
-  const response = await fetch(`${API_BASE}/events/${encodeURIComponent(eventId)}/banner`, {
+  const response = await apiFetch(`/events/${encodeURIComponent(eventId)}/banner`, {
     method: 'PUT',
     body: formData,
   })
@@ -673,7 +673,7 @@ export async function uploadClubBanner(clubId: string, file: File) {
   const formData = new FormData()
   formData.append('image', file)
 
-  const response = await fetch(`${API_BASE}/clubs/${encodeURIComponent(clubId)}/banner`, {
+  const response = await apiFetch(`/clubs/${encodeURIComponent(clubId)}/banner`, {
     method: 'PUT',
     body: formData,
   })
