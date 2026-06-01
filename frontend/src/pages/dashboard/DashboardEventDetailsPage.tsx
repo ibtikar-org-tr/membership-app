@@ -322,11 +322,26 @@ export function DashboardEventDetailsPage() {
             ) : null}
             <button
               type="button"
-              onClick={scrollToTicketBuyingSection}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-cyan-200 bg-transparent px-4 py-2.5 text-sm font-medium text-cyan-700 shadow-sm transition hover:bg-cyan-50 hover:text-cyan-800"
+              onClick={() => {
+                if (!hasUserRegistered) {
+                  scrollToTicketBuyingSection()
+                }
+              }}
+              disabled={hasUserRegistered}
+              className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-medium shadow-sm transition ${
+                hasUserRegistered
+                  ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500'
+                  : 'border-cyan-200 bg-transparent text-cyan-700 hover:bg-cyan-50 hover:text-cyan-800'
+              }`}
             >
-              سجّل الآن
-              <ArrowLeft className="h-4 w-4" />
+              {hasUserRegistered ? 'مسجّل بالفعل' : 'سجّل الآن'}
+              {hasUserRegistered ? (
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.415l-7.25 7.25a1 1 0 01-1.414 0l-3.25-3.25a1 1 0 111.414-1.415l2.543 2.543 6.543-6.543a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <ArrowLeft className="h-4 w-4" />
+              )}
             </button>
           </div>
         </div>
