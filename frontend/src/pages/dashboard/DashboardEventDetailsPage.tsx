@@ -1,5 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   Clock,
@@ -43,6 +43,7 @@ function eventStatusLabel(status: string) {
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
   const user = useMemo(() => getStoredUser(), [])
+  const ticketBuyingSectionRef = useRef<HTMLDivElement | null>(null)
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
   const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
@@ -56,6 +57,10 @@ export function DashboardEventDetailsPage() {
   const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
   const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
   const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
+
+  function scrollToTicketBuyingSection() {
+    ticketBuyingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     if (!eventID) {
@@ -312,6 +317,14 @@ export function DashboardEventDetailsPage() {
               العودة للفعاليات
               <ArrowRight className="h-4 w-4" />
             </Link>
+            <button
+              type="button"
+              onClick={scrollToTicketBuyingSection}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-cyan-200 bg-transparent px-4 py-2.5 text-sm font-medium text-cyan-700 shadow-sm transition hover:bg-cyan-50 hover:text-cyan-800"
+            >
+              سجّل الآن
+              <ArrowLeft className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -500,8 +513,9 @@ export function DashboardEventDetailsPage() {
             </p>
           ) : null}
 
-          {tickets.length > 0 && !hasUserRegistered ? (
-            <div className="mt-5">
+          <div ref={ticketBuyingSectionRef} className="scroll-mt-24">
+            {tickets.length > 0 && !hasUserRegistered ? (
+              <div className="mt-5">
               <p className="mb-3 text-sm font-medium text-slate-700">اختر تذكرة للتقديم:</p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {tickets.map((ticket) => {
@@ -567,17 +581,18 @@ export function DashboardEventDetailsPage() {
                 </form>
               )}
             </div>
-          ) : null}
-          {hasUserRegistered ? (
-            <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-              <p className="text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
-            </div>
-          ) : null}
-          {tickets.length === 0 ? (
-            <p className="mt-5 text-center text-sm text-slate-500">لا توجد تذاكر متاحة لهذه الفعالية بعد.</p>
-          ) : null}
-          {applyError ? <p className="mt-3 text-sm text-red-600">{applyError}</p> : null}
-          {applySuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{applySuccess}</p> : null}
+            ) : null}
+            {hasUserRegistered ? (
+              <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                <p className="text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
+              </div>
+            ) : null}
+            {tickets.length === 0 ? (
+              <p className="mt-5 text-center text-sm text-slate-500">لا توجد تذاكر متاحة لهذه الفعالية بعد.</p>
+            ) : null}
+            {applyError ? <p className="mt-3 text-sm text-red-600">{applyError}</p> : null}
+            {applySuccess ? <p className="mt-3 text-sm font-medium text-emerald-700">{applySuccess}</p> : null}
+          </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <div>
