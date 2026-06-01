@@ -319,3 +319,19 @@ export async function getUserDisplayNamesByMembershipNumbers(
 
   return displayNameMap
 }
+
+export async function memberHasTelegramId(db: D1DatabaseLike, membershipNumber: string): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `SELECT telegram_id
+       FROM user_info
+       WHERE membership_number = ?
+         AND telegram_id IS NOT NULL
+         AND trim(telegram_id) != ''
+       LIMIT 1`,
+    )
+    .bind(membershipNumber.trim())
+    .first<{ telegram_id: string }>()
+
+  return Boolean(row?.telegram_id)
+}

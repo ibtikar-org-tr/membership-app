@@ -3,6 +3,9 @@ import { Eye, EyeOff } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { login } from '../../api/vms'
 import { setStoredSession } from '../../utils/auth'
+import { isTelegramActivationRequiredError } from '../../utils/login-errors'
+
+const TELEGRAM_BOT_URL = 'https://t.me/ibtikar_bot'
 
 interface LoginPanelProps {
   onSuccess?: () => void
@@ -10,12 +13,14 @@ interface LoginPanelProps {
 
 export function LoginPanel({ onSuccess }: LoginPanelProps) {
   const [error, setError] = useState<string | null>(null)
+  const [telegramActivationRequired, setTelegramActivationRequired] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError(null)
+    setTelegramActivationRequired(false)
 
     const formData = new FormData(event.currentTarget)
     const identifier = String(formData.get('identifier') ?? '').trim()
@@ -33,6 +38,13 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
       setStoredSession(payload.user, payload.accessToken)
       onSuccess?.()
     } catch (requestError) {
+      if (isTelegramActivationRequiredError(requestError)) {
+        setTelegramActivationRequired(true)
+        setError(null)
+        return
+      }
+
+      setTelegramActivationRequired(false)
       if (requestError instanceof Error) {
         setError(requestError.message)
       } else {
@@ -124,7 +136,41 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
               {isSubmitting ? 'جار تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
 
-            {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
+            {telegramActivationRequired ? (
+              <div
+                className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950"
+                role="status"
+              >
+                <p className="font-semibold">تفعيل بوت تيليغرام مطلوب</p>
+                <p className="mt-2 leading-7">
+                  يجب تفعيل بوت تيليغرام قبل تسجيل الدخول. افتح البوت وأرسل{' '}
+                  <span className="font-mono font-semibold" dir="ltr">
+                    /verify
+                  </span>{' '}
+                  ثم أكمل التحقق.
+                </p>
+                <p className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <a
+                    href={TELEGRAM_BOT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-amber-900 underline-offset-4 hover:underline"
+                  >
+                    فتح البوت على تيليغرام
+                  </a>
+                  <Link
+                    to="/telegram-bot"
+                    className="font-semibold text-amber-900 underline-offset-4 hover:underline"
+                  >
+                    دليل التفعيل خطوة بخطوة
+                  </Link>
+                </p>
+              </div>
+            ) : null}
+
+            {error ? (
+              <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+            ) : null}
 
             <p className="text-center text-sm text-slate-600">
               <Link to="/" className="font-semibold text-slate-800 underline-offset-4 hover:underline">

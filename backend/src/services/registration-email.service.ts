@@ -1,6 +1,11 @@
 import type { AppBindings } from '../types/bindings'
 import { WorkerMailer } from 'worker-mailer'
 import { RegistrationEmailError } from '../errors/registration.errors'
+import {
+  buildRegistrationCredentialsEmailHtml,
+  buildRegistrationCredentialsEmailText,
+  resolveRegistrationEmailUrls,
+} from '../templates/registration-credentials-email'
 
 interface SendRegistrationCredentialsEmailParams {
   recipientEmail: string
@@ -23,12 +28,15 @@ export async function sendRegistrationCredentialsEmail(
     throw new RegistrationEmailError('SMTP_PORT must be a valid positive number. يرجى التواصل مع الأدمين وإخباره')
   }
 
-  const text = [
-    'Welcome to Ibtikar.',
-    `Membership Number: ${params.membershipNumber}`,
-    `Temporary Password: ${params.temporaryPassword}`,
-    'Please log in and change your password immediately.',
-  ].join('\n')
+  const urls = resolveRegistrationEmailUrls(bindings.FRONTEND_BASE_URL)
+  const emailContent = {
+    membershipNumber: params.membershipNumber,
+    temporaryPassword: params.temporaryPassword,
+    ...urls,
+  }
+
+  const text = buildRegistrationCredentialsEmailText(emailContent)
+  const html = buildRegistrationCredentialsEmailHtml(emailContent)
 
   let mailer: Awaited<ReturnType<typeof WorkerMailer.connect>> | null = null
 
@@ -48,9 +56,9 @@ export async function sendRegistrationCredentialsEmail(
     await mailer.send({
       from: bindings.SMTP_USER,
       to: params.recipientEmail,
-      subject: 'Your Membership Account Credentials',
+      subject: 'مرحباً بك في تجمّع إبتكار — بيانات حساب العضوية',
       text,
-      html: text,
+      html,
     })
   } catch (error) {
     throw new RegistrationEmailError('Unable to send registration credentials email at this time. يرجى التواصل مع الأدمين وإخباره', { cause: error })

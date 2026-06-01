@@ -48,6 +48,15 @@ const router = createBrowserRouter([
     },
   },
   {
+    path: '/telegram-bot',
+    errorElement: <RouteErrorBoundary />,
+    hydrateFallbackElement: <div />,
+    lazy: async () => {
+      const { TelegramBotPage } = await import('../pages/TelegramBotPage')
+      return { Component: TelegramBotPage }
+    },
+  },
+  {
     path: '/dashboard',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,

@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { WorkerMailer } from 'worker-mailer'
+import { memberHasTelegramId } from '../repositories/user-info.repository'
 import { getUserByEmail, getUserByMembershipNumber, updateUserPasswordHash } from '../repositories/users.repository'
 import {
   forgotPasswordSchema,
@@ -333,6 +334,17 @@ authRoute.post('/login', zValidator('json', loginSchema), async (c) => {
     const passwordOk = await verifyPassword(payload.password, user.password_hash)
     if (!passwordOk) {
       return c.json({ error: 'Invalid email or password.' }, 401)
+    }
+
+    const hasTelegram = await memberHasTelegramId(c.env.MEMBERS_DB, user.membership_number)
+    if (!hasTelegram) {
+      return c.json(
+        {
+          error: 'يجب تفعيل بوت تيليغرام قبل تسجيل الدخول. افتح البوت وأرسل /verify ثم أكمل التحقق.',
+          code: 'TELEGRAM_BOT_REQUIRED',
+        },
+        403,
+      )
     }
 
     const authUser = {
