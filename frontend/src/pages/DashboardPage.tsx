@@ -1,9 +1,11 @@
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { LoginPanel } from '../components/auth/LoginPanel'
+import { PublicEventShell } from '../components/events/PublicEventShell'
 import { Seo } from '../components/Seo'
 import type { AuthUser } from '../types/auth'
 import { getStoredUser } from '../utils/auth'
+import { isPublicEventDetailPath } from '../utils/public-event-routes'
 import { logout } from '../api/vms'
 import {
   LayoutDashboard,
@@ -42,9 +44,11 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 ]
 
 export function DashboardPage() {
+  const location = useLocation()
   const [user, setUser] = useState<AuthUser | null>(() => getStoredUser())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const isGuestPublicEventView = !user && isPublicEventDetailPath(location.pathname)
 
   useEffect(() => {
     if (!isMobileSidebarOpen) {
@@ -58,6 +62,14 @@ export function DashboardPage() {
       document.body.style.overflow = previousOverflow
     }
   }, [isMobileSidebarOpen])
+
+  if (isGuestPublicEventView) {
+    return (
+      <PublicEventShell>
+        <Outlet />
+      </PublicEventShell>
+    )
+  }
 
   if (!user) {
     return (

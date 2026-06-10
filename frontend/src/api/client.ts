@@ -47,6 +47,19 @@ async function refreshSession(): Promise<boolean> {
   }
 }
 
+export async function fetchPublicJson<T>(path: string): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, `Request failed (${response.status})`))
+  }
+
+  return (await response.json()) as T
+}
+
 export async function apiFetch(path: string, init: RequestInit = {}, retryOnUnauthorized = true): Promise<Response> {
   const headers = new Headers(init.headers)
   const accessToken = getAccessToken()

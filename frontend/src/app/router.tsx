@@ -48,6 +48,15 @@ const router = createBrowserRouter([
     },
   },
   {
+    path: '/event/:eventID',
+    errorElement: <RouteErrorBoundary />,
+    hydrateFallbackElement: <div />,
+    lazy: async () => {
+      const { PublicEventPage } = await import('../pages/PublicEventPage')
+      return { Component: PublicEventPage }
+    },
+  },
+  {
     path: '/telegram-bot',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,

@@ -17,7 +17,7 @@ import type {
 import type { ForgotPasswordResponse, LoginResponse, ResetPasswordResponse } from '../types/auth'
 import type { MemberProfile } from '../types/profile'
 
-import { API_BASE, apiDelete, apiFetch, apiGetJson, apiPostJson, apiPutJson, logoutRequest } from './client'
+import { API_BASE, apiDelete, apiFetch, apiGetJson, apiPostJson, apiPutJson, fetchPublicJson, logoutRequest } from './client'
 import { TelegramActivationRequiredError } from '../utils/login-errors'
 
 const GET_CACHE_TTL_MS = 1500
@@ -265,6 +265,16 @@ export function createEvent(payload: {
 
 export function fetchEventById(eventId: string) {
   return fetchJson<{ event: VmsEvent }>(`/events/${encodeURIComponent(eventId)}`)
+}
+
+export function fetchPublicEventById(eventId: string) {
+  return fetchPublicJson<{ event: VmsEvent }>(`/public/events/${encodeURIComponent(eventId)}`)
+}
+
+export function fetchPublicEventTickets(eventId: string) {
+  return fetchPublicJson<{ eventTickets: VmsEventTicket[] }>(
+    `/public/events/${encodeURIComponent(eventId)}/tickets`,
+  )
 }
 
 export function updateEvent(
