@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { ExternalLink, MessageCircle, Send } from 'lucide-react'
 import { Seo } from '../components/Seo'
+import { buildWebPageJsonLd } from '../seo/json-ld'
 
 const TELEGRAM_BOT_URL = 'https://t.me/ibtikar_bot'
 const TELEGRAM_CHANNEL_URL = 'https://t.me/ibtikar_org'
@@ -51,11 +53,22 @@ const TIPS = [
 ] as const
 
 export function TelegramBotPage() {
+  const pageTitle = 'تفعيل بوت تيليغرام'
+  const pageDescription =
+    'دليل تفعيل بوت تيليغرام الرسمي لأعضاء إبتكار: الاشتراك في القناة، التحقق من رقم العضوية، واستلام الإشعارات.'
+  const pageJsonLd = useMemo(
+    () => buildWebPageJsonLd(pageTitle, pageDescription, 'telegram-bot'),
+    [pageDescription, pageTitle],
+  )
+
   return (
     <>
       <Seo
-        title="تفعيل بوت تيليغرام"
-        description="دليل تفعيل بوت تيليغرام الرسمي لأعضاء إبتكار: الاشتراك في القناة، التحقق من رقم العضوية، واستلام الإشعارات."
+        title={pageTitle}
+        description={pageDescription}
+        keywords="بوت تيليغرام, تفعيل البوت, إبتكار, تيليغرام, رقم العضوية, /verify"
+        pathname="/telegram-bot"
+        jsonLd={pageJsonLd}
       />
       <main
         className="min-h-screen bg-linear-to-br from-sky-50 via-white to-emerald-50 px-4 py-8 text-slate-800 sm:px-6 sm:py-10"

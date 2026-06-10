@@ -49,6 +49,12 @@ export function HomeHeroSection() {
           >
             نسيت معلوماتي
           </Link>
+          <Link
+            to="/telegram-bot"
+            className="inline-flex w-full items-center justify-center rounded-xl px-1 py-2.5 text-sm font-semibold text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline sm:w-auto sm:py-3 sm:text-base"
+          >
+            تفعيل بوت تيليغرام
+          </Link>
         </div>
       </div>
       <Suspense fallback={<VolunteersCardFallback />}>
