@@ -1,8 +1,10 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
 import { HomeHeroSection } from '../components/main-page/HomeHeroSection'
 import { LazyReveal } from '../components/main-page/LazyReveal'
 import { Seo } from '../components/Seo'
 import { useHomeStats } from '../hooks/useHomeStats'
+import { DEFAULT_DESCRIPTION, SITE_NAME } from '../seo/config'
+import { buildHomePageJsonLd } from '../seo/json-ld'
 
 const MembersOverviewCard = lazy(() =>
   import('../components/main-page/MembersOverviewCard').then((module) => ({ default: module.MembersOverviewCard })),
@@ -35,6 +37,7 @@ export function HomePage() {
   const contentRef = useRef<HTMLDivElement | null>(null)
   const [sectionHeight, setSectionHeight] = useState<number | null>(null)
   const { stats } = useHomeStats()
+  const homeJsonLd = useMemo(() => buildHomePageJsonLd(), [])
 
   useEffect(() => {
     const sectionElement = sectionRef.current
@@ -71,8 +74,11 @@ export function HomePage() {
   return (
     <>
       <Seo
-        title="منصة أعضاء إبتكار"
-        description="منصة أعضاء إبتكار لإدارة العضويات والتطوع والفعاليات والمشاريع، والاطلاع على الإحصاءات والفرص والأنشطة المتاحة للأعضاء."
+        title={SITE_NAME}
+        description={DEFAULT_DESCRIPTION}
+        keywords="إبتكار, تجمّع إبتكار, منصة الأعضاء, تطوع, فعاليات, مشاريع, شباب, إحصاءات الأعضاء"
+        pathname="/"
+        jsonLd={homeJsonLd}
       />
       <main className="min-h-screen overflow-x-clip bg-linear-to-br from-amber-50 via-teal-50 to-sky-100 px-2 py-4 text-slate-800 sm:px-4 sm:py-8 md:px-6 md:py-10" dir="rtl">
         <div className="relative mx-auto flex min-h-[80vh] w-full max-w-6xl items-start md:items-center">

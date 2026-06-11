@@ -1,7 +1,8 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { FiBookOpen, FiFileText } from 'react-icons/fi'
 import { Seo } from '../components/Seo'
+import { buildWebPageJsonLd } from '../seo/json-ld'
 import { useRegistrationForm } from '../hooks/useRegistrationForm'
 import type { RegistrationFormData } from '../types/registration'
 
@@ -63,12 +64,22 @@ export function RegistrationPage() {
     resetSubmissionStatus,
   } = useRegistrationForm()
   const canShowBylawsAcknowledgementSection = hasCompletedNonOptionalFields(formData)
+  const registrationTitle = 'الانتساب إلى تجمّع إبتكار'
+  const registrationDescription =
+    'قدّم طلب الانتساب إلى تجمّع إبتكار وابدأ رحلة المشاركة في المشاريع والفعاليات والفرص التطوعية المتاحة للأعضاء الجدد.'
+  const registrationJsonLd = useMemo(
+    () => buildWebPageJsonLd(registrationTitle, registrationDescription, 'registration'),
+    [registrationDescription, registrationTitle],
+  )
 
   return (
     <>
       <Seo
-        title="الانتساب إلى تجمّع إبتكار"
-        description="قدّم طلب الانتساب إلى تجمّع إبتكار وابدأ رحلة المشاركة في المشاريع والفعاليات والفرص التطوعية المتاحة للأعضاء الجدد."
+        title={registrationTitle}
+        description={registrationDescription}
+        keywords="انتساب إبتكار, تسجيل عضوية, نموذج الانتساب, تجمّع إبتكار, تطوع, شباب"
+        pathname="/registration"
+        jsonLd={registrationJsonLd}
       />
       <main className="min-h-screen bg-linear-to-br from-slate-100 via-cyan-50 to-emerald-100 px-4 py-8 md:px-6 md:py-10" dir="rtl">
         <div className="mx-auto w-full max-w-5xl">

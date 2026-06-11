@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      port: 5930,
       watch: {
         usePolling: true,
         interval: 1000,

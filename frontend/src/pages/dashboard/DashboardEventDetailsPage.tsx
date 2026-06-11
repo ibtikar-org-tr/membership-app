@@ -1,4 +1,4 @@
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
@@ -22,6 +22,8 @@ import {
   fetchEventRegistrations,
   fetchEventTickets,
   fetchProjectMembers,
+  fetchPublicEventById,
+  fetchPublicEventTickets,
   requestTelegramGroupInvite,
 } from '../../api/vms'
 import type {
@@ -31,7 +33,8 @@ import type {
   VmsProjectMember,
 } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
-import { formatDateTimeEnCA } from '../../utils/date-format'
+import { isStandalonePublicEventPath } from '../../utils/public-event-routes'
+import { formatDateEnCA, formatTimeEnCA, formatTimezoneEnCA } from '../../utils/date-format'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -42,7 +45,10 @@ function eventStatusLabel(status: string) {
 
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
+  const location = useLocation()
   const user = useMemo(() => getStoredUser(), [])
+  const isStandaloneView = isStandalonePublicEventPath(location.pathname)
+  const loginRedirect = `${location.pathname}${location.search}`
   const ticketBuyingSectionRef = useRef<HTMLDivElement | null>(null)
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
@@ -73,10 +79,26 @@ export function DashboardEventDetailsPage() {
 
     async function loadEventDetails() {
       try {
-        const [eventPayload, ticketsPayload, registrationsPayload] = await Promise.all([
-          fetchEventById(currentEventId),
-          fetchEventTickets(currentEventId),
-          fetchEventRegistrations(currentEventId),
+        if (user) {
+          const [eventPayload, ticketsPayload, registrationsPayload] = await Promise.all([
+            fetchEventById(currentEventId),
+            fetchEventTickets(currentEventId),
+            fetchEventRegistrations(currentEventId),
+          ])
+
+          if (controller.signal.aborted) {
+            return
+          }
+
+          setEventItem(eventPayload.event)
+          setTickets(ticketsPayload.eventTickets)
+          setRegistrations(registrationsPayload.eventRegistrations)
+          return
+        }
+
+        const [eventPayload, ticketsPayload] = await Promise.all([
+          fetchPublicEventById(currentEventId),
+          fetchPublicEventTickets(currentEventId),
         ])
 
         if (controller.signal.aborted) {
@@ -85,7 +107,7 @@ export function DashboardEventDetailsPage() {
 
         setEventItem(eventPayload.event)
         setTickets(ticketsPayload.eventTickets)
-        setRegistrations(registrationsPayload.eventRegistrations)
+        setRegistrations([])
       } catch {
         if (!controller.signal.aborted) {
           setNotFound(true)
@@ -102,10 +124,10 @@ export function DashboardEventDetailsPage() {
     return () => {
       controller.abort()
     }
-  }, [eventID])
+  }, [eventID, user])
 
   useEffect(() => {
-    if (!eventItem || !eventItem.projectId) {
+    if (!user || !eventItem || !eventItem.projectId) {
       setProjectMembers([])
       return
     }
@@ -134,7 +156,7 @@ export function DashboardEventDetailsPage() {
     return () => {
       controller.abort()
     }
-  }, [eventItem])
+  }, [eventItem, user])
 
   const canEditEvent = useMemo(() => {
     if (!user || !eventItem) {
@@ -244,7 +266,7 @@ export function DashboardEventDetailsPage() {
   }
 
   if (!eventID || notFound) {
-    return <Navigate to="/dashboard/events" replace />
+    return <Navigate to={isStandaloneView ? '/' : '/dashboard/events'} replace />
   }
 
   if (isLoading || !eventItem) {
@@ -267,10 +289,10 @@ export function DashboardEventDetailsPage() {
     <section className="mx-auto max-w-5xl space-y-6 pb-10">
       <div className="flex justify-start">
         <Link
-          to="/dashboard/events"
+          to={isStandaloneView ? '/' : '/dashboard/events'}
           className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
-          العودة للفعاليات
+          {isStandaloneView ? 'العودة للرئيسية' : 'العودة للفعاليات'}
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
@@ -322,11 +344,26 @@ export function DashboardEventDetailsPage() {
             ) : null}
             <button
               type="button"
-              onClick={scrollToTicketBuyingSection}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-cyan-200 bg-transparent px-4 py-2.5 text-sm font-medium text-cyan-700 shadow-sm transition hover:bg-cyan-50 hover:text-cyan-800"
+              onClick={() => {
+                if (!hasUserRegistered) {
+                  scrollToTicketBuyingSection()
+                }
+              }}
+              disabled={hasUserRegistered}
+              className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-medium shadow-sm transition ${
+                hasUserRegistered
+                  ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-500'
+                  : 'border-cyan-200 bg-transparent text-cyan-700 hover:bg-cyan-50 hover:text-cyan-800'
+              }`}
             >
-              سجّل الآن
-              <ArrowLeft className="h-4 w-4" />
+              {hasUserRegistered ? 'مسجّل بالفعل' : 'سجّل الآن'}
+              {hasUserRegistered ? (
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.415l-7.25 7.25a1 1 0 01-1.414 0l-3.25-3.25a1 1 0 111.414-1.415l2.543 2.543 6.543-6.543a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <ArrowLeft className="h-4 w-4" />
+              )}
             </button>
           </div>
         </div>
@@ -346,18 +383,26 @@ export function DashboardEventDetailsPage() {
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700">
             <Calendar className="h-5 w-5" strokeWidth={1.75} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 space-y-1">
             <p className="text-xs font-medium text-slate-500">البداية</p>
-            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{formatDateTimeEnCA(eventItem.startTime)}</p>
+            <p className="text-sm font-semibold leading-snug text-slate-900">{formatDateEnCA(eventItem.startTime)}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
+              <span className="rounded-lg bg-slate-100 px-2 py-1">{formatTimeEnCA(eventItem.startTime)}</span>
+              <span className="rounded-lg bg-slate-100 px-2 py-1">{formatTimezoneEnCA(eventItem.startTime)}</span>
+            </div>
           </div>
         </div>
         <div className="group flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-cyan-200/80 hover:shadow-md">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
             <Clock className="h-5 w-5" strokeWidth={1.75} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 space-y-1">
             <p className="text-xs font-medium text-slate-500">النهاية</p>
-            <p className="mt-0.5 text-sm font-semibold leading-snug text-slate-900">{formatDateTimeEnCA(eventItem.endTime)}</p>
+            <p className="text-sm font-semibold leading-snug text-slate-900">{formatDateEnCA(eventItem.endTime)}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600">
+              <span className="rounded-lg bg-slate-100 px-2 py-1">{formatTimeEnCA(eventItem.endTime)}</span>
+              <span className="rounded-lg bg-slate-100 px-2 py-1">{formatTimezoneEnCA(eventItem.endTime)}</span>
+            </div>
           </div>
         </div>
         <div className="group flex gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm ring-1 ring-slate-900/5 transition hover:border-cyan-200/80 hover:shadow-md sm:col-span-1">
@@ -517,7 +562,21 @@ export function DashboardEventDetailsPage() {
           ) : null}
 
           <div ref={ticketBuyingSectionRef} className="scroll-mt-24">
-            {tickets.length > 0 && !hasUserRegistered ? (
+            {!user && tickets.length > 0 ? (
+              <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+                <p className="font-semibold">التسجيل في الفعالية يتطلب حساباً مفعّلاً</p>
+                <p className="mt-2 leading-7">
+                  يمكنك الاطلاع على تفاصيل الفعالية والتذاكر بدون تسجيل دخول. للتقديم، سجّل الدخول أولاً.
+                </p>
+                <Link
+                  to={`/login?redirect=${encodeURIComponent(loginRedirect)}`}
+                  className="mt-3 inline-flex font-semibold text-amber-900 underline-offset-4 hover:underline"
+                >
+                  تسجيل الدخول للتقديم
+                </Link>
+              </div>
+            ) : null}
+            {user && tickets.length > 0 && !hasUserRegistered ? (
               <div className="mt-5">
               <p className="mb-3 text-sm font-medium text-slate-700">اختر تذكرة للتقديم:</p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -632,6 +691,7 @@ export function DashboardEventDetailsPage() {
                 ))}
               </ul>
             </div>
+            {user ? (
             <div>
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">المسجّلون</h3>
               {tickets.length > 0 && registrations.length > 0 ? (
@@ -739,6 +799,7 @@ export function DashboardEventDetailsPage() {
                 <p className="text-center text-sm text-slate-500">لا توجد تسجيلات لهذه الفعالية بعد.</p>
               )}
             </div>
+            ) : null}
           </div>
           {tickets.length === 0 && registrations.length === 0 ? (
             <p className="mt-6 text-center text-sm text-slate-500">لا توجد تذاكر أو تسجيلات لهذه الفعالية بعد.</p>

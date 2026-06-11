@@ -8,6 +8,7 @@ import { statsRoute } from './routes/stats.route'
 import { telegramNotificationRoute } from './routes/telegram-notification.route'
 import { vmsEventRegistrationsRoute } from './routes/vms-event-registrations.route'
 import { vmsEventTicketsRoute } from './routes/vms-event-tickets.route'
+import { vmsPublicEventsRoute } from './routes/vms-public-events.route'
 import { vmsEventsRoute } from './routes/vms-events.route'
 import { vmsClubsRoute } from './routes/vms-clubs.route'
 import { vmsPointTransactionsRoute } from './routes/vms-point-transactions.route'
@@ -57,6 +58,7 @@ const publicApi = new Hono<{ Bindings: AppBindings }>()
 publicApi.route('/', registrationRoute)
 publicApi.route('/', statsRoute)
 publicApi.route('/', authRoute)
+publicApi.route('/', vmsPublicEventsRoute)
 
 const securedApi = new Hono<AppEnv>()
 securedApi.use('*', authMiddleware)

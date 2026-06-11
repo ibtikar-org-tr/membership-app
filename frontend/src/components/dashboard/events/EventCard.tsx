@@ -59,7 +59,7 @@ export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
           </span>
         </div>
         <Link
-          to={`/dashboard/event/${eventItem.id}`}
+          to={eventItem.status === 'public' ? `/event/${eventItem.id}` : `/dashboard/event/${eventItem.id}`}
           className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
         >
           عرض التفاصيل
