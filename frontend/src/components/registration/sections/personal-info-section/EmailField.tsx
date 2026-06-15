@@ -107,7 +107,7 @@ export function EmailField({ id, label, value, onChange, required = false, readO
   const trimmedValue = value.trim()
   const validationMessage = getEmailValidationMessage(trimmedValue)
   const showError = hasBlurred && validationMessage !== null
-  const showPreview = trimmedValue.length > 0 && !showError
+  const showPreview = trimmedValue.length > 0
 
   return (
     <label htmlFor={`${id}-local`} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
@@ -165,19 +165,9 @@ export function EmailField({ id, label, value, onChange, required = false, readO
           dir="ltr"
         />
       </div>
-      {!readOnly && !showError ? (
-        <p className="text-xs leading-6 text-slate-500">
-          اكتب اسم المستخدم قبل @، ثم النطاق فقط بعد @ مثل gmail.com — لا تكرّر اسم المستخدم في خانة النطاق.
-        </p>
-      ) : null}
       {showPreview ? (
         <p className="rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-800">
           البريد الكامل: <span className="font-mono">{trimmedValue}</span>
-        </p>
-      ) : null}
-      {showError && validationMessage ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
-          {validationMessage}
         </p>
       ) : null}
     </label>
