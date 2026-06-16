@@ -72,6 +72,7 @@ export interface VmsEventRegistration {
   updatedAt: string
   eventId: string
   membershipNumber: string
+  displayName?: string
   ticketId: string
   status: 'registered' | 'attended' | 'cancelled' | 'no_show' | string
   paymentApprovedBy: string | null
