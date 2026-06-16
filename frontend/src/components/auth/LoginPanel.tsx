@@ -142,6 +142,9 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
                 role="status"
               >
                 <p className="font-semibold">تفعيل بوت تيليغرام مطلوب</p>
+                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-100/60 px-3 py-2 leading-7">
+                  للعلم: إذا ظهرت لك هذه الرسالة، فهذا يعني أن كلمة المرور التي أدخلتها صحيحة.
+                </p>
                 <p className="mt-2 leading-7">
                   يجب تفعيل بوت تيليغرام قبل تسجيل الدخول. افتح البوت وأرسل{' '}
                   <span className="font-mono font-semibold" dir="ltr">

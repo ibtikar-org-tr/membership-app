@@ -7,6 +7,7 @@ import {
   listEventRegistrations,
   updateEventRegistrationById,
 } from '../repositories/vms-event-registrations.repository'
+import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
 import {
   createEventRegistrationSchema,
   eventRegistrationParamsSchema,
@@ -18,11 +19,30 @@ import { getActorMembershipNumber } from '../utils/actor'
 
 export const vmsEventRegistrationsRoute = new Hono<AppEnv>()
 
+async function enrichEventRegistrationsWithDisplayNames<T extends { membershipNumber: string }>(
+  membersDb: AppBindings['MEMBERS_DB'],
+  eventRegistrations: T[],
+) {
+  const displayNameMap = await getUserDisplayNamesByMembershipNumbers(
+    membersDb,
+    eventRegistrations.map((registration) => registration.membershipNumber),
+  )
+
+  return eventRegistrations.map((registration) => ({
+    ...registration,
+    displayName: displayNameMap.get(registration.membershipNumber) ?? registration.membershipNumber,
+  }))
+}
+
 vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
   try {
     const eventId = c.req.query('eventId')
     const eventRegistrations = await listEventRegistrations(c.env.VMS_DB, eventId)
-    return c.json({ eventRegistrations })
+    const enrichedRegistrations = await enrichEventRegistrationsWithDisplayNames(
+      c.env.MEMBERS_DB,
+      eventRegistrations,
+    )
+    return c.json({ eventRegistrations: enrichedRegistrations })
   } catch (error) {
     console.error('Failed to list event registrations', error)
     return c.json({ error: 'Could not fetch event registrations.' }, 500)
@@ -41,7 +61,11 @@ vmsEventRegistrationsRoute.get(
         return c.json({ error: 'Event registration not found.' }, 404)
       }
 
-      return c.json({ eventRegistration })
+      const [enrichedRegistration] = await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, [
+        eventRegistration,
+      ])
+
+      return c.json({ eventRegistration: enrichedRegistration })
     } catch (error) {
       console.error('Failed to fetch event registration', error)
       return c.json({ error: 'Could not fetch event registration.' }, 500)
@@ -54,8 +78,11 @@ vmsEventRegistrationsRoute.post('/event-registrations', zValidator('json', creat
     const payload = c.req.valid('json')
     const eventRegistrationId = crypto.randomUUID()
     const eventRegistration = await createEventRegistration(c.env.VMS_DB, eventRegistrationId, payload)
+    const [enrichedRegistration] = await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, [
+      eventRegistration!,
+    ])
 
-    return c.json({ eventRegistration }, 201)
+    return c.json({ eventRegistration: enrichedRegistration }, 201)
   } catch (error) {
     console.error('Failed to create event registration', error)
     return c.json({ error: 'Could not create event registration.' }, 500)
@@ -77,7 +104,10 @@ vmsEventRegistrationsRoute.put(
       }
 
       const eventRegistration = await updateEventRegistrationById(c.env.VMS_DB, id, payload)
-      return c.json({ eventRegistration })
+      const [enrichedRegistration] = await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, [
+        eventRegistration!,
+      ])
+      return c.json({ eventRegistration: enrichedRegistration })
     } catch (error) {
       console.error('Failed to update event registration', error)
       return c.json({ error: 'Could not update event registration.' }, 500)
@@ -126,8 +156,11 @@ vmsEventRegistrationsRoute.post(
       }
 
       const eventRegistration = await updateEventRegistrationById(c.env.VMS_DB, id, updateData)
+      const [enrichedRegistration] = await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, [
+        eventRegistration!,
+      ])
 
-      return c.json({ eventRegistration })
+      return c.json({ eventRegistration: enrichedRegistration })
     } catch (error) {
       console.error('Failed to approve', error)
       return c.json({ error: 'Could not approve.' }, 500)
