@@ -4,6 +4,7 @@ import {
   initialRegistrationFormData,
 } from '../types/registration'
 import type { FormFieldName, RegistrationFormData } from '../types/registration'
+import { composeEmail, getEmailValidationMessage, splitEmailParts } from '../utils/email'
 
 const DRAFT_STORAGE_KEY = 'registration-form-draft-v1'
 const AUTOSAVE_STORAGE_KEY = 'registration-form-autosave-v1'
@@ -128,8 +129,10 @@ function toRegistrationPayload(formData: RegistrationFormData) {
   const normalizedSex = formData.sex.trim()
   const normalizedBloodType = formData.bloodType.trim().toUpperCase()
 
+  const { localPart, domainPart } = splitEmailParts(formData.email)
+
   return {
-    email: formData.email.trim().toLowerCase(),
+    email: composeEmail(localPart, domainPart).trim().toLowerCase(),
     enName: formData.enName.trim(),
     arName: formData.arName.trim(),
     phoneNumber: formData.phoneNumber.trim(),
@@ -159,6 +162,8 @@ function toRegistrationPayload(formData: RegistrationFormData) {
 
 function validateRequiredFields(formData: RegistrationFormData) {
   if (!formData.email.trim()) return 'يرجى إدخال البريد الإلكتروني.'
+  const emailValidationMessage = getEmailValidationMessage(formData.email)
+  if (emailValidationMessage) return emailValidationMessage
   if (!formData.arName.trim()) return 'يرجى إدخال الاسم بالعربية.'
   if (!formData.enName.trim()) return 'يرجى إدخال الاسم بالإنكليزية أو التركية.'
   if (!formData.phoneNumber.trim()) return 'يرجى إدخال رقم الهاتف.'

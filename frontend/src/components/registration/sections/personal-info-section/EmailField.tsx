@@ -1,4 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  composeEmail,
+  getEmailValidationMessage,
+  normalizeEmailParts,
+  splitEmailParts,
+} from '../../../../utils/email'
 
 type EmailFieldProps = {
   id: string
@@ -7,23 +13,6 @@ type EmailFieldProps = {
   onChange: (value: string) => void
   required?: boolean
   readOnly?: boolean
-}
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-function splitEmailParts(email: string) {
-  const atIndex = email.indexOf('@')
-  if (atIndex === -1) {
-    return {
-      localPart: email,
-      domainPart: '',
-    }
-  }
-
-  return {
-    localPart: email.slice(0, atIndex),
-    domainPart: email.slice(atIndex + 1),
-  }
 }
 
 export function EmailField({ id, label, value, onChange, required = false, readOnly = false }: EmailFieldProps) {
@@ -44,9 +33,14 @@ export function EmailField({ id, label, value, onChange, required = false, readO
   }, [value])
 
   const syncValue = (nextLocalPart: string, nextDomainPart: string) => {
-    const hasAnyPart = nextLocalPart.length > 0 || nextDomainPart.length > 0
-    const nextEmail = hasAnyPart ? `${nextLocalPart}@${nextDomainPart}` : ''
-    onChange(nextEmail)
+    onChange(composeEmail(nextLocalPart, nextDomainPart))
+  }
+
+  const applyNormalizedParts = (nextLocalPart: string, nextDomainPart: string) => {
+    const normalized = normalizeEmailParts(nextLocalPart, nextDomainPart)
+    setLocalPart(normalized.localPart)
+    setDomainPart(normalized.domainPart)
+    syncValue(normalized.localPart, normalized.domainPart)
   }
 
   const handleLocalPartChange = (nextRawValue: string) => {
@@ -74,6 +68,17 @@ export function EmailField({ id, label, value, onChange, required = false, readO
   }
 
   const handleDomainPartChange = (nextRawValue: string) => {
+    if (nextRawValue.includes('@')) {
+      const { localPart: pastedLocal, domainPart: pastedDomain } = splitEmailParts(nextRawValue)
+      const nextLocalPart = pastedLocal || localPart
+      const nextDomainPart = pastedDomain.replaceAll('@', '')
+
+      setLocalPart(nextLocalPart)
+      setDomainPart(nextDomainPart)
+      syncValue(nextLocalPart, nextDomainPart)
+      return
+    }
+
     const sanitizedDomain = nextRawValue.replaceAll('@', '')
     setDomainPart(sanitizedDomain)
     syncValue(localPart, sanitizedDomain)
@@ -95,12 +100,14 @@ export function EmailField({ id, label, value, onChange, required = false, readO
     const isMovingWithinField = relatedTarget?.closest('[data-email-field]') === event.currentTarget
     if (!isMovingWithinField) {
       setHasBlurred(true)
+      applyNormalizedParts(localPart, domainPart)
     }
   }
 
   const trimmedValue = value.trim()
-  const isInvalid = trimmedValue.length > 0 && !emailPattern.test(trimmedValue)
-  const showError = hasBlurred && isInvalid
+  const validationMessage = getEmailValidationMessage(trimmedValue)
+  const showError = hasBlurred && validationMessage !== null
+  const showPreview = trimmedValue.length > 0
 
   return (
     <label htmlFor={`${id}-local`} className="flex min-w-0 flex-col gap-2 text-sm font-medium text-slate-700">
@@ -148,7 +155,7 @@ export function EmailField({ id, label, value, onChange, required = false, readO
           autoCorrect="off"
           spellCheck={false}
           required={required}
-          placeholder="proton.me"
+          placeholder="gmail.com"
           value={domainPart}
           onChange={(event) => handleDomainPartChange(event.target.value)}
           readOnly={readOnly}
@@ -158,11 +165,11 @@ export function EmailField({ id, label, value, onChange, required = false, readO
           dir="ltr"
         />
       </div>
-      {showError && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
-          البريد الإلكتروني غير صالح. اكتب الصيغة الصحيحة مثل: name@example.com
+      {showPreview ? (
+        <p className="rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-xs font-medium text-teal-800">
+          البريد الكامل: <span className="font-mono">{trimmedValue}</span>
         </p>
-      )}
+      ) : null}
     </label>
   )
 }
