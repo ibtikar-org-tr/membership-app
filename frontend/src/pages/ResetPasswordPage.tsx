@@ -1,4 +1,5 @@
 import { type FormEvent, useMemo, useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../api/vms'
 import { Seo } from '../components/Seo'
@@ -103,6 +104,8 @@ export function ResetPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -207,32 +210,54 @@ export function ResetPasswordPage() {
                 <label htmlFor="new-password" className="mb-2 block text-sm font-semibold text-slate-700">
                   كلمة المرور الجديدة
                 </label>
-                <input
-                  id="new-password"
-                  name="newPassword"
-                  type="password"
-                  minLength={8}
-                  required
-                  autoComplete="new-password"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
-                  placeholder="8 أحرف على الأقل"
-                />
+                <div className="relative">
+                  <input
+                    id="new-password"
+                    name="newPassword"
+                    type={showNewPassword ? 'text' : 'password'}
+                    minLength={8}
+                    required
+                    autoComplete="new-password"
+                    dir="ltr"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-11 text-left text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+                    placeholder="8 أحرف على الأقل"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((current) => !current)}
+                    className="absolute inset-y-0 right-3 flex items-center text-slate-500 transition hover:text-slate-800"
+                    aria-label={showNewPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  >
+                    {showNewPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label htmlFor="confirm-password" className="mb-2 block text-sm font-semibold text-slate-700">
                   تأكيد كلمة المرور
                 </label>
-                <input
-                  id="confirm-password"
-                  name="confirmPassword"
-                  type="password"
-                  minLength={8}
-                  required
-                  autoComplete="new-password"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
-                  placeholder="أعد كتابة كلمة المرور"
-                />
+                <div className="relative">
+                  <input
+                    id="confirm-password"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    minLength={8}
+                    required
+                    autoComplete="new-password"
+                    dir="ltr"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-4 pr-11 text-left text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
+                    placeholder="أعد كتابة كلمة المرور"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((current) => !current)}
+                    className="absolute inset-y-0 right-3 flex items-center text-slate-500 transition hover:text-slate-800"
+                    aria-label={showConfirmPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
+                  </button>
+                </div>
               </div>
 
               {errorMessage ? (
