@@ -43,6 +43,14 @@ function eventStatusLabel(status: string) {
   return status
 }
 
+function registrationStatusLabel(status: string) {
+  if (status === 'registered') return 'مسجل'
+  if (status === 'attended') return 'حضر'
+  if (status === 'cancelled') return 'ملغي'
+  if (status === 'no_show') return 'لم يحضر'
+  return status
+}
+
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
   const location = useLocation()
@@ -182,6 +190,20 @@ export function DashboardEventDetailsPage() {
 
     return registrations.some((registration) => registration.membershipNumber === user.membershipNumber)
   }, [registrations, user])
+  const userRegistration = useMemo(() => {
+    if (!user) {
+      return null
+    }
+
+    return registrations.find((registration) => registration.membershipNumber === user.membershipNumber) ?? null
+  }, [registrations, user])
+  const userRegisteredTicket = useMemo(() => {
+    if (!userRegistration) {
+      return null
+    }
+
+    return tickets.find((ticket) => ticket.id === userRegistration.ticketId) ?? null
+  }, [tickets, userRegistration])
   const canSendTelegramInvite = Boolean(eventItem?.telegramGroupId && user?.membershipNumber && hasUserRegistered)
   const telegramInviteHelperText = !user
     ? 'سجّل الدخول أولاً ثم سجّل في هذه الفعالية لإرسال دعوة مجموعة التلغرام.'
@@ -367,6 +389,14 @@ export function DashboardEventDetailsPage() {
             </button>
           </div>
         </div>
+        {hasUserRegistered && userRegisteredTicket ? (
+          <div className="border-t border-slate-100 px-5 pb-5 sm:px-6 md:px-8">
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              أنت مسجّل في هذه الفعالية. التذكرة المختارة:{' '}
+              <span className="font-semibold">{userRegisteredTicket.name}</span>
+            </p>
+          </div>
+        ) : null}
       </div>
 
       {canEditEvent ? (
@@ -645,8 +675,46 @@ export function DashboardEventDetailsPage() {
             </div>
             ) : null}
             {hasUserRegistered ? (
-              <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-                <p className="text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
+              <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-center text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
+                {userRegisteredTicket ? (
+                  <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4 text-right shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-slate-500">التذكرة التي اخترتها</p>
+                        <p className="mt-1 font-semibold text-slate-900">{userRegisteredTicket.name}</p>
+                        {userRegisteredTicket.description ? (
+                          <p className="mt-1 text-xs leading-6 text-slate-500">{userRegisteredTicket.description}</p>
+                        ) : null}
+                      </div>
+                      <Ticket className="h-5 w-5 shrink-0 text-emerald-700" />
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-lg bg-slate-100 px-2 py-1 text-slate-700">
+                        {userRegisteredTicket.quantity} مقعد
+                      </span>
+                      <span className="rounded-lg bg-cyan-100 px-2 py-1 font-medium text-cyan-800">
+                        {userRegisteredTicket.pointPrice} نقطة
+                      </span>
+                      {userRegisteredTicket.currencyPrice ? (
+                        <span className="rounded-lg bg-amber-100 px-2 py-1 font-medium text-amber-800">
+                          {userRegisteredTicket.currencyPrice}
+                        </span>
+                      ) : (
+                        <span className="rounded-lg bg-emerald-100 px-2 py-1 font-medium text-emerald-800">
+                          مجاني
+                        </span>
+                      )}
+                      {userRegistration ? (
+                        <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 font-medium text-emerald-800">
+                          الحالة: {registrationStatusLabel(userRegistration.status)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-center text-xs text-emerald-700">تعذّر عرض تفاصيل التذكرة المختارة.</p>
+                )}
               </div>
             ) : null}
             {tickets.length === 0 ? (
