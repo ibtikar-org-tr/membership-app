@@ -17,8 +17,12 @@ export function PublicEventShell({ children }: PublicEventShellProps) {
       <div className="min-h-screen bg-slate-50 text-slate-800" dir="rtl">
         <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-            <Link to="/" className="text-sm font-semibold text-slate-900 hover:text-cyan-800">
-              منصة أعضاء إبتكار
+            <Link to="/" className="inline-flex items-center">
+              <img
+                src="/blue_long_logo.svg"
+                alt="منصة أعضاء إبتكار"
+                className="h-8 w-auto md:h-10"
+              />
             </Link>
             <div className="flex items-center gap-3 text-sm">
               <Link to="/login" className="font-medium text-slate-600 hover:text-slate-900">
