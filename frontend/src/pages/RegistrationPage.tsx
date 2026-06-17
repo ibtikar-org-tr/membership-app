@@ -220,6 +220,21 @@ export function RegistrationPage() {
             </div>
           </form>
         )}
+        <aside className="mt-6 rounded-xl border border-slate-200 bg-white/90 px-4 py-3 text-sm leading-7 text-slate-600 shadow-sm">
+          <p>
+            إذا واجهت صعوبة تقنية أثناء تعبئة النموذج، يمكنك التواصل معنا عبر{' '}
+            <a
+              href="https://t.me/ibtikar_org_tr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-cyan-700 underline-offset-4 hover:underline"
+              dir="ltr"
+            >
+              @ibtikar_org_tr
+            </a>
+            {' '}على تيليغرام.
+          </p>
+        </aside>
         </div>
       </main>
     </>
