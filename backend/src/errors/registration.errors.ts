@@ -22,3 +22,10 @@ export class RegistrationEmailError extends Error {
     }
   }
 }
+
+export class MembershipNumberAllocationError extends Error {
+  constructor() {
+    super('تعذّر إنشاء رقم عضوية جديد حالياً. يرجى المحاولة مرة أخرى بعد قليل.')
+    this.name = 'MembershipNumberAllocationError'
+  }
+}

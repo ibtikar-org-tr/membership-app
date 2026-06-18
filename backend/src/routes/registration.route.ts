@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import type { ZodIssue } from 'zod'
-import { EmailAlreadyExistsError, PhoneNumberAlreadyExistsError, RegistrationEmailError } from '../errors/registration.errors'
+import { EmailAlreadyExistsError, MembershipNumberAllocationError, PhoneNumberAlreadyExistsError, RegistrationEmailError } from '../errors/registration.errors'
 import { registrationSchema } from '../schemas/registration'
 import { registerUser } from '../services/registration.service'
 import type { AppBindings } from '../types/bindings'
@@ -50,6 +50,10 @@ function mapUnexpectedRegistrationError(error: unknown) {
       return 'تعذّر حفظ المهارات أو الاهتمامات بسبب تكرار غير متوقع. تأكّد من عدم إدخال نفس العنصر في المهارات والاهتمامات معاً، ثم حاول مرة أخرى.'
     }
 
+    if (error.message.includes('UNIQUE constraint failed: users.membership_number')) {
+      return 'تعذّر إنشاء رقم عضوية جديد حالياً. يرجى المحاولة مرة أخرى بعد قليل.'
+    }
+
     if (error.message.includes('UNIQUE constraint failed: skills.name')) {
       return 'تعذّر حفظ إحدى المهارات بسبب تعارض في الاسم. جرّب اختيار المهارة من القائمة بدل كتابتها يدوياً.'
     }
@@ -96,6 +100,10 @@ registrationRoute.post(
 
       if (error instanceof PhoneNumberAlreadyExistsError) {
         return c.json({ error: error.message }, 409)
+      }
+
+      if (error instanceof MembershipNumberAllocationError) {
+        return c.json({ error: error.message }, 503)
       }
 
       if (error instanceof RegistrationEmailError) {
