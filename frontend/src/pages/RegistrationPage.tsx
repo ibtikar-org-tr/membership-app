@@ -236,7 +236,7 @@ export function RegistrationPage() {
               </div>
 
               {submitError && (
-                <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                <p className="mt-3 whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
                   {submitError}
                 </p>
               )}

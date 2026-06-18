@@ -47,6 +47,28 @@ export async function addUserSkill(
   return getUserSkill(db, membershipNumber, skillId)
 }
 
+export async function upsertUserSkill(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+  skillId: string,
+  type: 'skill' | 'interest',
+  proficiencyLevel?: 'beginner' | 'intermediate' | 'expert'
+): Promise<UserSkill> {
+  await db
+    .prepare(
+      `INSERT INTO user_skills (membership_number, skill_id, type, proficiency_level)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(membership_number, skill_id) DO UPDATE SET
+         type = excluded.type,
+         proficiency_level = COALESCE(excluded.proficiency_level, user_skills.proficiency_level),
+         updated_at = datetime('now')`
+    )
+    .bind(membershipNumber, skillId, type, proficiencyLevel ?? null)
+    .run()
+
+  return getUserSkill(db, membershipNumber, skillId)
+}
+
 export async function getUserSkill(db: D1DatabaseLike, membershipNumber: string, skillId: string): Promise<UserSkill> {
   const row = await db
     .prepare(
