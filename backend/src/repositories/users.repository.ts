@@ -8,13 +8,44 @@ interface UserAuthRow {
   role: string
 }
 
-export async function getLatestMembershipNumber(db: D1DatabaseLike): Promise<string | null> {
-  const row = await db
-    .prepare('SELECT membership_number FROM users ORDER BY created_at DESC, rowid DESC LIMIT 1')
-    .bind()
-    .first<{ membership_number: string }>()
+export async function getLatestMembershipNumber(
+  db: D1DatabaseLike,
+  prefix: string,
+): Promise<string | null> {
+  const effectivePrefix = prefix.trim()
+  if (!effectivePrefix) {
+    return null
+  }
 
-  return row?.membership_number ?? null
+  const result = await db
+    .prepare('SELECT membership_number FROM users WHERE membership_number LIKE ?')
+    .bind(`${effectivePrefix}%`)
+    .all<{ membership_number: string }>()
+
+  let latestMembershipNumber: string | null = null
+  let latestSequence = -1
+
+  for (const row of result.results) {
+    const membershipNumber = row.membership_number
+    if (!membershipNumber.startsWith(effectivePrefix)) {
+      continue
+    }
+
+    const sequenceRaw = membershipNumber.slice(effectivePrefix.length)
+    if (!/^\d+$/.test(sequenceRaw)) {
+      continue
+    }
+
+    const sequence = Number.parseInt(sequenceRaw, 10)
+    if (!Number.isFinite(sequence) || sequence <= latestSequence) {
+      continue
+    }
+
+    latestSequence = sequence
+    latestMembershipNumber = membershipNumber
+  }
+
+  return latestMembershipNumber
 }
 
 export async function createUser(db: D1DatabaseLike, params: CreateUserParams): Promise<void> {

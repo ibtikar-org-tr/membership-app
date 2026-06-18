@@ -78,12 +78,72 @@ function toOptionalTrimmedString(value: string) {
 }
 
 function toOptionalStringArray(value: string) {
-  const items = value
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed) as unknown
+      if (Array.isArray(parsed)) {
+        const items = parsed.map((item) => String(item).trim()).filter(Boolean)
+        return items.length > 0 ? items : undefined
+      }
+
+      if (parsed && typeof parsed === 'object') {
+        const items = Object.keys(parsed as Record<string, unknown>)
+          .map((item) => item.trim())
+          .filter(Boolean)
+        return items.length > 0 ? items : undefined
+      }
+    } catch {
+      // fall through to CSV parsing
+    }
+  }
+
+  const items = trimmed
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
 
   return items.length > 0 ? items : undefined
+}
+
+type RegistrationApiErrorBody = {
+  message?: string
+  error?: string
+  issues?: string[]
+  details?: Array<{
+    path?: Array<string | number>
+    message?: string
+  }>
+}
+
+function formatRegistrationApiError(responseBody: RegistrationApiErrorBody | null) {
+  if (!responseBody) {
+    return 'تعذّر إرسال الطلب. يرجى المحاولة مرة أخرى.'
+  }
+
+  if (responseBody.issues?.length) {
+    return `${responseBody.error ?? 'يرجى تصحيح الحقول التالية قبل الإرسال.'}\n${responseBody.issues.join('\n')}`
+  }
+
+  if (responseBody.details?.length) {
+    const detailMessages = responseBody.details
+      .map((detail) => detail.message?.trim())
+      .filter(Boolean)
+
+    if (detailMessages.length > 0) {
+      return `${responseBody.error ?? 'يرجى تصحيح الحقول التالية قبل الإرسال.'}\n${detailMessages.join('\n')}`
+    }
+  }
+
+  if (responseBody.error?.trim()) {
+    return responseBody.error.trim()
+  }
+
+  return 'تعذّر إرسال الطلب. يرجى المحاولة مرة أخرى.'
 }
 
 function toOptionalSocialMediaLinks(value: string) {
@@ -264,13 +324,10 @@ export function useRegistrationForm() {
         body: JSON.stringify(payload),
       })
 
-      const responseBody = (await response.json().catch(() => null)) as {
-        message?: string
-        error?: string
-      } | null
+      const responseBody = (await response.json().catch(() => null)) as RegistrationApiErrorBody | null
 
       if (!response.ok) {
-        setSubmitError(responseBody?.error ?? 'تعذّر إرسال الطلب. يرجى المحاولة مرة أخرى.')
+        setSubmitError(formatRegistrationApiError(responseBody))
         return
       }
 

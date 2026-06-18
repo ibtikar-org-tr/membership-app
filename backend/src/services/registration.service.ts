@@ -1,4 +1,8 @@
-import { EmailAlreadyExistsError, PhoneNumberAlreadyExistsError } from '../errors/registration.errors'
+import {
+  EmailAlreadyExistsError,
+  MembershipNumberAllocationError,
+  PhoneNumberAlreadyExistsError,
+} from '../errors/registration.errors'
 import { createUserInfo, deleteUserInfoByMembershipNumber, phoneNumberExists } from '../repositories/user-info.repository'
 import {
   createUserRegistrationInfo,
@@ -6,8 +10,8 @@ import {
 } from '../repositories/user-registration-info.repository'
 import { createUser, deleteUserByMembershipNumber, getLatestMembershipNumber } from '../repositories/users.repository'
 import {
-  addUserSkill,
   deleteAllUserSkillsByMembershipNumber,
+  upsertUserSkill,
 } from '../repositories/user-skills.repository'
 import { createSkill, getSkillByName } from '../repositories/vms-skills.repository'
 import type { RegistrationInput } from '../schemas/registration'
@@ -29,14 +33,85 @@ function toJsonOrNull(value?: Record<string, string>): string | null {
   return JSON.stringify(value)
 }
 
+function uniqueTrimmedValues(values: string[]) {
+  const seen = new Set<string>()
+  const uniqueValues: string[] = []
+
+  for (const value of values) {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      continue
+    }
+
+    const dedupeKey = trimmed.toLocaleLowerCase()
+    if (seen.has(dedupeKey)) {
+      continue
+    }
+
+    seen.add(dedupeKey)
+    uniqueValues.push(trimmed)
+  }
+
+  return uniqueValues
+}
+
+const MEMBERSHIP_NUMBER_ALLOCATION_ATTEMPTS = 5
+
+function isMembershipNumberConflict(error: unknown) {
+  return error instanceof Error && error.message.includes('UNIQUE constraint failed: users.membership_number')
+}
+
+function isEmailConflict(error: unknown) {
+  return error instanceof Error && error.message.includes('UNIQUE constraint failed: users.email')
+}
+
+async function createUserWithMembershipRetry(
+  membersDb: AppBindings['MEMBERS_DB'],
+  prefix: string,
+  params: {
+    email: string
+    passwordHash: string
+    role: string
+  },
+) {
+  for (let attempt = 0; attempt < MEMBERSHIP_NUMBER_ALLOCATION_ATTEMPTS; attempt += 1) {
+    const lastMembershipNumber = await getLatestMembershipNumber(membersDb, prefix)
+    const membershipNumber = generateNextMembershipNumber(lastMembershipNumber, prefix)
+
+    try {
+      await createUser(membersDb, {
+        membershipNumber,
+        email: params.email,
+        passwordHash: params.passwordHash,
+        role: params.role,
+      })
+      return membershipNumber
+    } catch (error) {
+      if (isEmailConflict(error)) {
+        throw new EmailAlreadyExistsError()
+      }
+
+      if (isMembershipNumberConflict(error) && attempt < MEMBERSHIP_NUMBER_ALLOCATION_ATTEMPTS - 1) {
+        continue
+      }
+
+      if (isMembershipNumberConflict(error)) {
+        throw new MembershipNumberAllocationError()
+      }
+
+      throw error
+    }
+  }
+
+  throw new MembershipNumberAllocationError()
+}
+
 async function getOrCreateSkill(vmsDb: AppBindings['VMS_DB'], skillName: string): Promise<string> {
-  // Try to find existing skill by name
   const existing = await getSkillByName(vmsDb, skillName)
   if (existing) {
     return existing.id
   }
 
-  // Create new skill
   const skillId = generateId()
   await createSkill(vmsDb, {
     id: skillId,
@@ -46,15 +121,35 @@ async function getOrCreateSkill(vmsDb: AppBindings['VMS_DB'], skillName: string)
   return skillId
 }
 
+async function saveRegistrationSkills(
+  membersDb: AppBindings['MEMBERS_DB'],
+  vmsDb: AppBindings['VMS_DB'],
+  membershipNumber: string,
+  interests: string[],
+  skills?: string[],
+) {
+  for (const interest of uniqueTrimmedValues(interests)) {
+    const skillId = await getOrCreateSkill(vmsDb, interest)
+    await upsertUserSkill(membersDb, membershipNumber, skillId, 'interest')
+  }
+
+  if (!skills || skills.length === 0) {
+    return
+  }
+
+  for (const skillName of uniqueTrimmedValues(skills)) {
+    const skillId = await getOrCreateSkill(vmsDb, skillName)
+    await upsertUserSkill(membersDb, membershipNumber, skillId, 'skill', 'beginner')
+  }
+}
+
 export async function registerUser(bindings: AppBindings, input: RegistrationInput): Promise<RegistrationResult> {
   const membersDb = bindings.MEMBERS_DB
   const vmsDb = bindings.VMS_DB
-  const lastMembershipNumber = await getLatestMembershipNumber(membersDb)
-  const membershipNumber = generateNextMembershipNumber(lastMembershipNumber, bindings.MEMBERSHIP_NUMBER_PREFIX)
+  const membershipPrefix = bindings.MEMBERSHIP_NUMBER_PREFIX
   const temporaryPassword = generateTemporaryPassword()
   const passwordHash = await hashPassword(temporaryPassword)
 
-  // Check if phone number already exists (if provided)
   if (input.phoneNumber) {
     const phoneExists = await phoneNumberExists(membersDb, input.phoneNumber)
     if (phoneExists) {
@@ -62,19 +157,11 @@ export async function registerUser(bindings: AppBindings, input: RegistrationInp
     }
   }
 
-  try {
-    await createUser(membersDb, {
-      membershipNumber,
-      email: input.email,
-      passwordHash,
-      role: 'member',
-    })
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('UNIQUE constraint failed: users.email')) {
-      throw new EmailAlreadyExistsError()
-    }
-    throw error
-  }
+  const membershipNumber = await createUserWithMembershipRetry(membersDb, membershipPrefix, {
+    email: input.email,
+    passwordHash,
+    role: 'member',
+  })
 
   try {
     await createUserInfo(membersDb, {
@@ -101,19 +188,7 @@ export async function registerUser(bindings: AppBindings, input: RegistrationInp
       languages: input.languages ? input.languages.join(', ') : null,
     })
 
-    // Add interests to user_skills
-    for (const interest of input.interests) {
-      const skillId = await getOrCreateSkill(vmsDb, interest)
-      await addUserSkill(membersDb, membershipNumber, skillId, 'interest')
-    }
-
-    // Add skills to user_skills (if provided)
-    if (input.skills && input.skills.length > 0) {
-      for (const skill of input.skills) {
-        const skillId = await getOrCreateSkill(vmsDb, skill)
-        await addUserSkill(membersDb, membershipNumber, skillId, 'skill', 'beginner')
-      }
-    }
+    await saveRegistrationSkills(membersDb, vmsDb, membershipNumber, input.interests, input.skills)
 
     await createUserRegistrationInfo(membersDb, {
       membershipNumber,
