@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { FiSearch, FiUserMinus, FiX } from 'react-icons/fi'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../../types/vms'
 import { formatDateTimeEnCA } from '../../../utils/date-format'
-import { projectMemberRoleLabel } from './helpers'
+import {
+  memberAvatarTone,
+  memberInitials,
+  projectMemberRoleBadgeClass,
+  projectMemberRoleLabel,
+  sortProjectMembers,
+} from './helpers'
 import { SkillsField } from '../../SkillsField'
 
 function eventStatusLabel(status: string) {
@@ -413,55 +420,159 @@ export function MembersModal({
   onRequestRemove,
   onClose,
 }: MembersModalProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const sortedMembers = useMemo(
+    () => sortProjectMembers(projectMembers, projectOwnerMembershipNumber),
+    [projectMembers, projectOwnerMembershipNumber],
+  )
+
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+  const visibleMembers = useMemo(() => {
+    if (!normalizedQuery) {
+      return sortedMembers
+    }
+
+    return sortedMembers.filter((member) => {
+      const haystack = `${member.displayName} ${member.membershipNumber} ${projectMemberRoleLabel(member.role)}`.toLowerCase()
+      return haystack.includes(normalizedQuery)
+    })
+  }, [normalizedQuery, sortedMembers])
+
+  const managerCount = projectMembers.filter((member) => member.role === 'manager').length
+
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
-      <article className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <p className="text-base font-semibold text-slate-950">أعضاء المشروع</p>
-          <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <article
+        className="flex max-h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="border-b border-slate-200 bg-linear-to-l from-cyan-50 via-white to-emerald-50 px-4 py-4 sm:px-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-lg font-bold text-slate-950">أعضاء المشروع</p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                {projectMembers.length === 0
+                  ? 'لا يوجد أعضاء في هذا المشروع حالياً.'
+                  : `${projectMembers.length} ${projectMembers.length === 1 ? 'عضو' : 'أعضاء'}${managerCount > 0 ? ` • ${managerCount} ${managerCount === 1 ? 'مدير' : 'مديرون'}` : ''}`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="إغلاق"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 transition hover:border-slate-400 hover:text-slate-800"
+            >
+              <FiX className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+
+          {projectMembers.length > 4 ? (
+            <label className="relative mt-4 block">
+              <FiSearch className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="ابحث بالاسم أو رقم العضوية..."
+                className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pr-10 pl-3 text-sm text-slate-800 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100"
+              />
+            </label>
+          ) : null}
         </div>
 
-        <div className="mt-5">
-          <div className="grid gap-2 sm:grid-cols-2">
-            {projectMembers.length === 0 ? <p className="text-sm text-slate-500">لا يوجد أعضاء في هذا المشروع حالياً.</p> : null}
-            {projectMembers.map((member) => {
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+          {projectMembers.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+              <p className="text-sm font-medium text-slate-700">لا يوجد أعضاء بعد</p>
+              <p className="mt-1 text-xs text-slate-500">سيظهر أعضاء المشروع هنا عند انضمامهم.</p>
+            </div>
+          ) : null}
+
+          {projectMembers.length > 0 && visibleMembers.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
+              <p className="text-sm text-slate-600">لا توجد نتائج مطابقة لبحثك.</p>
+            </div>
+          ) : null}
+
+          <ul className="space-y-2">
+            {visibleMembers.map((member) => {
               const isOwner = member.membershipNumber === projectOwnerMembershipNumber
               const isSelf = member.membershipNumber === actorMembershipNumber
               const canRemove =
                 canManageMembers && !isOwner && !isSelf && removingMembershipNumber !== member.membershipNumber
+              const isRemoving = removingMembershipNumber === member.membershipNumber
 
               return (
-                <div
+                <li
                   key={`member-${member.projectId}-${member.membershipNumber}`}
-                  className="flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-sm"
+                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md"
                 >
-                  <button
-                    type="button"
-                    onClick={() => onSelectMember(member)}
-                    className="min-w-0 flex-1 rounded-2xl px-4 py-3 text-right transition hover:cursor-pointer hover:bg-slate-100/80"
-                    title="عرض معلومات العضو"
-                  >
-                    <p className="font-semibold text-slate-900">{member.displayName}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {projectMemberRoleLabel(member.role)} • {member.membershipNumber}
-                      {isOwner ? ' • مالك المشروع' : null}
-                    </p>
-                  </button>
-                  {canRemove ? (
+                  <div className="flex items-stretch gap-0">
                     <button
                       type="button"
-                      onClick={() => onRequestRemove(member)}
-                      className="m-2 shrink-0 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 transition hover:bg-red-100"
+                      onClick={() => onSelectMember(member)}
+                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-right transition hover:bg-slate-50 sm:px-4 sm:py-3.5"
+                      title="عرض معلومات العضو"
                     >
-                      إزالة
+                      <span
+                        className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-sm font-semibold shadow-sm ${memberAvatarTone(member.membershipNumber)}`}
+                      >
+                        {memberInitials(member.displayName, member.membershipNumber)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <span className="truncate text-sm font-semibold text-slate-900 sm:text-base">
+                            {member.displayName}
+                          </span>
+                          {isSelf ? (
+                            <span className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-800">
+                              أنت
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <span
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${projectMemberRoleBadgeClass(member.role, isOwner)}`}
+                          >
+                            {isOwner ? 'مالك المشروع' : projectMemberRoleLabel(member.role)}
+                          </span>
+                          <span className="font-mono text-[11px] text-slate-500" dir="ltr">
+                            {member.membershipNumber}
+                          </span>
+                        </span>
+                      </span>
                     </button>
-                  ) : removingMembershipNumber === member.membershipNumber ? (
-                    <span className="m-2 shrink-0 text-[11px] text-slate-500">جار الإزالة...</span>
-                  ) : null}
-                </div>
+
+                    {canRemove ? (
+                      <button
+                        type="button"
+                        onClick={() => onRequestRemove(member)}
+                        className="inline-flex shrink-0 flex-col items-center justify-center gap-1 border-s border-slate-100 px-3 text-[11px] font-semibold text-red-700 transition hover:bg-red-50 sm:min-w-[4.5rem] sm:px-4"
+                        title={`إزالة ${member.displayName}`}
+                      >
+                        <FiUserMinus className="h-4 w-4" aria-hidden />
+                        <span className="hidden sm:inline">إزالة</span>
+                      </button>
+                    ) : isRemoving ? (
+                      <span className="inline-flex shrink-0 items-center justify-center border-s border-slate-100 px-3 text-[11px] text-slate-500 sm:min-w-[4.5rem]">
+                        جار الإزالة...
+                      </span>
+                    ) : null}
+                  </div>
+                </li>
               )
             })}
-          </div>
+          </ul>
+        </div>
+
+        <div className="border-t border-slate-200 bg-slate-50/80 px-4 py-3 sm:px-6">
+          <p className="text-center text-xs text-slate-500 sm:text-right">
+            اضغط على أي عضو لعرض معلومات التواصل.
+          </p>
         </div>
       </article>
     </div>

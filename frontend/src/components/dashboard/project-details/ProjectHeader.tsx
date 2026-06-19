@@ -151,30 +151,33 @@ export function ProjectHeader({
             <button
               type="button"
               onClick={onOpenMembers}
-              className={toolbarBtn}
+              className={`${toolbarBtn} min-w-0 max-w-full`}
               title="عرض أعضاء المشروع"
             >
-              <div className="flex -space-x-1.5">
+              <div className="flex shrink-0 -space-x-1.5 rtl:space-x-reverse">
                 {previewMembers.map((member) => (
                   <span
                     key={`member-preview-${member.projectId}-${member.membershipNumber}`}
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-semibold shadow-sm ${memberAvatarTone(member.membershipNumber)}`}
+                    className={`inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-[10px] font-semibold shadow-sm sm:h-6 sm:w-6 sm:border ${memberAvatarTone(member.membershipNumber)}`}
                   >
                     {memberInitials(member.displayName, member.membershipNumber)}
                   </span>
                 ))}
                 {hiddenMembersCount > 0 ? (
-                  <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-slate-300 bg-slate-100 px-1 text-[10px] font-semibold text-slate-700 shadow-sm">
+                  <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-white bg-slate-100 px-1 text-[10px] font-semibold text-slate-700 shadow-sm sm:h-6 sm:min-w-6 sm:border-slate-300">
                     +{hiddenMembersCount}
                   </span>
                 ) : null}
                 {projectMembers.length === 0 ? (
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[10px] font-semibold text-slate-600 shadow-sm">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 bg-slate-100 text-[10px] font-semibold text-slate-600 shadow-sm sm:h-6 sm:w-6">
                     0
                   </span>
                 ) : null}
               </div>
-              <span className="hidden sm:inline">الأعضاء</span>
+              <span className="truncate">
+                الأعضاء
+                {memberCount > 0 ? ` (${memberCount})` : ''}
+              </span>
             </button>
             {showTelegramInvite && onSendTelegramInvite ? (
               <button

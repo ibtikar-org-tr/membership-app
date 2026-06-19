@@ -16,6 +16,47 @@ export function projectMemberRoleLabel(role: string) {
   return role
 }
 
+export function projectMemberRoleBadgeClass(role: string, isOwner = false) {
+  if (isOwner) {
+    return 'border-amber-200 bg-amber-100 text-amber-900'
+  }
+
+  if (role === 'manager') {
+    return 'border-cyan-200 bg-cyan-100 text-cyan-800'
+  }
+
+  if (role === 'observer') {
+    return 'border-slate-200 bg-slate-100 text-slate-700'
+  }
+
+  return 'border-emerald-200 bg-emerald-50 text-emerald-800'
+}
+
+export function sortProjectMembers<T extends { membershipNumber: string; role: string; displayName: string }>(
+  members: T[],
+  projectOwnerMembershipNumber: string,
+) {
+  const roleOrder: Record<string, number> = { manager: 0, observer: 1, member: 2 }
+
+  return [...members].sort((left, right) => {
+    const leftIsOwner = left.membershipNumber === projectOwnerMembershipNumber
+    const rightIsOwner = right.membershipNumber === projectOwnerMembershipNumber
+
+    if (leftIsOwner !== rightIsOwner) {
+      return leftIsOwner ? -1 : 1
+    }
+
+    const leftRole = roleOrder[left.role] ?? 3
+    const rightRole = roleOrder[right.role] ?? 3
+
+    if (leftRole !== rightRole) {
+      return leftRole - rightRole
+    }
+
+    return left.displayName.localeCompare(right.displayName, 'ar')
+  })
+}
+
 export function statusLabel(status: string) {
   if (status === 'completed') {
     return 'مكتمل'
