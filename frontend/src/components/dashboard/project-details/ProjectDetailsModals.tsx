@@ -7,6 +7,7 @@ import { formatDateTimeEnCA } from '../../../utils/date-format'
 import {
   memberAvatarTone,
   memberInitials,
+  projectMemberCardBorderClass,
   projectMemberRoleBadgeClass,
   projectMemberRoleLabel,
   sortProjectMembers,
@@ -533,7 +534,7 @@ export function MembersModal({
               return (
                 <li
                   key={`member-${member.projectId}-${member.membershipNumber}`}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                  className={`overflow-hidden rounded-2xl shadow-sm transition hover:shadow-md ${projectMemberCardBorderClass(member.role, isOwner)}`}
                 >
                   <div className="flex items-stretch gap-0">
                     <button
@@ -577,7 +578,7 @@ export function MembersModal({
                           <button
                             type="button"
                             onClick={() => onChangeMemberRole(member, 'manager')}
-                            className="inline-flex flex-1 flex-col items-center justify-center gap-1 px-3 py-2 text-[11px] font-semibold text-cyan-800 transition hover:bg-cyan-50 sm:min-w-[4.5rem] sm:px-4"
+                            className="inline-flex flex-1 flex-col items-center justify-center gap-1 px-3 py-2 text-[11px] font-semibold text-violet-800 transition hover:bg-violet-50 sm:min-w-[4.5rem] sm:px-4"
                             title={`ترقية ${member.displayName} إلى مدير`}
                           >
                             <FiArrowUp className="h-4 w-4" aria-hidden />

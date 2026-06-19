@@ -22,14 +22,30 @@ export function projectMemberRoleBadgeClass(role: string, isOwner = false) {
   }
 
   if (role === 'manager') {
-    return 'border-cyan-200 bg-cyan-100 text-cyan-800'
+    return 'border-violet-200 bg-violet-100 text-violet-900'
   }
 
   if (role === 'observer') {
     return 'border-slate-200 bg-slate-100 text-slate-700'
   }
 
-  return 'border-emerald-200 bg-emerald-50 text-emerald-800'
+  return 'border-slate-200 bg-slate-100 text-slate-700'
+}
+
+export function projectMemberCardBorderClass(role: string, isOwner = false) {
+  if (isOwner) {
+    return 'border-2 border-amber-300 bg-amber-50/50 hover:border-amber-400 hover:shadow-amber-100/60'
+  }
+
+  if (role === 'manager') {
+    return 'border-2 border-violet-400 bg-violet-50/50 hover:border-violet-500 hover:shadow-violet-100/60'
+  }
+
+  if (role === 'observer') {
+    return 'border border-slate-200 bg-white hover:border-slate-300 hover:shadow-slate-100/60'
+  }
+
+  return 'border border-slate-200 bg-white hover:border-slate-300 hover:shadow-slate-100/60'
 }
 
 export function sortProjectMembers<T extends { membershipNumber: string; role: string; displayName: string }>(
