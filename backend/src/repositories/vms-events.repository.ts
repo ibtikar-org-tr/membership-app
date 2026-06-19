@@ -78,9 +78,17 @@ function mapEventRow(row: EventRow) {
 
 async function hydrateEventRow(db: D1DatabaseLike, row: EventRow) {
   const event = mapEventRow(row)
+  let skills: Record<string, string> | null = null
+
+  try {
+    skills = await getAssociatedSkills(db, 'event', event.id)
+  } catch (error) {
+    console.error('Failed to load associated skills for event', event.id, error)
+  }
+
   return {
     ...event,
-    skills: await getAssociatedSkills(db, 'event', event.id),
+    skills,
   }
 }
 
@@ -152,6 +160,29 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
     .first<EventRow>()
 
   return row ? hydrateEventRow(db, row) : null
+}
+
+interface EventCancellationSettingsRow {
+  start_time: string | null
+  status: string
+  cancellation_deadline_hours: number | null
+}
+
+export async function getEventCancellationSettingsById(db: D1DatabaseLike, id: string) {
+  const row = await db
+    .prepare('SELECT start_time, status, cancellation_deadline_hours FROM events WHERE id = ?')
+    .bind(id)
+    .first<EventCancellationSettingsRow>()
+
+  if (!row) {
+    return null
+  }
+
+  return {
+    startTime: row.start_time,
+    status: row.status,
+    cancellationDeadlineHours: mapCancellationDeadlineHours(row.cancellation_deadline_hours),
+  }
 }
 
 export async function createEvent(db: D1DatabaseLike, id: string, input: CreateEventInput) {

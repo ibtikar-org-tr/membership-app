@@ -9,7 +9,7 @@ import {
   updateEventRegistrationById,
 } from '../repositories/vms-event-registrations.repository'
 import { getEventTicketById } from '../repositories/vms-event-tickets.repository'
-import { getEventById } from '../repositories/vms-events.repository'
+import { getEventById, getEventCancellationSettingsById } from '../repositories/vms-events.repository'
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
 import {
   createEventRegistrationSchema,
@@ -199,7 +199,7 @@ vmsEventRegistrationsRoute.post(
         return c.json({ error: 'Event registration not found.' }, 404)
       }
 
-      const event = await getEventById(c.env.VMS_DB, registration.eventId)
+      const event = await getEventCancellationSettingsById(c.env.VMS_DB, registration.eventId)
       if (!event) {
         return c.json({ error: 'Event not found.' }, 404)
       }
