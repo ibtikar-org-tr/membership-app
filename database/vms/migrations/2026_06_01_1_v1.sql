@@ -104,8 +104,7 @@ CREATE TABLE IF NOT EXISTS events (
     region TEXT, -- state/region or province within the country (e.g., "Istanbul", "Aleppo", "California" etc.)
     city TEXT, -- city of residence (e.g., "Fatih", "Al Bab", "Mezitli", "Azaz" etc.)
     address TEXT, -- detailed address for the event location (e.g., "123 Main St, Building A, Door 4") | can be "online" for online events
-    telegram_group_id TEXT, -- Telegram group ID for event communication (e.g., "-123456789"); the same group may be linked to multiple events
-    display_attendee_numbers INTEGER NOT NULL DEFAULT 1 -- 1 = show attendee counts publicly, 0 = hide from non-managers
+    telegram_group_id TEXT -- Telegram group ID for event communication (e.g., "-123456789"); the same group may be linked to multiple events
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_updated_at AFTER UPDATE ON events

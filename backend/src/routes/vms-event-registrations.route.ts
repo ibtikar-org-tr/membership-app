@@ -7,6 +7,7 @@ import {
   listEventRegistrations,
   updateEventRegistrationById,
 } from '../repositories/vms-event-registrations.repository'
+import { getEventById } from '../repositories/vms-events.repository'
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
 import {
   createEventRegistrationSchema,
@@ -16,6 +17,7 @@ import {
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
+import { canManageEvent } from '../utils/event-permissions'
 
 export const vmsEventRegistrationsRoute = new Hono<AppEnv>()
 
@@ -37,7 +39,22 @@ async function enrichEventRegistrationsWithDisplayNames<T extends { membershipNu
 vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
   try {
     const eventId = c.req.query('eventId')
-    const eventRegistrations = await listEventRegistrations(c.env.VMS_DB, eventId)
+    let eventRegistrations = await listEventRegistrations(c.env.VMS_DB, eventId)
+
+    if (eventId) {
+      const event = await getEventById(c.env.VMS_DB, eventId)
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      if (event && event.displayAttendeeNumbers === false) {
+        const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
+        if (!canManage) {
+          eventRegistrations = eventRegistrations.filter(
+            (registration) => registration.membershipNumber === actorMembershipNumber,
+          )
+        }
+      }
+    }
+
     const enrichedRegistrations = await enrichEventRegistrationsWithDisplayNames(
       c.env.MEMBERS_DB,
       eventRegistrations,

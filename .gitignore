@@ -2,7 +2,3 @@
 skills-lock.json
 *.md
 !README.md
-
-# for now we'll keep only main.sql files
-*.sql
-!main.sql

@@ -52,6 +52,7 @@ export interface VmsEvent {
   region: string | null
   city: string | null
   address: string | null
+  displayAttendeeNumbers: boolean
 }
 
 export interface VmsEventTicket {

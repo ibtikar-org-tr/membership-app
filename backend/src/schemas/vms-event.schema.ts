@@ -21,6 +21,7 @@ export const createEventSchema = z.object({
   region: optionalTrimmedString,
   city: optionalTrimmedString,
   address: optionalTrimmedString,
+  displayAttendeeNumbers: z.boolean().optional(),
 })
 
 export const updateEventSchema = createEventSchema
