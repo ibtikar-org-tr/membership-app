@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { FiSearch, FiUserMinus, FiX } from 'react-icons/fi'
+import { FiArrowDown, FiArrowUp, FiSearch, FiUserMinus, FiX } from 'react-icons/fi'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../../types/vms'
 import { formatDateTimeEnCA } from '../../../utils/date-format'
 import {
@@ -404,9 +404,13 @@ interface MembersModalProps {
   projectOwnerMembershipNumber: string
   actorMembershipNumber: string | null
   canManageMembers: boolean
+  isProjectOwner: boolean
   removingMembershipNumber: string | null
+  updatingRoleMembershipNumber: string | null
+  roleUpdateError: string | null
   onSelectMember: (member: VmsProjectMember) => void
   onRequestRemove: (member: VmsProjectMember) => void
+  onChangeMemberRole: (member: VmsProjectMember, role: 'member' | 'manager') => void
   onClose: () => void
 }
 
@@ -415,9 +419,13 @@ export function MembersModal({
   projectOwnerMembershipNumber,
   actorMembershipNumber,
   canManageMembers,
+  isProjectOwner,
   removingMembershipNumber,
+  updatingRoleMembershipNumber,
+  roleUpdateError,
   onSelectMember,
   onRequestRemove,
+  onChangeMemberRole,
   onClose,
 }: MembersModalProps) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -502,9 +510,25 @@ export function MembersModal({
             {visibleMembers.map((member) => {
               const isOwner = member.membershipNumber === projectOwnerMembershipNumber
               const isSelf = member.membershipNumber === actorMembershipNumber
+              const isUpdatingRole = updatingRoleMembershipNumber === member.membershipNumber
               const canRemove =
-                canManageMembers && !isOwner && !isSelf && removingMembershipNumber !== member.membershipNumber
+                canManageMembers && !isOwner && !isSelf && removingMembershipNumber !== member.membershipNumber && !isUpdatingRole
               const isRemoving = removingMembershipNumber === member.membershipNumber
+              const canPromote =
+                isProjectOwner &&
+                !isOwner &&
+                !isSelf &&
+                !isRemoving &&
+                !isUpdatingRole &&
+                (member.role === 'member' || member.role === 'observer')
+              const canDemote =
+                isProjectOwner &&
+                !isOwner &&
+                !isSelf &&
+                !isRemoving &&
+                !isUpdatingRole &&
+                member.role === 'manager'
+              const hasActions = canPromote || canDemote || canRemove || isRemoving || isUpdatingRole
 
               return (
                 <li
@@ -547,20 +571,50 @@ export function MembersModal({
                       </span>
                     </button>
 
-                    {canRemove ? (
-                      <button
-                        type="button"
-                        onClick={() => onRequestRemove(member)}
-                        className="inline-flex shrink-0 flex-col items-center justify-center gap-1 border-s border-slate-100 px-3 text-[11px] font-semibold text-red-700 transition hover:bg-red-50 sm:min-w-[4.5rem] sm:px-4"
-                        title={`إزالة ${member.displayName}`}
-                      >
-                        <FiUserMinus className="h-4 w-4" aria-hidden />
-                        <span className="hidden sm:inline">إزالة</span>
-                      </button>
-                    ) : isRemoving ? (
-                      <span className="inline-flex shrink-0 items-center justify-center border-s border-slate-100 px-3 text-[11px] text-slate-500 sm:min-w-[4.5rem]">
-                        جار الإزالة...
-                      </span>
+                    {hasActions ? (
+                      <div className="flex shrink-0 flex-col border-s border-slate-100">
+                        {canPromote ? (
+                          <button
+                            type="button"
+                            onClick={() => onChangeMemberRole(member, 'manager')}
+                            className="inline-flex flex-1 flex-col items-center justify-center gap-1 px-3 py-2 text-[11px] font-semibold text-cyan-800 transition hover:bg-cyan-50 sm:min-w-[4.5rem] sm:px-4"
+                            title={`ترقية ${member.displayName} إلى مدير`}
+                          >
+                            <FiArrowUp className="h-4 w-4" aria-hidden />
+                            <span>ترقية</span>
+                          </button>
+                        ) : null}
+                        {canDemote ? (
+                          <button
+                            type="button"
+                            onClick={() => onChangeMemberRole(member, 'member')}
+                            className="inline-flex flex-1 flex-col items-center justify-center gap-1 border-t border-slate-100 px-3 py-2 text-[11px] font-semibold text-amber-800 transition hover:bg-amber-50 sm:min-w-[4.5rem] sm:px-4"
+                            title={`إرجاع ${member.displayName} إلى عضو`}
+                          >
+                            <FiArrowDown className="h-4 w-4" aria-hidden />
+                            <span>خفض</span>
+                          </button>
+                        ) : null}
+                        {canRemove ? (
+                          <button
+                            type="button"
+                            onClick={() => onRequestRemove(member)}
+                            className={`inline-flex flex-1 flex-col items-center justify-center gap-1 px-3 py-2 text-[11px] font-semibold text-red-700 transition hover:bg-red-50 sm:min-w-[4.5rem] sm:px-4 ${canPromote || canDemote ? 'border-t border-slate-100' : ''}`}
+                            title={`إزالة ${member.displayName}`}
+                          >
+                            <FiUserMinus className="h-4 w-4" aria-hidden />
+                            <span className="hidden sm:inline">إزالة</span>
+                          </button>
+                        ) : isRemoving ? (
+                          <span className="inline-flex flex-1 items-center justify-center px-3 py-2 text-[11px] text-slate-500 sm:min-w-[4.5rem]">
+                            جار الإزالة...
+                          </span>
+                        ) : isUpdatingRole ? (
+                          <span className="inline-flex flex-1 items-center justify-center px-3 py-2 text-[11px] text-slate-500 sm:min-w-[4.5rem]">
+                            جار التحديث...
+                          </span>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 </li>
@@ -570,8 +624,13 @@ export function MembersModal({
         </div>
 
         <div className="border-t border-slate-200 bg-slate-50/80 px-4 py-3 sm:px-6">
+          {roleUpdateError ? (
+            <p className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{roleUpdateError}</p>
+          ) : null}
           <p className="text-center text-xs text-slate-500 sm:text-right">
-            اضغط على أي عضو لعرض معلومات التواصل.
+            {isProjectOwner
+              ? 'اضغط على أي عضو لعرض معلومات التواصل. يمكنك ترقية الأعضاء إلى مدير أو إرجاعهم إلى عضو.'
+              : 'اضغط على أي عضو لعرض معلومات التواصل.'}
           </p>
         </div>
       </article>

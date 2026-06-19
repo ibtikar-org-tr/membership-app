@@ -170,21 +170,29 @@ vmsProjectMembersRoute.put(
   async (c) => {
     try {
       const { projectId, membershipNumber } = c.req.valid('param')
-      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
-
-      if (!actorMembershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
-
+      const actorMembershipNumber = getActorMembershipNumber(c)
       const payload = c.req.valid('json')
-      const authorization = await canManageProjectMembers(c.env.VMS_DB, projectId, actorMembershipNumber)
 
-      if (!authorization.project) {
+      const project = await getProjectById(c.env.VMS_DB, projectId)
+
+      if (!project) {
         return c.json({ error: 'Project not found.' }, 404)
       }
 
-      if (!authorization.isAuthorized) {
-        return c.json({ error: 'Only project owner or managers can update project members.' }, 403)
+      if (payload.role !== undefined) {
+        if (project.owner !== actorMembershipNumber) {
+          return c.json({ error: 'فقط مالك المشروع يمكنه تغيير أدوار الأعضاء.' }, 403)
+        }
+
+        if (payload.role !== 'member' && payload.role !== 'manager') {
+          return c.json({ error: 'يمكن ترقية الأعضاء إلى مدير أو إرجاعهم إلى عضو فقط.' }, 400)
+        }
+      } else {
+        const authorization = await canManageProjectMembers(c.env.VMS_DB, projectId, actorMembershipNumber)
+
+        if (!authorization.isAuthorized) {
+          return c.json({ error: 'Only project owner or managers can update project members.' }, 403)
+        }
       }
 
       const existing = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
@@ -213,11 +221,7 @@ vmsProjectMembersRoute.delete(
   async (c) => {
     try {
       const { projectId, membershipNumber } = c.req.valid('param')
-      const actorMembershipNumber = c.req.query('membershipNumber')?.trim()
-
-      if (!actorMembershipNumber) {
-        return c.json({ error: 'Membership number is required.' }, 400)
-      }
+      const actorMembershipNumber = getActorMembershipNumber(c)
 
       const project = await getProjectById(c.env.VMS_DB, projectId)
 

@@ -495,10 +495,21 @@ export function leaveProject(projectId: string, membershipNumber: string) {
 export function removeProjectMember(
   projectId: string,
   targetMembershipNumber: string,
-  actorMembershipNumber: string,
+  _actorMembershipNumber: string,
 ) {
   return deleteJson(
     `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}`,
+  )
+}
+
+export function updateProjectMemberRole(
+  projectId: string,
+  targetMembershipNumber: string,
+  role: 'member' | 'manager',
+) {
+  return putJson<{ projectMember: VmsProjectMember }, { role: typeof role }>(
+    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}`,
+    { role },
   )
 }
 
