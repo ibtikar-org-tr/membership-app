@@ -21,5 +21,9 @@ export const eventRegistrationParamsSchema = z.object({
   id: requiredTrimmedString,
 })
 
+export const changeEventRegistrationTicketSchema = z.object({
+  ticketId: requiredTrimmedString,
+})
+
 export type CreateEventRegistrationInput = z.infer<typeof createEventRegistrationSchema>
 export type UpdateEventRegistrationInput = z.infer<typeof updateEventRegistrationSchema>

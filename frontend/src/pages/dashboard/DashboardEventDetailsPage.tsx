@@ -26,6 +26,7 @@ import {
   fetchPublicEventTickets,
   requestTelegramGroupInvite,
   selfCancelEventRegistration,
+  changeEventRegistrationTicket,
 } from '../../api/vms'
 import type {
   VmsEvent,
@@ -37,7 +38,7 @@ import { getStoredUser } from '../../utils/auth'
 import { isStandalonePublicEventPath } from '../../utils/public-event-routes'
 import { formatDateEnCA, formatTimeEnCA, formatTimezoneEnCA } from '../../utils/date-format'
 import {
-  canSelfCancelRegistration,
+  canSelfModifyRegistration,
   selfCancellationHelperText,
 } from '../../utils/event-registration-cancellation'
 
@@ -79,6 +80,11 @@ export function DashboardEventDetailsPage() {
   const [isCancellingRegistration, setIsCancellingRegistration] = useState(false)
   const [cancelRegistrationError, setCancelRegistrationError] = useState<string | null>(null)
   const [cancelRegistrationSuccess, setCancelRegistrationSuccess] = useState<string | null>(null)
+  const [isChangingTicket, setIsChangingTicket] = useState(false)
+  const [changeTicketError, setChangeTicketError] = useState<string | null>(null)
+  const [changeTicketSuccess, setChangeTicketSuccess] = useState<string | null>(null)
+  const [selectedChangeTicketId, setSelectedChangeTicketId] = useState<string | null>(null)
+  const [isChangeTicketPickerOpen, setIsChangeTicketPickerOpen] = useState(false)
 
   function scrollToTicketBuyingSection() {
     ticketBuyingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -219,14 +225,23 @@ export function DashboardEventDetailsPage() {
     eventItem?.telegramGroupId && user?.membershipNumber && userRegistration?.status === 'registered',
   )
   const canViewAttendeeNumbers = eventItem?.displayAttendeeNumbers !== false || canEditEvent
-  const canCancelRegistration = useMemo(() => {
+  const canModifyRegistration = useMemo(() => {
     if (!eventItem || !userRegistration) {
       return false
     }
 
-    return canSelfCancelRegistration(eventItem, userRegistration, user?.membershipNumber)
+    return canSelfModifyRegistration(eventItem, userRegistration, user?.membershipNumber)
   }, [eventItem, user?.membershipNumber, userRegistration])
-  const cancellationPolicyText = eventItem ? selfCancellationHelperText(eventItem) : null
+  const hasMultipleTicketTypes = tickets.length > 1
+  const alternateTickets = useMemo(() => {
+    if (!userRegistration) {
+      return tickets
+    }
+
+    return tickets.filter((ticket) => ticket.id !== userRegistration.ticketId)
+  }, [tickets, userRegistration])
+  const canChangeTicket = canModifyRegistration && hasMultipleTicketTypes
+  const modificationPolicyText = eventItem ? selfCancellationHelperText(eventItem) : null
   const telegramInviteHelperText = !user
     ? 'سجّل الدخول أولاً ثم سجّل في هذه الفعالية لإرسال دعوة مجموعة التلغرام.'
     : !hasUserRegistered
@@ -295,7 +310,7 @@ export function DashboardEventDetailsPage() {
     setCancelRegistrationError(null)
     setCancelRegistrationSuccess(null)
 
-    if (!userRegistration || !user || !canCancelRegistration) {
+    if (!userRegistration || !user || !canModifyRegistration) {
       return
     }
 
@@ -312,6 +327,10 @@ export function DashboardEventDetailsPage() {
       await selfCancelEventRegistration(userRegistration.id)
       setRegistrations((previous) => previous.filter((registration) => registration.id !== userRegistration.id))
       setCancelRegistrationSuccess('تم إلغاء تسجيلك. يمكنك التسجيل مجدداً إذا رغبت.')
+      setChangeTicketSuccess(null)
+      setChangeTicketError(null)
+      setIsChangeTicketPickerOpen(false)
+      setSelectedChangeTicketId(null)
       setTelegramInviteSuccess(null)
       setTelegramInviteError(null)
     } catch (requestError) {
@@ -322,6 +341,49 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setIsCancellingRegistration(false)
+    }
+  }
+
+  const handleChangeTicket = async () => {
+    setChangeTicketError(null)
+    setChangeTicketSuccess(null)
+
+    if (!userRegistration || !user || !canChangeTicket || !selectedChangeTicketId) {
+      return
+    }
+
+    const targetTicket = tickets.find((ticket) => ticket.id === selectedChangeTicketId)
+    const confirmed = window.confirm(
+      targetTicket
+        ? `هل تريد تغيير تذكرتك إلى «${targetTicket.name}»؟`
+        : 'هل تريد تغيير التذكرة؟',
+    )
+    if (!confirmed) {
+      return
+    }
+
+    setIsChangingTicket(true)
+
+    try {
+      const payload = await changeEventRegistrationTicket(userRegistration.id, selectedChangeTicketId)
+      setRegistrations((previous) =>
+        previous.map((registration) =>
+          registration.id === payload.eventRegistration.id ? payload.eventRegistration : registration,
+        ),
+      )
+      setChangeTicketSuccess('تم تغيير التذكرة بنجاح.')
+      setCancelRegistrationSuccess(null)
+      setCancelRegistrationError(null)
+      setIsChangeTicketPickerOpen(false)
+      setSelectedChangeTicketId(null)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setChangeTicketError(requestError.message)
+      } else {
+        setChangeTicketError('تعذر تغيير التذكرة.')
+      }
+    } finally {
+      setIsChangingTicket(false)
     }
   }
 
@@ -777,17 +839,88 @@ export function DashboardEventDetailsPage() {
                     </div>
                     {user && userRegistration?.status === 'registered' ? (
                       <div className="mt-4 space-y-2 border-t border-emerald-100 pt-4">
-                        {canCancelRegistration ? (
-                          <button
-                            type="button"
-                            onClick={() => void handleCancelRegistration()}
-                            disabled={isCancellingRegistration}
-                            className="inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {isCancellingRegistration ? 'جار الإلغاء...' : 'إلغاء التسجيل'}
-                          </button>
-                        ) : cancellationPolicyText ? (
-                          <p className="text-xs leading-6 text-slate-600">{cancellationPolicyText}</p>
+                        {canModifyRegistration ? (
+                          <div className={`grid gap-2 ${canChangeTicket ? 'sm:grid-cols-2' : ''}`}>
+                            {canChangeTicket ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setChangeTicketError(null)
+                                  setChangeTicketSuccess(null)
+                                  setIsChangeTicketPickerOpen((previous) => !previous)
+                                  setSelectedChangeTicketId(null)
+                                }}
+                                disabled={isChangingTicket || isCancellingRegistration}
+                                className="inline-flex w-full items-center justify-center rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {isChangeTicketPickerOpen ? 'إخفاء التذاكر' : 'تغيير التذكرة'}
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => void handleCancelRegistration()}
+                              disabled={isCancellingRegistration || isChangingTicket}
+                              className="inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {isCancellingRegistration ? 'جار الإلغاء...' : 'إلغاء التسجيل'}
+                            </button>
+                          </div>
+                        ) : modificationPolicyText ? (
+                          <p className="text-xs leading-6 text-slate-600">{modificationPolicyText}</p>
+                        ) : null}
+                        {canChangeTicket && isChangeTicketPickerOpen ? (
+                          <div className="space-y-2 rounded-xl border border-cyan-100 bg-cyan-50/50 p-3">
+                            <p className="text-xs font-medium text-slate-700">اختر التذكرة الجديدة:</p>
+                            <div className="space-y-2">
+                              {alternateTickets.map((ticket) => (
+                                <label
+                                  key={ticket.id}
+                                  className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 transition ${
+                                    selectedChangeTicketId === ticket.id
+                                      ? 'border-cyan-400 bg-white shadow-sm'
+                                      : 'border-slate-200 bg-white hover:border-cyan-200'
+                                  }`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="changeTicket"
+                                    value={ticket.id}
+                                    checked={selectedChangeTicketId === ticket.id}
+                                    onChange={() => setSelectedChangeTicketId(ticket.id)}
+                                    className="mt-1"
+                                  />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block text-sm font-semibold text-slate-900">{ticket.name}</span>
+                                    {ticket.description ? (
+                                      <span className="mt-0.5 block text-xs leading-5 text-slate-500">{ticket.description}</span>
+                                    ) : null}
+                                    <span className="mt-1.5 flex flex-wrap gap-1.5 text-[11px]">
+                                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">{ticket.pointPrice} نقطة</span>
+                                      {ticket.currencyPrice ? (
+                                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">{ticket.currencyPrice}</span>
+                                      ) : (
+                                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-800">مجاني</span>
+                                      )}
+                                    </span>
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => void handleChangeTicket()}
+                              disabled={isChangingTicket || !selectedChangeTicketId}
+                              className="inline-flex w-full items-center justify-center rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                            >
+                              {isChangingTicket ? 'جار التغيير...' : 'تأكيد تغيير التذكرة'}
+                            </button>
+                          </div>
+                        ) : null}
+                        {changeTicketError ? (
+                          <p className="text-sm text-red-600">{changeTicketError}</p>
+                        ) : null}
+                        {changeTicketSuccess ? (
+                          <p className="text-sm font-medium text-emerald-700">{changeTicketSuccess}</p>
                         ) : null}
                         {cancelRegistrationError ? (
                           <p className="text-sm text-red-600">{cancelRegistrationError}</p>
