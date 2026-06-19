@@ -42,32 +42,40 @@ export function canSelfCancelRegistration(
   registration: RegistrationForCancellation,
   actorMembershipNumber: string,
 ) {
+  return canSelfModifyRegistration(event, registration, actorMembershipNumber)
+}
+
+export function canSelfModifyRegistration(
+  event: EventCancellationSettings,
+  registration: RegistrationForCancellation,
+  actorMembershipNumber: string,
+) {
   if (registration.membershipNumber !== actorMembershipNumber) {
-    return { allowed: false as const, reason: 'يمكنك إلغاء تسجيلك فقط.' }
+    return { allowed: false as const, reason: 'يمكنك تعديل تسجيلك فقط.' }
   }
 
   if (registration.status !== 'registered') {
-    return { allowed: false as const, reason: 'لا يمكن إلغاء هذا التسجيل في حالته الحالية.' }
+    return { allowed: false as const, reason: 'لا يمكن تعديل هذا التسجيل في حالته الحالية.' }
   }
 
   if (event.status === 'archived') {
-    return { allowed: false as const, reason: 'هذه الفعالية مؤرشفة ولا يمكن إلغاء التسجيل فيها.' }
+    return { allowed: false as const, reason: 'هذه الفعالية مؤرشفة ولا يمكن تعديل التسجيل فيها.' }
   }
 
   if (!event.startTime) {
-    return { allowed: false as const, reason: 'لا يمكن إلغاء التسجيل قبل تحديد موعد بداية الفعالية.' }
+    return { allowed: false as const, reason: 'لا يمكن تعديل التسجيل قبل تحديد موعد بداية الفعالية.' }
   }
 
   const deadlineHours = mapCancellationDeadlineHours(event.cancellationDeadlineHours)
   if (deadlineHours <= 0) {
-    return { allowed: false as const, reason: 'الإلغاء الذاتي غير متاح لهذه الفعالية. تواصل مع المنظمين.' }
+    return { allowed: false as const, reason: 'تعديل التسجيل الذاتي غير متاح لهذه الفعالية. تواصل مع المنظمين.' }
   }
 
   const cutoffMs = getSelfCancellationCutoffMs(event)
   if (cutoffMs === null || Date.now() >= cutoffMs) {
     return {
       allowed: false as const,
-      reason: `انتهت مهلة الإلغاء الذاتي (${deadlineHours} ساعة قبل بداية الفعالية). تواصل مع المنظمين.`,
+      reason: `انتهت مهلة تعديل التسجيل الذاتي (${deadlineHours} ساعة قبل بداية الفعالية). تواصل مع المنظمين.`,
     }
   }
 

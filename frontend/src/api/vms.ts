@@ -378,6 +378,13 @@ export function selfCancelEventRegistration(registrationId: string) {
   )
 }
 
+export function changeEventRegistrationTicket(registrationId: string, ticketId: string) {
+  return postJson<{ eventRegistration: VmsEventRegistration }, { ticketId: string }>(
+    `/event-registrations/${encodeURIComponent(registrationId)}/change-ticket`,
+    { ticketId },
+  )
+}
+
 export function approveRegistration(registrationId: string, approverMembershipNumber: string, type: 'payment' | 'attendance') {
   return postJson<{ eventRegistration: VmsEventRegistration }, unknown>(
     `/event-registrations/${encodeURIComponent(registrationId)}/approve?type=${type}`,

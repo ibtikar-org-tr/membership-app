@@ -13,6 +13,7 @@ import { getEventById, getEventCancellationSettingsById } from '../repositories/
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
 import {
   createEventRegistrationSchema,
+  changeEventRegistrationTicketSchema,
   eventRegistrationParamsSchema,
   updateEventRegistrationSchema,
 } from '../schemas/vms-event-registration.schema'
@@ -22,6 +23,7 @@ import { getActorMembershipNumber } from '../utils/actor'
 import { canManageEvent } from '../utils/event-permissions'
 import {
   canSelfCancelRegistration,
+  canSelfModifyRegistration,
   countActiveRegistrationsForTicket,
 } from '../utils/event-registration-cancellation'
 
@@ -218,6 +220,58 @@ vmsEventRegistrationsRoute.post(
     } catch (error) {
       console.error('Failed to self-cancel event registration', error)
       return c.json({ error: 'Could not cancel event registration.' }, 500)
+    }
+  },
+)
+
+vmsEventRegistrationsRoute.post(
+  '/event-registrations/:id/change-ticket',
+  zValidator('param', eventRegistrationParamsSchema),
+  zValidator('json', changeEventRegistrationTicketSchema),
+  async (c) => {
+    try {
+      const { id } = c.req.valid('param')
+      const { ticketId } = c.req.valid('json')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      const registration = await getEventRegistrationById(c.env.VMS_DB, id)
+      if (!registration) {
+        return c.json({ error: 'Event registration not found.' }, 404)
+      }
+
+      if (registration.ticketId === ticketId) {
+        return c.json({ error: 'أنت مسجّل بالفعل على هذه التذكرة.' }, 400)
+      }
+
+      const event = await getEventCancellationSettingsById(c.env.VMS_DB, registration.eventId)
+      if (!event) {
+        return c.json({ error: 'Event not found.' }, 404)
+      }
+
+      const authorization = canSelfModifyRegistration(event, registration, actorMembershipNumber)
+      if (!authorization.allowed) {
+        return c.json({ error: authorization.reason }, 403)
+      }
+
+      const ticket = await getEventTicketById(c.env.VMS_DB, ticketId)
+      if (!ticket || ticket.eventId !== registration.eventId) {
+        return c.json({ error: 'التذكرة المختارة غير متاحة لهذه الفعالية.' }, 400)
+      }
+
+      const activeRegistrations = await countActiveRegistrationsForTicket(c.env.VMS_DB, ticketId)
+      if (activeRegistrations >= ticket.quantity) {
+        return c.json({ error: 'لم يعد هناك مقاعد متاحة لهذه التذكرة.' }, 409)
+      }
+
+      const eventRegistration = await updateEventRegistrationById(c.env.VMS_DB, id, { ticketId })
+      const [enrichedRegistration] = await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, [
+        eventRegistration!,
+      ])
+
+      return c.json({ eventRegistration: enrichedRegistration })
+    } catch (error) {
+      console.error('Failed to change event registration ticket', error)
+      return c.json({ error: 'Could not change event registration ticket.' }, 500)
     }
   },
 )

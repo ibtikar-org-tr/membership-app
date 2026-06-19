@@ -39,6 +39,21 @@ export function canSelfCancelRegistration(
   } | null,
   actorMembershipNumber: string | null | undefined,
 ) {
+  return canSelfModifyRegistration(event, registration, actorMembershipNumber)
+}
+
+export function canSelfModifyRegistration(
+  event: {
+    startTime: string | null
+    status: string
+    cancellationDeadlineHours: number
+  },
+  registration: {
+    membershipNumber: string
+    status: string
+  } | null,
+  actorMembershipNumber: string | null | undefined,
+) {
   if (!registration || !actorMembershipNumber) {
     return false
   }
@@ -69,17 +84,17 @@ export function selfCancellationHelperText(event: {
 }) {
   const deadlineHours = mapCancellationDeadlineHours(event.cancellationDeadlineHours)
   if (deadlineHours <= 0) {
-    return 'الإلغاء الذاتي غير متاح لهذه الفعالية. تواصل مع المنظمين.'
+    return 'تعديل التسجيل الذاتي غير متاح لهذه الفعالية. تواصل مع المنظمين.'
   }
 
   const cutoffMs = getSelfCancellationCutoffMs(event)
   if (cutoffMs === null) {
-    return 'الإلغاء الذاتي غير متاح قبل تحديد موعد البداية.'
+    return 'تعديل التسجيل الذاتي غير متاح قبل تحديد موعد البداية.'
   }
 
   if (Date.now() >= cutoffMs) {
-    return `انتهت مهلة الإلغاء الذاتي (${deadlineHours} ساعة قبل البداية). تواصل مع المنظمين.`
+    return `انتهت مهلة تعديل التسجيل الذاتي (${deadlineHours} ساعة قبل البداية). تواصل مع المنظمين.`
   }
 
-  return `يمكنك إلغاء تسجيلك حتى ${deadlineHours} ساعة قبل بداية الفعالية.`
+  return `يمكنك إلغاء التسجيل أو تغيير التذكرة حتى ${deadlineHours} ساعة قبل بداية الفعالية.`
 }
