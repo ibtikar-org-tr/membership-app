@@ -192,6 +192,7 @@ export function DashboardEventEditPage() {
     const endTime = String(formData.get('endTime') ?? '').trim()
     const statusRaw = String(formData.get('status') ?? eventItem.status).trim()
     const status = statusRaw === 'public' || statusRaw === 'archived' ? statusRaw : 'draft'
+    const displayAttendeeNumbers = formData.get('displayAttendeeNumbers') === 'on'
     const country = locationData.country.trim()
     const region = locationData.region.trim()
     const city = locationData.city.trim()
@@ -229,6 +230,7 @@ export function DashboardEventEditPage() {
         ...(startTime ? { startTime: new Date(startTime).toISOString() } : {}),
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         status,
+        displayAttendeeNumbers,
         ...(skills ? { skills } : {}),
         ...(associatedUrlsObject ? { associatedUrls: associatedUrlsObject } : {}),
         ...(locationType === 'online'
@@ -495,6 +497,20 @@ export function DashboardEventEditPage() {
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
             />
             <span className="text-xs text-slate-500">للحصول على المعرف، أرسل /info في المجموعة</span>
+          </label>
+          <label className="md:col-span-2 flex items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm">
+            <input
+              type="checkbox"
+              name="displayAttendeeNumbers"
+              defaultChecked={eventItem.displayAttendeeNumbers !== false}
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+            />
+            <span className="space-y-1">
+              <span className="block text-sm font-medium text-slate-800">عرض عدد المسجّلين علناً</span>
+              <span className="block text-xs leading-6 text-slate-500">
+                عند إيقاف هذا الخيار، لن يرى الأعضاء عدد المسجّلين أو قائمة الحضور. يبقى ذلك متاحاً لمديري الفعالية فقط.
+              </span>
+            </span>
           </label>
           <label className="md:col-span-4 space-y-1">
             <span className="text-xs font-medium text-slate-700">وصف الفعالية</span>

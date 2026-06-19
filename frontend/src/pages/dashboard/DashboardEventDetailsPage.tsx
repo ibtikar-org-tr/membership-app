@@ -205,6 +205,7 @@ export function DashboardEventDetailsPage() {
     return tickets.find((ticket) => ticket.id === userRegistration.ticketId) ?? null
   }, [tickets, userRegistration])
   const canSendTelegramInvite = Boolean(eventItem?.telegramGroupId && user?.membershipNumber && hasUserRegistered)
+  const canViewAttendeeNumbers = eventItem?.displayAttendeeNumbers !== false || canEditEvent
   const telegramInviteHelperText = !user
     ? 'سجّل الدخول أولاً ثم سجّل في هذه الفعالية لإرسال دعوة مجموعة التلغرام.'
     : !hasUserRegistered
@@ -759,7 +760,7 @@ export function DashboardEventDetailsPage() {
                 ))}
               </ul>
             </div>
-            {user ? (
+            {user && canViewAttendeeNumbers ? (
             <div>
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">المسجّلون</h3>
               {tickets.length > 0 && registrations.length > 0 ? (
@@ -867,6 +868,10 @@ export function DashboardEventDetailsPage() {
                 <p className="text-center text-sm text-slate-500">لا توجد تسجيلات لهذه الفعالية بعد.</p>
               )}
             </div>
+            ) : !canViewAttendeeNumbers && user ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
+                عدد المسجّلين في هذه الفعالية غير معروض علناً.
+              </div>
             ) : null}
           </div>
           {tickets.length === 0 && registrations.length === 0 ? (

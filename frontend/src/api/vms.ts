@@ -259,6 +259,7 @@ export function createEvent(payload: {
   telegramGroupId?: string
   imageUrl?: string
   associatedUrls?: Record<string, unknown>
+  displayAttendeeNumbers?: boolean
 }) {
   return postJson<{ event: VmsEvent }, typeof payload>('/events', payload)
 }
@@ -291,6 +292,7 @@ export function updateEvent(
     telegramGroupId: string
     imageUrl: string
     associatedUrls: Record<string, unknown>
+    displayAttendeeNumbers: boolean
   }>,
 ) {
   return putJson<{ event: VmsEvent }, typeof payload>(`/events/${encodeURIComponent(eventId)}`, payload)

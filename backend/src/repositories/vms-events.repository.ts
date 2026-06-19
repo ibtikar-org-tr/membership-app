@@ -22,6 +22,11 @@ interface EventRow {
   region: string | null
   city: string | null
   address: string | null
+  display_attendee_numbers: number | null
+}
+
+function mapDisplayAttendeeNumbers(value: number | null | undefined) {
+  return value === undefined || value === null || value === 1
 }
 
 function parseJsonObject(data: string | null): Record<string, unknown> | null {
@@ -64,6 +69,7 @@ function mapEventRow(row: EventRow) {
     region: row.region,
     city: row.city,
     address: row.address,
+    displayAttendeeNumbers: mapDisplayAttendeeNumbers(row.display_attendee_numbers),
   }
 }
 
@@ -97,7 +103,8 @@ export async function listEvents(db: D1DatabaseLike) {
          events.country,
          events.region,
          events.city,
-         events.address
+         events.address,
+         events.display_attendee_numbers
        FROM events
        LEFT JOIN projects ON projects.id = events.project_id
        ORDER BY events.created_at DESC`,
@@ -130,7 +137,8 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
          events.country,
          events.region,
          events.city,
-         events.address
+         events.address,
+         events.display_attendee_numbers
        FROM events
        LEFT JOIN projects ON projects.id = events.project_id
        WHERE events.id = ?`,
@@ -144,7 +152,7 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
 export async function createEvent(db: D1DatabaseLike, id: string, input: CreateEventInput) {
   await db
     .prepare(
-      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, telegram_group_id, country, region, city, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, telegram_group_id, country, region, city, address, display_attendee_numbers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -162,6 +170,7 @@ export async function createEvent(db: D1DatabaseLike, id: string, input: CreateE
       input.region ?? null,
       input.city ?? null,
       input.address ?? null,
+      input.displayAttendeeNumbers === false ? 0 : 1,
     )
     .run()
 
@@ -242,6 +251,11 @@ export async function updateEventById(db: D1DatabaseLike, id: string, input: Upd
   if (input.address !== undefined) {
     updates.push('address = ?')
     values.push(input.address ?? null)
+  }
+
+  if (input.displayAttendeeNumbers !== undefined) {
+    updates.push('display_attendee_numbers = ?')
+    values.push(input.displayAttendeeNumbers ? 1 : 0)
   }
 
   if (updates.length === 0) {
