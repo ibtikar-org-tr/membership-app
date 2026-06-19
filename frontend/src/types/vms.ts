@@ -53,6 +53,7 @@ export interface VmsEvent {
   city: string | null
   address: string | null
   displayAttendeeNumbers: boolean
+  cancellationDeadlineHours: number
 }
 
 export interface VmsEventTicket {

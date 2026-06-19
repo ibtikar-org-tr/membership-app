@@ -47,6 +47,21 @@ export async function getEventRegistrationById(db: D1DatabaseLike, id: string) {
   return row ? mapEventRegistrationRow(row) : null
 }
 
+export async function getEventRegistrationByEventAndMember(
+  db: D1DatabaseLike,
+  eventId: string,
+  membershipNumber: string,
+) {
+  const row = await db
+    .prepare(
+      'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations WHERE event_id = ? AND membership_number = ?',
+    )
+    .bind(eventId, membershipNumber)
+    .first<EventRegistrationRow>()
+
+  return row ? mapEventRegistrationRow(row) : null
+}
+
 export async function createEventRegistration(db: D1DatabaseLike, id: string, input: CreateEventRegistrationInput) {
   await db
     .prepare('INSERT INTO event_registrations (id, event_id, membership_number, ticket_id, status, attendance_approved_by) VALUES (?, ?, ?, ?, ?, ?)')
