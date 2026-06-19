@@ -193,6 +193,10 @@ export function DashboardEventEditPage() {
     const statusRaw = String(formData.get('status') ?? eventItem.status).trim()
     const status = statusRaw === 'public' || statusRaw === 'archived' ? statusRaw : 'draft'
     const displayAttendeeNumbers = formData.get('displayAttendeeNumbers') === 'on'
+    const cancellationDeadlineHoursRaw = Number(formData.get('cancellationDeadlineHours') ?? eventItem.cancellationDeadlineHours ?? 48)
+    const cancellationDeadlineHours = Number.isFinite(cancellationDeadlineHoursRaw)
+      ? Math.max(0, Math.min(24 * 365, Math.trunc(cancellationDeadlineHoursRaw)))
+      : 48
     const country = locationData.country.trim()
     const region = locationData.region.trim()
     const city = locationData.city.trim()
@@ -231,6 +235,7 @@ export function DashboardEventEditPage() {
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         status,
         displayAttendeeNumbers,
+        cancellationDeadlineHours,
         ...(skills ? { skills } : {}),
         ...(associatedUrlsObject ? { associatedUrls: associatedUrlsObject } : {}),
         ...(locationType === 'online'
@@ -510,6 +515,21 @@ export function DashboardEventEditPage() {
               <span className="block text-xs leading-6 text-slate-500">
                 عند إيقاف هذا الخيار، لن يرى الأعضاء عدد المسجّلين أو قائمة الحضور. يبقى ذلك متاحاً لمديري الفعالية فقط.
               </span>
+            </span>
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-slate-700">مهلة الإلغاء الذاتي (بالساعات)</span>
+            <input
+              type="number"
+              name="cancellationDeadlineHours"
+              min={0}
+              max={8760}
+              step={1}
+              defaultValue={eventItem.cancellationDeadlineHours ?? 48}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+            />
+            <span className="text-xs leading-6 text-slate-500">
+              عدد الساعات قبل بداية الفعالية التي يسمح بعدها للمسجّلين بإلغاء تذكرتهم (مثال: 48 = يومان). اجعل القيمة 0 لتعطيل الإلغاء الذاتي.
             </span>
           </label>
           <label className="md:col-span-4 space-y-1">

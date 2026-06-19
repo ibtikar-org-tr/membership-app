@@ -1,5 +1,6 @@
 import type { CreateEventInput, UpdateEventInput } from '../schemas/vms-event.schema'
 import type { D1DatabaseLike } from '../types/bindings'
+import { mapCancellationDeadlineHours } from '../utils/event-registration-cancellation'
 import { getAssociatedSkills, replaceAssociatedSkills } from './skills-association.repository'
 
 interface EventRow {
@@ -23,6 +24,7 @@ interface EventRow {
   city: string | null
   address: string | null
   display_attendee_numbers: number | null
+  cancellation_deadline_hours: number | null
 }
 
 function mapDisplayAttendeeNumbers(value: number | null | undefined) {
@@ -70,14 +72,23 @@ function mapEventRow(row: EventRow) {
     city: row.city,
     address: row.address,
     displayAttendeeNumbers: mapDisplayAttendeeNumbers(row.display_attendee_numbers),
+    cancellationDeadlineHours: mapCancellationDeadlineHours(row.cancellation_deadline_hours),
   }
 }
 
 async function hydrateEventRow(db: D1DatabaseLike, row: EventRow) {
   const event = mapEventRow(row)
+  let skills: Record<string, string> | null = null
+
+  try {
+    skills = await getAssociatedSkills(db, 'event', event.id)
+  } catch (error) {
+    console.error('Failed to load associated skills for event', event.id, error)
+  }
+
   return {
     ...event,
-    skills: await getAssociatedSkills(db, 'event', event.id),
+    skills,
   }
 }
 
@@ -104,7 +115,8 @@ export async function listEvents(db: D1DatabaseLike) {
          events.region,
          events.city,
          events.address,
-         events.display_attendee_numbers
+         events.display_attendee_numbers,
+         events.cancellation_deadline_hours
        FROM events
        LEFT JOIN projects ON projects.id = events.project_id
        ORDER BY events.created_at DESC`,
@@ -138,7 +150,8 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
          events.region,
          events.city,
          events.address,
-         events.display_attendee_numbers
+         events.display_attendee_numbers,
+         events.cancellation_deadline_hours
        FROM events
        LEFT JOIN projects ON projects.id = events.project_id
        WHERE events.id = ?`,
@@ -149,10 +162,33 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
   return row ? hydrateEventRow(db, row) : null
 }
 
+interface EventCancellationSettingsRow {
+  start_time: string | null
+  status: string
+  cancellation_deadline_hours: number | null
+}
+
+export async function getEventCancellationSettingsById(db: D1DatabaseLike, id: string) {
+  const row = await db
+    .prepare('SELECT start_time, status, cancellation_deadline_hours FROM events WHERE id = ?')
+    .bind(id)
+    .first<EventCancellationSettingsRow>()
+
+  if (!row) {
+    return null
+  }
+
+  return {
+    startTime: row.start_time,
+    status: row.status,
+    cancellationDeadlineHours: mapCancellationDeadlineHours(row.cancellation_deadline_hours),
+  }
+}
+
 export async function createEvent(db: D1DatabaseLike, id: string, input: CreateEventInput) {
   await db
     .prepare(
-      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, telegram_group_id, country, region, city, address, display_attendee_numbers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, telegram_group_id, country, region, city, address, display_attendee_numbers, cancellation_deadline_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -171,6 +207,7 @@ export async function createEvent(db: D1DatabaseLike, id: string, input: CreateE
       input.city ?? null,
       input.address ?? null,
       input.displayAttendeeNumbers === false ? 0 : 1,
+      input.cancellationDeadlineHours !== undefined ? mapCancellationDeadlineHours(input.cancellationDeadlineHours) : 48,
     )
     .run()
 
@@ -256,6 +293,11 @@ export async function updateEventById(db: D1DatabaseLike, id: string, input: Upd
   if (input.displayAttendeeNumbers !== undefined) {
     updates.push('display_attendee_numbers = ?')
     values.push(input.displayAttendeeNumbers ? 1 : 0)
+  }
+
+  if (input.cancellationDeadlineHours !== undefined) {
+    updates.push('cancellation_deadline_hours = ?')
+    values.push(mapCancellationDeadlineHours(input.cancellationDeadlineHours))
   }
 
   if (updates.length === 0) {

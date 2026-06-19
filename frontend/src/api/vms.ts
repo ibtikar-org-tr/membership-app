@@ -260,6 +260,7 @@ export function createEvent(payload: {
   imageUrl?: string
   associatedUrls?: Record<string, unknown>
   displayAttendeeNumbers?: boolean
+  cancellationDeadlineHours?: number
 }) {
   return postJson<{ event: VmsEvent }, typeof payload>('/events', payload)
 }
@@ -293,6 +294,7 @@ export function updateEvent(
     imageUrl: string
     associatedUrls: Record<string, unknown>
     displayAttendeeNumbers: boolean
+    cancellationDeadlineHours: number
   }>,
 ) {
   return putJson<{ event: VmsEvent }, typeof payload>(`/events/${encodeURIComponent(eventId)}`, payload)
@@ -367,6 +369,13 @@ export function updateEventRegistration(
 
 export function deleteEventRegistration(registrationId: string) {
   return deleteJson(`/event-registrations/${encodeURIComponent(registrationId)}`)
+}
+
+export function selfCancelEventRegistration(registrationId: string) {
+  return postJson<{ message: string }, Record<string, never>>(
+    `/event-registrations/${encodeURIComponent(registrationId)}/self-cancel`,
+    {},
+  )
 }
 
 export function approveRegistration(registrationId: string, approverMembershipNumber: string, type: 'payment' | 'attendance') {
@@ -495,10 +504,21 @@ export function leaveProject(projectId: string, membershipNumber: string) {
 export function removeProjectMember(
   projectId: string,
   targetMembershipNumber: string,
-  actorMembershipNumber: string,
+  _actorMembershipNumber: string,
 ) {
   return deleteJson(
     `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}`,
+  )
+}
+
+export function updateProjectMemberRole(
+  projectId: string,
+  targetMembershipNumber: string,
+  role: 'member' | 'manager',
+) {
+  return putJson<{ projectMember: VmsProjectMember }, { role: typeof role }>(
+    `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}`,
+    { role },
   )
 }
 

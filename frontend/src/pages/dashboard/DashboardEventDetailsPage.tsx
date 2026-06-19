@@ -25,6 +25,7 @@ import {
   fetchPublicEventById,
   fetchPublicEventTickets,
   requestTelegramGroupInvite,
+  selfCancelEventRegistration,
 } from '../../api/vms'
 import type {
   VmsEvent,
@@ -35,6 +36,10 @@ import type {
 import { getStoredUser } from '../../utils/auth'
 import { isStandalonePublicEventPath } from '../../utils/public-event-routes'
 import { formatDateEnCA, formatTimeEnCA, formatTimezoneEnCA } from '../../utils/date-format'
+import {
+  canSelfCancelRegistration,
+  selfCancellationHelperText,
+} from '../../utils/event-registration-cancellation'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -71,6 +76,9 @@ export function DashboardEventDetailsPage() {
   const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
   const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
   const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
+  const [isCancellingRegistration, setIsCancellingRegistration] = useState(false)
+  const [cancelRegistrationError, setCancelRegistrationError] = useState<string | null>(null)
+  const [cancelRegistrationSuccess, setCancelRegistrationSuccess] = useState<string | null>(null)
 
   function scrollToTicketBuyingSection() {
     ticketBuyingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -188,7 +196,10 @@ export function DashboardEventDetailsPage() {
       return false
     }
 
-    return registrations.some((registration) => registration.membershipNumber === user.membershipNumber)
+    return registrations.some(
+      (registration) =>
+        registration.membershipNumber === user.membershipNumber && registration.status === 'registered',
+    )
   }, [registrations, user])
   const userRegistration = useMemo(() => {
     if (!user) {
@@ -204,8 +215,18 @@ export function DashboardEventDetailsPage() {
 
     return tickets.find((ticket) => ticket.id === userRegistration.ticketId) ?? null
   }, [tickets, userRegistration])
-  const canSendTelegramInvite = Boolean(eventItem?.telegramGroupId && user?.membershipNumber && hasUserRegistered)
+  const canSendTelegramInvite = Boolean(
+    eventItem?.telegramGroupId && user?.membershipNumber && userRegistration?.status === 'registered',
+  )
   const canViewAttendeeNumbers = eventItem?.displayAttendeeNumbers !== false || canEditEvent
+  const canCancelRegistration = useMemo(() => {
+    if (!eventItem || !userRegistration) {
+      return false
+    }
+
+    return canSelfCancelRegistration(eventItem, userRegistration, user?.membershipNumber)
+  }, [eventItem, user?.membershipNumber, userRegistration])
+  const cancellationPolicyText = eventItem ? selfCancellationHelperText(eventItem) : null
   const telegramInviteHelperText = !user
     ? 'سجّل الدخول أولاً ثم سجّل في هذه الفعالية لإرسال دعوة مجموعة التلغرام.'
     : !hasUserRegistered
@@ -228,6 +249,14 @@ export function DashboardEventDetailsPage() {
 
     if (hasUserRegistered) {
       setApplyError('لقد قمت بالتسجيل في هذه الفعالية مسبقاً.')
+      return
+    }
+
+    const existingRegistration = registrations.find(
+      (registration) => registration.membershipNumber === user.membershipNumber,
+    )
+    if (existingRegistration) {
+      setApplyError('لديك تسجيل سابق في هذه الفعالية. تواصل مع المنظمين إذا كنت بحاجة للمساعدة.')
       return
     }
 
@@ -259,6 +288,40 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setIsApplying(false)
+    }
+  }
+
+  const handleCancelRegistration = async () => {
+    setCancelRegistrationError(null)
+    setCancelRegistrationSuccess(null)
+
+    if (!userRegistration || !user || !canCancelRegistration) {
+      return
+    }
+
+    const confirmed = window.confirm(
+      'هل أنت متأكد من إلغاء تسجيلك في هذه الفعالية؟ يمكنك التسجيل مجدداً إذا بقيت مقاعد متاحة.',
+    )
+    if (!confirmed) {
+      return
+    }
+
+    setIsCancellingRegistration(true)
+
+    try {
+      await selfCancelEventRegistration(userRegistration.id)
+      setRegistrations((previous) => previous.filter((registration) => registration.id !== userRegistration.id))
+      setCancelRegistrationSuccess('تم إلغاء تسجيلك. يمكنك التسجيل مجدداً إذا رغبت.')
+      setTelegramInviteSuccess(null)
+      setTelegramInviteError(null)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setCancelRegistrationError(requestError.message)
+      } else {
+        setCancelRegistrationError('تعذر إلغاء التسجيل.')
+      }
+    } finally {
+      setIsCancellingRegistration(false)
     }
   }
 
@@ -712,6 +775,28 @@ export function DashboardEventDetailsPage() {
                         </span>
                       ) : null}
                     </div>
+                    {user && userRegistration?.status === 'registered' ? (
+                      <div className="mt-4 space-y-2 border-t border-emerald-100 pt-4">
+                        {canCancelRegistration ? (
+                          <button
+                            type="button"
+                            onClick={() => void handleCancelRegistration()}
+                            disabled={isCancellingRegistration}
+                            className="inline-flex w-full items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {isCancellingRegistration ? 'جار الإلغاء...' : 'إلغاء التسجيل'}
+                          </button>
+                        ) : cancellationPolicyText ? (
+                          <p className="text-xs leading-6 text-slate-600">{cancellationPolicyText}</p>
+                        ) : null}
+                        {cancelRegistrationError ? (
+                          <p className="text-sm text-red-600">{cancelRegistrationError}</p>
+                        ) : null}
+                        {cancelRegistrationSuccess ? (
+                          <p className="text-sm font-medium text-emerald-700">{cancelRegistrationSuccess}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <p className="mt-2 text-center text-xs text-emerald-700">تعذّر عرض تفاصيل التذكرة المختارة.</p>

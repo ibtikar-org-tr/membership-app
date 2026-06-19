@@ -4,10 +4,12 @@ import {
   createEventRegistration,
   deleteEventRegistrationById,
   getEventRegistrationById,
+  getEventRegistrationByEventAndMember,
   listEventRegistrations,
   updateEventRegistrationById,
 } from '../repositories/vms-event-registrations.repository'
-import { getEventById } from '../repositories/vms-events.repository'
+import { getEventTicketById } from '../repositories/vms-event-tickets.repository'
+import { getEventById, getEventCancellationSettingsById } from '../repositories/vms-events.repository'
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
 import {
   createEventRegistrationSchema,
@@ -18,6 +20,10 @@ import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
 import { canManageEvent } from '../utils/event-permissions'
+import {
+  canSelfCancelRegistration,
+  countActiveRegistrationsForTicket,
+} from '../utils/event-registration-cancellation'
 
 export const vmsEventRegistrationsRoute = new Hono<AppEnv>()
 
@@ -93,8 +99,45 @@ vmsEventRegistrationsRoute.get(
 vmsEventRegistrationsRoute.post('/event-registrations', zValidator('json', createEventRegistrationSchema), async (c) => {
   try {
     const payload = c.req.valid('json')
+    const actorMembershipNumber = getActorMembershipNumber(c)
+
+    if (payload.membershipNumber !== actorMembershipNumber) {
+      return c.json({ error: 'يمكنك التسجيل في الفعالية لحسابك فقط.' }, 403)
+    }
+
+    const event = await getEventById(c.env.VMS_DB, payload.eventId)
+    if (!event) {
+      return c.json({ error: 'Event not found.' }, 404)
+    }
+
+    if (event.status !== 'public') {
+      return c.json({ error: 'التسجيل متاح فقط للفعاليات المنشورة.' }, 403)
+    }
+
+    const existingRegistration = await getEventRegistrationByEventAndMember(
+      c.env.VMS_DB,
+      payload.eventId,
+      actorMembershipNumber,
+    )
+    if (existingRegistration) {
+      return c.json({ error: 'لديك تسجيل سابق في هذه الفعالية.' }, 409)
+    }
+
+    const ticket = await getEventTicketById(c.env.VMS_DB, payload.ticketId)
+    if (!ticket || ticket.eventId !== payload.eventId) {
+      return c.json({ error: 'التذكرة المختارة غير متاحة لهذه الفعالية.' }, 400)
+    }
+
+    const activeRegistrations = await countActiveRegistrationsForTicket(c.env.VMS_DB, payload.ticketId)
+    if (activeRegistrations >= ticket.quantity) {
+      return c.json({ error: 'لم يعد هناك مقاعد متاحة لهذه التذكرة.' }, 409)
+    }
+
     const eventRegistrationId = crypto.randomUUID()
-    const eventRegistration = await createEventRegistration(c.env.VMS_DB, eventRegistrationId, payload)
+    const eventRegistration = await createEventRegistration(c.env.VMS_DB, eventRegistrationId, {
+      ...payload,
+      status: 'registered',
+    })
     const [enrichedRegistration] = await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, [
       eventRegistration!,
     ])
@@ -114,10 +157,21 @@ vmsEventRegistrationsRoute.put(
     try {
       const { id } = c.req.valid('param')
       const payload = c.req.valid('json')
+      const actorMembershipNumber = getActorMembershipNumber(c)
 
       const existing = await getEventRegistrationById(c.env.VMS_DB, id)
       if (!existing) {
         return c.json({ error: 'Event registration not found.' }, 404)
+      }
+
+      const event = await getEventById(c.env.VMS_DB, existing.eventId)
+      if (!event) {
+        return c.json({ error: 'Event not found.' }, 404)
+      }
+
+      const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
+      if (!canManage) {
+        return c.json({ error: 'Only event managers can update registrations.' }, 403)
       }
 
       const eventRegistration = await updateEventRegistrationById(c.env.VMS_DB, id, payload)
@@ -132,11 +186,63 @@ vmsEventRegistrationsRoute.put(
   },
 )
 
+vmsEventRegistrationsRoute.post(
+  '/event-registrations/:id/self-cancel',
+  zValidator('param', eventRegistrationParamsSchema),
+  async (c) => {
+    try {
+      const { id } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      const registration = await getEventRegistrationById(c.env.VMS_DB, id)
+      if (!registration) {
+        return c.json({ error: 'Event registration not found.' }, 404)
+      }
+
+      const event = await getEventCancellationSettingsById(c.env.VMS_DB, registration.eventId)
+      if (!event) {
+        return c.json({ error: 'Event not found.' }, 404)
+      }
+
+      const authorization = canSelfCancelRegistration(event, registration, actorMembershipNumber)
+      if (!authorization.allowed) {
+        return c.json({ error: authorization.reason }, 403)
+      }
+
+      const deleted = await deleteEventRegistrationById(c.env.VMS_DB, id)
+      if (!deleted) {
+        return c.json({ error: 'Event registration not found.' }, 404)
+      }
+
+      return c.json({ message: 'تم إلغاء التسجيل بنجاح.' })
+    } catch (error) {
+      console.error('Failed to self-cancel event registration', error)
+      return c.json({ error: 'Could not cancel event registration.' }, 500)
+    }
+  },
+)
+
 vmsEventRegistrationsRoute.delete('/event-registrations/:id', zValidator('param', eventRegistrationParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
-    const deleted = await deleteEventRegistrationById(c.env.VMS_DB, id)
+    const actorMembershipNumber = getActorMembershipNumber(c)
 
+    const registration = await getEventRegistrationById(c.env.VMS_DB, id)
+    if (!registration) {
+      return c.json({ error: 'Event registration not found.' }, 404)
+    }
+
+    const event = await getEventById(c.env.VMS_DB, registration.eventId)
+    if (!event) {
+      return c.json({ error: 'Event not found.' }, 404)
+    }
+
+    const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
+    if (!canManage) {
+      return c.json({ error: 'Only event managers can delete registrations.' }, 403)
+    }
+
+    const deleted = await deleteEventRegistrationById(c.env.VMS_DB, id)
     if (!deleted) {
       return c.json({ error: 'Event registration not found.' }, 404)
     }

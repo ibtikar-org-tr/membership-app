@@ -12,6 +12,7 @@ import {
   removeProjectMember,
   requestTelegramGroupInvite,
   updateProject,
+  updateProjectMemberRole,
   updateTask,
 } from '../../api/vms'
 import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
@@ -64,6 +65,8 @@ export function DashboardProjectDetailsPage() {
   const [isRemovingMember, setIsRemovingMember] = useState(false)
   const [removeMemberError, setRemoveMemberError] = useState<string | null>(null)
   const [removingMembershipNumber, setRemovingMembershipNumber] = useState<string | null>(null)
+  const [updatingRoleMembershipNumber, setUpdatingRoleMembershipNumber] = useState<string | null>(null)
+  const [roleUpdateError, setRoleUpdateError] = useState<string | null>(null)
   const [telegramInviteError, setTelegramInviteError] = useState<string | null>(null)
   const [telegramInviteSuccess, setTelegramInviteSuccess] = useState<string | null>(null)
   const [isSendingTelegramInvite, setIsSendingTelegramInvite] = useState(false)
@@ -587,6 +590,33 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
+  const handleChangeMemberRole = async (member: VmsProjectMember, role: 'member' | 'manager') => {
+    setRoleUpdateError(null)
+
+    if (!projectID || !user || !isProjectOwner) {
+      return
+    }
+
+    setUpdatingRoleMembershipNumber(member.membershipNumber)
+
+    try {
+      const response = await updateProjectMemberRole(projectID, member.membershipNumber, role)
+      setProjectMembers((previous) =>
+        previous.map((item) =>
+          item.membershipNumber === response.projectMember.membershipNumber ? response.projectMember : item,
+        ),
+      )
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setRoleUpdateError(requestError.message)
+      } else {
+        setRoleUpdateError('تعذر تحديث دور العضو.')
+      }
+    } finally {
+      setUpdatingRoleMembershipNumber(null)
+    }
+  }
+
   const handleLeaveProject = async () => {
     setLeaveError(null)
 
@@ -738,17 +768,22 @@ export function DashboardProjectDetailsPage() {
           projectOwnerMembershipNumber={project.owner}
           actorMembershipNumber={user?.membershipNumber ?? null}
           canManageMembers={canManageProjectMembers}
+          isProjectOwner={isProjectOwner}
           removingMembershipNumber={removingMembershipNumber}
+          updatingRoleMembershipNumber={updatingRoleMembershipNumber}
+          roleUpdateError={roleUpdateError}
           onSelectMember={(member) => setMemberInfoTarget(member)}
           onRequestRemove={(member) => {
             setRemoveMemberError(null)
             setMemberPendingRemoval(member)
           }}
+          onChangeMemberRole={(member, role) => void handleChangeMemberRole(member, role)}
           onClose={() => {
-            if (!isRemovingMember) {
+            if (!isRemovingMember && !updatingRoleMembershipNumber) {
               setIsMembersOpen(false)
               setMemberPendingRemoval(null)
               setRemoveMemberError(null)
+              setRoleUpdateError(null)
             }
           }}
         />
