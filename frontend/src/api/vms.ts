@@ -409,6 +409,12 @@ export function fetchProjectMemberContact(projectId: string, targetMembershipNum
   )
 }
 
+export function fetchEventRegistrantContact(eventId: string, targetMembershipNumber: string) {
+  return fetchJson<{ contact: VmsProjectMemberContact }>(
+    `/events/${encodeURIComponent(eventId)}/registrants/${encodeURIComponent(targetMembershipNumber)}/contact`,
+  )
+}
+
 export function fetchProjectMembers(projectId?: string) {
   const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : ''
   return fetchJson<{ projectMembers: VmsProjectMember[] }>(`/project-members${query}`)

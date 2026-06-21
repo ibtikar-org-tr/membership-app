@@ -8,6 +8,7 @@ import {
   listEventRegistrations,
   updateEventRegistrationById,
 } from '../repositories/vms-event-registrations.repository'
+import { getMemberContactInfoByMembershipNumber } from '../repositories/user-info.repository'
 import { getEventTicketById } from '../repositories/vms-event-tickets.repository'
 import { getEventById, getEventCancellationSettingsById } from '../repositories/vms-events.repository'
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
@@ -15,6 +16,7 @@ import {
   createEventRegistrationSchema,
   changeEventRegistrationTicketSchema,
   eventRegistrationParamsSchema,
+  eventRegistrantContactParamsSchema,
   updateEventRegistrationSchema,
 } from '../schemas/vms-event-registration.schema'
 import type { AppBindings } from '../types/bindings'
@@ -43,6 +45,42 @@ async function enrichEventRegistrationsWithDisplayNames<T extends { membershipNu
     displayName: displayNameMap.get(registration.membershipNumber) ?? registration.membershipNumber,
   }))
 }
+
+vmsEventRegistrationsRoute.get(
+  '/events/:eventId/registrants/:membershipNumber/contact',
+  zValidator('param', eventRegistrantContactParamsSchema),
+  async (c) => {
+    try {
+      const { eventId, membershipNumber } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      const event = await getEventById(c.env.VMS_DB, eventId)
+      if (!event) {
+        return c.json({ error: 'Event not found.' }, 404)
+      }
+
+      const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
+      if (!canManage) {
+        return c.json({ error: 'Only the project owner or managers can view registrant contact info.' }, 403)
+      }
+
+      const registration = await getEventRegistrationByEventAndMember(c.env.VMS_DB, eventId, membershipNumber)
+      if (!registration) {
+        return c.json({ error: 'Event registrant not found.' }, 404)
+      }
+
+      const contact = await getMemberContactInfoByMembershipNumber(c.env.MEMBERS_DB, membershipNumber)
+      if (!contact) {
+        return c.json({ error: 'Member contact info not found.' }, 404)
+      }
+
+      return c.json({ contact })
+    } catch (error) {
+      console.error('Failed to fetch event registrant contact info', error)
+      return c.json({ error: 'Could not fetch event registrant contact info.' }, 500)
+    }
+  },
+)
 
 vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
   try {

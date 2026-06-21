@@ -21,6 +21,11 @@ export const eventRegistrationParamsSchema = z.object({
   id: requiredTrimmedString,
 })
 
+export const eventRegistrantContactParamsSchema = z.object({
+  eventId: requiredTrimmedString,
+  membershipNumber: requiredTrimmedString,
+})
+
 export const changeEventRegistrationTicketSchema = z.object({
   ticketId: requiredTrimmedString,
 })
