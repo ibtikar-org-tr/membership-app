@@ -12,7 +12,7 @@ export function getAccessToken(): string | null {
     return null
   }
 
-  const token = window.sessionStorage.getItem(AUTH_ACCESS_STORAGE_KEY)?.trim()
+  const token = window.localStorage.getItem(AUTH_ACCESS_STORAGE_KEY)?.trim()
   return token || null
 }
 
@@ -21,7 +21,7 @@ export function setAccessToken(token: string) {
     return
   }
 
-  window.sessionStorage.setItem(AUTH_ACCESS_STORAGE_KEY, token)
+  window.localStorage.setItem(AUTH_ACCESS_STORAGE_KEY, token)
 }
 
 export function getStoredUser(): AuthUser | null {
@@ -29,7 +29,7 @@ export function getStoredUser(): AuthUser | null {
     return null
   }
 
-  const raw = window.sessionStorage.getItem(AUTH_USER_STORAGE_KEY)
+  const raw = window.localStorage.getItem(AUTH_USER_STORAGE_KEY)
   if (!raw) {
     return null
   }
@@ -65,7 +65,7 @@ export function setStoredUser(user: AuthUser) {
     return
   }
 
-  window.sessionStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user))
+  window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user))
 }
 
 export function setStoredSession(user: AuthUser, accessToken: string) {
@@ -78,8 +78,8 @@ export function clearStoredAuth() {
     return
   }
 
-  window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY)
-  window.sessionStorage.removeItem(AUTH_ACCESS_STORAGE_KEY)
+  window.localStorage.removeItem(AUTH_USER_STORAGE_KEY)
+  window.localStorage.removeItem(AUTH_ACCESS_STORAGE_KEY)
 }
 
 /** @deprecated Use clearStoredAuth */
