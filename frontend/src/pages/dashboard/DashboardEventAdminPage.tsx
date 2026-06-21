@@ -11,6 +11,7 @@ import {
   updateEventRegistration,
 } from '../../api/vms'
 import type { VmsEvent, VmsEventRegistration, VmsEventTicket, VmsProjectMember } from '../../types/vms'
+import { MemberInfoModal } from '../../components/dashboard/project-details/MemberInfoModal'
 import { getStoredUser } from '../../utils/auth'
 
 function registrationStatusLabel(status: string) {
@@ -34,6 +35,10 @@ export function DashboardEventAdminPage() {
   const [busyRegistrationId, setBusyRegistrationId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [memberInfoTarget, setMemberInfoTarget] = useState<{
+    membershipNumber: string
+    displayName: string
+  } | null>(null)
 
   useEffect(() => {
     if (!eventID) return
@@ -197,10 +202,22 @@ export function DashboardEventAdminPage() {
               <li key={registration.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      {registration.displayName ?? registration.membershipNumber}
-                    </p>
-                    <p className="mt-0.5 font-mono text-xs text-slate-500">{registration.membershipNumber}</p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMemberInfoTarget({
+                          membershipNumber: registration.membershipNumber,
+                          displayName: registration.displayName ?? registration.membershipNumber,
+                        })
+                      }
+                      className="text-right transition hover:opacity-80"
+                      title="عرض معلومات العضو"
+                    >
+                      <p className="text-sm font-medium text-slate-900 underline-offset-2 hover:underline">
+                        {registration.displayName ?? registration.membershipNumber}
+                      </p>
+                      <p className="mt-0.5 font-mono text-xs text-slate-500">{registration.membershipNumber}</p>
+                    </button>
                     <p className="mt-0.5 text-xs text-slate-500">التذكرة: {ticket ? ticket.name : 'غير معروفة'}</p>
                   </div>
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
@@ -275,6 +292,15 @@ export function DashboardEventAdminPage() {
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         {success ? <p className="mt-3 text-sm font-medium text-emerald-700">{success}</p> : null}
       </article>
+
+      {memberInfoTarget ? (
+        <MemberInfoModal
+          eventId={eventID}
+          membershipNumber={memberInfoTarget.membershipNumber}
+          displayName={memberInfoTarget.displayName}
+          onClose={() => setMemberInfoTarget(null)}
+        />
+      ) : null}
     </section>
   )
 }
