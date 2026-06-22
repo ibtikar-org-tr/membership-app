@@ -178,3 +178,16 @@ export interface VmsPointTransaction {
   amount: number
   type: 'task_reward' | 'task_reward_reversal' | 'purchase' | 'event_attendance' | 'other' | string
 }
+
+export interface VmsProjectNote {
+  id: string
+  createdAt: string
+  updatedAt: string
+  projectId: string
+  title: string
+  content: string
+  contentPreview: string | null
+  createdBy: string
+  createdByDisplayName?: string
+  canEdit?: boolean
+}

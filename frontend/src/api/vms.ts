@@ -11,6 +11,7 @@ import type {
   VmsProject,
   VmsProjectMember,
   VmsProjectMemberContact,
+  VmsProjectNote,
   VmsSkill,
   VmsTask,
 } from '../types/vms'
@@ -655,6 +656,38 @@ export function deleteClubMember(clubId: string, membershipNumber: string, actor
 export function fetchPointTransactions(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)
+}
+
+export function fetchProjectNotes(projectId: string) {
+  return fetchJson<{ notes: VmsProjectNote[] }>(`/project-notes?projectId=${encodeURIComponent(projectId)}`)
+}
+
+export function fetchProjectNoteById(noteId: string) {
+  return fetchJson<{ note: VmsProjectNote }>(`/project-notes/${encodeURIComponent(noteId)}`)
+}
+
+export function createProjectNote(payload: { projectId: string; title: string }) {
+  return postJson<{ note: VmsProjectNote }, typeof payload>(`/project-notes`, payload)
+}
+
+export function updateProjectNote(noteId: string, payload: { title?: string }) {
+  return putJson<{ note: VmsProjectNote }, typeof payload>(`/project-notes/${encodeURIComponent(noteId)}`, payload)
+}
+
+export function deleteProjectNote(noteId: string) {
+  return deleteJson(`/project-notes/${encodeURIComponent(noteId)}`)
+}
+
+export function getProjectNoteWebSocketUrl(noteId: string, token: string) {
+  const memberMsBaseUrl = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
+
+  if (memberMsBaseUrl) {
+    const wsBase = memberMsBaseUrl.replace(/^http/i, 'ws').replace(/\/+$/, '')
+    return `${wsBase}/api/project-notes/${encodeURIComponent(noteId)}/ws?token=${encodeURIComponent(token)}`
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/ms/membership-app/api/project-notes/${encodeURIComponent(noteId)}/ws?token=${encodeURIComponent(token)}`
 }
 
 export async function uploadImages(files: File[]): Promise<{ images: string[] }> {

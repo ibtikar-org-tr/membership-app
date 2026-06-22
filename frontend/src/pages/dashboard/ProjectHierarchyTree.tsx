@@ -157,7 +157,6 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
     }
   }, [user?.membershipNumber])
 
-  const rootCount = useMemo(() => projects.filter((project) => !project.parentProjectId).length, [projects])
   const maxDepth = useMemo(() => getMaxDepth(projects), [projects])
   const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects])
   const hoveredProject = hoveredProjectId ? projectById.get(hoveredProjectId) ?? null : null
