@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import { useMemo } from 'react'
 import { FiChevronLeft } from 'react-icons/fi'
 import type { VmsProject } from '../../../types/vms'
-import { formatDateEnCA } from '../../../utils/date-format'
 import { projectStatusAccent, statusBadgeClass, statusLabel } from '../project-details/helpers'
 import { buildLinearProjectTreeRows } from './buildLinearProjectTreeRows'
 
