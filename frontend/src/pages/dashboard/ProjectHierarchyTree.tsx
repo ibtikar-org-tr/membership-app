@@ -93,7 +93,6 @@ function ProjectTreeTooltip({ project, position }: { project: VmsProject; positi
       dir="rtl"
       role="tooltip"
     >
-      <p className="text-sm font-semibold text-slate-900">{project.name}</p>
       <p className="mt-2 text-xs text-slate-500">
         <span className="font-medium text-slate-700">المسؤول:</span>{' '}
         {project.ownerDisplayName ?? project.owner}
