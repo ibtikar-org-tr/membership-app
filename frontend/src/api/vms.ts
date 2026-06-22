@@ -687,7 +687,8 @@ export function getProjectNoteWebSocketUrl(noteId: string, token: string) {
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${protocol}//${window.location.host}/ms/membership-app/api/project-notes/${encodeURIComponent(noteId)}/ws?token=${encodeURIComponent(token)}`
+  const host = import.meta.env.DEV ? `${window.location.hostname}:5931` : window.location.host
+  return `${protocol}//${host}/ms/membership-app/api/project-notes/${encodeURIComponent(noteId)}/ws?token=${encodeURIComponent(token)}`
 }
 
 export async function uploadImages(files: File[]): Promise<{ images: string[] }> {

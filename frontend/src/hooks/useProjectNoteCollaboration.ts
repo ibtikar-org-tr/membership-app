@@ -6,6 +6,7 @@ import * as awarenessProtocol from 'y-protocols/awareness'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
 import { getProjectNoteWebSocketUrl } from '../api/vms'
+import { getAccessToken } from '../utils/auth'
 
 const MESSAGE_SYNC = 0
 const MESSAGE_AWARENESS = 1
@@ -19,7 +20,6 @@ export interface NoteCollaborator {
 
 interface UseProjectNoteCollaborationOptions {
   noteId: string | null
-  token: string | null
   membershipNumber: string | null
   displayName: string | null
   enabled: boolean
@@ -37,7 +37,6 @@ function colorForMembershipNumber(membershipNumber: string) {
 
 export function useProjectNoteCollaboration({
   noteId,
-  token,
   membershipNumber,
   displayName,
   enabled,
@@ -48,6 +47,8 @@ export function useProjectNoteCollaboration({
   const docRef = useRef<Yjs.Doc | null>(null)
 
   useEffect(() => {
+    const token = getAccessToken()
+
     if (!enabled || !noteId || !token || !membershipNumber) {
       setConnectionState('idle')
       setCollaborators([])
@@ -156,7 +157,7 @@ export function useProjectNoteCollaboration({
       setConnectionState('idle')
       setYText(null)
     }
-  }, [displayName, enabled, membershipNumber, noteId, token])
+  }, [displayName, enabled, membershipNumber, noteId])
 
   return {
     yText,

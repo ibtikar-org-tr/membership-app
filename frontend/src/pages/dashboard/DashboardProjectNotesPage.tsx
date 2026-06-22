@@ -12,7 +12,7 @@ import {
 import { CollaborativeNoteEditor } from '../../components/dashboard/project-notes/CollaborativeNoteEditor'
 import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollaboration'
 import type { VmsProject, VmsProjectMember, VmsProjectNote } from '../../types/vms'
-import { getAccessToken, getStoredUser } from '../../utils/auth'
+import { getStoredUser } from '../../utils/auth'
 import { formatDateEnCA } from '../../utils/date-format'
 
 export function DashboardProjectNotesPage() {
@@ -20,7 +20,6 @@ export function DashboardProjectNotesPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const user = useMemo(() => getStoredUser(), [])
-  const accessToken = useMemo(() => getAccessToken(), [])
 
   const [project, setProject] = useState<VmsProject | null>(null)
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
@@ -145,10 +144,9 @@ export function DashboardProjectNotesPage() {
 
   const { yText, connectionState, collaborators } = useProjectNoteCollaboration({
     noteId: selectedNote?.id ?? null,
-    token: accessToken,
     membershipNumber: user?.membershipNumber ?? null,
     displayName: user?.email ?? user?.membershipNumber ?? null,
-    enabled: Boolean(selectedNote && canEditSelectedNote),
+    enabled: Boolean(selectedNote && canEditSelectedNote && !isLoading),
   })
 
   const handleCreateNote = async (event: FormEvent<HTMLFormElement>) => {
