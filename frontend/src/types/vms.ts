@@ -6,6 +6,7 @@ export interface VmsProject {
   description: string | null
   parentProjectId: string | null
   owner: string
+  ownerDisplayName?: string
   telegramGroupId: string | null
   status: 'active' | 'completed' | 'archived' | string
   skills: Record<string, string> | null

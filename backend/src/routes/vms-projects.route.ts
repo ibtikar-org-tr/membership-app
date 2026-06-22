@@ -1,6 +1,7 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { getUserByMembershipNumber } from '../repositories/users.repository'
+import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
 import {
   createProject,
   deleteProjectById,
@@ -66,7 +67,17 @@ vmsProjectsRoute.get('/projects/platform', async (c) => {
 
 
     const projects = await listProjectsForMemberWithRedactedNames(c.env.VMS_DB, membershipNumber)
-    return c.json({ projects })
+    const displayNameMap = await getUserDisplayNamesByMembershipNumbers(
+      c.env.MEMBERS_DB,
+      projects.map((project) => project.owner),
+    )
+
+    return c.json({
+      projects: projects.map((project) => ({
+        ...project,
+        ownerDisplayName: displayNameMap.get(project.owner) ?? project.owner,
+      })),
+    })
   } catch (error) {
     console.error('Failed to list platform projects', error)
     return c.json({ error: 'Could not fetch platform projects.' }, 500)
