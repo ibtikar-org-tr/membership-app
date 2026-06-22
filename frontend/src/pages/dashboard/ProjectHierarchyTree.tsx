@@ -438,9 +438,6 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
             <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
               {projects.length} مشروع
             </span>
-            <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-              {rootCount} رئيسي
-            </span>
             {maxDepth > 1 ? (
               <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
                 {maxDepth} مستويات
@@ -450,7 +447,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
         ) : null}
       </div>
 
-      {clickableProjectIds.length > 0 && !isLoading && !hasError && projects.length > 0 ? (
+      {/* {clickableProjectIds.length > 0 && !isLoading && !hasError && projects.length > 0 ? (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-[11px] text-slate-600">
           <span className="font-medium text-slate-700">دليل الألوان:</span>
           <span className="inline-flex items-center gap-1.5">
@@ -466,7 +463,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
             قابل للضغط
           </span>
         </div>
-      ) : null}
+      ) : null} */}
 
       {isLoading ? <TreeSkeleton /> : null}
 
