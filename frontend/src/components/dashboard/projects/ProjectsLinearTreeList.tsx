@@ -58,15 +58,10 @@ function ProjectTreeRow({
             </div>
             {project.description ? (
               <p className="min-w-0 truncate text-xs text-slate-500 sm:max-w-md sm:flex-1">{project.description}</p>
-            ) : (
-              <p className="hidden text-xs italic text-slate-400 sm:block sm:max-w-md sm:flex-1">لا يوجد وصف</p>
-            )}
+            ) : null}
             <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 sm:ms-auto">
               <span className="truncate">
                 <span className="text-slate-400">المسؤول:</span> {project.ownerDisplayName ?? project.owner}
-              </span>
-              <span className="hidden sm:inline">
-                <span className="text-slate-400">آخر تحديث:</span> {formatDateEnCA(project.updatedAt)}
               </span>
             </div>
           </div>

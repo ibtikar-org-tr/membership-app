@@ -54,7 +54,17 @@ vmsProjectsRoute.get('/projects/direct', async (c) => {
 
 
     const projects = await listDirectProjectsForMember(c.env.VMS_DB, membershipNumber)
-    return c.json({ projects })
+    const displayNameMap = await getUserDisplayNamesByMembershipNumbers(
+      c.env.MEMBERS_DB,
+      projects.map((project) => project.owner),
+    )
+
+    return c.json({
+      projects: projects.map((project) => ({
+        ...project,
+        ownerDisplayName: displayNameMap.get(project.owner) ?? project.owner,
+      })),
+    })
   } catch (error) {
     console.error('Failed to list direct projects', error)
     return c.json({ error: 'Could not fetch direct projects.' }, 500)
