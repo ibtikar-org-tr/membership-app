@@ -1,38 +1,21 @@
 import { Link } from 'react-router-dom'
 import { useMemo } from 'react'
-import { FiChevronLeft, FiCornerDownLeft } from 'react-icons/fi'
+import { FiChevronLeft } from 'react-icons/fi'
 import type { VmsProject } from '../../../types/vms'
 import { formatDateEnCA } from '../../../utils/date-format'
-import { priorityTone, statusBadgeClass, statusLabel } from '../project-details/helpers'
+import { projectStatusAccent, statusBadgeClass, statusLabel } from '../project-details/helpers'
 import { buildLinearProjectTreeRows } from './buildLinearProjectTreeRows'
-
-function TreeIndentGuide({ depth }: { depth: number }) {
-  if (depth === 0) {
-    return null
-  }
-
-  return (
-    <div className="flex shrink-0 items-stretch" aria-hidden>
-      {Array.from({ length: depth }, (_, index) => (
-        <span
-          key={`tree-guide-${index}`}
-          className={`inline-block w-5 shrink-0 ${index === depth - 1 ? 'border-s border-slate-200' : 'border-s border-slate-100'}`}
-        />
-      ))}
-      <span className="flex w-5 shrink-0 items-center justify-center text-slate-300">
-        <FiCornerDownLeft className="h-3.5 w-3.5 rotate-180" />
-      </span>
-    </div>
-  )
-}
 
 function ProjectTreeRow({ project, depth }: { project: VmsProject; depth: number }) {
   return (
-    <li>
-      <article className="group flex items-stretch gap-2 rounded-xl border border-slate-200/80 bg-white shadow-sm transition hover:border-cyan-200/80 hover:shadow-md sm:gap-3">
-        <div className={`w-1 shrink-0 rounded-s-xl ${priorityTone(project.status)}`} aria-hidden />
-        <div className="flex min-w-0 flex-1 items-center gap-2 py-2.5 ps-1 pe-3 sm:gap-3 sm:py-3 sm:pe-4">
-          <TreeIndentGuide depth={depth} />
+    <li style={{ paddingInlineStart: depth > 0 ? `${depth * 1.25}rem` : undefined }}>
+      <article className="group flex items-stretch overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition hover:border-cyan-200/80 hover:shadow-md">
+        <div className="flex min-w-0 flex-1 items-center gap-2 py-2.5 ps-3 pe-2 sm:gap-3 sm:py-3 sm:ps-4 sm:pe-3">
+          {depth > 0 ? (
+            <span className="shrink-0 text-sm leading-none text-slate-300" aria-hidden>
+              ↳
+            </span>
+          ) : null}
           <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <span className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusBadgeClass(project.status)}`}>
@@ -62,6 +45,7 @@ function ProjectTreeRow({ project, depth }: { project: VmsProject; depth: number
             <FiChevronLeft className="h-3.5 w-3.5 transition group-hover:-translate-x-0.5" aria-hidden />
           </Link>
         </div>
+        <div className={`w-1 shrink-0 ${projectStatusAccent(project.status)}`} aria-hidden />
       </article>
     </li>
   )
@@ -86,7 +70,7 @@ export function ProjectsLinearTreeSkeleton() {
         <div
           key={`project-tree-skeleton-${key}`}
           className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3"
-          style={{ marginInlineStart: `${(key % 3) * 1.25}rem` }}
+          style={{ paddingInlineStart: `${(key % 3) * 1.25}rem` }}
         >
           <div className="h-3 w-16 animate-pulse rounded-full bg-slate-200" />
           <div className="h-4 w-40 animate-pulse rounded-md bg-slate-200" />
