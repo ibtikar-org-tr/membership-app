@@ -3,6 +3,8 @@ import type { VmsProject } from '../../../types/vms'
 export interface LinearProjectTreeRow {
   project: VmsProject
   depth: number
+  isLast: boolean
+  linePrefixes: boolean[]
 }
 
 export function buildLinearProjectTreeRows(projects: VmsProject[]): LinearProjectTreeRow[] {
@@ -30,17 +32,24 @@ export function buildLinearProjectTreeRows(projects: VmsProject[]): LinearProjec
 
   const rows: LinearProjectTreeRow[] = []
 
-  function visit(project: VmsProject, depth: number) {
-    rows.push({ project, depth })
+  function visit(project: VmsProject, depth: number, linePrefixes: boolean[], isLastSibling: boolean) {
+    rows.push({
+      project,
+      depth,
+      isLast: isLastSibling,
+      linePrefixes: [...linePrefixes],
+    })
 
-    for (const child of childrenByParentId.get(project.id) ?? []) {
-      visit(child, depth + 1)
-    }
+    const children = childrenByParentId.get(project.id) ?? []
+    children.forEach((child, index) => {
+      const isLast = index === children.length - 1
+      visit(child, depth + 1, [...linePrefixes, !isLastSibling], isLast)
+    })
   }
 
-  for (const root of roots) {
-    visit(root, 0)
-  }
+  roots.forEach((root, index) => {
+    visit(root, 0, [], index === roots.length - 1)
+  })
 
   return rows
 }
