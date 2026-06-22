@@ -74,10 +74,43 @@ interface ProjectHierarchyTreeProps {
   clickableProjectIds?: string[]
 }
 
+interface TooltipPosition {
+  x: number
+  y: number
+}
+
+function ProjectTreeTooltip({ project, position }: { project: VmsProject; position: TooltipPosition }) {
+  const description = project.description?.trim()
+
+  return (
+    <div
+      className="pointer-events-none fixed z-50 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-3 text-right shadow-lg"
+      style={{
+        left: position.x,
+        top: position.y,
+        transform: 'translate(-50%, calc(-100% - 10px))',
+      }}
+      dir="rtl"
+      role="tooltip"
+    >
+      <p className="text-sm font-semibold text-slate-900">{project.name}</p>
+      <p className="mt-2 text-xs text-slate-500">
+        <span className="font-medium text-slate-700">المسؤول:</span>{' '}
+        {project.ownerDisplayName ?? project.owner}
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-600">
+        {description}
+      </p>
+    </div>
+  )
+}
+
 export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierarchyTreeProps) {
   const [projects, setProjects] = useState<VmsProject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState<TooltipPosition | null>(null)
   const diagramRef = useRef<HTMLDivElement | null>(null)
   const diagramId = useId().replace(/:/g, '_')
   const user = useMemo(() => getStoredUser(), [])
@@ -127,6 +160,8 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
 
   const rootCount = useMemo(() => projects.filter((project) => !project.parentProjectId).length, [projects])
   const maxDepth = useMemo(() => getMaxDepth(projects), [projects])
+  const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects])
+  const hoveredProject = hoveredProjectId ? projectById.get(hoveredProjectId) ?? null : null
 
   const diagramDefinition = useMemo(() => {
     if (projects.length === 0) {
@@ -258,7 +293,8 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
             svgElement.setAttribute('aria-label', 'شجرة هرمية للمشاريع')
           }
 
-          for (const projectId of clickableProjectIdSet) {
+          for (const project of projects) {
+            const projectId = project.id
             const nodeId = toMermaidNodeId(projectId)
             const escapedNodeId = escapeAttributeValue(nodeId)
             const node = diagramRef.current.querySelector<SVGGElement>(
@@ -269,28 +305,54 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
               continue
             }
 
-            node.style.cursor = 'pointer'
-            node.classList.add('clickable-project-node')
-            node.setAttribute('tabindex', '0')
-            node.setAttribute('role', 'link')
-            node.setAttribute('aria-label', 'فتح تفاصيل المشروع')
-            node.setAttribute('title', 'اضغط لفتح تفاصيل المشروع')
-
-            const label = node.querySelector<SVGTextElement>('text')
-            if (label) {
-              label.style.fontWeight = '700'
-              label.style.textDecoration = 'underline'
-              label.style.textUnderlineOffset = '3px'
-            }
-
+            const isClickable = clickableProjectIdSet.has(projectId)
             const shape = node.querySelector<SVGElement>('rect, polygon, path, circle, ellipse')
             const defaultShapeFilter = shape?.style.filter ?? ''
 
+            if (isClickable) {
+              node.style.cursor = 'pointer'
+              node.classList.add('clickable-project-node')
+              node.setAttribute('tabindex', '0')
+              node.setAttribute('role', 'link')
+              node.setAttribute('aria-label', 'فتح تفاصيل المشروع')
+
+              const label = node.querySelector<SVGTextElement>('text')
+              if (label) {
+                label.style.fontWeight = '700'
+                label.style.textDecoration = 'underline'
+                label.style.textUnderlineOffset = '3px'
+              }
+            } else {
+              node.style.cursor = 'default'
+            }
+
+            const showTooltip = () => {
+              const nodeRect = node.getBoundingClientRect()
+              setHoveredProjectId(projectId)
+              setTooltipPosition({
+                x: nodeRect.left + nodeRect.width / 2,
+                y: nodeRect.top,
+              })
+            }
+
+            const hideTooltip = () => {
+              setHoveredProjectId(null)
+              setTooltipPosition(null)
+            }
+
             const handleOpenProject = () => {
+              if (!isClickable) {
+                return
+              }
+
               navigate(`/dashboard/projects/${projectId}`)
             }
 
             const handleKeyDown = (event: Event) => {
+              if (!isClickable) {
+                return
+              }
+
               const keyboardEvent = event as KeyboardEvent
               if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
                 keyboardEvent.preventDefault()
@@ -299,13 +361,17 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
             }
 
             const handleMouseEnter = () => {
-              if (shape) {
+              showTooltip()
+
+              if (isClickable && shape) {
                 shape.style.filter = 'drop-shadow(0 4px 10px rgba(8, 145, 178, 0.22))'
                 shape.style.strokeWidth = '3px'
               }
             }
 
             const handleMouseLeave = () => {
+              hideTooltip()
+
               if (shape) {
                 shape.style.filter = defaultShapeFilter
                 shape.style.strokeWidth = ''
@@ -313,23 +379,30 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
             }
 
             const handleFocus = () => {
-              if (shape) {
+              showTooltip()
+
+              if (isClickable && shape) {
                 shape.style.filter = 'drop-shadow(0 0 0 3px rgba(8, 145, 178, 0.35))'
               }
             }
 
             const handleBlur = () => {
+              hideTooltip()
+
               if (shape) {
                 shape.style.filter = defaultShapeFilter
               }
             }
 
-            node.addEventListener('click', handleOpenProject)
-            node.addEventListener('keydown', handleKeyDown)
             node.addEventListener('mouseenter', handleMouseEnter)
             node.addEventListener('mouseleave', handleMouseLeave)
             node.addEventListener('focus', handleFocus)
             node.addEventListener('blur', handleBlur)
+
+            if (isClickable) {
+              node.addEventListener('click', handleOpenProject)
+              node.addEventListener('keydown', handleKeyDown)
+            }
           }
         }
       } catch {
@@ -343,8 +416,10 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
 
     return () => {
       isActive = false
+      setHoveredProjectId(null)
+      setTooltipPosition(null)
     }
-  }, [clickableProjectIdSet, diagramDefinition, diagramId, navigate])
+  }, [clickableProjectIdSet, diagramDefinition, diagramId, navigate, projects])
 
   return (
     <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-6">
@@ -355,7 +430,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
           </span>
           <div>
             <h3 className="text-base font-semibold text-slate-900 sm:text-lg">شجرة المشاريع</h3>
-            <p className="mt-0.5 text-sm text-slate-500">عرض هرمي لجميع المشاريع في المنصة من الأعلى إلى الأسفل.</p>
+            <p className="mt-0.5 text-sm text-slate-500">عرض هرمي لجميع المشاريع في المنصة من الأعلى إلى الأسفل. مرّر المؤشر على أي مشروع لعرض الوصف والمالك.</p>
           </div>
         </div>
 
@@ -423,9 +498,13 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
       {!isLoading && !hasError && projects.length > 0 ? (
         <div
           ref={diagramRef}
-          className="project-tree-canvas mt-5 min-h-56 overflow-x-auto rounded-2xl border border-slate-200/80 bg-[radial-gradient(circle_at_1px_1px,#e2e8f0_1px,transparent_0)] bg-size-[20px_20px] bg-linear-to-b from-slate-50/90 to-white p-5 sm:p-8 [&_svg]:mx-auto"
+          className="project-tree-canvas relative mt-5 min-h-56 overflow-x-auto rounded-2xl border border-slate-200/80 bg-[radial-gradient(circle_at_1px_1px,#e2e8f0_1px,transparent_0)] bg-size-[20px_20px] bg-linear-to-b from-slate-50/90 to-white p-5 sm:p-8 [&_svg]:mx-auto"
           dir="ltr"
         />
+      ) : null}
+
+      {hoveredProject && tooltipPosition ? (
+        <ProjectTreeTooltip project={hoveredProject} position={tooltipPosition} />
       ) : null}
     </section>
   )
