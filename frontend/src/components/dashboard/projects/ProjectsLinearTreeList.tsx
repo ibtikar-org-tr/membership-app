@@ -6,6 +6,8 @@ import { formatDateEnCA } from '../../../utils/date-format'
 import { projectStatusAccent, statusBadgeClass, statusLabel } from '../project-details/helpers'
 import { buildLinearProjectTreeRows } from './buildLinearProjectTreeRows'
 
+const TREE_LINE = 'bg-slate-200'
+
 function TreeGuideLines({ depth, linePrefixes, isLast }: { depth: number; linePrefixes: boolean[]; isLast: boolean }) {
   if (depth === 0) {
     return null
@@ -14,14 +16,14 @@ function TreeGuideLines({ depth, linePrefixes, isLast }: { depth: number; linePr
   return (
     <div className="flex shrink-0 self-stretch" aria-hidden>
       {linePrefixes.map((continues, index) => (
-        <span key={`tree-prefix-${index}`} className="relative w-5 shrink-0">
-          {continues ? <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-slate-200" /> : null}
+        <span key={`tree-prefix-${index}`} className="relative w-5 shrink-0 self-stretch">
+          {continues ? <span className={`absolute inset-y-0 left-1/2 w-px -translate-x-1/2 ${TREE_LINE}`} /> : null}
         </span>
       ))}
-      <span className="relative w-5 shrink-0">
-        <span className="absolute left-1/2 top-0 h-1/2 w-px -translate-x-1/2 bg-slate-200" />
-        <span className="absolute top-1/2 left-0 h-px w-1/2 bg-slate-200" />
-        {!isLast ? <span className="absolute bottom-0 left-1/2 top-1/2 w-px -translate-x-1/2 bg-slate-200" /> : null}
+      <span className="relative w-5 shrink-0 self-stretch">
+        <span className={`absolute left-1/2 top-0 bottom-1/2 w-px -translate-x-1/2 ${TREE_LINE}`} />
+        <span className={`absolute top-1/2 left-0 h-px w-1/2 ${TREE_LINE}`} />
+        {!isLast ? <span className={`absolute left-1/2 top-1/2 bottom-0 w-px -translate-x-1/2 ${TREE_LINE}`} /> : null}
       </span>
     </div>
   )
@@ -32,16 +34,20 @@ function ProjectTreeRow({
   depth,
   linePrefixes,
   isLast,
+  isLastRow,
 }: {
   project: VmsProject
   depth: number
   linePrefixes: boolean[]
   isLast: boolean
+  isLastRow: boolean
 }) {
   return (
     <li className="flex items-stretch">
       <TreeGuideLines depth={depth} linePrefixes={linePrefixes} isLast={isLast} />
-      <article className="group flex min-w-0 flex-1 items-stretch overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition hover:border-cyan-200/80 hover:shadow-md">
+      <article
+        className={`group flex min-w-0 flex-1 items-stretch overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition hover:border-cyan-200/80 hover:shadow-md ${isLastRow ? '' : 'mb-2'}`}
+      >
         <div className="flex min-w-0 flex-1 items-center gap-2 py-2.5 ps-3 pe-2 sm:gap-3 sm:py-3 sm:ps-4 sm:pe-3">
           <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -82,14 +88,15 @@ export function ProjectsLinearTreeList({ projects }: { projects: VmsProject[] })
   const rows = useMemo(() => buildLinearProjectTreeRows(projects), [projects])
 
   return (
-    <ul className="grid list-none grid-cols-1 gap-2 p-0 lg:max-w-5xl">
-      {rows.map(({ project, depth, linePrefixes, isLast }) => (
+    <ul className="grid list-none grid-cols-1 gap-0 p-0 lg:max-w-5xl">
+      {rows.map(({ project, depth, linePrefixes, isLast }, index) => (
         <ProjectTreeRow
           key={project.id}
           project={project}
           depth={depth}
           linePrefixes={linePrefixes}
           isLast={isLast}
+          isLastRow={index === rows.length - 1}
         />
       ))}
     </ul>
@@ -98,22 +105,25 @@ export function ProjectsLinearTreeList({ projects }: { projects: VmsProject[] })
 
 export function ProjectsLinearTreeSkeleton() {
   return (
-    <div className="space-y-2 lg:max-w-5xl">
+    <div className="space-y-0 lg:max-w-5xl">
       {[0, 1, 2, 3, 4, 5].map((key) => {
         const depth = key % 3
+        const isLastRow = key === 5
 
         return (
           <div key={`project-tree-skeleton-${key}`} className="flex items-stretch">
             {depth > 0 ? (
-              <div className="flex shrink-0 self-stretch pe-0.5" aria-hidden>
+              <div className="flex shrink-0 self-stretch" aria-hidden>
                 {Array.from({ length: depth }, (_, index) => (
-                  <span key={index} className="relative w-5 shrink-0">
-                    <span className="absolute inset-y-0 start-1/2 w-px -translate-x-1/2 bg-slate-100" />
+                  <span key={index} className="relative w-5 shrink-0 self-stretch">
+                    <span className={`absolute inset-y-0 left-1/2 w-px -translate-x-1/2 ${TREE_LINE}`} />
                   </span>
                 ))}
               </div>
             ) : null}
-            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3">
+            <div
+              className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-3 ${isLastRow ? '' : 'mb-2'}`}
+            >
               <div className="h-3 w-16 animate-pulse rounded-full bg-slate-200" />
               <div className="h-4 w-40 animate-pulse rounded-md bg-slate-200" />
               <div className="ms-auto h-7 w-20 animate-pulse rounded-lg bg-slate-200" />
