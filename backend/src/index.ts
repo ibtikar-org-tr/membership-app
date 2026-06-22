@@ -58,7 +58,14 @@ app.post('/ms/membership-app/api/internal/cron', async (c) => {
   return c.json({ ok: true, stats })
 })
 
+app.get('/ms/membership-app/api/project-notes/:id/ws', async (c) => {
+  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('id'))
+})
+
 const publicApi = new Hono<{ Bindings: AppBindings }>()
+publicApi.get('/project-notes/:id/ws', async (c) => {
+  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('id'))
+})
 publicApi.route('/', registrationRoute)
 publicApi.route('/', statsRoute)
 publicApi.route('/', authRoute)
@@ -85,10 +92,6 @@ securedApi.put('/clubs/:id/banner', uploadClubBanner)
 
 app.route('/ms/membership-app/api', publicApi)
 app.route('/ms/membership-app/api', securedApi)
-
-app.get('/ms/membership-app/api/project-notes/:id/ws', async (c) => {
-  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('id'))
-})
 
 export default {
   fetch: app.fetch,

@@ -216,7 +216,9 @@ export async function handleProjectNoteWebSocket(
   }
 
   const url = new URL(request.url)
-  const token = url.searchParams.get('token')?.trim()
+  const queryToken = url.searchParams.get('token')?.trim()
+  const headerToken = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim()
+  const token = queryToken || headerToken
 
   if (!noteId) {
     return new Response('Missing note id.', { status: 400 })
