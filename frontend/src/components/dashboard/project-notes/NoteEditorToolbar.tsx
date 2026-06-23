@@ -6,7 +6,6 @@ import {
   FiBold,
   FiItalic,
   FiList,
-  FiType,
   FiUnderline,
 } from 'react-icons/fi'
 import { getActiveTextDirection } from './note-text-direction'
@@ -48,14 +47,7 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
   void toolbarRevision
 
   const activeDirection = getActiveTextDirection(editor)
-
-  const blockLabel = editor.isActive('heading', { level: 1 })
-    ? 'عنوان 1'
-    : editor.isActive('heading', { level: 2 })
-      ? 'عنوان 2'
-      : editor.isActive('heading', { level: 3 })
-        ? 'عنوان 3'
-        : 'فقرة'
+  const activeFontSize = editor.getAttributes('textStyle').fontSize ?? '16px'
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/80 px-3 py-2">
@@ -90,46 +82,12 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
       <span className="mx-1 h-6 w-px bg-slate-200" aria-hidden />
 
       <label className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700">
-        <FiType className="h-3.5 w-3.5 opacity-70" aria-hidden />
         <select
           disabled={disabled}
-          value={
-            editor.isActive('heading', { level: 1 })
-              ? 'h1'
-              : editor.isActive('heading', { level: 2 })
-                ? 'h2'
-                : editor.isActive('heading', { level: 3 })
-                  ? 'h3'
-                  : 'paragraph'
-          }
+          value={activeFontSize}
           onChange={(event) => {
             const value = event.target.value
-            if (value === 'paragraph') {
-              editor.chain().focus().setParagraph().run()
-              return
-            }
-
-            const level = Number(value.replace('h', '')) as 1 | 2 | 3
-            editor.chain().focus().setHeading({ level }).run()
-          }}
-          className="bg-transparent text-xs outline-none"
-          aria-label="نوع النص"
-        >
-          <option value="paragraph">{blockLabel === 'فقرة' ? 'فقرة' : blockLabel}</option>
-          <option value="h1">عنوان 1</option>
-          <option value="h2">عنوان 2</option>
-          <option value="h3">عنوان 3</option>
-        </select>
-      </label>
-
-      <label className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700">
-        <FiAlignLeft className="h-3.5 w-3.5 opacity-70" aria-hidden />
-        <select
-          disabled={disabled}
-          value={editor.getAttributes('textStyle').fontSize ?? 'default'}
-          onChange={(event) => {
-            const value = event.target.value
-            if (value === 'default') {
+            if (value === '16px') {
               editor.chain().focus().unsetMark('textStyle').run()
               return
             }
@@ -139,11 +97,10 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
           className="bg-transparent text-xs outline-none"
           aria-label="حجم الخط"
         >
-          <option value="default">الحجم الافتراضي</option>
-          <option value="12px">صغير</option>
-          <option value="16px">عادي</option>
-          <option value="20px">كبير</option>
-          <option value="28px">عنوان</option>
+          <option value="12px">12</option>
+          <option value="16px">16</option>
+          <option value="20px">20</option>
+          <option value="28px">28</option>
         </select>
       </label>
 
