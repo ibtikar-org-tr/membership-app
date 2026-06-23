@@ -10,6 +10,22 @@ import {
 } from 'react-icons/fi'
 import { getActiveTextDirection } from './note-text-direction'
 
+const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 48, 72] as const
+const DEFAULT_FONT_SIZE = '16px'
+
+function fontSizeOptionValue(size: number) {
+  return `${size}px`
+}
+
+function parseFontSizePx(value: string | null | undefined) {
+  if (!value) {
+    return null
+  }
+
+  const match = /^(\d+(?:\.\d+)?)px$/.exec(value)
+  return match ? Number(match[1]) : null
+}
+
 const toolbarBtn =
   'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-transparent px-2 text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40'
 const toolbarBtnActive = 'border-slate-200 bg-slate-100 text-slate-900'
@@ -47,7 +63,11 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
   void toolbarRevision
 
   const activeDirection = getActiveTextDirection(editor)
-  const activeFontSize = editor.getAttributes('textStyle').fontSize ?? '16px'
+  const markedFontSize = editor.getAttributes('textStyle').fontSize as string | undefined
+  const activeFontSize = markedFontSize ?? DEFAULT_FONT_SIZE
+  const parsedActiveSize = parseFontSizePx(activeFontSize)
+  const isKnownSize =
+    parsedActiveSize !== null && FONT_SIZES.includes(parsedActiveSize as (typeof FONT_SIZES)[number])
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/80 px-3 py-2">
@@ -84,10 +104,10 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
       <label className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700">
         <select
           disabled={disabled}
-          value={activeFontSize}
+          value={isKnownSize ? activeFontSize : markedFontSize ?? DEFAULT_FONT_SIZE}
           onChange={(event) => {
             const value = event.target.value
-            if (value === '16px') {
+            if (value === DEFAULT_FONT_SIZE) {
               editor.chain().focus().unsetMark('textStyle').run()
               return
             }
@@ -97,10 +117,14 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
           className="bg-transparent text-xs outline-none"
           aria-label="حجم الخط"
         >
-          <option value="12px">12</option>
-          <option value="16px">16</option>
-          <option value="20px">20</option>
-          <option value="28px">28</option>
+          {FONT_SIZES.map((size) => (
+            <option key={size} value={fontSizeOptionValue(size)}>
+              {size}
+            </option>
+          ))}
+          {!isKnownSize && markedFontSize ? (
+            <option value={markedFontSize}>{parsedActiveSize ?? markedFontSize}</option>
+          ) : null}
         </select>
       </label>
 
