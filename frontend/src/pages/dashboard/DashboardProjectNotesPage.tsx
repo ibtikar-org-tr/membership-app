@@ -12,6 +12,7 @@ import {
   updateProjectNote,
 } from '../../api/vms'
 import { CollaborativeNoteEditor } from '../../components/dashboard/project-notes/CollaborativeNoteEditor'
+import { NoteOnlineUsers, resolveOnlineNoteUsers } from '../../components/dashboard/project-notes/NoteOnlineUsers'
 import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollaboration'
 import type { VmsProject, VmsProjectMember, VmsProjectNote } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
@@ -153,13 +154,38 @@ export function DashboardProjectNotesPage() {
 
   const canEditSelectedNote = selectedNote?.canEdit ?? currentMembership?.role !== 'observer'
 
+  const currentUserDisplayName = useMemo(() => {
+    if (!user?.membershipNumber) {
+      return null
+    }
+
+    const member = projectMembers.find((item) => item.membershipNumber === user.membershipNumber)
+    return member?.displayName?.trim() || user.membershipNumber
+  }, [projectMembers, user?.membershipNumber])
+
+  const memberDisplayNameByNumber = useMemo(
+    () => new Map(projectMembers.map((member) => [member.membershipNumber, member.displayName])),
+    [projectMembers],
+  )
+
+  const resolveMemberDisplayName = useMemo(
+    () => (membershipNumber: string) => memberDisplayNameByNumber.get(membershipNumber) ?? null,
+    [memberDisplayNameByNumber],
+  )
+
   const { yDoc, awareness, connectionState, collaborators, memberColor, displayName: collaboratorDisplayName } =
     useProjectNoteCollaboration({
       noteId: selectedNote?.id ?? null,
       membershipNumber: user?.membershipNumber ?? null,
-      displayName: user?.email ?? user?.membershipNumber ?? null,
+      displayName: currentUserDisplayName,
+      resolveMemberDisplayName,
       enabled: Boolean(selectedNote && canEditSelectedNote && !isLoading),
     })
+
+  const onlineNoteUsers = useMemo(
+    () => resolveOnlineNoteUsers(collaborators, memberDisplayNameByNumber),
+    [collaborators, memberDisplayNameByNumber],
+  )
 
   const handleCreateNote = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -429,6 +455,7 @@ export function DashboardProjectNotesPage() {
                     أنشأها {selectedNote.createdByDisplayName ?? selectedNote.createdBy} • آخر تحديث{' '}
                     {formatDateEnCA(selectedNote.updatedAt)}
                   </p>
+                  {canEditSelectedNote ? <NoteOnlineUsers users={onlineNoteUsers} /> : null}
                 </div>
               </div>
 
@@ -441,7 +468,6 @@ export function DashboardProjectNotesPage() {
                 initialContent={selectedNote.content}
                 readOnly={!canEditSelectedNote}
                 connectionState={canEditSelectedNote ? connectionState : 'idle'}
-                collaborators={canEditSelectedNote ? collaborators : []}
                 memberColor={memberColor}
                 displayName={collaboratorDisplayName}
               />

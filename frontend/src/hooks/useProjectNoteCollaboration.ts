@@ -23,6 +23,7 @@ interface UseProjectNoteCollaborationOptions {
   noteId: string | null
   membershipNumber: string | null
   displayName: string | null
+  resolveMemberDisplayName?: (membershipNumber: string) => string | null | undefined
   enabled: boolean
 }
 
@@ -65,6 +66,7 @@ export function useProjectNoteCollaboration({
   noteId,
   membershipNumber,
   displayName,
+  resolveMemberDisplayName,
   enabled,
 }: UseProjectNoteCollaborationOptions) {
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
@@ -113,11 +115,16 @@ export function useProjectNoteCollaboration({
           return
         }
 
+        const resolvedDisplayName =
+          resolveMemberDisplayName?.(user.membershipNumber)?.trim() ||
+          user.displayName?.trim() ||
+          user.membershipNumber
+
         nextCollaborators.push({
           clientId,
           membershipNumber: user.membershipNumber,
-          displayName: user.displayName ?? user.membershipNumber,
-          color: user.color ?? colorForMembershipNumber(user.membershipNumber),
+          displayName: resolvedDisplayName,
+          color: colorForMembershipNumber(user.membershipNumber),
         })
       })
 
@@ -214,7 +221,7 @@ export function useProjectNoteCollaboration({
       setYDoc(null)
       setAwareness(null)
     }
-  }, [displayName, enabled, membershipNumber, noteId])
+  }, [displayName, enabled, membershipNumber, noteId, resolveMemberDisplayName])
 
   return {
     yDoc,
