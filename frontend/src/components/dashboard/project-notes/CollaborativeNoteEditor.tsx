@@ -10,6 +10,48 @@ interface CollaborativeNoteEditorProps {
   collaborators: NoteCollaborator[]
 }
 
+function applyTextareaValueToYText(textarea: HTMLTextAreaElement, yText: Y.Text) {
+  const nextValue = textarea.value
+  const currentValue = yText.toString()
+
+  if (nextValue === currentValue) {
+    return
+  }
+
+  let start = 0
+  while (
+    start < currentValue.length &&
+    start < nextValue.length &&
+    currentValue.charCodeAt(start) === nextValue.charCodeAt(start)
+  ) {
+    start += 1
+  }
+
+  let endCurrent = currentValue.length
+  let endNext = nextValue.length
+  while (
+    endCurrent > start &&
+    endNext > start &&
+    currentValue.charCodeAt(endCurrent - 1) === nextValue.charCodeAt(endNext - 1)
+  ) {
+    endCurrent -= 1
+    endNext -= 1
+  }
+
+  const deleteLength = endCurrent - start
+  const insertText = nextValue.slice(start, endNext)
+
+  yText.doc?.transact(() => {
+    if (deleteLength > 0) {
+      yText.delete(start, deleteLength)
+    }
+
+    if (insertText.length > 0) {
+      yText.insert(start, insertText)
+    }
+  })
+}
+
 export function CollaborativeNoteEditor({
   yText,
   initialContent = '',
@@ -18,6 +60,7 @@ export function CollaborativeNoteEditor({
   collaborators,
 }: CollaborativeNoteEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const isApplyingRemoteRef = useRef(false)
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -30,36 +73,43 @@ export function CollaborativeNoteEditor({
       return
     }
 
+    isApplyingRemoteRef.current = true
     textarea.value = yText.toString()
+    isApplyingRemoteRef.current = false
 
     const handleRemoteUpdate = (event: Y.YTextEvent) => {
       if (event.transaction.local) {
         return
       }
 
-      textarea.value = yText.toString()
+      const selectionStart = textarea.selectionStart
+      const selectionEnd = textarea.selectionEnd
+      const nextValue = yText.toString()
+
+      if (textarea.value === nextValue) {
+        return
+      }
+
+      isApplyingRemoteRef.current = true
+      textarea.value = nextValue
+
+      if (document.activeElement === textarea) {
+        const nextStart = Math.min(selectionStart, nextValue.length)
+        const nextEnd = Math.min(selectionEnd, nextValue.length)
+        textarea.setSelectionRange(nextStart, nextEnd)
+      }
+
+      isApplyingRemoteRef.current = false
     }
 
     yText.observe(handleRemoteUpdate)
 
     const handleInput = () => {
-      if (readOnly) {
+      if (readOnly || isApplyingRemoteRef.current) {
         return
       }
 
-      const currentValue = yText.toString()
-      const nextValue = textarea.value
-
-      if (currentValue === nextValue) {
-        return
-      }
-
-      yText.doc?.transact(() => {
-        yText.delete(0, currentValue.length)
-        if (nextValue.length > 0) {
-          yText.insert(0, nextValue)
-        }
-      })
+      applyTextareaValueToYText(textarea, yText)
     }
 
     textarea.addEventListener('input', handleInput)
@@ -79,8 +129,10 @@ export function CollaborativeNoteEditor({
     return accumulator
   }, [])
 
+  const canEdit = Boolean(yText) && !readOnly
+
   return (
-    <div className="flex h-full min-h-[24rem] flex-col rounded-2xl border border-slate-200 bg-white">
+    <div className="flex h-full min-h-96 flex-col rounded-2xl border border-slate-200 bg-white">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
           <span
@@ -119,9 +171,9 @@ export function CollaborativeNoteEditor({
 
       <textarea
         ref={textareaRef}
-        readOnly={readOnly || !yText}
+        readOnly={!canEdit}
         placeholder={readOnly ? 'يمكنك مشاهدة هذه الملاحظة فقط.' : 'ابدأ الكتابة... سيتم مزامنة التغييرات مع فريق المشروع مباشرة.'}
-        className="min-h-[22rem] flex-1 resize-none rounded-b-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+        className="min-h-88 flex-1 resize-none rounded-b-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
       />
     </div>
   )

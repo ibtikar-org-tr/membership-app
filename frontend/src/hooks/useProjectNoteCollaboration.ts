@@ -35,6 +35,17 @@ function colorForMembershipNumber(membershipNumber: string) {
   return `hsl(${hue} 70% 45%)`
 }
 
+function sendSyncUpdate(doc: Yjs.Doc, socket: WebSocket, update: Uint8Array) {
+  if (socket.readyState !== WebSocket.OPEN) {
+    return
+  }
+
+  const encoder = encoding.createEncoder()
+  encoding.writeVarUint(encoder, MESSAGE_SYNC)
+  syncProtocol.writeUpdate(encoder, update)
+  socket.send(encoding.toUint8Array(encoder))
+}
+
 export function useProjectNoteCollaboration({
   noteId,
   membershipNumber,
@@ -58,8 +69,10 @@ export function useProjectNoteCollaboration({
 
     const doc = new Yjs.Doc()
     docRef.current = doc
-    const awareness = new awarenessProtocol.Awareness(doc)
+    const text = doc.getText('content')
+    setYText(text)
 
+    const awareness = new awarenessProtocol.Awareness(doc)
     awareness.setLocalStateField('user', {
       membershipNumber,
       displayName: displayName ?? membershipNumber,
@@ -69,7 +82,6 @@ export function useProjectNoteCollaboration({
     const socket = new WebSocket(getProjectNoteWebSocketUrl(noteId, token))
     socket.binaryType = 'arraybuffer'
     setConnectionState('connecting')
-    setYText(null)
 
     const updateCollaborators = () => {
       const nextCollaborators: NoteCollaborator[] = []
@@ -93,25 +105,17 @@ export function useProjectNoteCollaboration({
 
     awareness.on('update', updateCollaborators)
 
-    socket.addEventListener('open', () => {
-      setConnectionState('connected')
-      setYText(doc.getText('content'))
+    const handleDocUpdate = (update: Uint8Array, origin: unknown) => {
+      if (origin === socket) {
+        return
+      }
 
-      const encoder = encoding.createEncoder()
-      encoding.writeVarUint(encoder, MESSAGE_SYNC)
-      syncProtocol.writeSyncStep1(encoder, doc)
-      socket.send(encoding.toUint8Array(encoder))
+      sendSyncUpdate(doc, socket, update)
+    }
 
-      const awarenessEncoder = encoding.createEncoder()
-      encoding.writeVarUint(awarenessEncoder, MESSAGE_AWARENESS)
-      encoding.writeVarUint8Array(
-        awarenessEncoder,
-        awarenessProtocol.encodeAwarenessUpdate(awareness, [doc.clientID]),
-      )
-      socket.send(encoding.toUint8Array(awarenessEncoder))
-    })
+    doc.on('update', handleDocUpdate)
 
-    socket.addEventListener('message', (event) => {
+    const handleSocketMessage = (event: MessageEvent<ArrayBuffer | string>) => {
       const payload =
         event.data instanceof ArrayBuffer ? new Uint8Array(event.data) : new TextEncoder().encode(String(event.data))
       const decoder = decoding.createDecoder(payload)
@@ -131,19 +135,37 @@ export function useProjectNoteCollaboration({
       if (messageType === MESSAGE_AWARENESS) {
         awarenessProtocol.applyAwarenessUpdate(awareness, decoding.readVarUint8Array(decoder), socket)
       }
+    }
+
+    socket.addEventListener('open', () => {
+      setConnectionState('connected')
+
+      const encoder = encoding.createEncoder()
+      encoding.writeVarUint(encoder, MESSAGE_SYNC)
+      syncProtocol.writeSyncStep1(encoder, doc)
+      socket.send(encoding.toUint8Array(encoder))
+
+      const awarenessEncoder = encoding.createEncoder()
+      encoding.writeVarUint(awarenessEncoder, MESSAGE_AWARENESS)
+      encoding.writeVarUint8Array(
+        awarenessEncoder,
+        awarenessProtocol.encodeAwarenessUpdate(awareness, [doc.clientID]),
+      )
+      socket.send(encoding.toUint8Array(awarenessEncoder))
     })
+
+    socket.addEventListener('message', handleSocketMessage)
 
     socket.addEventListener('close', () => {
       setConnectionState('idle')
-      setYText(null)
     })
 
     socket.addEventListener('error', () => {
       setConnectionState('error')
-      setYText(null)
     })
 
     return () => {
+      doc.off('update', handleDocUpdate)
       awareness.off('update', updateCollaborators)
       awareness.destroy()
       doc.destroy()

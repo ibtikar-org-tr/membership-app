@@ -214,7 +214,7 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
     }
 
     const state = Y.encodeStateAsUpdate(this.doc)
-    await this.ctx.storage.put('yjs-state', state.buffer.slice(state.byteOffset, state.byteOffset + state.byteLength))
+    await this.ctx.storage.put('yjs-state', new Uint8Array(state))
 
     if (!writeSql) {
       return
