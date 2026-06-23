@@ -8,6 +8,7 @@ import {
   fetchProjectMembers,
   fetchProjectNoteById,
   fetchProjectNotes,
+  updateProjectNote,
 } from '../../api/vms'
 import { CollaborativeNoteEditor } from '../../components/dashboard/project-notes/CollaborativeNoteEditor'
 import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollaboration'
@@ -37,6 +38,9 @@ export function DashboardProjectNotesPage() {
   const [createError, setCreateError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editingTitle, setEditingTitle] = useState('')
+  const [isSavingTitle, setIsSavingTitle] = useState(false)
 
   const selectedNoteId = searchParams.get('note')
 
@@ -123,6 +127,11 @@ export function DashboardProjectNotesPage() {
     }
   }, [notes, selectedNoteId])
 
+  useEffect(() => {
+    setIsEditingTitle(false)
+    setEditingTitle(selectedNote?.title ?? '')
+  }, [selectedNote?.id, selectedNote?.title])
+
   const managerMembershipNumbers = useMemo(
     () => new Set(projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber)),
     [projectMembers],
@@ -178,6 +187,41 @@ export function DashboardProjectNotesPage() {
       setCreateError(requestError instanceof Error ? requestError.message : 'تعذر إنشاء الملاحظة.')
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  const handleSaveTitle = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setActionError(null)
+
+    if (!selectedNote) {
+      return
+    }
+
+    const title = editingTitle.trim()
+    if (!title) {
+      setActionError('يرجى إدخال عنوان للملاحظة.')
+      return
+    }
+
+    if (title === selectedNote.title) {
+      setIsEditingTitle(false)
+      return
+    }
+
+    setIsSavingTitle(true)
+
+    try {
+      const payload = await updateProjectNote(selectedNote.id, { title })
+      setSelectedNote((current) => (current ? { ...current, ...payload.note } : current))
+      setNotes((current) =>
+        current.map((note) => (note.id === selectedNote.id ? { ...note, ...payload.note } : note)),
+      )
+      setIsEditingTitle(false)
+    } catch (requestError) {
+      setActionError(requestError instanceof Error ? requestError.message : 'تعذر تحديث عنوان الملاحظة.')
+    } finally {
+      setIsSavingTitle(false)
     }
   }
 
@@ -308,8 +352,56 @@ export function DashboardProjectNotesPage() {
           {selectedNote ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">{selectedNote.title}</h3>
+                <div className="min-w-0 flex-1">
+                  {canManageNotes && isEditingTitle ? (
+                    <form onSubmit={handleSaveTitle} className="flex flex-wrap items-center gap-2">
+                      <input
+                        value={editingTitle}
+                        onChange={(event) => setEditingTitle(event.target.value)}
+                        maxLength={160}
+                        autoFocus
+                        disabled={isSavingTitle}
+                        className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-900 outline-none ring-cyan-500 focus:ring-2 disabled:opacity-60"
+                        aria-label="عنوان الملاحظة"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSavingTitle}
+                        className="inline-flex rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingTitle ? 'جار الحفظ...' : 'حفظ'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSavingTitle}
+                        onClick={() => {
+                          setEditingTitle(selectedNote.title)
+                          setIsEditingTitle(false)
+                          setActionError(null)
+                        }}
+                        className="inline-flex rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        إلغاء
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold text-slate-900">{selectedNote.title}</h3>
+                      {canManageNotes ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingTitle(selectedNote.title)
+                            setIsEditingTitle(true)
+                            setActionError(null)
+                          }}
+                          className="inline-flex rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                        >
+                          تعديل العنوان
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
                   <p className="mt-1 text-xs text-slate-500">
                     أنشأها {selectedNote.createdByDisplayName ?? selectedNote.createdBy} • آخر تحديث{' '}
                     {formatDateEnCA(selectedNote.updatedAt)}
