@@ -43,13 +43,55 @@ function xmlTextToHtml(text: Y.XmlText) {
     .join('')
 }
 
-function blockDirAttribute(node: Y.XmlElement) {
-  const dir = node.getAttribute('dir')
-  if (dir === 'ltr' || dir === 'rtl') {
-    return ` dir="${dir}"`
+const STRONG_RTL_RE =
+  /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/
+const STRONG_LTR_RE = /[A-Za-z]/
+
+function detectDirectionFromText(text: string): 'ltr' | 'rtl' {
+  for (const char of text) {
+    if (STRONG_RTL_RE.test(char)) {
+      return 'rtl'
+    }
+
+    if (STRONG_LTR_RE.test(char)) {
+      return 'ltr'
+    }
   }
 
-  return ''
+  return 'rtl'
+}
+
+function xmlElementTextContent(node: Y.XmlElement): string {
+  const parts: string[] = []
+
+  node.forEach((child) => {
+    if (child instanceof Y.XmlText) {
+      parts.push(child.toString())
+      return
+    }
+
+    if (child instanceof Y.XmlElement) {
+      parts.push(xmlElementTextContent(child))
+    }
+  })
+
+  return parts.join('')
+}
+
+function blockDirAttribute(node: Y.XmlElement) {
+  const textDirection = node.getAttribute('textDirection')
+
+  if (textDirection === 'ltr' || textDirection === 'rtl') {
+    return ` dir="${textDirection}" data-text-direction="${textDirection}"`
+  }
+
+  const dir = node.getAttribute('dir')
+  if (dir === 'ltr' || dir === 'rtl') {
+    return ` dir="${dir}" data-text-direction="auto"`
+  }
+
+  const resolved = detectDirectionFromText(xmlElementTextContent(node))
+  return ` dir="${resolved}" data-text-direction="auto"`
 }
 
 function xmlNodeToHtml(node: Y.XmlText | Y.XmlElement): string {
