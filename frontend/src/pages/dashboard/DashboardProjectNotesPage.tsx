@@ -231,6 +231,14 @@ export function DashboardProjectNotesPage() {
       return
     }
 
+    if (
+      !window.confirm(
+        `هل أنت متأكد من حذف الملاحظة "${selectedNote.title}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+      )
+    ) {
+      return
+    }
+
     setActionError(null)
     setIsDeleting(true)
 
