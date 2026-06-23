@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { FiEdit2, FiTrash2 } from 'react-icons/fi'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   createProjectNote,
@@ -351,7 +352,7 @@ export function DashboardProjectNotesPage() {
         <div className="min-w-0">
           {selectedNote ? (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-wrap items-start gap-3">
                 <div className="min-w-0 flex-1">
                   {canManageNotes && isEditingTitle ? (
                     <form onSubmit={handleSaveTitle} className="flex flex-wrap items-center gap-2">
@@ -388,17 +389,31 @@ export function DashboardProjectNotesPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-lg font-semibold text-slate-900">{selectedNote.title}</h3>
                       {canManageNotes ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingTitle(selectedNote.title)
-                            setIsEditingTitle(true)
-                            setActionError(null)
-                          }}
-                          className="inline-flex rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
-                        >
-                          تعديل العنوان
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingTitle(selectedNote.title)
+                              setIsEditingTitle(true)
+                              setActionError(null)
+                            }}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                            title="تعديل العنوان"
+                            aria-label="تعديل العنوان"
+                          >
+                            <FiEdit2 className="h-4 w-4" aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteNote()}
+                            disabled={isDeleting}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="حذف الملاحظة"
+                            aria-label="حذف الملاحظة"
+                          >
+                            <FiTrash2 className="h-4 w-4" aria-hidden />
+                          </button>
+                        </div>
                       ) : null}
                     </div>
                   )}
@@ -407,16 +422,6 @@ export function DashboardProjectNotesPage() {
                     {formatDateEnCA(selectedNote.updatedAt)}
                   </p>
                 </div>
-                {canManageNotes ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleDeleteNote()}
-                    disabled={isDeleting}
-                    className="inline-flex rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isDeleting ? 'جار الحذف...' : 'حذف الملاحظة'}
-                  </button>
-                ) : null}
               </div>
 
               {actionError ? <p className="text-sm text-red-600">{actionError}</p> : null}
