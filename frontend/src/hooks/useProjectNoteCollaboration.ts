@@ -46,6 +46,20 @@ function sendSyncUpdate(doc: Yjs.Doc, socket: WebSocket, update: Uint8Array) {
   socket.send(encoding.toUint8Array(encoder))
 }
 
+function awarenessSnapshotSignature(
+  collaborators: NoteCollaborator[],
+  remoteCursors: NoteRemoteCursor[],
+) {
+  const collaboratorPart = collaborators
+    .map((item) => `${item.clientId}:${item.membershipNumber}:${item.displayName}:${item.color}`)
+    .join('|')
+  const cursorPart = remoteCursors
+    .map((item) => `${item.clientId}:${item.anchor}:${item.head}:${item.color}`)
+    .join('|')
+
+  return `${collaboratorPart}::${cursorPart}`
+}
+
 export function useProjectNoteCollaboration({
   noteId,
   membershipNumber,
@@ -59,6 +73,7 @@ export function useProjectNoteCollaboration({
   const docRef = useRef<Yjs.Doc | null>(null)
   const awarenessRef = useRef<awarenessProtocol.Awareness | null>(null)
   const localClientIdRef = useRef<number | null>(null)
+  const awarenessSnapshotRef = useRef('')
 
   const updateLocalCursor = (anchor: number, head: number) => {
     awarenessRef.current?.setLocalStateField('cursor', {
@@ -77,6 +92,7 @@ export function useProjectNoteCollaboration({
       setYText(null)
       awarenessRef.current = null
       localClientIdRef.current = null
+      awarenessSnapshotRef.current = ''
       return
     }
 
@@ -141,6 +157,12 @@ export function useProjectNoteCollaboration({
         })
       })
 
+      const nextSnapshot = awarenessSnapshotSignature(nextCollaborators, nextRemoteCursors)
+      if (nextSnapshot === awarenessSnapshotRef.current) {
+        return
+      }
+
+      awarenessSnapshotRef.current = nextSnapshot
       setCollaborators(nextCollaborators)
       setRemoteCursors(nextRemoteCursors)
     }
@@ -214,6 +236,7 @@ export function useProjectNoteCollaboration({
       docRef.current = null
       awarenessRef.current = null
       localClientIdRef.current = null
+      awarenessSnapshotRef.current = ''
 
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
         socket.close()

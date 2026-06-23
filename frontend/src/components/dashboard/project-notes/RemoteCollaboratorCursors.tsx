@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import type { NoteRemoteCursor } from '../../../hooks/useProjectNoteCollaboration'
 import { getTextareaCaretCoordinates, getTextareaSelectionRect } from '../../../utils/textarea-caret'
 
@@ -18,38 +18,40 @@ interface RemoteCollaboratorCursorsProps {
   contentVersion: number
 }
 
+function computePositionedCursors(
+  textarea: HTMLTextAreaElement,
+  cursors: NoteRemoteCursor[],
+): PositionedCursor[] {
+  return cursors
+    .map((cursor) => {
+      const head = Math.max(0, Math.min(cursor.head, textarea.value.length))
+      const anchor = Math.max(0, Math.min(cursor.anchor, textarea.value.length))
+      const caret = getTextareaCaretCoordinates(textarea, head)
+      const selection = getTextareaSelectionRect(textarea, anchor, head)
+
+      return {
+        ...cursor,
+        caretTop: caret.top,
+        caretLeft: caret.left,
+        caretHeight: caret.height,
+        selectionTop: selection?.top,
+        selectionLeft: selection?.left,
+        selectionWidth: selection?.width,
+        selectionHeight: selection?.height,
+      }
+    })
+    .filter((cursor) => Number.isFinite(cursor.caretTop) && Number.isFinite(cursor.caretLeft))
+}
+
+function cursorsSignature(cursors: NoteRemoteCursor[]) {
+  return cursors
+    .map((cursor) => `${cursor.clientId}:${cursor.anchor}:${cursor.head}`)
+    .join('|')
+}
+
 export function RemoteCollaboratorCursors({ textareaRef, cursors, contentVersion }: RemoteCollaboratorCursorsProps) {
-  const [positionedCursors, setPositionedCursors] = useState<PositionedCursor[]>([])
-
-  useLayoutEffect(() => {
-    const textarea = textareaRef.current
-    if (!textarea || cursors.length === 0) {
-      setPositionedCursors([])
-      return
-    }
-
-    const nextPositioned = cursors
-      .map((cursor) => {
-        const head = Math.max(0, Math.min(cursor.head, textarea.value.length))
-        const anchor = Math.max(0, Math.min(cursor.anchor, textarea.value.length))
-        const caret = getTextareaCaretCoordinates(textarea, head)
-        const selection = getTextareaSelectionRect(textarea, anchor, head)
-
-        return {
-          ...cursor,
-          caretTop: caret.top,
-          caretLeft: caret.left,
-          caretHeight: caret.height,
-          selectionTop: selection?.top,
-          selectionLeft: selection?.left,
-          selectionWidth: selection?.width,
-          selectionHeight: selection?.height,
-        }
-      })
-      .filter((cursor) => Number.isFinite(cursor.caretTop) && Number.isFinite(cursor.caretLeft))
-
-    setPositionedCursors(nextPositioned)
-  }, [contentVersion, cursors, textareaRef])
+  const [layoutTick, setLayoutTick] = useState(0)
+  const cursorSignature = cursorsSignature(cursors)
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current
@@ -58,29 +60,7 @@ export function RemoteCollaboratorCursors({ textareaRef, cursors, contentVersion
     }
 
     const recalculate = () => {
-      setPositionedCursors((current) => {
-        if (current.length === 0) {
-          return current
-        }
-
-        return current.map((cursor) => {
-          const head = Math.max(0, Math.min(cursor.head, textarea.value.length))
-          const anchor = Math.max(0, Math.min(cursor.anchor, textarea.value.length))
-          const caret = getTextareaCaretCoordinates(textarea, head)
-          const selection = getTextareaSelectionRect(textarea, anchor, head)
-
-          return {
-            ...cursor,
-            caretTop: caret.top,
-            caretLeft: caret.left,
-            caretHeight: caret.height,
-            selectionTop: selection?.top,
-            selectionLeft: selection?.left,
-            selectionWidth: selection?.width,
-            selectionHeight: selection?.height,
-          }
-        })
-      })
+      setLayoutTick((tick) => tick + 1)
     }
 
     textarea.addEventListener('scroll', recalculate)
@@ -91,6 +71,17 @@ export function RemoteCollaboratorCursors({ textareaRef, cursors, contentVersion
       window.removeEventListener('resize', recalculate)
     }
   }, [textareaRef])
+
+  const positionedCursors = useMemo(() => {
+    void layoutTick
+
+    const textarea = textareaRef.current
+    if (!textarea || cursors.length === 0) {
+      return []
+    }
+
+    return computePositionedCursors(textarea, cursors)
+  }, [contentVersion, cursorSignature, cursors, layoutTick, textareaRef])
 
   if (positionedCursors.length === 0) {
     return null
