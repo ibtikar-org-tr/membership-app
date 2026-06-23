@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type * as Y from 'yjs'
 import * as Yjs from 'yjs'
 import * as syncProtocol from 'y-protocols/sync'
@@ -46,6 +46,24 @@ function sendSyncUpdate(doc: Yjs.Doc, socket: WebSocket, update: Uint8Array) {
   socket.send(encoding.toUint8Array(encoder))
 }
 
+function sendAwarenessUpdate(
+  awareness: awarenessProtocol.Awareness,
+  socket: WebSocket,
+  changedClients: number[],
+) {
+  if (socket.readyState !== WebSocket.OPEN || changedClients.length === 0) {
+    return
+  }
+
+  const encoder = encoding.createEncoder()
+  encoding.writeVarUint(encoder, MESSAGE_AWARENESS)
+  encoding.writeVarUint8Array(
+    encoder,
+    awarenessProtocol.encodeAwarenessUpdate(awareness, changedClients),
+  )
+  socket.send(encoding.toUint8Array(encoder))
+}
+
 function awarenessSnapshotSignature(
   collaborators: NoteCollaborator[],
   remoteCursors: NoteRemoteCursor[],
@@ -74,13 +92,28 @@ export function useProjectNoteCollaboration({
   const awarenessRef = useRef<awarenessProtocol.Awareness | null>(null)
   const localClientIdRef = useRef<number | null>(null)
   const awarenessSnapshotRef = useRef('')
+  const lastPublishedCursorRef = useRef('')
 
-  const updateLocalCursor = (anchor: number, head: number) => {
-    awarenessRef.current?.setLocalStateField('cursor', {
-      anchor: Math.max(0, anchor),
-      head: Math.max(0, head),
+  const updateLocalCursor = useCallback((anchor: number, head: number) => {
+    const awareness = awarenessRef.current
+    if (!awareness) {
+      return
+    }
+
+    const nextAnchor = Math.max(0, anchor)
+    const nextHead = Math.max(0, head)
+    const nextSignature = `${nextAnchor}:${nextHead}`
+
+    if (nextSignature === lastPublishedCursorRef.current) {
+      return
+    }
+
+    lastPublishedCursorRef.current = nextSignature
+    awareness.setLocalStateField('cursor', {
+      anchor: nextAnchor,
+      head: nextHead,
     })
-  }
+  }, [])
 
   useEffect(() => {
     const token = getAccessToken()
@@ -93,6 +126,7 @@ export function useProjectNoteCollaboration({
       awarenessRef.current = null
       localClientIdRef.current = null
       awarenessSnapshotRef.current = ''
+      lastPublishedCursorRef.current = ''
       return
     }
 
@@ -167,7 +201,21 @@ export function useProjectNoteCollaboration({
       setRemoteCursors(nextRemoteCursors)
     }
 
-    awareness.on('update', syncAwarenessState)
+    const handleAwarenessUpdate = (
+      changes: { added: number[]; updated: number[]; removed: number[] },
+      origin: unknown,
+    ) => {
+      syncAwarenessState()
+
+      if (origin === socket) {
+        return
+      }
+
+      const changedClients = changes.added.concat(changes.updated).concat(changes.removed)
+      sendAwarenessUpdate(awareness, socket, changedClients)
+    }
+
+    awareness.on('update', handleAwarenessUpdate)
 
     const handleDocUpdate = (update: Uint8Array, origin: unknown) => {
       if (origin === socket) {
@@ -209,13 +257,7 @@ export function useProjectNoteCollaboration({
       syncProtocol.writeSyncStep1(encoder, doc)
       socket.send(encoding.toUint8Array(encoder))
 
-      const awarenessEncoder = encoding.createEncoder()
-      encoding.writeVarUint(awarenessEncoder, MESSAGE_AWARENESS)
-      encoding.writeVarUint8Array(
-        awarenessEncoder,
-        awarenessProtocol.encodeAwarenessUpdate(awareness, [doc.clientID]),
-      )
-      socket.send(encoding.toUint8Array(awarenessEncoder))
+      sendAwarenessUpdate(awareness, socket, [doc.clientID])
     })
 
     socket.addEventListener('message', handleSocketMessage)
@@ -230,13 +272,14 @@ export function useProjectNoteCollaboration({
 
     return () => {
       doc.off('update', handleDocUpdate)
-      awareness.off('update', syncAwarenessState)
+      awareness.off('update', handleAwarenessUpdate)
       awareness.destroy()
       doc.destroy()
       docRef.current = null
       awarenessRef.current = null
       localClientIdRef.current = null
       awarenessSnapshotRef.current = ''
+      lastPublishedCursorRef.current = ''
 
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
         socket.close()

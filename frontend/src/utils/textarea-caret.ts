@@ -30,35 +30,6 @@ export interface TextareaCaretCoordinates {
   height: number
 }
 
-function createTextareaMirror(textarea: HTMLTextAreaElement) {
-  const mirror = document.createElement('div')
-  const computed = window.getComputedStyle(textarea)
-
-  mirror.style.position = 'absolute'
-  mirror.style.visibility = 'hidden'
-  mirror.style.whiteSpace = 'pre-wrap'
-  mirror.style.wordWrap = 'break-word'
-  mirror.style.overflow = 'hidden'
-  mirror.style.top = '0'
-  mirror.style.left = '0'
-  mirror.style.height = 'auto'
-  mirror.style.padding = '0'
-  mirror.style.border = '0'
-  mirror.style.margin = '0'
-  mirror.style.width = `${textarea.clientWidth}px`
-
-  for (const property of MIRROR_PROPERTIES) {
-    mirror.style[property] = computed[property]
-  }
-
-  document.body.appendChild(mirror)
-  return { mirror, computed }
-}
-
-function removeMirror(mirror: HTMLDivElement) {
-  document.body.removeChild(mirror)
-}
-
 function lineHeightFromComputed(computed: CSSStyleDeclaration) {
   const parsedLineHeight = Number.parseFloat(computed.lineHeight)
   if (Number.isFinite(parsedLineHeight) && parsedLineHeight > 0) {
@@ -73,6 +44,42 @@ function lineHeightFromComputed(computed: CSSStyleDeclaration) {
   return 20
 }
 
+function createTextareaMirror(textarea: HTMLTextAreaElement) {
+  const mirror = document.createElement('div')
+  const computed = window.getComputedStyle(textarea)
+
+  mirror.setAttribute('dir', textarea.dir || computed.direction || 'auto')
+  mirror.style.position = 'absolute'
+  mirror.style.visibility = 'hidden'
+  mirror.style.whiteSpace = 'pre-wrap'
+  mirror.style.wordWrap = 'break-word'
+  mirror.style.wordBreak = 'break-word'
+  mirror.style.overflow = 'hidden'
+  mirror.style.top = '0'
+  mirror.style.left = '0'
+  mirror.style.height = 'auto'
+  mirror.style.padding = '0'
+  mirror.style.border = '0'
+  mirror.style.margin = '0'
+  mirror.style.width = `${textarea.clientWidth}px`
+  mirror.style.boxSizing = 'content-box'
+
+  for (const property of MIRROR_PROPERTIES) {
+    if (property === 'boxSizing') {
+      continue
+    }
+
+    mirror.style[property] = computed[property]
+  }
+
+  document.body.appendChild(mirror)
+  return { mirror, computed }
+}
+
+function removeMirror(mirror: HTMLDivElement) {
+  mirror.remove()
+}
+
 export function getTextareaCaretCoordinates(
   textarea: HTMLTextAreaElement,
   position: number,
@@ -81,9 +88,12 @@ export function getTextareaCaretCoordinates(
   const { mirror, computed } = createTextareaMirror(textarea)
   const marker = document.createElement('span')
 
-  mirror.append(document.createTextNode(textarea.value.slice(0, clampedPosition)))
-  marker.textContent = textarea.value.slice(clampedPosition) || '\u200b'
+  marker.textContent = '\u200b'
+  mirror.textContent = textarea.value.substring(0, clampedPosition)
   mirror.appendChild(marker)
+  if (clampedPosition < textarea.value.length) {
+    mirror.append(document.createTextNode(textarea.value.substring(clampedPosition)))
+  }
 
   const coordinates: TextareaCaretCoordinates = {
     top: marker.offsetTop - textarea.scrollTop,
@@ -122,10 +132,12 @@ export function getTextareaSelectionRect(
   const { mirror, computed } = createTextareaMirror(textarea)
   const selected = document.createElement('span')
 
-  mirror.append(document.createTextNode(textarea.value.slice(0, start)))
-  selected.textContent = textarea.value.slice(start, end)
+  selected.textContent = textarea.value.substring(start, end)
+  mirror.textContent = textarea.value.substring(0, start)
   mirror.appendChild(selected)
-  mirror.append(document.createTextNode(textarea.value.slice(end)))
+  if (end < textarea.value.length) {
+    mirror.append(document.createTextNode(textarea.value.substring(end)))
+  }
 
   const rect = {
     top: selected.offsetTop - textarea.scrollTop,
