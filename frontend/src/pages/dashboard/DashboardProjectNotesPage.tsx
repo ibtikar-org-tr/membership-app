@@ -14,6 +14,7 @@ import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollabora
 import type { VmsProject, VmsProjectMember, VmsProjectNote } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import { formatDateEnCA } from '../../utils/date-format'
+import { sanitizeNotePreview } from '../../utils/yjs-rich-text'
 
 export function DashboardProjectNotesPage() {
   const { projectID } = useParams()
@@ -293,7 +294,7 @@ export function DashboardProjectNotesPage() {
                   >
                     <p className="truncate text-sm font-semibold text-slate-900">{note.title}</p>
                     <p className="mt-1 line-clamp-2 text-xs text-slate-500">
-                      {note.contentPreview || 'ملاحظة فارغة'}
+                      {sanitizeNotePreview(note.contentPreview) || 'ملاحظة فارغة'}
                     </p>
                     <p className="mt-2 text-[11px] text-slate-400">{formatDateEnCA(note.updatedAt)}</p>
                   </Link>

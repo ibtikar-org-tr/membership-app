@@ -61,12 +61,19 @@ function detectDirectionFromText(text: string): 'ltr' | 'rtl' {
   return 'rtl'
 }
 
+function xmlTextToPlainText(text: Y.XmlText) {
+  return text
+    .toDelta()
+    .map((operation) => (typeof operation.insert === 'string' ? operation.insert : ''))
+    .join('')
+}
+
 function xmlElementTextContent(node: Y.XmlElement): string {
   const parts: string[] = []
 
   node.forEach((child) => {
     if (child instanceof Y.XmlText) {
-      parts.push(child.toString())
+      parts.push(xmlTextToPlainText(child))
       return
     }
 
@@ -144,7 +151,7 @@ export function xmlFragmentToPlainText(fragment: Y.XmlFragment) {
 
   fragment.forEach((node) => {
     if (node instanceof Y.XmlText) {
-      parts.push(node.toString())
+      parts.push(xmlTextToPlainText(node))
       return
     }
 
@@ -157,6 +164,24 @@ export function xmlFragmentToPlainText(fragment: Y.XmlFragment) {
   })
 
   return parts.join('').replace(/\n+/g, '\n').trim()
+}
+
+export function sanitizeNotePreview(preview: string | null | undefined) {
+  if (!preview) {
+    return null
+  }
+
+  const stripped = preview
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return stripped || null
 }
 
 export function extractNoteContent(doc: Y.Doc) {
@@ -177,7 +202,7 @@ export function extractNoteContent(doc: Y.Doc) {
 }
 
 function createContentPreview(content: string) {
-  const normalized = content.replace(/\s+/g, ' ').trim()
+  const normalized = sanitizeNotePreview(content)
   if (!normalized) {
     return null
   }
