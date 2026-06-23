@@ -43,6 +43,15 @@ function xmlTextToHtml(text: Y.XmlText) {
     .join('')
 }
 
+function blockDirAttribute(node: Y.XmlElement) {
+  const dir = node.getAttribute('dir')
+  if (dir === 'ltr' || dir === 'rtl') {
+    return ` dir="${dir}"`
+  }
+
+  return ''
+}
+
 function xmlNodeToHtml(node: Y.XmlText | Y.XmlElement): string {
   if (node instanceof Y.XmlText) {
     return xmlTextToHtml(node)
@@ -55,19 +64,19 @@ function xmlNodeToHtml(node: Y.XmlText | Y.XmlElement): string {
 
   switch (node.nodeName) {
     case 'paragraph':
-      return `<p>${inner || '<br>'}</p>`
+      return `<p${blockDirAttribute(node)}>${inner || '<br>'}</p>`
     case 'heading': {
       const level = node.getAttribute('level') ?? 1
-      return `<h${level}>${inner}</h${level}>`
+      return `<h${level}${blockDirAttribute(node)}>${inner}</h${level}>`
     }
     case 'bulletList':
       return `<ul>${inner}</ul>`
     case 'orderedList':
       return `<ol>${inner}</ol>`
     case 'listItem':
-      return `<li>${inner}</li>`
+      return `<li${blockDirAttribute(node)}>${inner}</li>`
     case 'blockquote':
-      return `<blockquote>${inner}</blockquote>`
+      return `<blockquote${blockDirAttribute(node)}>${inner}</blockquote>`
     case 'codeBlock':
       return `<pre><code>${inner}</code></pre>`
     case 'hardBreak':

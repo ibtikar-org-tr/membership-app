@@ -1,12 +1,15 @@
 import type { Editor } from '@tiptap/react'
+import { useEffect, useState } from 'react'
 import {
   FiAlignLeft,
+  FiAlignRight,
   FiBold,
   FiItalic,
   FiList,
   FiType,
   FiUnderline,
 } from 'react-icons/fi'
+import { getActiveTextDirection } from './note-text-direction'
 
 const toolbarBtn =
   'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-transparent px-2 text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40'
@@ -18,9 +21,33 @@ interface NoteEditorToolbarProps {
 }
 
 export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolbarProps) {
+  const [toolbarRevision, setToolbarRevision] = useState(0)
+
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+
+    const refreshToolbar = () => {
+      setToolbarRevision((value) => value + 1)
+    }
+
+    editor.on('selectionUpdate', refreshToolbar)
+    editor.on('transaction', refreshToolbar)
+
+    return () => {
+      editor.off('selectionUpdate', refreshToolbar)
+      editor.off('transaction', refreshToolbar)
+    }
+  }, [editor])
+
   if (!editor) {
     return null
   }
+
+  void toolbarRevision
+
+  const activeDirection = getActiveTextDirection(editor)
 
   const blockLabel = editor.isActive('heading', { level: 1 })
     ? 'عنوان 1'
@@ -119,6 +146,38 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
           <option value="28px">عنوان</option>
         </select>
       </label>
+
+      <span className="mx-1 h-6 w-px bg-slate-200" aria-hidden />
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => editor.chain().focus().setTextDirection('rtl').run()}
+        className={`${toolbarBtn} ${activeDirection === 'rtl' ? toolbarBtnActive : ''}`}
+        title="من اليمين لليسار"
+      >
+        <FiAlignRight className="h-4 w-4" aria-hidden />
+        <span className="ms-1 text-[10px] font-bold">RTL</span>
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => editor.chain().focus().setTextDirection('ltr').run()}
+        className={`${toolbarBtn} ${activeDirection === 'ltr' ? toolbarBtnActive : ''}`}
+        title="من اليسار لليمين"
+      >
+        <FiAlignLeft className="h-4 w-4" aria-hidden />
+        <span className="ms-1 text-[10px] font-bold">LTR</span>
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => editor.chain().focus().setTextDirection('auto').run()}
+        className={`${toolbarBtn} ${activeDirection === 'auto' ? toolbarBtnActive : ''}`}
+        title="اتجاه تلقائي"
+      >
+        <span className="text-[10px] font-bold">Auto</span>
+      </button>
 
       <span className="mx-1 h-6 w-px bg-slate-200" aria-hidden />
 

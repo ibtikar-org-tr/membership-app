@@ -11,6 +11,7 @@ import type * as Y from 'yjs'
 import { plainTextToHtml } from '../../../utils/yjs-rich-text'
 import { NoteEditorToolbar } from './NoteEditorToolbar'
 import { NoteFontSize } from './note-font-size'
+import { NoteTextDirection } from './note-text-direction'
 
 interface CollaborativeNoteEditorProps {
   noteId: string
@@ -56,6 +57,7 @@ export function CollaborativeNoteEditor({
             }),
             Underline,
             NoteFontSize,
+            NoteTextDirection,
             Placeholder.configure({
               placeholder: 'ابدأ الكتابة... سيتم مزامنة التغييرات والتنسيق مع فريق المشروع مباشرة.',
             }),
@@ -76,6 +78,7 @@ export function CollaborativeNoteEditor({
             StarterKit,
             Underline,
             NoteFontSize,
+            NoteTextDirection,
             Placeholder.configure({
               placeholder: readOnly ? 'يمكنك مشاهدة هذه الملاحظة فقط.' : 'جار تحميل المحرر...',
             }),
