@@ -147,6 +147,14 @@ const router = createBrowserRouter([
         },
       },
       {
+        path: 'projects/:projectID/notes',
+        hydrateFallbackElement: <div />,
+        lazy: async () => {
+          const { DashboardProjectNotesPage } = await import('../pages/dashboard/DashboardProjectNotesPage')
+          return { Component: DashboardProjectNotesPage }
+        },
+      },
+      {
         path: 'volunteering',
         hydrateFallbackElement: <div />,
         lazy: async () => {

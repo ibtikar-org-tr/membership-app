@@ -44,11 +44,27 @@ export interface R2HttpMetadata {
   expires?: Date
 }
 
+export interface DurableObjectNamespaceLike<T = unknown> {
+  idFromName(name: string): DurableObjectIdLike
+  get(id: DurableObjectIdLike): DurableObjectStubLike<T>
+  getByName(name: string): DurableObjectStubLike<T>
+}
+
+export interface DurableObjectIdLike {
+  toString(): string
+}
+
+export interface DurableObjectStubLike<T = unknown> {
+  fetch(input: RequestInfo, init?: RequestInit): Promise<Response>
+  id: DurableObjectIdLike
+}
+
 export interface AppBindings {
   MEMBERS_DB: D1DatabaseLike
   VMS_DB: D1DatabaseLike
   VMS_LOGS_DB: D1DatabaseLike
   MY_BUCKET: R2BucketLike
+  PROJECT_NOTE_ROOM: DurableObjectNamespaceLike
   TELEGRAM_MS_SERVICE?: Fetcher
   MEMBERSHIP_NUMBER_PREFIX: string
   SMTP_HOST: string

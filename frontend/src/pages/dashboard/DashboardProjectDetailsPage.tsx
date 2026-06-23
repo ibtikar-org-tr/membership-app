@@ -701,6 +701,7 @@ export function DashboardProjectDetailsPage() {
         eventsPath={`/dashboard/projects/${project.id}/events`}
         clubsPath={`/dashboard/projects/${project.id}/clubs`}
         positionsPath={`/dashboard/projects/${project.id}/positions`}
+        notesPath={`/dashboard/projects/${project.id}/notes`}
         subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}
         onOpenMembers={() => setIsMembersOpen(true)}
         onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}

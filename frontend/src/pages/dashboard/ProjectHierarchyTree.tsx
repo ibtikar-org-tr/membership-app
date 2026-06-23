@@ -157,7 +157,6 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
     }
   }, [user?.membershipNumber])
 
-  const rootCount = useMemo(() => projects.filter((project) => !project.parentProjectId).length, [projects])
   const maxDepth = useMemo(() => getMaxDepth(projects), [projects])
   const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects])
   const hoveredProject = hoveredProjectId ? projectById.get(hoveredProjectId) ?? null : null
@@ -437,9 +436,6 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
               {projects.length} مشروع
-            </span>
-            <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-              {rootCount} رئيسي
             </span>
             {maxDepth > 1 ? (
               <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
