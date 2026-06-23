@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type * as Y from 'yjs'
-import type { NoteCollaborator } from '../../../hooks/useProjectNoteCollaboration'
+import type { NoteCollaborator, NoteRemoteCursor } from '../../../hooks/useProjectNoteCollaboration'
+import { RemoteCollaboratorCursors } from './RemoteCollaboratorCursors'
 
 interface CollaborativeNoteEditorProps {
   yText: Y.Text | null
@@ -8,6 +9,8 @@ interface CollaborativeNoteEditorProps {
   readOnly?: boolean
   connectionState: 'idle' | 'connecting' | 'connected' | 'error'
   collaborators: NoteCollaborator[]
+  remoteCursors: NoteRemoteCursor[]
+  onLocalCursorChange?: (anchor: number, head: number) => void
 }
 
 function applyTextareaValueToYText(textarea: HTMLTextAreaElement, yText: Y.Text) {
@@ -52,15 +55,25 @@ function applyTextareaValueToYText(textarea: HTMLTextAreaElement, yText: Y.Text)
   })
 }
 
+function publishCursor(
+  textarea: HTMLTextAreaElement,
+  onLocalCursorChange: ((anchor: number, head: number) => void) | undefined,
+) {
+  onLocalCursorChange?.(textarea.selectionStart, textarea.selectionEnd)
+}
+
 export function CollaborativeNoteEditor({
   yText,
   initialContent = '',
   readOnly = false,
   connectionState,
   collaborators,
+  remoteCursors,
+  onLocalCursorChange,
 }: CollaborativeNoteEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const isApplyingRemoteRef = useRef(false)
+  const [contentVersion, setContentVersion] = useState(0)
 
   useEffect(() => {
     const textarea = textareaRef.current
@@ -70,12 +83,15 @@ export function CollaborativeNoteEditor({
 
     if (!yText) {
       textarea.value = initialContent
+      setContentVersion((value) => value + 1)
       return
     }
 
     isApplyingRemoteRef.current = true
     textarea.value = yText.toString()
     isApplyingRemoteRef.current = false
+    setContentVersion((value) => value + 1)
+    publishCursor(textarea, onLocalCursorChange)
 
     const handleRemoteUpdate = (event: Y.YTextEvent) => {
       if (event.transaction.local) {
@@ -100,6 +116,8 @@ export function CollaborativeNoteEditor({
       }
 
       isApplyingRemoteRef.current = false
+      setContentVersion((value) => value + 1)
+      publishCursor(textarea, onLocalCursorChange)
     }
 
     yText.observe(handleRemoteUpdate)
@@ -110,15 +128,33 @@ export function CollaborativeNoteEditor({
       }
 
       applyTextareaValueToYText(textarea, yText)
+      setContentVersion((value) => value + 1)
+      publishCursor(textarea, onLocalCursorChange)
+    }
+
+    const handleSelectionChange = () => {
+      if (document.activeElement !== textarea || isApplyingRemoteRef.current) {
+        return
+      }
+
+      publishCursor(textarea, onLocalCursorChange)
     }
 
     textarea.addEventListener('input', handleInput)
+    textarea.addEventListener('keyup', handleSelectionChange)
+    textarea.addEventListener('click', handleSelectionChange)
+    textarea.addEventListener('select', handleSelectionChange)
+    document.addEventListener('selectionchange', handleSelectionChange)
 
     return () => {
       yText.unobserve(handleRemoteUpdate)
       textarea.removeEventListener('input', handleInput)
+      textarea.removeEventListener('keyup', handleSelectionChange)
+      textarea.removeEventListener('click', handleSelectionChange)
+      textarea.removeEventListener('select', handleSelectionChange)
+      document.removeEventListener('selectionchange', handleSelectionChange)
     }
-  }, [initialContent, readOnly, yText])
+  }, [initialContent, onLocalCursorChange, readOnly, yText])
 
   const uniqueCollaborators = collaborators.reduce<NoteCollaborator[]>((accumulator, collaborator) => {
     if (accumulator.some((item) => item.membershipNumber === collaborator.membershipNumber)) {
@@ -158,7 +194,7 @@ export function CollaborativeNoteEditor({
           <div className="flex flex-wrap items-center gap-2">
             {uniqueCollaborators.map((collaborator) => (
               <span
-                key={`${collaborator.membershipNumber}-${collaborator.clientId}`}
+                key={collaborator.membershipNumber}
                 className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700"
               >
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: collaborator.color }} />
@@ -169,12 +205,23 @@ export function CollaborativeNoteEditor({
         ) : null}
       </div>
 
-      <textarea
-        ref={textareaRef}
-        readOnly={!canEdit}
-        placeholder={readOnly ? 'يمكنك مشاهدة هذه الملاحظة فقط.' : 'ابدأ الكتابة... سيتم مزامنة التغييرات مع فريق المشروع مباشرة.'}
-        className="min-h-88 flex-1 resize-none rounded-b-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
-      />
+      <div className="relative min-h-88 flex-1">
+        <textarea
+          ref={textareaRef}
+          readOnly={!canEdit}
+          placeholder={
+            readOnly
+              ? 'يمكنك مشاهدة هذه الملاحظة فقط.'
+              : 'ابدأ الكتابة... سيتم مزامنة التغييرات مع فريق المشروع مباشرة.'
+          }
+          className="min-h-88 h-full w-full resize-none rounded-b-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+        />
+        <RemoteCollaboratorCursors
+          textareaRef={textareaRef}
+          cursors={remoteCursors}
+          contentVersion={contentVersion}
+        />
+      </div>
     </div>
   )
 }

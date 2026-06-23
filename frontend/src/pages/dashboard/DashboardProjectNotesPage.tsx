@@ -142,7 +142,7 @@ export function DashboardProjectNotesPage() {
 
   const canEditSelectedNote = selectedNote?.canEdit ?? currentMembership?.role !== 'observer'
 
-  const { yText, connectionState, collaborators } = useProjectNoteCollaboration({
+  const { yText, connectionState, collaborators, remoteCursors, updateLocalCursor } = useProjectNoteCollaboration({
     noteId: selectedNote?.id ?? null,
     membershipNumber: user?.membershipNumber ?? null,
     displayName: user?.email ?? user?.membershipNumber ?? null,
@@ -333,6 +333,8 @@ export function DashboardProjectNotesPage() {
                 readOnly={!canEditSelectedNote}
                 connectionState={canEditSelectedNote ? connectionState : 'idle'}
                 collaborators={canEditSelectedNote ? collaborators : []}
+                remoteCursors={canEditSelectedNote ? remoteCursors : []}
+                onLocalCursorChange={canEditSelectedNote ? updateLocalCursor : undefined}
               />
 
               {!canEditSelectedNote ? (
