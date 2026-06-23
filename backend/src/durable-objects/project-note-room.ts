@@ -4,21 +4,13 @@ import * as syncProtocol from 'y-protocols/sync'
 import * as awarenessProtocol from 'y-protocols/awareness'
 import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
-import { getProjectNoteById, updateProjectNoteContent } from '../repositories/vms-project-notes.repository'
+import { updateProjectNoteContent } from '../repositories/vms-project-notes.repository'
 import type { AppBindings } from '../types/bindings'
+import { extractNoteContent } from '../utils/yjs-rich-text'
 
 const MESSAGE_SYNC = 0
 const MESSAGE_AWARENESS = 1
 const PERSIST_DEBOUNCE_MS = 1500
-
-function createContentPreview(content: string) {
-  const normalized = content.replace(/\s+/g, ' ').trim()
-  if (!normalized) {
-    return null
-  }
-
-  return normalized.length > 200 ? `${normalized.slice(0, 197)}...` : normalized
-}
 
 export class ProjectNoteRoom extends DurableObject<AppBindings> {
   private doc: Y.Doc | null = null
@@ -116,12 +108,6 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
       const storedState = await this.ctx.storage.get<ArrayBuffer>('yjs-state')
       if (storedState) {
         Y.applyUpdate(this.doc, new Uint8Array(storedState))
-      } else {
-        const note = await getProjectNoteById(this.env.VMS_DB, noteId)
-        if (note?.content) {
-          this.doc.getText('content').insert(0, note.content)
-          await this.persistDocState(noteId, false)
-        }
       }
 
       this.doc.on('update', (update: Uint8Array, origin: unknown) => {
@@ -220,8 +206,8 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
       return
     }
 
-    const content = this.doc.getText('content').toString()
-    await updateProjectNoteContent(this.env.VMS_DB, noteId, content, createContentPreview(content))
+    const { html, preview } = extractNoteContent(this.doc)
+    await updateProjectNoteContent(this.env.VMS_DB, noteId, html, preview)
   }
 }
 

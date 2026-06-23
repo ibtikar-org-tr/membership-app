@@ -142,12 +142,13 @@ export function DashboardProjectNotesPage() {
 
   const canEditSelectedNote = selectedNote?.canEdit ?? currentMembership?.role !== 'observer'
 
-  const { yText, connectionState, collaborators, remoteCursors, updateLocalCursor } = useProjectNoteCollaboration({
-    noteId: selectedNote?.id ?? null,
-    membershipNumber: user?.membershipNumber ?? null,
-    displayName: user?.email ?? user?.membershipNumber ?? null,
-    enabled: Boolean(selectedNote && canEditSelectedNote && !isLoading),
-  })
+  const { yDoc, awareness, connectionState, collaborators, memberColor, displayName: collaboratorDisplayName } =
+    useProjectNoteCollaboration({
+      noteId: selectedNote?.id ?? null,
+      membershipNumber: user?.membershipNumber ?? null,
+      displayName: user?.email ?? user?.membershipNumber ?? null,
+      enabled: Boolean(selectedNote && canEditSelectedNote && !isLoading),
+    })
 
   const handleCreateNote = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -328,13 +329,15 @@ export function DashboardProjectNotesPage() {
               {actionError ? <p className="text-sm text-red-600">{actionError}</p> : null}
 
               <CollaborativeNoteEditor
-                yText={canEditSelectedNote ? yText : null}
+                noteId={selectedNote.id}
+                yDoc={canEditSelectedNote ? yDoc : null}
+                awareness={canEditSelectedNote ? awareness : null}
                 initialContent={selectedNote.content}
                 readOnly={!canEditSelectedNote}
                 connectionState={canEditSelectedNote ? connectionState : 'idle'}
                 collaborators={canEditSelectedNote ? collaborators : []}
-                remoteCursors={canEditSelectedNote ? remoteCursors : []}
-                onLocalCursorChange={canEditSelectedNote ? updateLocalCursor : undefined}
+                memberColor={memberColor}
+                displayName={collaboratorDisplayName}
               />
 
               {!canEditSelectedNote ? (

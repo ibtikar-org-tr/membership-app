@@ -1,164 +1,138 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import Underline from '@tiptap/extension-underline'
+import Placeholder from '@tiptap/extension-placeholder'
+import Collaboration from '@tiptap/extension-collaboration'
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
+import type { NoteCollaborator } from '../../../hooks/useProjectNoteCollaboration'
+import type * as awarenessProtocol from 'y-protocols/awareness'
 import type * as Y from 'yjs'
-import type { NoteCollaborator, NoteRemoteCursor } from '../../../hooks/useProjectNoteCollaboration'
-import { RemoteCollaboratorCursors } from './RemoteCollaboratorCursors'
+import { plainTextToHtml } from '../../../utils/yjs-rich-text'
+import { NoteEditorToolbar } from './NoteEditorToolbar'
+import { NoteFontSize } from './note-font-size'
 
 interface CollaborativeNoteEditorProps {
-  yText: Y.Text | null
+  noteId: string
+  yDoc: Y.Doc | null
+  awareness: awarenessProtocol.Awareness | null
   initialContent?: string
   readOnly?: boolean
   connectionState: 'idle' | 'connecting' | 'connected' | 'error'
   collaborators: NoteCollaborator[]
-  remoteCursors: NoteRemoteCursor[]
-  onLocalCursorChange?: (anchor: number, head: number) => void
+  memberColor: string
+  displayName: string
 }
 
-function applyTextareaValueToYText(textarea: HTMLTextAreaElement, yText: Y.Text) {
-  const nextValue = textarea.value
-  const currentValue = yText.toString()
-
-  if (nextValue === currentValue) {
-    return
-  }
-
-  let start = 0
-  while (
-    start < currentValue.length &&
-    start < nextValue.length &&
-    currentValue.charCodeAt(start) === nextValue.charCodeAt(start)
-  ) {
-    start += 1
-  }
-
-  let endCurrent = currentValue.length
-  let endNext = nextValue.length
-  while (
-    endCurrent > start &&
-    endNext > start &&
-    currentValue.charCodeAt(endCurrent - 1) === nextValue.charCodeAt(endNext - 1)
-  ) {
-    endCurrent -= 1
-    endNext -= 1
-  }
-
-  const deleteLength = endCurrent - start
-  const insertText = nextValue.slice(start, endNext)
-
-  yText.doc?.transact(() => {
-    if (deleteLength > 0) {
-      yText.delete(start, deleteLength)
-    }
-
-    if (insertText.length > 0) {
-      yText.insert(start, insertText)
-    }
-  })
-}
-
-function publishCursor(
-  textarea: HTMLTextAreaElement,
-  onLocalCursorChange: ((anchor: number, head: number) => void) | undefined,
-) {
-  onLocalCursorChange?.(textarea.selectionStart, textarea.selectionEnd)
-}
+const editorSurfaceClass =
+  '[&_.ProseMirror]:min-h-88 [&_.ProseMirror]:px-4 [&_.ProseMirror]:py-4 [&_.ProseMirror]:text-base [&_.ProseMirror]:leading-8 [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_.is-empty:first-child::before]:text-slate-400'
 
 export function CollaborativeNoteEditor({
-  yText,
+  noteId,
+  yDoc,
+  awareness,
   initialContent = '',
   readOnly = false,
   connectionState,
   collaborators,
-  remoteCursors,
-  onLocalCursorChange,
+  memberColor,
+  displayName,
 }: CollaborativeNoteEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const isApplyingRemoteRef = useRef(false)
-  const [contentVersion, setContentVersion] = useState(0)
+  const hasSeededRef = useRef(false)
+  const seedNoteIdRef = useRef<string | null>(null)
+
+  const isCollaborative = Boolean(yDoc && awareness && !readOnly)
+  const canEdit = isCollaborative && connectionState === 'connected'
+
+  const staticContent = useMemo(() => plainTextToHtml(initialContent), [initialContent])
+
+  const editor = useEditor(
+    {
+      editable: readOnly ? false : connectionState === 'connected',
+      extensions: isCollaborative
+        ? [
+            StarterKit.configure({
+              history: false,
+            }),
+            Underline,
+            NoteFontSize,
+            Placeholder.configure({
+              placeholder: 'ابدأ الكتابة... سيتم مزامنة التغييرات والتنسيق مع فريق المشروع مباشرة.',
+            }),
+            Collaboration.configure({
+              document: yDoc!,
+            }),
+            CollaborationCursor.configure({
+              provider: {
+                awareness: awareness!,
+              },
+              user: {
+                name: displayName,
+                color: memberColor,
+              },
+            }),
+          ]
+        : [
+            StarterKit,
+            Underline,
+            NoteFontSize,
+            Placeholder.configure({
+              placeholder: readOnly ? 'يمكنك مشاهدة هذه الملاحظة فقط.' : 'جار تحميل المحرر...',
+            }),
+          ],
+      content: readOnly ? staticContent : undefined,
+      editorProps: {
+        attributes: {
+          class: 'note-rich-text',
+          dir: 'auto',
+        },
+      },
+    },
+    [noteId, readOnly, isCollaborative, yDoc, awareness, memberColor, displayName, connectionState],
+  )
 
   useEffect(() => {
-    const textarea = textareaRef.current
-    if (!textarea) {
+    if (seedNoteIdRef.current !== noteId) {
+      seedNoteIdRef.current = noteId
+      hasSeededRef.current = false
+    }
+  }, [noteId])
+
+  useEffect(() => {
+    if (!editor || !yDoc || readOnly || connectionState !== 'connected' || hasSeededRef.current) {
       return
     }
 
-    if (!yText) {
-      textarea.value = initialContent
-      setContentVersion((value) => value + 1)
+    const fragment = yDoc.getXmlFragment('default')
+    if (fragment.length > 0) {
+      hasSeededRef.current = true
       return
     }
 
-    isApplyingRemoteRef.current = true
-    textarea.value = yText.toString()
-    isApplyingRemoteRef.current = false
-    setContentVersion((value) => value + 1)
-    publishCursor(textarea, onLocalCursorChange)
-
-    const handleRemoteUpdate = (event: Y.YTextEvent) => {
-      if (event.transaction.local) {
-        return
-      }
-
-      const selectionStart = textarea.selectionStart
-      const selectionEnd = textarea.selectionEnd
-      const nextValue = yText.toString()
-
-      if (textarea.value === nextValue) {
-        return
-      }
-
-      isApplyingRemoteRef.current = true
-      textarea.value = nextValue
-
-      if (document.activeElement === textarea) {
-        const nextStart = Math.min(selectionStart, nextValue.length)
-        const nextEnd = Math.min(selectionEnd, nextValue.length)
-        textarea.setSelectionRange(nextStart, nextEnd)
-      }
-
-      isApplyingRemoteRef.current = false
-      setContentVersion((value) => value + 1)
-      publishCursor(textarea, onLocalCursorChange)
+    if (!initialContent.trim()) {
+      hasSeededRef.current = true
+      return
     }
 
-    yText.observe(handleRemoteUpdate)
+    editor.commands.setContent(plainTextToHtml(initialContent), false)
+    hasSeededRef.current = true
+  }, [connectionState, editor, initialContent, readOnly, yDoc])
 
-    const handleInput = () => {
-      if (readOnly || isApplyingRemoteRef.current) {
-        return
-      }
-
-      applyTextareaValueToYText(textarea, yText)
-      setContentVersion((value) => value + 1)
-      publishCursor(textarea, onLocalCursorChange)
+  useEffect(() => {
+    if (!editor) {
+      return
     }
 
-    const handleSelectionChange = () => {
-      if (document.activeElement !== textarea || isApplyingRemoteRef.current) {
-        return
-      }
+    editor.setEditable(!readOnly && connectionState === 'connected')
+  }, [connectionState, editor, readOnly])
 
-      publishCursor(textarea, onLocalCursorChange)
+  useEffect(() => {
+    if (!editor || !readOnly) {
+      return
     }
 
-    textarea.addEventListener('input', handleInput)
-    textarea.addEventListener('keydown', handleSelectionChange)
-    textarea.addEventListener('keyup', handleSelectionChange)
-    textarea.addEventListener('click', handleSelectionChange)
-    textarea.addEventListener('pointerup', handleSelectionChange)
-    textarea.addEventListener('select', handleSelectionChange)
-    document.addEventListener('selectionchange', handleSelectionChange)
-
-    return () => {
-      yText.unobserve(handleRemoteUpdate)
-      textarea.removeEventListener('input', handleInput)
-      textarea.removeEventListener('keydown', handleSelectionChange)
-      textarea.removeEventListener('keyup', handleSelectionChange)
-      textarea.removeEventListener('click', handleSelectionChange)
-      textarea.removeEventListener('pointerup', handleSelectionChange)
-      textarea.removeEventListener('select', handleSelectionChange)
-      document.removeEventListener('selectionchange', handleSelectionChange)
-    }
-  }, [initialContent, onLocalCursorChange, readOnly, yText])
+    editor.commands.setContent(staticContent, false)
+  }, [editor, readOnly, staticContent])
 
   const uniqueCollaborators = collaborators.reduce<NoteCollaborator[]>((accumulator, collaborator) => {
     if (accumulator.some((item) => item.membershipNumber === collaborator.membershipNumber)) {
@@ -169,10 +143,31 @@ export function CollaborativeNoteEditor({
     return accumulator
   }, [])
 
-  const canEdit = Boolean(yText) && !readOnly
-
   return (
-    <div className="flex h-full min-h-96 flex-col rounded-2xl border border-slate-200 bg-white">
+    <div className="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <style>{`
+        .note-rich-text .collaboration-cursor__caret {
+          position: relative;
+          margin-inline: -1px;
+          border-inline-start-width: 2px;
+          border-inline-start-style: solid;
+          pointer-events: none;
+        }
+        .note-rich-text .collaboration-cursor__label {
+          position: absolute;
+          top: -1.35em;
+          inset-inline-start: -1px;
+          padding: 2px 6px;
+          border-radius: 4px 4px 4px 0;
+          font-size: 10px;
+          font-weight: 600;
+          line-height: 1;
+          color: #fff;
+          white-space: nowrap;
+          user-select: none;
+          pointer-events: none;
+        }
+      `}</style>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
           <span
@@ -186,13 +181,15 @@ export function CollaborativeNoteEditor({
                     : 'bg-slate-300'
             }`}
           />
-          {connectionState === 'connected'
-            ? 'متصل — التحرير المشترك مفعّل'
-            : connectionState === 'connecting'
-              ? 'جار الاتصال بالمحرر المشترك...'
-              : connectionState === 'error'
-                ? 'تعذر الاتصال بالمحرر المشترك'
-                : 'في انتظار الاتصال'}
+          {readOnly
+            ? 'وضع المشاهدة فقط'
+            : connectionState === 'connected'
+              ? 'متصل — التحرير المشترك مفعّل'
+              : connectionState === 'connecting'
+                ? 'جار الاتصال بالمحرر المشترك...'
+                : connectionState === 'error'
+                  ? 'تعذر الاتصال بالمحرر المشترك'
+                  : 'في انتظار الاتصال'}
         </div>
         {uniqueCollaborators.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -209,22 +206,10 @@ export function CollaborativeNoteEditor({
         ) : null}
       </div>
 
-      <div className="relative min-h-88 flex-1">
-        <textarea
-          ref={textareaRef}
-          readOnly={!canEdit}
-          placeholder={
-            readOnly
-              ? 'يمكنك مشاهدة هذه الملاحظة فقط.'
-              : 'ابدأ الكتابة... سيتم مزامنة التغييرات مع فريق المشروع مباشرة.'
-          }
-          className="min-h-88 h-full w-full resize-none rounded-b-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
-        />
-        <RemoteCollaboratorCursors
-          textareaRef={textareaRef}
-          cursors={remoteCursors}
-          contentVersion={contentVersion}
-        />
+      <NoteEditorToolbar editor={editor} disabled={!canEdit} />
+
+      <div className={`relative flex-1 overflow-auto ${editorSurfaceClass}`}>
+        <EditorContent editor={editor} />
       </div>
     </div>
   )

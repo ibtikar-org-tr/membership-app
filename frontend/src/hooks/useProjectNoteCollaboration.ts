@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type * as Y from 'yjs'
 import * as Yjs from 'yjs'
 import * as syncProtocol from 'y-protocols/sync'
@@ -17,15 +17,6 @@ export interface NoteCollaborator {
   membershipNumber: string
   displayName: string
   color: string
-}
-
-export interface NoteRemoteCursor {
-  clientId: number
-  membershipNumber: string
-  displayName: string
-  color: string
-  anchor: number
-  head: number
 }
 
 interface UseProjectNoteCollaborationOptions {
@@ -64,18 +55,10 @@ function sendAwarenessUpdate(
   socket.send(encoding.toUint8Array(encoder))
 }
 
-function awarenessSnapshotSignature(
-  collaborators: NoteCollaborator[],
-  remoteCursors: NoteRemoteCursor[],
-) {
-  const collaboratorPart = collaborators
+function collaboratorsSignature(collaborators: NoteCollaborator[]) {
+  return collaborators
     .map((item) => `${item.clientId}:${item.membershipNumber}:${item.displayName}:${item.color}`)
     .join('|')
-  const cursorPart = remoteCursors
-    .map((item) => `${item.clientId}:${item.anchor}:${item.head}:${item.color}`)
-    .join('|')
-
-  return `${collaboratorPart}::${cursorPart}`
 }
 
 export function useProjectNoteCollaboration({
@@ -86,34 +69,10 @@ export function useProjectNoteCollaboration({
 }: UseProjectNoteCollaborationOptions) {
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const [collaborators, setCollaborators] = useState<NoteCollaborator[]>([])
-  const [remoteCursors, setRemoteCursors] = useState<NoteRemoteCursor[]>([])
-  const [yText, setYText] = useState<Y.Text | null>(null)
-  const docRef = useRef<Yjs.Doc | null>(null)
-  const awarenessRef = useRef<awarenessProtocol.Awareness | null>(null)
-  const localClientIdRef = useRef<number | null>(null)
-  const awarenessSnapshotRef = useRef('')
-  const lastPublishedCursorRef = useRef('')
-
-  const updateLocalCursor = useCallback((anchor: number, head: number) => {
-    const awareness = awarenessRef.current
-    if (!awareness) {
-      return
-    }
-
-    const nextAnchor = Math.max(0, anchor)
-    const nextHead = Math.max(0, head)
-    const nextSignature = `${nextAnchor}:${nextHead}`
-
-    if (nextSignature === lastPublishedCursorRef.current) {
-      return
-    }
-
-    lastPublishedCursorRef.current = nextSignature
-    awareness.setLocalStateField('cursor', {
-      anchor: nextAnchor,
-      head: nextHead,
-    })
-  }, [])
+  const [yDoc, setYDoc] = useState<Y.Doc | null>(null)
+  const [awareness, setAwareness] = useState<awarenessProtocol.Awareness | null>(null)
+  const [memberColor, setMemberColor] = useState('#64748b')
+  const collaboratorsSnapshotRef = useRef('')
 
   useEffect(() => {
     const token = getAccessToken()
@@ -121,101 +80,70 @@ export function useProjectNoteCollaboration({
     if (!enabled || !noteId || !token || !membershipNumber) {
       setConnectionState('idle')
       setCollaborators([])
-      setRemoteCursors([])
-      setYText(null)
-      awarenessRef.current = null
-      localClientIdRef.current = null
-      awarenessSnapshotRef.current = ''
-      lastPublishedCursorRef.current = ''
+      setYDoc(null)
+      setAwareness(null)
+      collaboratorsSnapshotRef.current = ''
       return
     }
 
     const doc = new Yjs.Doc()
-    docRef.current = doc
-    localClientIdRef.current = doc.clientID
+    const awarenessInstance = new awarenessProtocol.Awareness(doc)
+    const color = colorForMembershipNumber(membershipNumber)
 
-    const text = doc.getText('content')
-    setYText(text)
-
-    const awareness = new awarenessProtocol.Awareness(doc)
-    awarenessRef.current = awareness
-
-    const memberColor = colorForMembershipNumber(membershipNumber)
-    awareness.setLocalStateField('user', {
+    awarenessInstance.setLocalStateField('user', {
       membershipNumber,
       displayName: displayName ?? membershipNumber,
-      color: memberColor,
+      color,
     })
+
+    setYDoc(doc)
+    setAwareness(awarenessInstance)
+    setMemberColor(color)
 
     const socket = new WebSocket(getProjectNoteWebSocketUrl(noteId, token))
     socket.binaryType = 'arraybuffer'
     setConnectionState('connecting')
 
-    const syncAwarenessState = () => {
+    const syncCollaborators = () => {
       const nextCollaborators: NoteCollaborator[] = []
-      const nextRemoteCursors: NoteRemoteCursor[] = []
-      const localClientId = localClientIdRef.current
 
-      awareness.getStates().forEach((state, clientId) => {
+      awarenessInstance.getStates().forEach((state, clientId) => {
         const user = state.user as { membershipNumber?: string; displayName?: string; color?: string } | undefined
         if (!user?.membershipNumber) {
           return
         }
 
-        const color = user.color ?? colorForMembershipNumber(user.membershipNumber)
-        const collaboratorDisplayName = user.displayName ?? user.membershipNumber
-
         nextCollaborators.push({
           clientId,
           membershipNumber: user.membershipNumber,
-          displayName: collaboratorDisplayName,
-          color,
-        })
-
-        if (clientId === localClientId) {
-          return
-        }
-
-        const cursor = state.cursor as { anchor?: number; head?: number } | undefined
-        if (typeof cursor?.anchor !== 'number') {
-          return
-        }
-
-        nextRemoteCursors.push({
-          clientId,
-          membershipNumber: user.membershipNumber,
-          displayName: collaboratorDisplayName,
-          color,
-          anchor: cursor.anchor,
-          head: typeof cursor.head === 'number' ? cursor.head : cursor.anchor,
+          displayName: user.displayName ?? user.membershipNumber,
+          color: user.color ?? colorForMembershipNumber(user.membershipNumber),
         })
       })
 
-      const nextSnapshot = awarenessSnapshotSignature(nextCollaborators, nextRemoteCursors)
-      if (nextSnapshot === awarenessSnapshotRef.current) {
+      const nextSnapshot = collaboratorsSignature(nextCollaborators)
+      if (nextSnapshot === collaboratorsSnapshotRef.current) {
         return
       }
 
-      awarenessSnapshotRef.current = nextSnapshot
+      collaboratorsSnapshotRef.current = nextSnapshot
       setCollaborators(nextCollaborators)
-      setRemoteCursors(nextRemoteCursors)
     }
 
     const handleAwarenessUpdate = (
       changes: { added: number[]; updated: number[]; removed: number[] },
       origin: unknown,
     ) => {
-      syncAwarenessState()
+      syncCollaborators()
 
       if (origin === socket) {
         return
       }
 
-      const changedClients = changes.added.concat(changes.updated).concat(changes.removed)
-      sendAwarenessUpdate(awareness, socket, changedClients)
+      sendAwarenessUpdate(awarenessInstance, socket, changes.added.concat(changes.updated).concat(changes.removed))
     }
 
-    awareness.on('update', handleAwarenessUpdate)
+    awarenessInstance.on('update', handleAwarenessUpdate)
 
     const handleDocUpdate = (update: Uint8Array, origin: unknown) => {
       if (origin === socket) {
@@ -245,7 +173,7 @@ export function useProjectNoteCollaboration({
       }
 
       if (messageType === MESSAGE_AWARENESS) {
-        awarenessProtocol.applyAwarenessUpdate(awareness, decoding.readVarUint8Array(decoder), socket)
+        awarenessProtocol.applyAwarenessUpdate(awarenessInstance, decoding.readVarUint8Array(decoder), socket)
       }
     }
 
@@ -257,7 +185,7 @@ export function useProjectNoteCollaboration({
       syncProtocol.writeSyncStep1(encoder, doc)
       socket.send(encoding.toUint8Array(encoder))
 
-      sendAwarenessUpdate(awareness, socket, [doc.clientID])
+      sendAwarenessUpdate(awarenessInstance, socket, [doc.clientID])
     })
 
     socket.addEventListener('message', handleSocketMessage)
@@ -272,31 +200,28 @@ export function useProjectNoteCollaboration({
 
     return () => {
       doc.off('update', handleDocUpdate)
-      awareness.off('update', handleAwarenessUpdate)
-      awareness.destroy()
+      awarenessInstance.off('update', handleAwarenessUpdate)
+      awarenessInstance.destroy()
       doc.destroy()
-      docRef.current = null
-      awarenessRef.current = null
-      localClientIdRef.current = null
-      awarenessSnapshotRef.current = ''
-      lastPublishedCursorRef.current = ''
+      collaboratorsSnapshotRef.current = ''
 
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
         socket.close()
       }
 
       setCollaborators([])
-      setRemoteCursors([])
       setConnectionState('idle')
-      setYText(null)
+      setYDoc(null)
+      setAwareness(null)
     }
   }, [displayName, enabled, membershipNumber, noteId])
 
   return {
-    yText,
+    yDoc,
+    awareness,
     connectionState,
     collaborators,
-    remoteCursors,
-    updateLocalCursor,
+    memberColor,
+    displayName: displayName ?? membershipNumber ?? '',
   }
 }
