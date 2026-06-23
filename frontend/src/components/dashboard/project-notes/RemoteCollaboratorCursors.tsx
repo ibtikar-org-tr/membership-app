@@ -66,9 +66,13 @@ export function RemoteCollaboratorCursors({ textareaRef, cursors, contentVersion
     textarea.addEventListener('scroll', recalculate)
     window.addEventListener('resize', recalculate)
 
+    const resizeObserver = new ResizeObserver(recalculate)
+    resizeObserver.observe(textarea)
+
     return () => {
       textarea.removeEventListener('scroll', recalculate)
       window.removeEventListener('resize', recalculate)
+      resizeObserver.disconnect()
     }
   }, [textareaRef])
 
@@ -81,7 +85,7 @@ export function RemoteCollaboratorCursors({ textareaRef, cursors, contentVersion
     }
 
     return computePositionedCursors(textarea, cursors)
-  }, [contentVersion, cursorSignature, cursors, layoutTick, textareaRef])
+  }, [contentVersion, cursorSignature, layoutTick, textareaRef])
 
   if (positionedCursors.length === 0) {
     return null

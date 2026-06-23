@@ -1,18 +1,12 @@
 const MIRROR_PROPERTIES = [
   'direction',
   'boxSizing',
-  'width',
-  'height',
   'overflowX',
   'overflowY',
   'borderTopWidth',
   'borderRightWidth',
   'borderBottomWidth',
   'borderLeftWidth',
-  'paddingTop',
-  'paddingRight',
-  'paddingBottom',
-  'paddingLeft',
   'fontStyle',
   'fontVariant',
   'fontWeight',
@@ -36,13 +30,8 @@ export interface TextareaCaretCoordinates {
   height: number
 }
 
-export function getTextareaCaretCoordinates(
-  textarea: HTMLTextAreaElement,
-  position: number,
-): TextareaCaretCoordinates {
-  const clampedPosition = Math.max(0, Math.min(position, textarea.value.length))
+function createTextareaMirror(textarea: HTMLTextAreaElement) {
   const mirror = document.createElement('div')
-  const marker = document.createElement('span')
   const computed = window.getComputedStyle(textarea)
 
   mirror.style.position = 'absolute'
@@ -50,26 +39,59 @@ export function getTextareaCaretCoordinates(
   mirror.style.whiteSpace = 'pre-wrap'
   mirror.style.wordWrap = 'break-word'
   mirror.style.overflow = 'hidden'
+  mirror.style.top = '0'
+  mirror.style.left = '0'
+  mirror.style.height = 'auto'
+  mirror.style.padding = '0'
+  mirror.style.border = '0'
+  mirror.style.margin = '0'
+  mirror.style.width = `${textarea.clientWidth}px`
 
   for (const property of MIRROR_PROPERTIES) {
     mirror.style[property] = computed[property]
   }
 
-  mirror.textContent = textarea.value.slice(0, clampedPosition)
-  marker.textContent = textarea.value.slice(clampedPosition) || '.'
-
-  mirror.appendChild(marker)
   document.body.appendChild(mirror)
+  return { mirror, computed }
+}
 
-  const lineHeight = Number.parseFloat(computed.lineHeight) || Number.parseFloat(computed.fontSize) * 1.75 || 20
+function removeMirror(mirror: HTMLDivElement) {
+  document.body.removeChild(mirror)
+}
+
+function lineHeightFromComputed(computed: CSSStyleDeclaration) {
+  const parsedLineHeight = Number.parseFloat(computed.lineHeight)
+  if (Number.isFinite(parsedLineHeight) && parsedLineHeight > 0) {
+    return parsedLineHeight
+  }
+
+  const parsedFontSize = Number.parseFloat(computed.fontSize)
+  if (Number.isFinite(parsedFontSize) && parsedFontSize > 0) {
+    return parsedFontSize * 1.75
+  }
+
+  return 20
+}
+
+export function getTextareaCaretCoordinates(
+  textarea: HTMLTextAreaElement,
+  position: number,
+): TextareaCaretCoordinates {
+  const clampedPosition = Math.max(0, Math.min(position, textarea.value.length))
+  const { mirror, computed } = createTextareaMirror(textarea)
+  const marker = document.createElement('span')
+
+  mirror.append(document.createTextNode(textarea.value.slice(0, clampedPosition)))
+  marker.textContent = textarea.value.slice(clampedPosition) || '\u200b'
+  mirror.appendChild(marker)
 
   const coordinates: TextareaCaretCoordinates = {
     top: marker.offsetTop - textarea.scrollTop,
     left: marker.offsetLeft - textarea.scrollLeft,
-    height: lineHeight,
+    height: lineHeightFromComputed(computed),
   }
 
-  document.body.removeChild(mirror)
+  removeMirror(mirror)
   return coordinates
 }
 
@@ -97,36 +119,21 @@ export function getTextareaSelectionRect(
     }
   }
 
-  const mirror = document.createElement('div')
-  const computed = window.getComputedStyle(textarea)
-
-  mirror.style.position = 'absolute'
-  mirror.style.visibility = 'hidden'
-  mirror.style.whiteSpace = 'pre-wrap'
-  mirror.style.wordWrap = 'break-word'
-  mirror.style.overflow = 'hidden'
-
-  for (const property of MIRROR_PROPERTIES) {
-    mirror.style[property] = computed[property]
-  }
-
-  const before = document.createTextNode(textarea.value.slice(0, start))
+  const { mirror, computed } = createTextareaMirror(textarea)
   const selected = document.createElement('span')
-  selected.textContent = textarea.value.slice(start, end)
-  const after = document.createTextNode(textarea.value.slice(end))
 
-  mirror.appendChild(before)
+  mirror.append(document.createTextNode(textarea.value.slice(0, start)))
+  selected.textContent = textarea.value.slice(start, end)
   mirror.appendChild(selected)
-  mirror.appendChild(after)
-  document.body.appendChild(mirror)
+  mirror.append(document.createTextNode(textarea.value.slice(end)))
 
   const rect = {
     top: selected.offsetTop - textarea.scrollTop,
     left: selected.offsetLeft - textarea.scrollLeft,
-    width: selected.offsetWidth,
-    height: selected.offsetHeight || startCoords.height,
+    width: Math.max(selected.offsetWidth, 2),
+    height: selected.offsetHeight || lineHeightFromComputed(computed),
   }
 
-  document.body.removeChild(mirror)
+  removeMirror(mirror)
   return rect
 }

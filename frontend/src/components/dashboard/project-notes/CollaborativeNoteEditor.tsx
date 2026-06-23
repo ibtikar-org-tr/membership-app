@@ -141,16 +141,20 @@ export function CollaborativeNoteEditor({
     }
 
     textarea.addEventListener('input', handleInput)
+    textarea.addEventListener('keydown', handleSelectionChange)
     textarea.addEventListener('keyup', handleSelectionChange)
     textarea.addEventListener('click', handleSelectionChange)
+    textarea.addEventListener('pointerup', handleSelectionChange)
     textarea.addEventListener('select', handleSelectionChange)
     document.addEventListener('selectionchange', handleSelectionChange)
 
     return () => {
       yText.unobserve(handleRemoteUpdate)
       textarea.removeEventListener('input', handleInput)
+      textarea.removeEventListener('keydown', handleSelectionChange)
       textarea.removeEventListener('keyup', handleSelectionChange)
       textarea.removeEventListener('click', handleSelectionChange)
+      textarea.removeEventListener('pointerup', handleSelectionChange)
       textarea.removeEventListener('select', handleSelectionChange)
       document.removeEventListener('selectionchange', handleSelectionChange)
     }
