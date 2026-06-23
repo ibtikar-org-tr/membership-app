@@ -35,15 +35,16 @@ export function resolveOnlineNoteUsers(
 
 interface NoteOnlineUsersProps {
   users: ResolvedOnlineUser[]
+  className?: string
 }
 
-export function NoteOnlineUsers({ users }: NoteOnlineUsersProps) {
+export function NoteOnlineUsers({ users, className = 'mt-2' }: NoteOnlineUsersProps) {
   if (users.length === 0) {
     return null
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       <span className="text-xs font-medium text-slate-500">متصل الآن</span>
       {users.map((user) => (
         <span

@@ -12,7 +12,7 @@ import {
   updateProjectNote,
 } from '../../api/vms'
 import { CollaborativeNoteEditor } from '../../components/dashboard/project-notes/CollaborativeNoteEditor'
-import { NoteOnlineUsers, resolveOnlineNoteUsers } from '../../components/dashboard/project-notes/NoteOnlineUsers'
+import { resolveOnlineNoteUsers } from '../../components/dashboard/project-notes/NoteOnlineUsers'
 import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollaboration'
 import type { VmsProject, VmsProjectMember, VmsProjectNote } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
@@ -455,7 +455,6 @@ export function DashboardProjectNotesPage() {
                     أنشأها {selectedNote.createdByDisplayName ?? selectedNote.createdBy} • آخر تحديث{' '}
                     {formatDateEnCA(selectedNote.updatedAt)}
                   </p>
-                  {canEditSelectedNote ? <NoteOnlineUsers users={onlineNoteUsers} /> : null}
                 </div>
               </div>
 
@@ -468,8 +467,10 @@ export function DashboardProjectNotesPage() {
                 initialContent={selectedNote.content}
                 readOnly={!canEditSelectedNote}
                 connectionState={canEditSelectedNote ? connectionState : 'idle'}
+                onlineUsers={onlineNoteUsers}
                 memberColor={memberColor}
                 displayName={collaboratorDisplayName}
+                membershipNumber={user?.membershipNumber ?? ''}
               />
 
               {!canEditSelectedNote ? (

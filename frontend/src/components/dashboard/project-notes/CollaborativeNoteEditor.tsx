@@ -10,6 +10,7 @@ import type * as Y from 'yjs'
 import { plainTextToHtml } from '../../../utils/yjs-rich-text'
 import { NoteEditorToolbar } from './NoteEditorToolbar'
 import { NoteFontSize } from './note-font-size'
+import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
 import { NoteTextDirection } from './note-text-direction'
 
 interface CollaborativeNoteEditorProps {
@@ -19,8 +20,10 @@ interface CollaborativeNoteEditorProps {
   initialContent?: string
   readOnly?: boolean
   connectionState: 'idle' | 'connecting' | 'connected' | 'error'
+  onlineUsers: ResolvedOnlineUser[]
   memberColor: string
   displayName: string
+  membershipNumber: string
 }
 
 const editorSurfaceClass =
@@ -33,8 +36,10 @@ export function CollaborativeNoteEditor({
   initialContent = '',
   readOnly = false,
   connectionState,
+  onlineUsers,
   memberColor,
   displayName,
+  membershipNumber,
 }: CollaborativeNoteEditorProps) {
   const hasSeededRef = useRef(false)
   const seedNoteIdRef = useRef<string | null>(null)
@@ -134,6 +139,17 @@ export function CollaborativeNoteEditor({
     editor.commands.setContent(staticContent, false)
   }, [editor, readOnly, staticContent])
 
+  useEffect(() => {
+    if (!editor || !awareness || readOnly) {
+      return
+    }
+
+    awareness.setLocalStateField('notePresence', {
+      membershipNumber,
+      displayName,
+    })
+  }, [awareness, displayName, editor, membershipNumber, readOnly])
+
   return (
     <div className="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <style>{`
@@ -159,7 +175,7 @@ export function CollaborativeNoteEditor({
           pointer-events: none;
         }
       `}</style>
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
           <span
             className={`inline-flex h-2 w-2 rounded-full ${
@@ -182,6 +198,7 @@ export function CollaborativeNoteEditor({
                   ? 'تعذر الاتصال بالمحرر المشترك'
                   : 'في انتظار الاتصال'}
         </div>
+        {!readOnly ? <NoteOnlineUsers users={onlineUsers} className="mt-0" /> : null}
       </div>
 
       <NoteEditorToolbar editor={editor} disabled={!canEdit} />
