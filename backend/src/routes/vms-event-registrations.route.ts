@@ -5,6 +5,7 @@ import {
   deleteEventRegistrationById,
   getEventRegistrationById,
   getEventRegistrationByEventAndMember,
+  countEventRegistrations,
   listEventRegistrations,
   updateEventRegistrationById,
 } from '../repositories/vms-event-registrations.repository'
@@ -30,6 +31,32 @@ import {
 } from '../utils/event-registration-cancellation'
 
 export const vmsEventRegistrationsRoute = new Hono<AppEnv>()
+
+const DEFAULT_EVENT_REGISTRATIONS_PAGE_SIZE = 50
+const MAX_EVENT_REGISTRATIONS_PAGE_SIZE = 200
+
+function parseEventRegistrationsPagination(c: { req: { query: (key: string) => string | undefined } }) {
+  const limitParam = c.req.query('limit')
+  const offsetParam = c.req.query('offset')
+  const eventId = c.req.query('eventId')
+  const membershipNumberFilter = c.req.query('membershipNumber')
+
+  let limit: number | undefined
+  if (limitParam === '0') {
+    limit = undefined
+  } else if (limitParam !== undefined) {
+    const parsedLimit = Number.parseInt(limitParam, 10)
+    limit = Number.isFinite(parsedLimit)
+      ? Math.min(Math.max(parsedLimit, 1), MAX_EVENT_REGISTRATIONS_PAGE_SIZE)
+      : DEFAULT_EVENT_REGISTRATIONS_PAGE_SIZE
+  } else if (eventId && !membershipNumberFilter) {
+    limit = DEFAULT_EVENT_REGISTRATIONS_PAGE_SIZE
+  }
+
+  const offset = offsetParam ? Math.max(Number.parseInt(offsetParam, 10) || 0, 0) : 0
+
+  return { limit, offset }
+}
 
 async function enrichEventRegistrationsWithDisplayNames<T extends { membershipNumber: string }>(
   membersDb: AppBindings['MEMBERS_DB'],
@@ -85,26 +112,50 @@ vmsEventRegistrationsRoute.get(
 vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
   try {
     const eventId = c.req.query('eventId')
-    let eventRegistrations = await listEventRegistrations(c.env.VMS_DB, eventId)
+    const membershipNumberFilter = c.req.query('membershipNumber')
+    const { limit, offset } = parseEventRegistrationsPagination(c)
 
-    if (eventId) {
+    let restrictedMembershipNumber = membershipNumberFilter
+
+    if (eventId && !membershipNumberFilter) {
       const event = await getEventById(c.env.VMS_DB, eventId)
       const actorMembershipNumber = getActorMembershipNumber(c)
 
       if (event && event.displayAttendeeNumbers === false) {
         const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
         if (!canManage) {
-          eventRegistrations = eventRegistrations.filter(
-            (registration) => registration.membershipNumber === actorMembershipNumber,
-          )
+          restrictedMembershipNumber = actorMembershipNumber ?? undefined
         }
       }
     }
+
+    const listOptions = {
+      eventId,
+      membershipNumber: restrictedMembershipNumber,
+      limit,
+      offset: limit !== undefined ? offset : undefined,
+    }
+
+    const eventRegistrations = await listEventRegistrations(c.env.VMS_DB, listOptions)
 
     const enrichedRegistrations = await enrichEventRegistrationsWithDisplayNames(
       c.env.MEMBERS_DB,
       eventRegistrations,
     )
+
+    if (eventId && limit !== undefined) {
+      const total = await countEventRegistrations(c.env.VMS_DB, {
+        eventId,
+        membershipNumber: restrictedMembershipNumber,
+      })
+
+      return c.json({
+        eventRegistrations: enrichedRegistrations,
+        total,
+        hasMore: offset + enrichedRegistrations.length < total,
+      })
+    }
+
     return c.json({ eventRegistrations: enrichedRegistrations })
   } catch (error) {
     console.error('Failed to list event registrations', error)
