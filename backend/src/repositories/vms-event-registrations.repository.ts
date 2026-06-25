@@ -63,6 +63,29 @@ export async function countEventRegistrations(
   return row?.count ?? 0
 }
 
+export async function countActiveEventRegistrationsByTicket(db: D1DatabaseLike, eventId: string) {
+  const rows = await db
+    .prepare(
+      `SELECT ticket_id, COUNT(*) as count
+       FROM event_registrations
+       WHERE event_id = ?
+         AND status IN ('registered', 'attended')
+       GROUP BY ticket_id`,
+    )
+    .bind(eventId)
+    .all<{ ticket_id: string; count: number }>()
+
+  const ticketCounts = new Map<string, number>()
+  let total = 0
+
+  for (const row of rows.results) {
+    ticketCounts.set(row.ticket_id, row.count)
+    total += row.count
+  }
+
+  return { ticketCounts, total }
+}
+
 export async function listEventRegistrations(db: D1DatabaseLike, options: ListEventRegistrationsOptions = {}) {
   const conditions: string[] = []
   const values: unknown[] = []
