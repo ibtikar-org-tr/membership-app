@@ -15,6 +15,7 @@ import {
   Send,
   ArrowLeft,
 } from 'lucide-react'
+import Avatar from 'boring-avatars'
 import {
   createEventRegistration,
   fetchEventById,
@@ -55,6 +56,12 @@ function registrationStatusLabel(status: string) {
   if (status === 'cancelled') return 'ملغي'
   if (status === 'no_show') return 'لم يحضر'
   return status
+}
+
+const ATTENDEE_AVATAR_COLORS = ['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']
+
+function attendeeAvatarKeys(seed: string, count: number) {
+  return Array.from({ length: count }, (_, index) => `${seed}:${index}`)
 }
 
 export function DashboardEventDetailsPage() {
@@ -993,7 +1000,7 @@ export function DashboardEventDetailsPage() {
                 ) : null}
               </h3>
               {registrationsTotal > 0 ? (
-                <ul className="space-y-2">
+                <div className="space-y-6">
                   {tickets.map((ticket) => {
                     const count = ticketRegistrationCounts[ticket.id] ?? 0
                     if (count === 0) {
@@ -1001,31 +1008,53 @@ export function DashboardEventDetailsPage() {
                     }
 
                     return (
-                      <li
-                        key={ticket.id}
-                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm"
-                      >
-                        <span className="font-medium text-slate-900">{ticket.name}</span>
-                        <span className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-800">
-                          {count} {count === 1 ? 'مسجّل' : 'مسجّلين'}
-                        </span>
-                      </li>
+                      <div key={ticket.id}>
+                        <h4 className="mb-2 text-sm font-semibold text-slate-700">
+                          {ticket.name}
+                          <span className="ml-2 rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-medium text-cyan-800">
+                            {count} {count === 1 ? 'مسجّل' : 'مسجّلين'}
+                          </span>
+                        </h4>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {attendeeAvatarKeys(ticket.id, count).map((avatarKey) => (
+                            <Avatar
+                              key={avatarKey}
+                              size={40}
+                              name={avatarKey}
+                              variant="beam"
+                              colors={ATTENDEE_AVATAR_COLORS}
+                              className="ring-2 ring-white shadow-sm"
+                            />
+                          ))}
+                        </div>
+                      </div>
                     )
                   })}
                   {Object.entries(ticketRegistrationCounts)
                     .filter(([ticketId]) => !tickets.some((ticket) => ticket.id === ticketId))
                     .map(([ticketId, count]) => (
-                      <li
-                        key={ticketId}
-                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm"
-                      >
-                        <span className="font-medium text-slate-900">تذكرة أخرى</span>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                          {count} {count === 1 ? 'مسجّل' : 'مسجّلين'}
-                        </span>
-                      </li>
+                      <div key={ticketId}>
+                        <h4 className="mb-2 text-sm font-semibold text-slate-700">
+                          تذاكر أخرى
+                          <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                            {count} {count === 1 ? 'مسجّل' : 'مسجّلين'}
+                          </span>
+                        </h4>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {attendeeAvatarKeys(ticketId, count).map((avatarKey) => (
+                            <Avatar
+                              key={avatarKey}
+                              size={40}
+                              name={avatarKey}
+                              variant="beam"
+                              colors={ATTENDEE_AVATAR_COLORS}
+                              className="ring-2 ring-white shadow-sm"
+                            />
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                </ul>
+                </div>
               ) : (
                 <p className="text-center text-sm text-slate-500">لا توجد تسجيلات لهذه الفعالية بعد.</p>
               )}
