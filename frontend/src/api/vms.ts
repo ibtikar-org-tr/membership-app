@@ -335,9 +335,33 @@ export function deleteEventTicket(ticketId: string) {
   return deleteJson(`/event-tickets/${encodeURIComponent(ticketId)}`)
 }
 
-export function fetchEventRegistrations(eventId?: string) {
-  const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''
-  return fetchJson<{ eventRegistrations: VmsEventRegistration[] }>(`/event-registrations${query}`)
+export function fetchEventRegistrations(
+  eventId?: string,
+  options?: {
+    limit?: number
+    offset?: number
+    membershipNumber?: string
+  },
+) {
+  const params = new URLSearchParams()
+  if (eventId) {
+    params.set('eventId', eventId)
+  }
+  if (options?.limit !== undefined) {
+    params.set('limit', String(options.limit))
+  }
+  if (options?.offset !== undefined) {
+    params.set('offset', String(options.offset))
+  }
+  if (options?.membershipNumber) {
+    params.set('membershipNumber', options.membershipNumber)
+  }
+  const query = params.toString() ? `?${params.toString()}` : ''
+  return fetchJson<{
+    eventRegistrations: VmsEventRegistration[]
+    total?: number
+    hasMore?: boolean
+  }>(`/event-registrations${query}`)
 }
 
 export function createEventRegistration(payload: {

@@ -67,6 +67,10 @@ export function DashboardEventDetailsPage() {
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
   const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
+  const [myRegistration, setMyRegistration] = useState<VmsEventRegistration | null>(null)
+  const [registrationsTotal, setRegistrationsTotal] = useState(0)
+  const [hasMoreRegistrations, setHasMoreRegistrations] = useState(false)
+  const [isLoadingMoreRegistrations, setIsLoadingMoreRegistrations] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
@@ -102,10 +106,11 @@ export function DashboardEventDetailsPage() {
     async function loadEventDetails() {
       try {
         if (user) {
-          const [eventPayload, ticketsPayload, registrationsPayload] = await Promise.all([
+          const [eventPayload, ticketsPayload, registrationsPayload, myRegistrationPayload] = await Promise.all([
             fetchEventById(currentEventId),
             fetchEventTickets(currentEventId),
             fetchEventRegistrations(currentEventId),
+            fetchEventRegistrations(currentEventId, { membershipNumber: user.membershipNumber }),
           ])
 
           if (controller.signal.aborted) {
@@ -115,6 +120,11 @@ export function DashboardEventDetailsPage() {
           setEventItem(eventPayload.event)
           setTickets(ticketsPayload.eventTickets)
           setRegistrations(registrationsPayload.eventRegistrations)
+          setRegistrationsTotal(
+            registrationsPayload.total ?? registrationsPayload.eventRegistrations.length,
+          )
+          setHasMoreRegistrations(registrationsPayload.hasMore ?? false)
+          setMyRegistration(myRegistrationPayload.eventRegistrations[0] ?? null)
           return
         }
 
@@ -197,23 +207,8 @@ export function DashboardEventDetailsPage() {
   }, [eventItem, projectMembers, user])
 
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
-  const hasUserRegistered = useMemo(() => {
-    if (!user) {
-      return false
-    }
-
-    return registrations.some(
-      (registration) =>
-        registration.membershipNumber === user.membershipNumber && registration.status === 'registered',
-    )
-  }, [registrations, user])
-  const userRegistration = useMemo(() => {
-    if (!user) {
-      return null
-    }
-
-    return registrations.find((registration) => registration.membershipNumber === user.membershipNumber) ?? null
-  }, [registrations, user])
+  const hasUserRegistered = useMemo(() => myRegistration?.status === 'registered', [myRegistration])
+  const userRegistration = myRegistration
   const userRegisteredTicket = useMemo(() => {
     if (!userRegistration) {
       return null
@@ -267,9 +262,7 @@ export function DashboardEventDetailsPage() {
       return
     }
 
-    const existingRegistration = registrations.find(
-      (registration) => registration.membershipNumber === user.membershipNumber,
-    )
+    const existingRegistration = myRegistration
     if (existingRegistration) {
       setApplyError('لديك تسجيل سابق في هذه الفعالية. تواصل مع المنظمين إذا كنت بحاجة للمساعدة.')
       return
@@ -291,7 +284,9 @@ export function DashboardEventDetailsPage() {
         status: 'registered',
       })
 
+      setMyRegistration(payload.eventRegistration)
       setRegistrations((previous) => [payload.eventRegistration, ...previous])
+      setRegistrationsTotal((previous) => previous + 1)
       setApplySuccess('تم إرسال طلب التسجيل بنجاح.')
       setSelectedTicketId(null)
       applyForm.reset()
@@ -325,7 +320,9 @@ export function DashboardEventDetailsPage() {
 
     try {
       await selfCancelEventRegistration(userRegistration.id)
+      setMyRegistration(null)
       setRegistrations((previous) => previous.filter((registration) => registration.id !== userRegistration.id))
+      setRegistrationsTotal((previous) => Math.max(0, previous - 1))
       setCancelRegistrationSuccess('تم إلغاء تسجيلك. يمكنك التسجيل مجدداً إذا رغبت.')
       setChangeTicketSuccess(null)
       setChangeTicketError(null)
@@ -366,6 +363,7 @@ export function DashboardEventDetailsPage() {
 
     try {
       const payload = await changeEventRegistrationTicket(userRegistration.id, selectedChangeTicketId)
+      setMyRegistration(payload.eventRegistration)
       setRegistrations((previous) =>
         previous.map((registration) =>
           registration.id === payload.eventRegistration.id ? payload.eventRegistration : registration,
@@ -410,6 +408,25 @@ export function DashboardEventDetailsPage() {
       }
     } finally {
       setIsSendingTelegramInvite(false)
+    }
+  }
+
+  const handleLoadMoreRegistrations = async () => {
+    if (!eventID || isLoadingMoreRegistrations || !hasMoreRegistrations) {
+      return
+    }
+
+    setIsLoadingMoreRegistrations(true)
+
+    try {
+      const payload = await fetchEventRegistrations(eventID, { offset: registrations.length })
+      setRegistrations((previous) => [...previous, ...payload.eventRegistrations])
+      setRegistrationsTotal(payload.total ?? registrationsTotal)
+      setHasMoreRegistrations(payload.hasMore ?? false)
+    } catch {
+      // Keep existing list visible if pagination fails.
+    } finally {
+      setIsLoadingMoreRegistrations(false)
     }
   }
 
@@ -980,7 +997,12 @@ export function DashboardEventDetailsPage() {
             </div>
             {user && canViewAttendeeNumbers ? (
             <div>
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">المسجّلون</h3>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                المسجّلون
+                {registrationsTotal > 0 ? (
+                  <span className="mr-2 font-normal normal-case text-slate-600">({registrationsTotal})</span>
+                ) : null}
+              </h3>
               {tickets.length > 0 && registrations.length > 0 ? (
                 <div className="space-y-6">
                   {tickets.map((ticket) => {
@@ -1085,6 +1107,20 @@ export function DashboardEventDetailsPage() {
               ) : (
                 <p className="text-center text-sm text-slate-500">لا توجد تسجيلات لهذه الفعالية بعد.</p>
               )}
+              {hasMoreRegistrations ? (
+                <div className="mt-4 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadMoreRegistrations()}
+                    disabled={isLoadingMoreRegistrations}
+                    className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isLoadingMoreRegistrations
+                      ? 'جار التحميل...'
+                      : `تحميل المزيد (${registrations.length} من ${registrationsTotal})`}
+                  </button>
+                </div>
+              ) : null}
             </div>
             ) : !canViewAttendeeNumbers && user ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600">
