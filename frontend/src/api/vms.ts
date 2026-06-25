@@ -335,6 +335,12 @@ export function deleteEventTicket(ticketId: string) {
   return deleteJson(`/event-tickets/${encodeURIComponent(ticketId)}`)
 }
 
+export function fetchEventRegistrationCounts(eventId: string) {
+  return fetchJson<{ ticketCounts: Record<string, number>; total: number }>(
+    `/events/${encodeURIComponent(eventId)}/registration-counts`,
+  )
+}
+
 export function fetchEventRegistrations(
   eventId?: string,
   options?: {

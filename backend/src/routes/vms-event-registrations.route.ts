@@ -5,6 +5,7 @@ import {
   deleteEventRegistrationById,
   getEventRegistrationById,
   getEventRegistrationByEventAndMember,
+  countActiveEventRegistrationsByTicket,
   countEventRegistrations,
   listEventRegistrations,
   updateEventRegistrationById,
@@ -17,6 +18,7 @@ import {
   createEventRegistrationSchema,
   changeEventRegistrationTicketSchema,
   eventRegistrationParamsSchema,
+  eventRegistrationCountsParamsSchema,
   eventRegistrantContactParamsSchema,
   updateEventRegistrationSchema,
 } from '../schemas/vms-event-registration.schema'
@@ -72,6 +74,39 @@ async function enrichEventRegistrationsWithDisplayNames<T extends { membershipNu
     displayName: displayNameMap.get(registration.membershipNumber) ?? registration.membershipNumber,
   }))
 }
+
+vmsEventRegistrationsRoute.get(
+  '/events/:eventId/registration-counts',
+  zValidator('param', eventRegistrationCountsParamsSchema),
+  async (c) => {
+    try {
+      const { eventId } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      const event = await getEventById(c.env.VMS_DB, eventId)
+      if (!event) {
+        return c.json({ error: 'Event not found.' }, 404)
+      }
+
+      if (event.displayAttendeeNumbers === false) {
+        const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
+        if (!canManage) {
+          return c.json({ ticketCounts: {}, total: 0 })
+        }
+      }
+
+      const { ticketCounts, total } = await countActiveEventRegistrationsByTicket(c.env.VMS_DB, eventId)
+
+      return c.json({
+        ticketCounts: Object.fromEntries(ticketCounts),
+        total,
+      })
+    } catch (error) {
+      console.error('Failed to fetch event registration counts', error)
+      return c.json({ error: 'Could not fetch event registration counts.' }, 500)
+    }
+  },
+)
 
 vmsEventRegistrationsRoute.get(
   '/events/:eventId/registrants/:membershipNumber/contact',
@@ -138,10 +173,9 @@ vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
 
     const eventRegistrations = await listEventRegistrations(c.env.VMS_DB, listOptions)
 
-    const enrichedRegistrations = await enrichEventRegistrationsWithDisplayNames(
-      c.env.MEMBERS_DB,
-      eventRegistrations,
-    )
+    const enrichedRegistrations = listOptions.membershipNumber
+      ? eventRegistrations
+      : await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, eventRegistrations)
 
     if (eventId && limit !== undefined) {
       const total = await countEventRegistrations(c.env.VMS_DB, {
