@@ -5,12 +5,12 @@ import Underline from '@tiptap/extension-underline'
 import Placeholder from '@tiptap/extension-placeholder'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
-import type { NoteCollaborator } from '../../../hooks/useProjectNoteCollaboration'
 import type * as awarenessProtocol from 'y-protocols/awareness'
 import type * as Y from 'yjs'
 import { plainTextToHtml } from '../../../utils/yjs-rich-text'
 import { NoteEditorToolbar } from './NoteEditorToolbar'
 import { NoteFontSize } from './note-font-size'
+import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
 import { NoteTextDirection } from './note-text-direction'
 
 interface CollaborativeNoteEditorProps {
@@ -20,9 +20,10 @@ interface CollaborativeNoteEditorProps {
   initialContent?: string
   readOnly?: boolean
   connectionState: 'idle' | 'connecting' | 'connected' | 'error'
-  collaborators: NoteCollaborator[]
+  onlineUsers: ResolvedOnlineUser[]
   memberColor: string
   displayName: string
+  membershipNumber: string
 }
 
 const editorSurfaceClass =
@@ -35,9 +36,10 @@ export function CollaborativeNoteEditor({
   initialContent = '',
   readOnly = false,
   connectionState,
-  collaborators,
+  onlineUsers,
   memberColor,
   displayName,
+  membershipNumber,
 }: CollaborativeNoteEditorProps) {
   const hasSeededRef = useRef(false)
   const seedNoteIdRef = useRef<string | null>(null)
@@ -137,14 +139,16 @@ export function CollaborativeNoteEditor({
     editor.commands.setContent(staticContent, false)
   }, [editor, readOnly, staticContent])
 
-  const uniqueCollaborators = collaborators.reduce<NoteCollaborator[]>((accumulator, collaborator) => {
-    if (accumulator.some((item) => item.membershipNumber === collaborator.membershipNumber)) {
-      return accumulator
+  useEffect(() => {
+    if (!editor || !awareness || readOnly) {
+      return
     }
 
-    accumulator.push(collaborator)
-    return accumulator
-  }, [])
+    awareness.setLocalStateField('notePresence', {
+      membershipNumber,
+      displayName,
+    })
+  }, [awareness, displayName, editor, membershipNumber, readOnly])
 
   return (
     <div className="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
@@ -194,19 +198,7 @@ export function CollaborativeNoteEditor({
                   ? 'تعذر الاتصال بالمحرر المشترك'
                   : 'في انتظار الاتصال'}
         </div>
-        {uniqueCollaborators.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {uniqueCollaborators.map((collaborator) => (
-              <span
-                key={collaborator.membershipNumber}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700"
-              >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: collaborator.color }} />
-                {collaborator.displayName}
-              </span>
-            ))}
-          </div>
-        ) : null}
+        {!readOnly ? <NoteOnlineUsers users={onlineUsers} className="mt-0" /> : null}
       </div>
 
       <NoteEditorToolbar editor={editor} disabled={!canEdit} />

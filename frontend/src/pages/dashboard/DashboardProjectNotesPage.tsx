@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { FiEdit2, FiTrash2 } from 'react-icons/fi'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   createProjectNote,
@@ -8,8 +9,10 @@ import {
   fetchProjectMembers,
   fetchProjectNoteById,
   fetchProjectNotes,
+  updateProjectNote,
 } from '../../api/vms'
 import { CollaborativeNoteEditor } from '../../components/dashboard/project-notes/CollaborativeNoteEditor'
+import { resolveOnlineNoteUsers } from '../../components/dashboard/project-notes/NoteOnlineUsers'
 import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollaboration'
 import type { VmsProject, VmsProjectMember, VmsProjectNote } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
@@ -37,6 +40,9 @@ export function DashboardProjectNotesPage() {
   const [createError, setCreateError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editingTitle, setEditingTitle] = useState('')
+  const [isSavingTitle, setIsSavingTitle] = useState(false)
 
   const selectedNoteId = searchParams.get('note')
 
@@ -123,6 +129,11 @@ export function DashboardProjectNotesPage() {
     }
   }, [notes, selectedNoteId])
 
+  useEffect(() => {
+    setIsEditingTitle(false)
+    setEditingTitle(selectedNote?.title ?? '')
+  }, [selectedNote?.id, selectedNote?.title])
+
   const managerMembershipNumbers = useMemo(
     () => new Set(projectMembers.filter((member) => member.role === 'manager').map((member) => member.membershipNumber)),
     [projectMembers],
@@ -143,13 +154,38 @@ export function DashboardProjectNotesPage() {
 
   const canEditSelectedNote = selectedNote?.canEdit ?? currentMembership?.role !== 'observer'
 
+  const currentUserDisplayName = useMemo(() => {
+    if (!user?.membershipNumber) {
+      return null
+    }
+
+    const member = projectMembers.find((item) => item.membershipNumber === user.membershipNumber)
+    return member?.displayName?.trim() || user.membershipNumber
+  }, [projectMembers, user?.membershipNumber])
+
+  const memberDisplayNameByNumber = useMemo(
+    () => new Map(projectMembers.map((member) => [member.membershipNumber, member.displayName])),
+    [projectMembers],
+  )
+
+  const resolveMemberDisplayName = useMemo(
+    () => (membershipNumber: string) => memberDisplayNameByNumber.get(membershipNumber) ?? null,
+    [memberDisplayNameByNumber],
+  )
+
   const { yDoc, awareness, connectionState, collaborators, memberColor, displayName: collaboratorDisplayName } =
     useProjectNoteCollaboration({
       noteId: selectedNote?.id ?? null,
       membershipNumber: user?.membershipNumber ?? null,
-      displayName: user?.email ?? user?.membershipNumber ?? null,
+      displayName: currentUserDisplayName,
+      resolveMemberDisplayName,
       enabled: Boolean(selectedNote && canEditSelectedNote && !isLoading),
     })
+
+  const onlineNoteUsers = useMemo(
+    () => resolveOnlineNoteUsers(collaborators, memberDisplayNameByNumber),
+    [collaborators, memberDisplayNameByNumber],
+  )
 
   const handleCreateNote = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -181,8 +217,51 @@ export function DashboardProjectNotesPage() {
     }
   }
 
+  const handleSaveTitle = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setActionError(null)
+
+    if (!selectedNote) {
+      return
+    }
+
+    const title = editingTitle.trim()
+    if (!title) {
+      setActionError('يرجى إدخال عنوان للملاحظة.')
+      return
+    }
+
+    if (title === selectedNote.title) {
+      setIsEditingTitle(false)
+      return
+    }
+
+    setIsSavingTitle(true)
+
+    try {
+      const payload = await updateProjectNote(selectedNote.id, { title })
+      setSelectedNote((current) => (current ? { ...current, ...payload.note } : current))
+      setNotes((current) =>
+        current.map((note) => (note.id === selectedNote.id ? { ...note, ...payload.note } : note)),
+      )
+      setIsEditingTitle(false)
+    } catch (requestError) {
+      setActionError(requestError instanceof Error ? requestError.message : 'تعذر تحديث عنوان الملاحظة.')
+    } finally {
+      setIsSavingTitle(false)
+    }
+  }
+
   const handleDeleteNote = async () => {
     if (!selectedNote || !projectID) {
+      return
+    }
+
+    if (
+      !window.confirm(
+        `هل أنت متأكد من حذف الملاحظة "${selectedNote.title}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+      )
+    ) {
       return
     }
 
@@ -307,24 +386,76 @@ export function DashboardProjectNotesPage() {
         <div className="min-w-0">
           {selectedNote ? (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">{selectedNote.title}</h3>
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  {canManageNotes && isEditingTitle ? (
+                    <form onSubmit={handleSaveTitle} className="flex flex-wrap items-center gap-2">
+                      <input
+                        value={editingTitle}
+                        onChange={(event) => setEditingTitle(event.target.value)}
+                        maxLength={160}
+                        autoFocus
+                        disabled={isSavingTitle}
+                        className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-900 outline-none ring-cyan-500 focus:ring-2 disabled:opacity-60"
+                        aria-label="عنوان الملاحظة"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSavingTitle}
+                        className="inline-flex rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingTitle ? 'جار الحفظ...' : 'حفظ'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isSavingTitle}
+                        onClick={() => {
+                          setEditingTitle(selectedNote.title)
+                          setIsEditingTitle(false)
+                          setActionError(null)
+                        }}
+                        className="inline-flex rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        إلغاء
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold text-slate-900">{selectedNote.title}</h3>
+                      {canManageNotes ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingTitle(selectedNote.title)
+                              setIsEditingTitle(true)
+                              setActionError(null)
+                            }}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                            title="تعديل العنوان"
+                            aria-label="تعديل العنوان"
+                          >
+                            <FiEdit2 className="h-4 w-4" aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteNote()}
+                            disabled={isDeleting}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="حذف الملاحظة"
+                            aria-label="حذف الملاحظة"
+                          >
+                            <FiTrash2 className="h-4 w-4" aria-hidden />
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                   <p className="mt-1 text-xs text-slate-500">
                     أنشأها {selectedNote.createdByDisplayName ?? selectedNote.createdBy} • آخر تحديث{' '}
                     {formatDateEnCA(selectedNote.updatedAt)}
                   </p>
                 </div>
-                {canManageNotes ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleDeleteNote()}
-                    disabled={isDeleting}
-                    className="inline-flex rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isDeleting ? 'جار الحذف...' : 'حذف الملاحظة'}
-                  </button>
-                ) : null}
               </div>
 
               {actionError ? <p className="text-sm text-red-600">{actionError}</p> : null}
@@ -336,9 +467,10 @@ export function DashboardProjectNotesPage() {
                 initialContent={selectedNote.content}
                 readOnly={!canEditSelectedNote}
                 connectionState={canEditSelectedNote ? connectionState : 'idle'}
-                collaborators={canEditSelectedNote ? collaborators : []}
+                onlineUsers={onlineNoteUsers}
                 memberColor={memberColor}
                 displayName={collaboratorDisplayName}
+                membershipNumber={user?.membershipNumber ?? ''}
               />
 
               {!canEditSelectedNote ? (

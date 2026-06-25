@@ -23,6 +23,7 @@ interface UseProjectNoteCollaborationOptions {
   noteId: string | null
   membershipNumber: string | null
   displayName: string | null
+  resolveMemberDisplayName?: (membershipNumber: string) => string | null | undefined
   enabled: boolean
 }
 
@@ -55,6 +56,45 @@ function sendAwarenessUpdate(
   socket.send(encoding.toUint8Array(encoder))
 }
 
+interface NotePresence {
+  membershipNumber: string
+  displayName: string
+}
+
+function readNotePresence(state: Record<string, unknown>): NotePresence | null {
+  const presence = state.notePresence as NotePresence | undefined
+  if (presence?.membershipNumber?.trim()) {
+    return {
+      membershipNumber: presence.membershipNumber.trim(),
+      displayName: presence.displayName?.trim() || presence.membershipNumber.trim(),
+    }
+  }
+
+  const user = state.user as
+    | { membershipNumber?: string; displayName?: string; name?: string }
+    | undefined
+
+  if (user?.membershipNumber?.trim()) {
+    return {
+      membershipNumber: user.membershipNumber.trim(),
+      displayName: user.displayName?.trim() || user.name?.trim() || user.membershipNumber.trim(),
+    }
+  }
+
+  return null
+}
+
+function setLocalNotePresence(
+  awareness: awarenessProtocol.Awareness,
+  membershipNumber: string,
+  displayName: string,
+) {
+  awareness.setLocalStateField('notePresence', {
+    membershipNumber,
+    displayName,
+  } satisfies NotePresence)
+}
+
 function collaboratorsSignature(collaborators: NoteCollaborator[]) {
   return collaborators
     .map((item) => `${item.clientId}:${item.membershipNumber}:${item.displayName}:${item.color}`)
@@ -65,6 +105,7 @@ export function useProjectNoteCollaboration({
   noteId,
   membershipNumber,
   displayName,
+  resolveMemberDisplayName,
   enabled,
 }: UseProjectNoteCollaborationOptions) {
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
@@ -73,6 +114,9 @@ export function useProjectNoteCollaboration({
   const [awareness, setAwareness] = useState<awarenessProtocol.Awareness | null>(null)
   const [memberColor, setMemberColor] = useState('#64748b')
   const collaboratorsSnapshotRef = useRef('')
+  const resolveMemberDisplayNameRef = useRef(resolveMemberDisplayName)
+
+  resolveMemberDisplayNameRef.current = resolveMemberDisplayName
 
   useEffect(() => {
     const token = getAccessToken()
@@ -89,12 +133,9 @@ export function useProjectNoteCollaboration({
     const doc = new Yjs.Doc()
     const awarenessInstance = new awarenessProtocol.Awareness(doc)
     const color = colorForMembershipNumber(membershipNumber)
+    const localDisplayName = displayName ?? membershipNumber
 
-    awarenessInstance.setLocalStateField('user', {
-      membershipNumber,
-      displayName: displayName ?? membershipNumber,
-      color,
-    })
+    setLocalNotePresence(awarenessInstance, membershipNumber, localDisplayName)
 
     setYDoc(doc)
     setAwareness(awarenessInstance)
@@ -108,16 +149,21 @@ export function useProjectNoteCollaboration({
       const nextCollaborators: NoteCollaborator[] = []
 
       awarenessInstance.getStates().forEach((state, clientId) => {
-        const user = state.user as { membershipNumber?: string; displayName?: string; color?: string } | undefined
-        if (!user?.membershipNumber) {
+        const presence = readNotePresence(state as Record<string, unknown>)
+        if (!presence) {
           return
         }
 
+        const resolvedDisplayName =
+          resolveMemberDisplayNameRef.current?.(presence.membershipNumber)?.trim() ||
+          presence.displayName ||
+          presence.membershipNumber
+
         nextCollaborators.push({
           clientId,
-          membershipNumber: user.membershipNumber,
-          displayName: user.displayName ?? user.membershipNumber,
-          color: user.color ?? colorForMembershipNumber(user.membershipNumber),
+          membershipNumber: presence.membershipNumber,
+          displayName: resolvedDisplayName,
+          color: colorForMembershipNumber(presence.membershipNumber),
         })
       })
 
@@ -129,6 +175,8 @@ export function useProjectNoteCollaboration({
       collaboratorsSnapshotRef.current = nextSnapshot
       setCollaborators(nextCollaborators)
     }
+
+    syncCollaborators()
 
     const handleAwarenessUpdate = (
       changes: { added: number[]; updated: number[]; removed: number[] },
@@ -179,6 +227,7 @@ export function useProjectNoteCollaboration({
 
     socket.addEventListener('open', () => {
       setConnectionState('connected')
+      setLocalNotePresence(awarenessInstance, membershipNumber, localDisplayName)
 
       const encoder = encoding.createEncoder()
       encoding.writeVarUint(encoder, MESSAGE_SYNC)
@@ -186,6 +235,7 @@ export function useProjectNoteCollaboration({
       socket.send(encoding.toUint8Array(encoder))
 
       sendAwarenessUpdate(awarenessInstance, socket, [doc.clientID])
+      syncCollaborators()
     })
 
     socket.addEventListener('message', handleSocketMessage)
