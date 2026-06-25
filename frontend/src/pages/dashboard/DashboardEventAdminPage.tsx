@@ -29,6 +29,9 @@ export function DashboardEventAdminPage() {
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
   const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
+  const [registrationsTotal, setRegistrationsTotal] = useState(0)
+  const [hasMoreRegistrations, setHasMoreRegistrations] = useState(false)
+  const [isLoadingMoreRegistrations, setIsLoadingMoreRegistrations] = useState(false)
   const [projectMembers, setProjectMembers] = useState<VmsProjectMember[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -48,12 +51,14 @@ export function DashboardEventAdminPage() {
         const [eventPayload, ticketsPayload, registrationsPayload] = await Promise.all([
           fetchEventById(eventID as string),
           fetchEventTickets(eventID as string),
-          fetchEventRegistrations(eventID as string, { limit: 0 }),
+          fetchEventRegistrations(eventID as string),
         ])
         if (controller.signal.aborted) return
         setEventItem(eventPayload.event)
         setTickets(ticketsPayload.eventTickets)
         setRegistrations(registrationsPayload.eventRegistrations)
+        setRegistrationsTotal(registrationsPayload.total ?? registrationsPayload.eventRegistrations.length)
+        setHasMoreRegistrations(registrationsPayload.hasMore ?? false)
       } catch {
         if (!controller.signal.aborted) setNotFound(true)
       } finally {
@@ -133,11 +138,31 @@ export function DashboardEventAdminPage() {
     try {
       await deleteEventRegistration(registrationId)
       setRegistrations((previous) => previous.filter((item) => item.id !== registrationId))
+      setRegistrationsTotal((previous) => Math.max(0, previous - 1))
       setSuccess('تم حذف التسجيل.')
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'تعذر حذف التسجيل.')
     } finally {
       setBusyRegistrationId(null)
+    }
+  }
+
+  const handleLoadMoreRegistrations = async () => {
+    if (!eventID || isLoadingMoreRegistrations || !hasMoreRegistrations) {
+      return
+    }
+
+    setIsLoadingMoreRegistrations(true)
+
+    try {
+      const payload = await fetchEventRegistrations(eventID, { offset: registrations.length })
+      setRegistrations((previous) => [...previous, ...payload.eventRegistrations])
+      setRegistrationsTotal(payload.total ?? registrationsTotal)
+      setHasMoreRegistrations(payload.hasMore ?? false)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'تعذر تحميل المزيد من التسجيلات.')
+    } finally {
+      setIsLoadingMoreRegistrations(false)
     }
   }
 
@@ -187,11 +212,11 @@ export function DashboardEventAdminPage() {
           <Users className="h-5 w-5 text-slate-700" />
           <h2 className="text-base font-semibold text-slate-900">المسجلون</h2>
           <span className="mr-auto rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-            {registrations.length} تسجيل
+            {registrationsTotal} تسجيل
           </span>
         </div>
 
-        {registrations.length === 0 ? <p className="text-sm text-slate-500">لا توجد تسجيلات بعد.</p> : null}
+        {registrationsTotal === 0 ? <p className="text-sm text-slate-500">لا توجد تسجيلات بعد.</p> : null}
 
         <ul className="space-y-2">
           {registrations.map((registration) => {
@@ -288,6 +313,21 @@ export function DashboardEventAdminPage() {
             )
           })}
         </ul>
+
+        {hasMoreRegistrations ? (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => void handleLoadMoreRegistrations()}
+              disabled={isLoadingMoreRegistrations}
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoadingMoreRegistrations
+                ? 'جار التحميل...'
+                : `تحميل المزيد (${registrations.length} من ${registrationsTotal})`}
+            </button>
+          </div>
+        ) : null}
 
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
         {success ? <p className="mt-3 text-sm font-medium text-emerald-700">{success}</p> : null}
