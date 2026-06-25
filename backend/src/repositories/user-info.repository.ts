@@ -283,6 +283,9 @@ export async function getUserProfileByMembershipNumber(
     .first<UserProfileRow>()
 }
 
+// SQLite limits bound variables per statement (999 by default).
+const MEMBERSHIP_NUMBER_IN_CLAUSE_BATCH_SIZE = 500
+
 export async function getUserDisplayNamesByMembershipNumbers(
   db: D1DatabaseLike,
   membershipNumbers: string[],
@@ -293,28 +296,31 @@ export async function getUserDisplayNamesByMembershipNumbers(
     return new Map()
   }
 
-  const placeholders = uniqueMembershipNumbers.map(() => '?').join(', ')
-  const rows = await db
-    .prepare(
-      `SELECT
-        u.membership_number,
-        u.email,
-        ui.en_name,
-        ui.ar_name
-      FROM users u
-      LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
-      WHERE u.membership_number IN (${placeholders})`
-    )
-    .bind(...uniqueMembershipNumbers)
-    .all<UserDisplayNameRow>()
-
   const displayNameMap = new Map<string, string>()
 
-  for (const row of rows.results) {
-    const displayName =
-      row.ar_name?.trim() || row.en_name?.trim() || row.email?.trim() || row.membership_number
+  for (let offset = 0; offset < uniqueMembershipNumbers.length; offset += MEMBERSHIP_NUMBER_IN_CLAUSE_BATCH_SIZE) {
+    const batch = uniqueMembershipNumbers.slice(offset, offset + MEMBERSHIP_NUMBER_IN_CLAUSE_BATCH_SIZE)
+    const placeholders = batch.map(() => '?').join(', ')
+    const rows = await db
+      .prepare(
+        `SELECT
+          u.membership_number,
+          u.email,
+          ui.en_name,
+          ui.ar_name
+        FROM users u
+        LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
+        WHERE u.membership_number IN (${placeholders})`
+      )
+      .bind(...batch)
+      .all<UserDisplayNameRow>()
 
-    displayNameMap.set(row.membership_number, displayName)
+    for (const row of rows.results) {
+      const displayName =
+        row.ar_name?.trim() || row.en_name?.trim() || row.email?.trim() || row.membership_number
+
+      displayNameMap.set(row.membership_number, displayName)
+    }
   }
 
   return displayNameMap
