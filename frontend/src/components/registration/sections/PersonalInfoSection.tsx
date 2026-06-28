@@ -70,7 +70,7 @@ export function PersonalInfoSection({ data, onFieldChange, readOnlyFields }: Per
           onChange={(value) => onFieldChange('phoneNumber', value)}
           required
         />
-        <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+        <div id="sex" className="flex flex-col gap-2 text-sm font-medium text-slate-700">
           <span>
             الجنس
             <span className="mr-1 font-bold text-red-600" aria-hidden="true">*</span>
