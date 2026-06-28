@@ -51,6 +51,7 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           options={availableSkills}
           initialSuggestions={POPULAR_SKILLS_INITIAL_SUGGESTIONS}
           placeholder={isLoadingSkills ? 'جاري التحميل...' : 'ابحث عن مهارة أو أضف مهارة مخصصة'}
+          pendingSelectionHint="كتبتَ مهارة لكن لم تُضَف بعد. اضغط على المهارة في القائمة أو اضغط Enter لإضافتها."
           onChange={(value) => onFieldChange('skills', value)}
         />
         <SearchableTagsField
@@ -73,6 +74,7 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
             initialSuggestions={POPULAR_LANGUAGES_INITIAL_SUGGESTIONS}
             allowCustom={false}
             placeholder="ابحث بالعربية أو English أو ISO (مثل ar, en)"
+            pendingSelectionHint="كتبتَ لغة لكن لم تُضف بعد. اضغط على اللغة في القائمة أو اضغط Enter لإضافتها."
             onChange={(value) => onFieldChange('languages', value)}
           />
         </div>

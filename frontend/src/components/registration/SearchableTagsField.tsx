@@ -58,7 +58,7 @@ export function SearchableTagsField({
   allowCustom = true,
   placeholder = 'ابحث أو اكتب قيمة ثم اضغط Enter',
   helperText,
-  pendingSelectionHint,
+  pendingSelectionHint = 'كتبتَ قيمة لكن لم تُضَف بعد. اضغط على الخيار في القائمة أو اضغط Enter لإضافته.',
   hiddenValue,
   renderTag,
 }: SearchableTagsFieldProps) {

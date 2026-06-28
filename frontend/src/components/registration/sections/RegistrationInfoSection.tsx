@@ -129,6 +129,7 @@ export function RegistrationInfoSection({ data, onFieldChange }: RegistrationInf
           options={[]}
           helperText="اذا كان انضمامك عبر دعوة من عضو في التجمّع، يرجى ذكر اسم العضو"
           initialSuggestions={[]}
+          pendingSelectionHint="كتبتَ اسمًا لكن لم يُضف بعد. اضغط Enter لإضافة الاسم."
           value={data.friendsOnPlatform}
           onChange={(value) => onFieldChange('friendsOnPlatform', value)}
         />
