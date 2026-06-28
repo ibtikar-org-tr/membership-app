@@ -61,6 +61,7 @@ export function ProfileSection({ data, onFieldChange }: ProfileSectionProps) {
           options={availableSkills}
           initialSuggestions={POPULAR_SKILLS_INITIAL_SUGGESTIONS}
           placeholder={isLoadingSkills ? 'جاري التحميل...' : 'ابحث عن اهتمام أو أضف اهتمامًا مخصصًا'}
+          pendingSelectionHint="كتبتَ اهتمامًا لكن لم يُضَف بعد. اضغط على الاهتمام في القائمة أو اضغط Enter لإضافته."
           onChange={(value) => onFieldChange('interests', value)}
         />
         <div className="md:col-span-2">

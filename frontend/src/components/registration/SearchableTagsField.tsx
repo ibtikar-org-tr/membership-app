@@ -19,6 +19,7 @@ type SearchableTagsFieldProps = {
   allowCustom?: boolean
   placeholder?: string
   helperText?: string
+  pendingSelectionHint?: string
   hiddenValue?: string
   renderTag?: (tag: string, onRemove: () => void) => ReactNode
 }
@@ -57,11 +58,13 @@ export function SearchableTagsField({
   allowCustom = true,
   placeholder = 'ابحث أو اكتب قيمة ثم اضغط Enter',
   helperText,
+  pendingSelectionHint,
   hiddenValue,
   renderTag,
 }: SearchableTagsFieldProps) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLDivElement | null>(null)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
@@ -135,6 +138,10 @@ export function SearchableTagsField({
       })
       .slice(0, 12)
   }, [normalizedOptions, query, selectedSet, initialSuggestions, optionsByValue])
+
+  const showPendingSelectionHint = Boolean(
+    pendingSelectionHint && query.trim() && !isFocused,
+  )
 
   const canAddCustom = useMemo(() => {
     if (!allowCustom) {
@@ -274,7 +281,11 @@ export function SearchableTagsField({
           id={id}
           type="text"
           value={query}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            setIsFocused(true)
+            setIsOpen(true)
+          }}
+          onBlur={() => setIsFocused(false)}
           onChange={(event) => {
             setQuery(event.target.value)
             setIsOpen(true)
@@ -304,6 +315,15 @@ export function SearchableTagsField({
       </div>
 
       {helperText && <p className="text-xs font-normal text-slate-500/70">{helperText}</p>}
+
+      {showPendingSelectionHint && (
+        <p
+          role="status"
+          className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-900"
+        >
+          {pendingSelectionHint}
+        </p>
+      )}
 
       {isOpen && (filteredOptions.length > 0 || canAddCustom) && createPortal(
         <div
