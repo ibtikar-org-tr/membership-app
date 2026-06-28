@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { getClubMember } from '../repositories/vms-club-members.repository'
 import { getClubById } from '../repositories/vms-clubs.repository'
-import { listEventRegistrations } from '../repositories/vms-event-registrations.repository'
+import { getEventRegistrationByEventAndMember } from '../repositories/vms-event-registrations.repository'
 import { getEventById } from '../repositories/vms-events.repository'
 import { getProjectMember } from '../repositories/vms-project-members.repository'
 import { getProjectById } from '../repositories/vms-projects.repository'
@@ -83,8 +83,7 @@ async function canJoinEventGroup(c: { env: AppBindings }, eventId: string, membe
     return { allowed: false, status: 404, error: 'Event not found.' as const, groupId: null, contextLabel: null }
   }
 
-  const registrations = await listEventRegistrations(c.env.VMS_DB, eventId)
-  const registration = registrations.find((entry) => entry.membershipNumber === membershipNumber) ?? null
+  const registration = await getEventRegistrationByEventAndMember(c.env.VMS_DB, eventId, membershipNumber)
   if (!registration || (registration.status !== 'registered' && registration.status !== 'attended')) {
     return { allowed: false, status: 403, error: 'You are not registered for this event.' as const, groupId: null, contextLabel: null }
   }

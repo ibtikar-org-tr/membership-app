@@ -11,11 +11,20 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
+    "@tiptap/extension-collaboration": "^2.27.2",
+    "@tiptap/extension-collaboration-cursor": "^2.26.2",
+    "@tiptap/extension-placeholder": "^2.27.2",
+    "@tiptap/extension-text-style": "^2.27.2",
+    "@tiptap/extension-underline": "^2.27.2",
+    "@tiptap/pm": "^2.27.2",
+    "@tiptap/react": "^2.27.2",
+    "@tiptap/starter-kit": "^2.27.2",
     "boring-avatars": "^2.0.4",
     "canvas-confetti": "^1.9.4",
     "chart.js": "^4.5.1",
     "gsap": "^3.14.2",
     "iso-countries-languages": "^0.3.0",
+    "lib0": "^0.2.117",
     "lucide-react": "^1.8.0",
     "mermaid": "^11.14.0",
     "react": "^19.2.4",
@@ -24,7 +33,9 @@
     "react-icons": "^5.6.0",
     "react-international-phone": "^4.8.0",
     "react-router-dom": "^7.13.2",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.2.2",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.31"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

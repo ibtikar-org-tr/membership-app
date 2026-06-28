@@ -11,6 +11,7 @@ import type {
   VmsProject,
   VmsProjectMember,
   VmsProjectMemberContact,
+  VmsProjectNote,
   VmsSkill,
   VmsTask,
 } from '../types/vms'
@@ -334,9 +335,39 @@ export function deleteEventTicket(ticketId: string) {
   return deleteJson(`/event-tickets/${encodeURIComponent(ticketId)}`)
 }
 
-export function fetchEventRegistrations(eventId?: string) {
-  const query = eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''
-  return fetchJson<{ eventRegistrations: VmsEventRegistration[] }>(`/event-registrations${query}`)
+export function fetchEventRegistrationCounts(eventId: string) {
+  return fetchJson<{ ticketCounts: Record<string, number>; total: number }>(
+    `/events/${encodeURIComponent(eventId)}/registration-counts`,
+  )
+}
+
+export function fetchEventRegistrations(
+  eventId?: string,
+  options?: {
+    limit?: number
+    offset?: number
+    membershipNumber?: string
+  },
+) {
+  const params = new URLSearchParams()
+  if (eventId) {
+    params.set('eventId', eventId)
+  }
+  if (options?.limit !== undefined) {
+    params.set('limit', String(options.limit))
+  }
+  if (options?.offset !== undefined) {
+    params.set('offset', String(options.offset))
+  }
+  if (options?.membershipNumber) {
+    params.set('membershipNumber', options.membershipNumber)
+  }
+  const query = params.toString() ? `?${params.toString()}` : ''
+  return fetchJson<{
+    eventRegistrations: VmsEventRegistration[]
+    total?: number
+    hasMore?: boolean
+  }>(`/event-registrations${query}`)
 }
 
 export function createEventRegistration(payload: {
@@ -406,6 +437,12 @@ export function searchOrCreateSkill(skillName: string) {
 export function fetchProjectMemberContact(projectId: string, targetMembershipNumber: string) {
   return fetchJson<{ contact: VmsProjectMemberContact }>(
     `/project-members/${encodeURIComponent(projectId)}/${encodeURIComponent(targetMembershipNumber)}/contact`,
+  )
+}
+
+export function fetchEventRegistrantContact(eventId: string, targetMembershipNumber: string) {
+  return fetchJson<{ contact: VmsProjectMemberContact }>(
+    `/events/${encodeURIComponent(eventId)}/registrants/${encodeURIComponent(targetMembershipNumber)}/contact`,
   )
 }
 
@@ -649,6 +686,39 @@ export function deleteClubMember(clubId: string, membershipNumber: string, actor
 export function fetchPointTransactions(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)
+}
+
+export function fetchProjectNotes(projectId: string) {
+  return fetchJson<{ notes: VmsProjectNote[] }>(`/project-notes?projectId=${encodeURIComponent(projectId)}`)
+}
+
+export function fetchProjectNoteById(noteId: string) {
+  return fetchJson<{ note: VmsProjectNote }>(`/project-notes/${encodeURIComponent(noteId)}`)
+}
+
+export function createProjectNote(payload: { projectId: string; title: string }) {
+  return postJson<{ note: VmsProjectNote }, typeof payload>(`/project-notes`, payload)
+}
+
+export function updateProjectNote(noteId: string, payload: { title?: string }) {
+  return putJson<{ note: VmsProjectNote }, typeof payload>(`/project-notes/${encodeURIComponent(noteId)}`, payload)
+}
+
+export function deleteProjectNote(noteId: string) {
+  return deleteJson(`/project-notes/${encodeURIComponent(noteId)}`)
+}
+
+export function getProjectNoteWebSocketUrl(noteId: string, token: string) {
+  const memberMsBaseUrl = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
+
+  if (memberMsBaseUrl) {
+    const wsBase = memberMsBaseUrl.replace(/^http/i, 'ws').replace(/\/+$/, '')
+    return `${wsBase}/api/project-notes/${encodeURIComponent(noteId)}/ws?token=${encodeURIComponent(token)}`
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const host = import.meta.env.DEV ? `${window.location.hostname}:5931` : window.location.host
+  return `${protocol}//${host}/ms/membership-app/api/project-notes/${encodeURIComponent(noteId)}/ws?token=${encodeURIComponent(token)}`
 }
 
 export async function uploadImages(files: File[]): Promise<{ images: string[] }> {

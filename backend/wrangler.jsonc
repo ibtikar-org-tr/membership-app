@@ -44,6 +44,20 @@
       "remote": true
     }
   ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PROJECT_NOTE_ROOM",
+        "class_name": "ProjectNoteRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1-project-notes",
+      "new_sqlite_classes": ["ProjectNoteRoom"]
+    }
+  ],
   "vars": {
     "MEMBERSHIP_NUMBER_PREFIX": "2501",
     "TELEGRAM_MS":"https://ibtikar.tr/ms/telegram",

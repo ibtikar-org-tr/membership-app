@@ -6,6 +6,7 @@ export interface VmsProject {
   description: string | null
   parentProjectId: string | null
   owner: string
+  ownerDisplayName?: string
   telegramGroupId: string | null
   status: 'active' | 'completed' | 'archived' | string
   skills: Record<string, string> | null
@@ -176,4 +177,17 @@ export interface VmsPointTransaction {
   taskId: string | null
   amount: number
   type: 'task_reward' | 'task_reward_reversal' | 'purchase' | 'event_attendance' | 'other' | string
+}
+
+export interface VmsProjectNote {
+  id: string
+  createdAt: string
+  updatedAt: string
+  projectId: string
+  title: string
+  content: string
+  contentPreview: string | null
+  createdBy: string
+  createdByDisplayName?: string
+  canEdit?: boolean
 }

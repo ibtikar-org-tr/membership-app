@@ -19,6 +19,7 @@ import Avatar from 'boring-avatars'
 import {
   createEventRegistration,
   fetchEventById,
+  fetchEventRegistrationCounts,
   fetchEventRegistrations,
   fetchEventTickets,
   fetchProjectMembers,
@@ -57,6 +58,12 @@ function registrationStatusLabel(status: string) {
   return status
 }
 
+const ATTENDEE_AVATAR_COLORS = ['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']
+
+function attendeeAvatarKeys(seed: string, count: number) {
+  return Array.from({ length: count }, (_, index) => `${seed}:${index}`)
+}
+
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
   const location = useLocation()
@@ -66,7 +73,9 @@ export function DashboardEventDetailsPage() {
   const ticketBuyingSectionRef = useRef<HTMLDivElement | null>(null)
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
-  const [registrations, setRegistrations] = useState<VmsEventRegistration[]>([])
+  const [ticketRegistrationCounts, setTicketRegistrationCounts] = useState<Record<string, number>>({})
+  const [registrationsTotal, setRegistrationsTotal] = useState(0)
+  const [myRegistration, setMyRegistration] = useState<VmsEventRegistration | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
@@ -86,6 +95,21 @@ export function DashboardEventDetailsPage() {
   const [selectedChangeTicketId, setSelectedChangeTicketId] = useState<string | null>(null)
   const [isChangeTicketPickerOpen, setIsChangeTicketPickerOpen] = useState(false)
 
+  function adjustTicketRegistrationCount(ticketId: string, delta: number) {
+    setTicketRegistrationCounts((previous) => {
+      const next = { ...previous }
+      const nextCount = Math.max(0, (next[ticketId] ?? 0) + delta)
+
+      if (nextCount === 0) {
+        delete next[ticketId]
+      } else {
+        next[ticketId] = nextCount
+      }
+
+      return next
+    })
+  }
+
   function scrollToTicketBuyingSection() {
     ticketBuyingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
@@ -102,10 +126,11 @@ export function DashboardEventDetailsPage() {
     async function loadEventDetails() {
       try {
         if (user) {
-          const [eventPayload, ticketsPayload, registrationsPayload] = await Promise.all([
+          const [eventPayload, ticketsPayload, registrationCountsPayload, myRegistrationPayload] = await Promise.all([
             fetchEventById(currentEventId),
             fetchEventTickets(currentEventId),
-            fetchEventRegistrations(currentEventId),
+            fetchEventRegistrationCounts(currentEventId),
+            fetchEventRegistrations(currentEventId, { membershipNumber: user.membershipNumber }),
           ])
 
           if (controller.signal.aborted) {
@@ -114,7 +139,9 @@ export function DashboardEventDetailsPage() {
 
           setEventItem(eventPayload.event)
           setTickets(ticketsPayload.eventTickets)
-          setRegistrations(registrationsPayload.eventRegistrations)
+          setTicketRegistrationCounts(registrationCountsPayload.ticketCounts)
+          setRegistrationsTotal(registrationCountsPayload.total)
+          setMyRegistration(myRegistrationPayload.eventRegistrations[0] ?? null)
           return
         }
 
@@ -129,7 +156,8 @@ export function DashboardEventDetailsPage() {
 
         setEventItem(eventPayload.event)
         setTickets(ticketsPayload.eventTickets)
-        setRegistrations([])
+        setTicketRegistrationCounts({})
+        setRegistrationsTotal(0)
       } catch {
         if (!controller.signal.aborted) {
           setNotFound(true)
@@ -197,23 +225,8 @@ export function DashboardEventDetailsPage() {
   }, [eventItem, projectMembers, user])
 
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
-  const hasUserRegistered = useMemo(() => {
-    if (!user) {
-      return false
-    }
-
-    return registrations.some(
-      (registration) =>
-        registration.membershipNumber === user.membershipNumber && registration.status === 'registered',
-    )
-  }, [registrations, user])
-  const userRegistration = useMemo(() => {
-    if (!user) {
-      return null
-    }
-
-    return registrations.find((registration) => registration.membershipNumber === user.membershipNumber) ?? null
-  }, [registrations, user])
+  const hasUserRegistered = useMemo(() => myRegistration?.status === 'registered', [myRegistration])
+  const userRegistration = myRegistration
   const userRegisteredTicket = useMemo(() => {
     if (!userRegistration) {
       return null
@@ -267,9 +280,7 @@ export function DashboardEventDetailsPage() {
       return
     }
 
-    const existingRegistration = registrations.find(
-      (registration) => registration.membershipNumber === user.membershipNumber,
-    )
+    const existingRegistration = myRegistration
     if (existingRegistration) {
       setApplyError('لديك تسجيل سابق في هذه الفعالية. تواصل مع المنظمين إذا كنت بحاجة للمساعدة.')
       return
@@ -291,7 +302,9 @@ export function DashboardEventDetailsPage() {
         status: 'registered',
       })
 
-      setRegistrations((previous) => [payload.eventRegistration, ...previous])
+      setMyRegistration(payload.eventRegistration)
+      adjustTicketRegistrationCount(payload.eventRegistration.ticketId, 1)
+      setRegistrationsTotal((previous) => previous + 1)
       setApplySuccess('تم إرسال طلب التسجيل بنجاح.')
       setSelectedTicketId(null)
       applyForm.reset()
@@ -325,7 +338,9 @@ export function DashboardEventDetailsPage() {
 
     try {
       await selfCancelEventRegistration(userRegistration.id)
-      setRegistrations((previous) => previous.filter((registration) => registration.id !== userRegistration.id))
+      setMyRegistration(null)
+      adjustTicketRegistrationCount(userRegistration.ticketId, -1)
+      setRegistrationsTotal((previous) => Math.max(0, previous - 1))
       setCancelRegistrationSuccess('تم إلغاء تسجيلك. يمكنك التسجيل مجدداً إذا رغبت.')
       setChangeTicketSuccess(null)
       setChangeTicketError(null)
@@ -366,11 +381,9 @@ export function DashboardEventDetailsPage() {
 
     try {
       const payload = await changeEventRegistrationTicket(userRegistration.id, selectedChangeTicketId)
-      setRegistrations((previous) =>
-        previous.map((registration) =>
-          registration.id === payload.eventRegistration.id ? payload.eventRegistration : registration,
-        ),
-      )
+      setMyRegistration(payload.eventRegistration)
+      adjustTicketRegistrationCount(userRegistration.ticketId, -1)
+      adjustTicketRegistrationCount(payload.eventRegistration.ticketId, 1)
       setChangeTicketSuccess('تم تغيير التذكرة بنجاح.')
       setCancelRegistrationSuccess(null)
       setCancelRegistrationError(null)
@@ -980,107 +993,67 @@ export function DashboardEventDetailsPage() {
             </div>
             {user && canViewAttendeeNumbers ? (
             <div>
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">المسجّلون</h3>
-              {tickets.length > 0 && registrations.length > 0 ? (
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                المسجّلون
+                {registrationsTotal > 0 ? (
+                  <span className="mr-2 font-normal normal-case text-slate-600">({registrationsTotal})</span>
+                ) : null}
+              </h3>
+              {registrationsTotal > 0 ? (
                 <div className="space-y-6">
                   {tickets.map((ticket) => {
-                    const ticketRegistrations = registrations.filter((reg) => reg.ticketId === ticket.id)
-                    if (ticketRegistrations.length === 0) return null
+                    const count = ticketRegistrationCounts[ticket.id] ?? 0
+                    if (count === 0) {
+                      return null
+                    }
 
                     return (
                       <div key={ticket.id}>
                         <h4 className="mb-2 text-sm font-semibold text-slate-700">
                           {ticket.name}
                           <span className="ml-2 rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-medium text-cyan-800">
-                            {ticketRegistrations.length} {ticketRegistrations.length === 1 ? 'مسجّل' : 'مسجّلين'}
+                            {count} {count === 1 ? 'مسجّل' : 'مسجّلين'}
                           </span>
                         </h4>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          {ticketRegistrations.map((registration) => (
-                            <div key={registration.id} className="relative">
-                              <Avatar
-                                size={40}
-                                name={registration.id}
-                                variant="beam"
-                                colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
-                                className="ring-2 ring-white shadow-sm"
-                              />
-                              <span className={`absolute -bottom-1 -right-1 rounded-full px-1 py-0.5 text-[10px] font-medium ring-1 ${
-                                registration.status === 'attended'
-                                  ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
-                                  : registration.status === 'cancelled'
-                                  ? 'bg-red-100 text-red-800 ring-red-200'
-                                  : registration.status === 'no_show'
-                                  ? 'bg-amber-100 text-amber-800 ring-amber-200'
-                                  : 'bg-white text-slate-700 ring-slate-200'
-                              }`}>
-                                {registration.status === 'attended' ? '✓' : registration.status === 'cancelled' ? '✗' : registration.status === 'no_show' ? '?' : '○'}
-                              </span>
-                            </div>
+                          {attendeeAvatarKeys(ticket.id, count).map((avatarKey) => (
+                            <Avatar
+                              key={avatarKey}
+                              size={40}
+                              name={avatarKey}
+                              variant="beam"
+                              colors={ATTENDEE_AVATAR_COLORS}
+                              className="ring-2 ring-white shadow-sm"
+                            />
                           ))}
                         </div>
                       </div>
                     )
                   })}
-                  {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).length > 0 && (
-                    <div>
-                      <h4 className="mb-2 text-sm font-semibold text-slate-700">
-                        تذاكر أخرى
-                        <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-                          {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).length} {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).length === 1 ? 'مسجّل' : 'مسجّلين'}
-                        </span>
-                      </h4>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {registrations.filter((reg) => !tickets.some((t) => t.id === reg.ticketId)).map((registration) => (
-                          <div key={registration.id} className="relative">
+                  {Object.entries(ticketRegistrationCounts)
+                    .filter(([ticketId]) => !tickets.some((ticket) => ticket.id === ticketId))
+                    .map(([ticketId, count]) => (
+                      <div key={ticketId}>
+                        <h4 className="mb-2 text-sm font-semibold text-slate-700">
+                          تذاكر أخرى
+                          <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                            {count} {count === 1 ? 'مسجّل' : 'مسجّلين'}
+                          </span>
+                        </h4>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {attendeeAvatarKeys(ticketId, count).map((avatarKey) => (
                             <Avatar
+                              key={avatarKey}
                               size={40}
-                              name={registration.id}
+                              name={avatarKey}
                               variant="beam"
-                              colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
+                              colors={ATTENDEE_AVATAR_COLORS}
                               className="ring-2 ring-white shadow-sm"
                             />
-                            <span className={`absolute -bottom-1 -right-1 rounded-full px-1 py-0.5 text-[10px] font-medium ring-1 ${
-                              registration.status === 'attended'
-                                ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
-                                : registration.status === 'cancelled'
-                                ? 'bg-red-100 text-red-800 ring-red-200'
-                                : registration.status === 'no_show'
-                                ? 'bg-amber-100 text-amber-800 ring-amber-200'
-                                : 'bg-white text-slate-700 ring-slate-200'
-                            }`}>
-                              {registration.status === 'attended' ? '✓' : registration.status === 'cancelled' ? '✗' : registration.status === 'no_show' ? '?' : '○'}
-                            </span>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ) : registrations.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {registrations.map((registration) => (
-                    <div key={registration.id} className="relative">
-                      <Avatar
-                        size={40}
-                        name={registration.membershipNumber}
-                        variant="beam"
-                        colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
-                        className="ring-2 ring-white shadow-sm"
-                      />
-                      <span className={`absolute -bottom-1 -right-1 rounded-full px-1 py-0.5 text-[10px] font-medium ring-1 ${
-                        registration.status === 'attended'
-                          ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
-                          : registration.status === 'cancelled'
-                          ? 'bg-red-100 text-red-800 ring-red-200'
-                          : registration.status === 'no_show'
-                          ? 'bg-amber-100 text-amber-800 ring-amber-200'
-                          : 'bg-white text-slate-700 ring-slate-200'
-                      }`}>
-                        {registration.status === 'attended' ? '✓' : registration.status === 'cancelled' ? '✗' : registration.status === 'no_show' ? '?' : '○'}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               ) : (
                 <p className="text-center text-sm text-slate-500">لا توجد تسجيلات لهذه الفعالية بعد.</p>
@@ -1092,7 +1065,7 @@ export function DashboardEventDetailsPage() {
               </div>
             ) : null}
           </div>
-          {tickets.length === 0 && registrations.length === 0 ? (
+          {tickets.length === 0 && registrationsTotal === 0 ? (
             <p className="mt-6 text-center text-sm text-slate-500">لا توجد تذاكر أو تسجيلات لهذه الفعالية بعد.</p>
           ) : null}
         </div>

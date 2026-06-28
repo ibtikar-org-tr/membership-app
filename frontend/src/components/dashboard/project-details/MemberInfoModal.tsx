@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { fetchProjectMemberContact } from '../../../api/vms'
+import { fetchEventRegistrantContact, fetchProjectMemberContact } from '../../../api/vms'
 import type { VmsProjectMemberContact } from '../../../types/vms'
 
 function displayValue(value: string | null | undefined) {
@@ -17,14 +17,16 @@ function formatTelegramLabel(username: string) {
   return trimmed.startsWith('@') ? trimmed : `@${trimmed}`
 }
 
-interface MemberInfoModalProps {
-  projectId: string
+type MemberInfoModalProps = {
   membershipNumber: string
   displayName: string
   onClose: () => void
-}
+} & (
+  | { projectId: string; eventId?: never }
+  | { eventId: string; projectId?: never }
+)
 
-export function MemberInfoModal({ projectId, membershipNumber, displayName, onClose }: MemberInfoModalProps) {
+export function MemberInfoModal({ projectId, eventId, membershipNumber, displayName, onClose }: MemberInfoModalProps) {
   const [contact, setContact] = useState<VmsProjectMemberContact | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
@@ -37,7 +39,15 @@ export function MemberInfoModal({ projectId, membershipNumber, displayName, onCl
       setHasError(false)
 
       try {
-        const payload = await fetchProjectMemberContact(projectId, membershipNumber)
+        let payload: { contact: VmsProjectMemberContact }
+
+        if (eventId) {
+          payload = await fetchEventRegistrantContact(eventId, membershipNumber)
+        } else if (projectId) {
+          payload = await fetchProjectMemberContact(projectId, membershipNumber)
+        } else {
+          throw new Error('Missing project or event context.')
+        }
 
         if (!controller.signal.aborted) {
           setContact(payload.contact)
@@ -59,7 +69,7 @@ export function MemberInfoModal({ projectId, membershipNumber, displayName, onCl
     return () => {
       controller.abort()
     }
-  }, [membershipNumber, projectId])
+  }, [eventId, membershipNumber, projectId])
 
   const telegramUsername = contact?.telegramUsername?.trim() ?? ''
 

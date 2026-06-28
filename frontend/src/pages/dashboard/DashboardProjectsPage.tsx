@@ -1,13 +1,11 @@
-import { Link } from 'react-router-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiChevronLeft, FiFolder, FiGitBranch, FiLayers } from 'react-icons/fi'
+import { FiFolder, FiGitBranch, FiLayers } from 'react-icons/fi'
 import { createProject, fetchDirectProjects } from '../../api/vms'
 import type { VmsProject } from '../../types/vms'
-import { formatDateEnCA } from '../../utils/date-format'
 import { getStoredUser, isPlatformAdmin } from '../../utils/auth'
 import { ProjectHierarchyTree } from './ProjectHierarchyTree'
-import { priorityTone, statusBadgeClass, statusLabel } from '../../components/dashboard/project-details/helpers'
+import { ProjectsLinearTreeList, ProjectsLinearTreeSkeleton } from '../../components/dashboard/projects/ProjectsLinearTreeList'
 import { SkillsField } from '../../components/SkillsField'
 
 export function DashboardProjectsPage() {
@@ -53,24 +51,6 @@ export function DashboardProjectsPage() {
   }, [loadProjects])
 
   const topLevelCount = useMemo(() => projects.filter((project) => !project.parentProjectId).length, [projects])
-
-  const projectNameById = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const project of projects) {
-      map.set(project.id, project.name)
-    }
-    return map
-  }, [projects])
-
-  const sortedProjects = useMemo(() => {
-    return [...projects].sort((left, right) => {
-      if (Boolean(left.parentProjectId) !== Boolean(right.parentProjectId)) {
-        return left.parentProjectId ? 1 : -1
-      }
-
-      return left.name.localeCompare(right.name, 'ar')
-    })
-  }, [projects])
 
   const handleCreateProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -269,6 +249,8 @@ export function DashboardProjectsPage() {
         </section>
       }
 
+      <ProjectHierarchyTree clickableProjectIds={projects.map((project) => project.id)} />
+
       <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
@@ -277,7 +259,7 @@ export function DashboardProjectsPage() {
             </span>
             <div>
               <h3 className="text-base font-semibold text-slate-900 sm:text-lg">قائمة المشاريع</h3>
-              <p className="mt-0.5 text-sm text-slate-500">بطاقات سريعة مع الحالة وآخر تحديث.</p>
+              <p className="mt-0.5 text-sm text-slate-500">عرض خطي هرمي للمشاريع التي أنت عضوٌ فيها أو مسؤولٌ عنها.</p>
             </div>
           </div>
           {!isLoading && !hasError ? (
@@ -288,24 +270,7 @@ export function DashboardProjectsPage() {
         </div>
 
         <div className="mt-5">
-          {isLoading ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {[0, 1, 2, 3, 4, 5].map((key) => (
-                <div
-                  key={`project-skeleton-${key}`}
-                  className="flex overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/80"
-                >
-                  <div className="w-1 shrink-0 bg-slate-200" />
-                  <div className="flex flex-1 flex-col gap-3 p-4">
-                    <div className="h-3 w-20 animate-pulse rounded-full bg-slate-200" />
-                    <div className="h-4 w-3/4 max-w-48 animate-pulse rounded-md bg-slate-200" />
-                    <div className="h-3 w-full animate-pulse rounded-md bg-slate-100" />
-                    <div className="mt-auto h-8 w-full animate-pulse rounded-xl bg-slate-200" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
+          {isLoading ? <ProjectsLinearTreeSkeleton /> : null}
 
           {!isLoading && hasError ? (
             <div className="rounded-2xl border border-red-100 bg-red-50/60 px-4 py-5 text-center">
@@ -331,65 +296,9 @@ export function DashboardProjectsPage() {
             </div>
           ) : null}
 
-          {!isLoading && !hasError && projects.length > 0 ? (
-            <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
-              {sortedProjects.map((project) => {
-                const parentName = project.parentProjectId ? projectNameById.get(project.parentProjectId) : null
-
-                return (
-                  <li key={project.id}>
-                    <article className="group flex h-full min-h-46 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:border-cyan-200/80 hover:shadow-md">
-                      <div className={`w-1 shrink-0 ${priorityTone(project.status)}`} aria-hidden />
-                      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusBadgeClass(project.status)}`}>
-                            {statusLabel(project.status)}
-                          </span>
-                          {project.parentProjectId ? (
-                            <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600" title={parentName ?? project.parentProjectId}>
-                              <FiGitBranch className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-                              <span className="truncate">{parentName ? `تحت: ${parentName}` : 'مشروع فرعي'}</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50/80 px-2 py-0.5 text-[11px] font-medium text-cyan-800">مشروع رئيسي</span>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-semibold leading-snug text-slate-900">{project.name}</h4>
-                          {project.description ? (
-                            <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600">{project.description}</p>
-                          ) : (
-                            <p className="mt-1 text-xs italic text-slate-400">لا يوجد وصف</p>
-                          )}
-                        </div>
-                        <div className="mt-auto flex flex-wrap items-end justify-between gap-2 border-t border-slate-100 pt-3 text-[11px] text-slate-500">
-                          <div className="min-w-0 space-y-0.5">
-                            <p className="truncate">
-                              <span className="text-slate-400">المسؤول:</span> {project.owner}
-                            </p>
-                            <p>
-                              <span className="text-slate-400">آخر تحديث:</span> {formatDateEnCA(project.updatedAt)}
-                            </p>
-                          </div>
-                          <Link
-                            to={`/dashboard/projects/${project.id}`}
-                            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:border-cyan-300 group-hover:bg-cyan-50/80 group-hover:text-cyan-950"
-                          >
-                            التفاصيل
-                            <FiChevronLeft className="h-3.5 w-3.5 transition group-hover:-translate-x-0.5" aria-hidden />
-                          </Link>
-                        </div>
-                      </div>
-                    </article>
-                  </li>
-                )
-              })}
-            </ul>
-          ) : null}
+          {!isLoading && !hasError && projects.length > 0 ? <ProjectsLinearTreeList projects={projects} /> : null}
         </div>
       </section>
-
-      <ProjectHierarchyTree clickableProjectIds={projects.map((project) => project.id)} />
     </div>
   )
 }

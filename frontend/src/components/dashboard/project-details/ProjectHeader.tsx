@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import {
   FiCalendar,
+  FiFileText,
   FiGitBranch,
   FiHeart,
   FiLogOut,
@@ -39,6 +40,7 @@ interface ProjectHeaderProps {
   eventsPath: string
   clubsPath: string
   positionsPath: string
+  notesPath: string
   onOpenMembers: () => void
   onOpenProjectSettings: () => void
   subProjectsPath: string
@@ -67,6 +69,7 @@ export function ProjectHeader({
   eventsPath,
   clubsPath,
   positionsPath,
+  notesPath,
   onOpenMembers,
   onOpenProjectSettings,
   subProjectsPath,
@@ -147,6 +150,10 @@ export function ProjectHeader({
             <Link to={subProjectsPath} className={toolbarBtn}>
               <FiGitBranch className={toolbarIcon} aria-hidden />
               المشاريع الفرعية
+            </Link>
+            <Link to={notesPath} className={toolbarBtn}>
+              <FiFileText className={toolbarIcon} aria-hidden />
+              الملاحظات
             </Link>
             <button
               type="button"

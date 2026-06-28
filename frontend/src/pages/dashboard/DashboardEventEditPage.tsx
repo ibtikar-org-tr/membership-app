@@ -85,7 +85,7 @@ export function DashboardEventEditPage() {
         const [eventPayload, ticketsPayload, registrationsPayload] = await Promise.all([
           fetchEventById(currentEventId),
           fetchEventTickets(currentEventId),
-          fetchEventRegistrations(currentEventId),
+          fetchEventRegistrations(currentEventId, { limit: 0 }),
         ])
         if (controller.signal.aborted) return
         setEventItem(eventPayload.event)

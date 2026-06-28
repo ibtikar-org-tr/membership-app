@@ -125,6 +125,18 @@ export function statusBadgeClass(status: string) {
   return 'border-cyan-200 bg-cyan-50 text-cyan-700'
 }
 
+export function projectStatusAccent(status: string) {
+  if (status === 'completed') {
+    return 'bg-emerald-500'
+  }
+
+  if (status === 'archived') {
+    return 'bg-slate-400'
+  }
+
+  return 'bg-cyan-500'
+}
+
 export function taskPriorityLabel(priority: string) {
   if (priority === 'high') {
     return 'عالية'

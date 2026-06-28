@@ -1,4 +1,5 @@
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
+import { lazyRoute } from './lazy-route'
 import { RouteErrorBoundary } from '../components/errors/RouteErrorBoundary'
 
 const router = createBrowserRouter([
@@ -6,233 +7,154 @@ const router = createBrowserRouter([
     path: '/',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
-    lazy: async () => {
-      const { HomePage } = await import('../pages/HomePage')
-      return { Component: HomePage }
-    },
+    lazy: lazyRoute(() => import('../pages/HomePage'), 'HomePage'),
   },
   {
     path: '/registration',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
-    lazy: async () => {
-      const { RegistrationPage } = await import('../pages/RegistrationPage')
-      return { Component: RegistrationPage }
-    },
+    lazy: lazyRoute(() => import('../pages/RegistrationPage'), 'RegistrationPage'),
   },
   {
     path: '/login',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
-    lazy: async () => {
-      const { LoginPage } = await import('../pages/LoginPage')
-      return { Component: LoginPage }
-    },
+    lazy: lazyRoute(() => import('../pages/LoginPage'), 'LoginPage'),
   },
   {
     path: '/iforgot',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
-    lazy: async () => {
-      const { IForgotPage } = await import('../pages/IForgotPage')
-      return { Component: IForgotPage }
-    },
+    lazy: lazyRoute(() => import('../pages/IForgotPage'), 'IForgotPage'),
   },
   {
     path: '/reset-password',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
-    lazy: async () => {
-      const { ResetPasswordPage } = await import('../pages/ResetPasswordPage')
-      return { Component: ResetPasswordPage }
-    },
+    lazy: lazyRoute(() => import('../pages/ResetPasswordPage'), 'ResetPasswordPage'),
   },
   {
     path: '/event/:eventID',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
-    lazy: async () => {
-      const { PublicEventPage } = await import('../pages/PublicEventPage')
-      return { Component: PublicEventPage }
-    },
+    lazy: lazyRoute(() => import('../pages/PublicEventPage'), 'PublicEventPage'),
   },
   {
     path: '/telegram-bot',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
-    lazy: async () => {
-      const { TelegramBotPage } = await import('../pages/TelegramBotPage')
-      return { Component: TelegramBotPage }
-    },
+    lazy: lazyRoute(() => import('../pages/TelegramBotPage'), 'TelegramBotPage'),
   },
   {
     path: '/dashboard',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
-    lazy: async () => {
-      const { DashboardPage } = await import('../pages/DashboardPage')
-      return { Component: DashboardPage }
-    },
+    lazy: lazyRoute(() => import('../pages/DashboardPage'), 'DashboardPage'),
     children: [
       {
         index: true,
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardMainPage } = await import('../pages/dashboard/DashboardMainPage')
-          return { Component: DashboardMainPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardMainPage'), 'DashboardMainPage'),
       },
       {
         path: 'profile',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardProfilePage } = await import('../pages/dashboard/DashboardProfilePage')
-          return { Component: DashboardProfilePage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProfilePage'), 'DashboardProfilePage'),
       },
       {
         path: 'community',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardCommunityPage } = await import('../pages/dashboard/DashboardCommunityPage')
-          return { Component: DashboardCommunityPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardCommunityPage'), 'DashboardCommunityPage'),
       },
       {
         path: 'projects',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardProjectsPage } = await import('../pages/dashboard/DashboardProjectsPage')
-          return { Component: DashboardProjectsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectsPage'), 'DashboardProjectsPage'),
       },
       {
         path: 'projects/:projectID/sub-projects',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardProjectSubProjectsPage } = await import('../pages/dashboard/DashboardProjectSubProjectsPage')
-          return { Component: DashboardProjectSubProjectsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectSubProjectsPage'), 'DashboardProjectSubProjectsPage'),
       },
       {
         path: 'projects/:projectID',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardProjectDetailsPage } = await import('../pages/dashboard/DashboardProjectDetailsPage')
-          return { Component: DashboardProjectDetailsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectDetailsPage'), 'DashboardProjectDetailsPage'),
       },
       {
         path: 'projects/:projectID/events',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardProjectEventsPage } = await import('../pages/dashboard/DashboardProjectEventsPage')
-          return { Component: DashboardProjectEventsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectEventsPage'), 'DashboardProjectEventsPage'),
       },
       {
         path: 'projects/:projectID/clubs',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardProjectClubsPage } = await import('../pages/dashboard/DashboardProjectClubsPage')
-          return { Component: DashboardProjectClubsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectClubsPage'), 'DashboardProjectClubsPage'),
       },
       {
         path: 'projects/:projectID/positions',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardProjectPositionsPage } = await import('../pages/dashboard/DashboardProjectPositionsPage')
-          return { Component: DashboardProjectPositionsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectPositionsPage'), 'DashboardProjectPositionsPage'),
+      },
+      {
+        path: 'projects/:projectID/notes',
+        hydrateFallbackElement: <div />,
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectNotesPage'), 'DashboardProjectNotesPage'),
       },
       {
         path: 'volunteering',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardVolunteeringPage } = await import('../pages/dashboard/DashboardVolunteeringPage')
-          return { Component: DashboardVolunteeringPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardVolunteeringPage'), 'DashboardVolunteeringPage'),
       },
       {
         path: 'events',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardEventsPage } = await import('../pages/dashboard/DashboardEventsPage')
-          return { Component: DashboardEventsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventsPage'), 'DashboardEventsPage'),
       },
       {
         path: 'clubs',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardClubsPage } = await import('../pages/dashboard/DashboardClubsPage')
-          return { Component: DashboardClubsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubsPage'), 'DashboardClubsPage'),
       },
       {
         path: 'clubs/:clubID',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardClubPage } = await import('../pages/dashboard/DashboardClubPage')
-          return { Component: DashboardClubPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubPage'), 'DashboardClubPage'),
       },
       {
         path: 'clubs/:clubID/edit',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardClubDetailsPage } = await import('../pages/dashboard/DashboardClubDetailsPage')
-          return { Component: DashboardClubDetailsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubDetailsPage'), 'DashboardClubDetailsPage'),
       },
       {
         path: 'events/:eventID',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardEventDetailsPage } = await import('../pages/dashboard/DashboardEventDetailsPage')
-          return { Component: DashboardEventDetailsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventDetailsPage'), 'DashboardEventDetailsPage'),
       },
       {
         path: 'event/:eventID',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardEventDetailsPage } = await import('../pages/dashboard/DashboardEventDetailsPage')
-          return { Component: DashboardEventDetailsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventDetailsPage'), 'DashboardEventDetailsPage'),
       },
       {
         path: 'event/:eventID/edit',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardEventEditPage } = await import('../pages/dashboard/DashboardEventEditPage')
-          return { Component: DashboardEventEditPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventEditPage'), 'DashboardEventEditPage'),
       },
       {
         path: 'event/:eventID/admin',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardEventAdminPage } = await import('../pages/dashboard/DashboardEventAdminPage')
-          return { Component: DashboardEventAdminPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventAdminPage'), 'DashboardEventAdminPage'),
       },
       {
         path: 'positions/:positionID/edit',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardPositionEditPage } = await import('../pages/dashboard/DashboardPositionEditPage')
-          return { Component: DashboardPositionEditPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardPositionEditPage'), 'DashboardPositionEditPage'),
       },
       {
         path: 'settings',
         hydrateFallbackElement: <div />,
-        lazy: async () => {
-          const { DashboardSettingsPage } = await import('../pages/dashboard/DashboardSettingsPage')
-          return { Component: DashboardSettingsPage }
-        },
+        lazy: lazyRoute(() => import('../pages/dashboard/DashboardSettingsPage'), 'DashboardSettingsPage'),
       },
     ],
   },

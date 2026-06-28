@@ -5,9 +5,12 @@ import {
   deleteEventRegistrationById,
   getEventRegistrationById,
   getEventRegistrationByEventAndMember,
+  countActiveEventRegistrationsByTicket,
+  countEventRegistrations,
   listEventRegistrations,
   updateEventRegistrationById,
 } from '../repositories/vms-event-registrations.repository'
+import { getMemberContactInfoByMembershipNumber } from '../repositories/user-info.repository'
 import { getEventTicketById } from '../repositories/vms-event-tickets.repository'
 import { getEventById, getEventCancellationSettingsById } from '../repositories/vms-events.repository'
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
@@ -15,6 +18,8 @@ import {
   createEventRegistrationSchema,
   changeEventRegistrationTicketSchema,
   eventRegistrationParamsSchema,
+  eventRegistrationCountsParamsSchema,
+  eventRegistrantContactParamsSchema,
   updateEventRegistrationSchema,
 } from '../schemas/vms-event-registration.schema'
 import type { AppBindings } from '../types/bindings'
@@ -28,6 +33,32 @@ import {
 } from '../utils/event-registration-cancellation'
 
 export const vmsEventRegistrationsRoute = new Hono<AppEnv>()
+
+const DEFAULT_EVENT_REGISTRATIONS_PAGE_SIZE = 50
+const MAX_EVENT_REGISTRATIONS_PAGE_SIZE = 200
+
+function parseEventRegistrationsPagination(c: { req: { query: (key: string) => string | undefined } }) {
+  const limitParam = c.req.query('limit')
+  const offsetParam = c.req.query('offset')
+  const eventId = c.req.query('eventId')
+  const membershipNumberFilter = c.req.query('membershipNumber')
+
+  let limit: number | undefined
+  if (limitParam === '0') {
+    limit = undefined
+  } else if (limitParam !== undefined) {
+    const parsedLimit = Number.parseInt(limitParam, 10)
+    limit = Number.isFinite(parsedLimit)
+      ? Math.min(Math.max(parsedLimit, 1), MAX_EVENT_REGISTRATIONS_PAGE_SIZE)
+      : DEFAULT_EVENT_REGISTRATIONS_PAGE_SIZE
+  } else if (eventId && !membershipNumberFilter) {
+    limit = DEFAULT_EVENT_REGISTRATIONS_PAGE_SIZE
+  }
+
+  const offset = offsetParam ? Math.max(Number.parseInt(offsetParam, 10) || 0, 0) : 0
+
+  return { limit, offset }
+}
 
 async function enrichEventRegistrationsWithDisplayNames<T extends { membershipNumber: string }>(
   membersDb: AppBindings['MEMBERS_DB'],
@@ -44,29 +75,121 @@ async function enrichEventRegistrationsWithDisplayNames<T extends { membershipNu
   }))
 }
 
+vmsEventRegistrationsRoute.get(
+  '/events/:eventId/registration-counts',
+  zValidator('param', eventRegistrationCountsParamsSchema),
+  async (c) => {
+    try {
+      const { eventId } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      const event = await getEventById(c.env.VMS_DB, eventId)
+      if (!event) {
+        return c.json({ error: 'Event not found.' }, 404)
+      }
+
+      if (event.displayAttendeeNumbers === false) {
+        const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
+        if (!canManage) {
+          return c.json({ ticketCounts: {}, total: 0 })
+        }
+      }
+
+      const { ticketCounts, total } = await countActiveEventRegistrationsByTicket(c.env.VMS_DB, eventId)
+
+      return c.json({
+        ticketCounts: Object.fromEntries(ticketCounts),
+        total,
+      })
+    } catch (error) {
+      console.error('Failed to fetch event registration counts', error)
+      return c.json({ error: 'Could not fetch event registration counts.' }, 500)
+    }
+  },
+)
+
+vmsEventRegistrationsRoute.get(
+  '/events/:eventId/registrants/:membershipNumber/contact',
+  zValidator('param', eventRegistrantContactParamsSchema),
+  async (c) => {
+    try {
+      const { eventId, membershipNumber } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+
+      const event = await getEventById(c.env.VMS_DB, eventId)
+      if (!event) {
+        return c.json({ error: 'Event not found.' }, 404)
+      }
+
+      const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
+      if (!canManage) {
+        return c.json({ error: 'Only the project owner or managers can view registrant contact info.' }, 403)
+      }
+
+      const registration = await getEventRegistrationByEventAndMember(c.env.VMS_DB, eventId, membershipNumber)
+      if (!registration) {
+        return c.json({ error: 'Event registrant not found.' }, 404)
+      }
+
+      const contact = await getMemberContactInfoByMembershipNumber(c.env.MEMBERS_DB, membershipNumber)
+      if (!contact) {
+        return c.json({ error: 'Member contact info not found.' }, 404)
+      }
+
+      return c.json({ contact })
+    } catch (error) {
+      console.error('Failed to fetch event registrant contact info', error)
+      return c.json({ error: 'Could not fetch event registrant contact info.' }, 500)
+    }
+  },
+)
+
 vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
   try {
     const eventId = c.req.query('eventId')
-    let eventRegistrations = await listEventRegistrations(c.env.VMS_DB, eventId)
+    const membershipNumberFilter = c.req.query('membershipNumber')
+    const { limit, offset } = parseEventRegistrationsPagination(c)
 
-    if (eventId) {
+    let restrictedMembershipNumber = membershipNumberFilter
+
+    if (eventId && !membershipNumberFilter) {
       const event = await getEventById(c.env.VMS_DB, eventId)
       const actorMembershipNumber = getActorMembershipNumber(c)
 
       if (event && event.displayAttendeeNumbers === false) {
         const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
         if (!canManage) {
-          eventRegistrations = eventRegistrations.filter(
-            (registration) => registration.membershipNumber === actorMembershipNumber,
-          )
+          restrictedMembershipNumber = actorMembershipNumber ?? undefined
         }
       }
     }
 
-    const enrichedRegistrations = await enrichEventRegistrationsWithDisplayNames(
-      c.env.MEMBERS_DB,
-      eventRegistrations,
-    )
+    const listOptions = {
+      eventId,
+      membershipNumber: restrictedMembershipNumber,
+      limit,
+      offset: limit !== undefined ? offset : undefined,
+    }
+
+    const eventRegistrations = await listEventRegistrations(c.env.VMS_DB, listOptions)
+
+    const enrichedRegistrations = listOptions.membershipNumber
+      ? eventRegistrations
+      : await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, eventRegistrations)
+
+    if (eventId && limit !== undefined) {
+      const total = await countEventRegistrations(c.env.VMS_DB, {
+        eventId,
+        membershipNumber: restrictedMembershipNumber,
+      })
+
+      return c.json({
+        eventRegistrations: enrichedRegistrations,
+        total,
+        hasMore: offset + enrichedRegistrations.length < total,
+      })
+    }
+
     return c.json({ eventRegistrations: enrichedRegistrations })
   } catch (error) {
     console.error('Failed to list event registrations', error)

@@ -27,14 +27,93 @@ function mapEventRegistrationRow(row: EventRegistrationRow) {
   }
 }
 
-export async function listEventRegistrations(db: D1DatabaseLike, eventId?: string) {
-  const query = eventId
-    ? 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations WHERE event_id = ? ORDER BY created_at DESC'
-    : 'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations ORDER BY created_at DESC'
+export interface ListEventRegistrationsOptions {
+  eventId?: string
+  membershipNumber?: string
+  limit?: number
+  offset?: number
+}
 
-  const statement = db.prepare(query)
-  const result = eventId ? await statement.bind(eventId).all<EventRegistrationRow>() : await statement.bind().all<EventRegistrationRow>()
+const EVENT_REGISTRATION_SELECT =
+  'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations'
 
+export async function countEventRegistrations(
+  db: D1DatabaseLike,
+  options: Pick<ListEventRegistrationsOptions, 'eventId' | 'membershipNumber'> = {},
+) {
+  const conditions: string[] = []
+  const values: unknown[] = []
+
+  if (options.eventId) {
+    conditions.push('event_id = ?')
+    values.push(options.eventId)
+  }
+
+  if (options.membershipNumber) {
+    conditions.push('membership_number = ?')
+    values.push(options.membershipNumber)
+  }
+
+  const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : ''
+  const row = await db
+    .prepare(`SELECT COUNT(*) as count FROM event_registrations${whereClause}`)
+    .bind(...values)
+    .first<{ count: number }>()
+
+  return row?.count ?? 0
+}
+
+export async function countActiveEventRegistrationsByTicket(db: D1DatabaseLike, eventId: string) {
+  const rows = await db
+    .prepare(
+      `SELECT ticket_id, COUNT(*) as count
+       FROM event_registrations
+       WHERE event_id = ?
+         AND status IN ('registered', 'attended')
+       GROUP BY ticket_id`,
+    )
+    .bind(eventId)
+    .all<{ ticket_id: string; count: number }>()
+
+  const ticketCounts = new Map<string, number>()
+  let total = 0
+
+  for (const row of rows.results) {
+    ticketCounts.set(row.ticket_id, row.count)
+    total += row.count
+  }
+
+  return { ticketCounts, total }
+}
+
+export async function listEventRegistrations(db: D1DatabaseLike, options: ListEventRegistrationsOptions = {}) {
+  const conditions: string[] = []
+  const values: unknown[] = []
+
+  if (options.eventId) {
+    conditions.push('event_id = ?')
+    values.push(options.eventId)
+  }
+
+  if (options.membershipNumber) {
+    conditions.push('membership_number = ?')
+    values.push(options.membershipNumber)
+  }
+
+  const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')}` : ''
+  let query = `${EVENT_REGISTRATION_SELECT}${whereClause} ORDER BY created_at DESC`
+
+  if (options.limit !== undefined) {
+    query += ' LIMIT ?'
+    values.push(options.limit)
+  }
+
+  if (options.offset !== undefined) {
+    query += ' OFFSET ?'
+    values.push(options.offset)
+  }
+
+  const result = await db.prepare(query).bind(...values).all<EventRegistrationRow>()
   return result.results.map(mapEventRegistrationRow)
 }
 
