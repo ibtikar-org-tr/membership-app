@@ -5,6 +5,10 @@ import tippy from 'tippy.js'
 import { MemberMentionList, type MemberMentionListHandle } from './MemberMentionList'
 import { filterMentionableMembers, type MentionableMember } from './mentionable-members'
 
+function mentionClientRect(getRect: (() => DOMRect | null) | null | undefined) {
+  return () => getRect?.() ?? new DOMRect(0, 0, 0, 0)
+}
+
 export function createNoteMemberMention(getMembers: () => MentionableMember[]) {
   return Mention.configure({
     HTMLAttributes: {
@@ -49,15 +53,15 @@ export function createNoteMemberMention(getMembers: () => MentionableMember[]) {
               return
             }
 
-            popup = tippy(document.body, {
-              getReferenceClientRect: props.clientRect,
+            popup = tippy('body', {
+              getReferenceClientRect: mentionClientRect(props.clientRect),
               appendTo: () => document.body,
               content: component.element,
               showOnCreate: true,
               interactive: true,
               trigger: 'manual',
               placement: 'bottom-start',
-            })
+            })[0]
           },
           onUpdate(props) {
             component?.updateProps(props)
@@ -67,7 +71,7 @@ export function createNoteMemberMention(getMembers: () => MentionableMember[]) {
             }
 
             popup?.setProps({
-              getReferenceClientRect: props.clientRect,
+              getReferenceClientRect: mentionClientRect(props.clientRect),
             })
           },
           onKeyDown(props) {
