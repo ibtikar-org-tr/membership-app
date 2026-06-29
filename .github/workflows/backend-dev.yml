@@ -85,4 +85,7 @@ jobs:
       - name: Migrate D1 Databases
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: npm run db:migrate:remote:config:local
+        run: |
+          wrangler d1 migrations apply ${{ vars.VMS_LOGS_DB_NAME }} --remote --config wrangler.local.jsonc
+          wrangler d1 migrations apply ${{ vars.MEMBERS_DB_NAME }} --remote --config wrangler.local.jsonc
+          wrangler d1 migrations apply ${{ vars.VMS_DB_NAME }} --remote --config wrangler.local.jsonc
