@@ -92,27 +92,13 @@ export function DashboardVolunteeringPage() {
     setApplyingPositionId(positionId)
 
     try {
-      await createPositionApplication(positionId, {}, user.membershipNumber)
+      const { positionApplication } = await createPositionApplication(positionId, {}, user.membershipNumber)
       setPositions((previous) =>
         previous.map((position) =>
           position.id === positionId
             ? {
                 ...position,
-                applications: [
-                  ...position.applications,
-                  {
-                    id: crypto.randomUUID(),
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    positionId,
-                    membershipNumber: user.membershipNumber,
-                    motivationLetter: null,
-                    status: 'pending',
-                    reviewedBy: null,
-                    displayName: user.email,
-                    reviewedByDisplayName: null,
-                  },
-                ],
+                applications: [...position.applications, positionApplication],
               }
             : position,
         ),
