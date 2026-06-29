@@ -80,6 +80,12 @@ function xmlElementTextContent(node: Y.XmlElement): string {
     }
 
     if (child instanceof Y.XmlElement) {
+      if (child.nodeName === 'mention') {
+        const label = child.getAttribute('label') ?? child.getAttribute('id') ?? ''
+        parts.push(`@${label}`)
+        return
+      }
+
       parts.push(xmlElementTextContent(child))
     }
   })
@@ -132,6 +138,11 @@ function xmlNodeToHtml(node: Y.XmlText | Y.XmlElement): string {
       return `<pre><code>${inner}</code></pre>`
     case 'hardBreak':
       return '<br>'
+    case 'mention': {
+      const id = escapeHtml(String(node.getAttribute('id') ?? ''))
+      const label = escapeHtml(String(node.getAttribute('label') ?? node.getAttribute('id') ?? ''))
+      return `<span data-type="mention" data-id="${id}" data-label="${label}" class="note-mention">@${label}</span>`
+    }
     default:
       return inner
   }
@@ -158,6 +169,12 @@ export function xmlFragmentToPlainText(fragment: Y.XmlFragment) {
     }
 
     if (node instanceof Y.XmlElement) {
+      if (node.nodeName === 'mention') {
+        const label = node.getAttribute('label') ?? node.getAttribute('id') ?? ''
+        parts.push(`@${label}`)
+        return
+      }
+
       parts.push(xmlFragmentToPlainText(node as unknown as Y.XmlFragment))
       if (['paragraph', 'heading', 'listItem', 'blockquote'].includes(node.nodeName)) {
         parts.push('\n')
