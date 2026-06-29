@@ -1,5 +1,7 @@
 import type { CreateEventRegistrationInput, UpdateEventRegistrationInput } from '../schemas/vms-event-registration.schema'
 import type { D1DatabaseLike } from '../types/bindings'
+import { applyRegistrationCountTransition } from '../utils/event-registration-counts'
+import { listEventTickets } from './vms-event-tickets.repository'
 
 interface EventRegistrationRow {
   id: string
@@ -64,23 +66,13 @@ export async function countEventRegistrations(
 }
 
 export async function countActiveEventRegistrationsByTicket(db: D1DatabaseLike, eventId: string) {
-  const rows = await db
-    .prepare(
-      `SELECT ticket_id, COUNT(*) as count
-       FROM event_registrations
-       WHERE event_id = ?
-         AND status IN ('registered', 'attended')
-       GROUP BY ticket_id`,
-    )
-    .bind(eventId)
-    .all<{ ticket_id: string; count: number }>()
-
+  const tickets = await listEventTickets(db, eventId)
   const ticketCounts = new Map<string, number>()
   let total = 0
 
-  for (const row of rows.results) {
-    ticketCounts.set(row.ticket_id, row.count)
-    total += row.count
+  for (const ticket of tickets) {
+    ticketCounts.set(ticket.id, ticket.activeRegistrationCount)
+    total += ticket.activeRegistrationCount
   }
 
   return { ticketCounts, total }
@@ -119,7 +111,7 @@ export async function listEventRegistrations(db: D1DatabaseLike, options: ListEv
 
 export async function getEventRegistrationById(db: D1DatabaseLike, id: string) {
   const row = await db
-    .prepare('SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations WHERE id = ?')
+    .prepare(`${EVENT_REGISTRATION_SELECT} WHERE id = ?`)
     .bind(id)
     .first<EventRegistrationRow>()
 
@@ -132,9 +124,7 @@ export async function getEventRegistrationByEventAndMember(
   membershipNumber: string,
 ) {
   const row = await db
-    .prepare(
-      'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations WHERE event_id = ? AND membership_number = ?',
-    )
+    .prepare(`${EVENT_REGISTRATION_SELECT} WHERE event_id = ? AND membership_number = ?`)
     .bind(eventId, membershipNumber)
     .first<EventRegistrationRow>()
 
@@ -147,10 +137,21 @@ export async function createEventRegistration(db: D1DatabaseLike, id: string, in
     .bind(id, input.eventId, input.membershipNumber, input.ticketId, input.status, input.attendanceApprovedBy ?? null)
     .run()
 
+  await applyRegistrationCountTransition(db, null, {
+    ticketId: input.ticketId,
+    status: input.status,
+  })
+
   return getEventRegistrationById(db, id)
 }
 
 export async function updateEventRegistrationById(db: D1DatabaseLike, id: string, input: UpdateEventRegistrationInput) {
+  const existing = await getEventRegistrationById(db, id)
+
+  if (!existing) {
+    return null
+  }
+
   const updates: string[] = []
   const values: unknown[] = []
 
@@ -185,7 +186,7 @@ export async function updateEventRegistrationById(db: D1DatabaseLike, id: string
   }
 
   if (updates.length === 0) {
-    return getEventRegistrationById(db, id)
+    return existing
   }
 
   updates.push("updated_at = datetime('now')")
@@ -195,7 +196,21 @@ export async function updateEventRegistrationById(db: D1DatabaseLike, id: string
     .bind(...values, id)
     .run()
 
-  return getEventRegistrationById(db, id)
+  const updated = await getEventRegistrationById(db, id)
+  if (!updated) {
+    return null
+  }
+
+  const countStateChanged = input.ticketId !== undefined || input.status !== undefined
+  if (countStateChanged) {
+    await applyRegistrationCountTransition(
+      db,
+      { ticketId: existing.ticketId, status: existing.status },
+      { ticketId: updated.ticketId, status: updated.status },
+    )
+  }
+
+  return updated
 }
 
 export async function deleteEventRegistrationById(db: D1DatabaseLike, id: string) {
@@ -206,5 +221,12 @@ export async function deleteEventRegistrationById(db: D1DatabaseLike, id: string
   }
 
   await db.prepare('DELETE FROM event_registrations WHERE id = ?').bind(id).run()
+
+  await applyRegistrationCountTransition(
+    db,
+    { ticketId: existing.ticketId, status: existing.status },
+    null,
+  )
+
   return true
 }

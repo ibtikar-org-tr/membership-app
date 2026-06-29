@@ -29,7 +29,6 @@ import { canManageEvent } from '../utils/event-permissions'
 import {
   canSelfCancelRegistration,
   canSelfModifyRegistration,
-  countActiveRegistrationsForTicket,
 } from '../utils/event-registration-cancellation'
 
 export const vmsEventRegistrationsRoute = new Hono<AppEnv>()
@@ -253,7 +252,7 @@ vmsEventRegistrationsRoute.post('/event-registrations', zValidator('json', creat
       return c.json({ error: 'التذكرة المختارة غير متاحة لهذه الفعالية.' }, 400)
     }
 
-    const activeRegistrations = await countActiveRegistrationsForTicket(c.env.VMS_DB, payload.ticketId)
+    const activeRegistrations = ticket.activeRegistrationCount
     if (activeRegistrations >= ticket.quantity) {
       return c.json({ error: 'لم يعد هناك مقاعد متاحة لهذه التذكرة.' }, 409)
     }
@@ -381,7 +380,7 @@ vmsEventRegistrationsRoute.post(
         return c.json({ error: 'التذكرة المختارة غير متاحة لهذه الفعالية.' }, 400)
       }
 
-      const activeRegistrations = await countActiveRegistrationsForTicket(c.env.VMS_DB, ticketId)
+      const activeRegistrations = ticket.activeRegistrationCount
       if (activeRegistrations >= ticket.quantity) {
         return c.json({ error: 'لم يعد هناك مقاعد متاحة لهذه التذكرة.' }, 409)
       }

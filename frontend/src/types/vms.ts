@@ -67,6 +67,7 @@ export interface VmsEventTicket {
   pointPrice: number
   currencyPrice: string | null
   quantity: number
+  activeRegistrationCount?: number
 }
 
 export interface VmsEventRegistration {
