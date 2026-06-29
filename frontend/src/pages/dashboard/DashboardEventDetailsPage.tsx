@@ -19,7 +19,6 @@ import Avatar from 'boring-avatars'
 import {
   createEventRegistration,
   fetchEventById,
-  fetchEventRegistrationCounts,
   fetchEventRegistrations,
   fetchEventTickets,
   fetchProjectMembers,
@@ -73,8 +72,6 @@ export function DashboardEventDetailsPage() {
   const ticketBuyingSectionRef = useRef<HTMLDivElement | null>(null)
   const [eventItem, setEventItem] = useState<VmsEvent | null>(null)
   const [tickets, setTickets] = useState<VmsEventTicket[]>([])
-  const [ticketRegistrationCounts, setTicketRegistrationCounts] = useState<Record<string, number>>({})
-  const [registrationsTotal, setRegistrationsTotal] = useState(0)
   const [myRegistration, setMyRegistration] = useState<VmsEventRegistration | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -95,19 +92,17 @@ export function DashboardEventDetailsPage() {
   const [selectedChangeTicketId, setSelectedChangeTicketId] = useState<string | null>(null)
   const [isChangeTicketPickerOpen, setIsChangeTicketPickerOpen] = useState(false)
 
-  function adjustTicketRegistrationCount(ticketId: string, delta: number) {
-    setTicketRegistrationCounts((previous) => {
-      const next = { ...previous }
-      const nextCount = Math.max(0, (next[ticketId] ?? 0) + delta)
-
-      if (nextCount === 0) {
-        delete next[ticketId]
-      } else {
-        next[ticketId] = nextCount
-      }
-
-      return next
-    })
+  function adjustTicketActiveCount(ticketId: string, delta: number) {
+    setTickets((previous) =>
+      previous.map((ticket) =>
+        ticket.id === ticketId
+          ? {
+              ...ticket,
+              activeRegistrationCount: Math.max(0, (ticket.activeRegistrationCount ?? 0) + delta),
+            }
+          : ticket,
+      ),
+    )
   }
 
   function scrollToTicketBuyingSection() {
@@ -126,10 +121,9 @@ export function DashboardEventDetailsPage() {
     async function loadEventDetails() {
       try {
         if (user) {
-          const [eventPayload, ticketsPayload, registrationCountsPayload, myRegistrationPayload] = await Promise.all([
+          const [eventPayload, ticketsPayload, myRegistrationPayload] = await Promise.all([
             fetchEventById(currentEventId),
             fetchEventTickets(currentEventId),
-            fetchEventRegistrationCounts(currentEventId),
             fetchEventRegistrations(currentEventId, { membershipNumber: user.membershipNumber }),
           ])
 
@@ -139,8 +133,6 @@ export function DashboardEventDetailsPage() {
 
           setEventItem(eventPayload.event)
           setTickets(ticketsPayload.eventTickets)
-          setTicketRegistrationCounts(registrationCountsPayload.ticketCounts)
-          setRegistrationsTotal(registrationCountsPayload.total)
           setMyRegistration(myRegistrationPayload.eventRegistrations[0] ?? null)
           return
         }
@@ -156,8 +148,6 @@ export function DashboardEventDetailsPage() {
 
         setEventItem(eventPayload.event)
         setTickets(ticketsPayload.eventTickets)
-        setTicketRegistrationCounts({})
-        setRegistrationsTotal(0)
       } catch {
         if (!controller.signal.aborted) {
           setNotFound(true)
@@ -238,6 +228,14 @@ export function DashboardEventDetailsPage() {
     eventItem?.telegramGroupId && user?.membershipNumber && userRegistration?.status === 'registered',
   )
   const canViewAttendeeNumbers = eventItem?.displayAttendeeNumbers !== false || canEditEvent
+  const ticketRegistrationCounts = useMemo(
+    () => Object.fromEntries(tickets.map((ticket) => [ticket.id, ticket.activeRegistrationCount ?? 0])),
+    [tickets],
+  )
+  const registrationsTotal = useMemo(
+    () => tickets.reduce((sum, ticket) => sum + (ticket.activeRegistrationCount ?? 0), 0),
+    [tickets],
+  )
   const canModifyRegistration = useMemo(() => {
     if (!eventItem || !userRegistration) {
       return false
@@ -303,8 +301,7 @@ export function DashboardEventDetailsPage() {
       })
 
       setMyRegistration(payload.eventRegistration)
-      adjustTicketRegistrationCount(payload.eventRegistration.ticketId, 1)
-      setRegistrationsTotal((previous) => previous + 1)
+      adjustTicketActiveCount(payload.eventRegistration.ticketId, 1)
       setApplySuccess('تم إرسال طلب التسجيل بنجاح.')
       setSelectedTicketId(null)
       applyForm.reset()
@@ -339,8 +336,7 @@ export function DashboardEventDetailsPage() {
     try {
       await selfCancelEventRegistration(userRegistration.id)
       setMyRegistration(null)
-      adjustTicketRegistrationCount(userRegistration.ticketId, -1)
-      setRegistrationsTotal((previous) => Math.max(0, previous - 1))
+      adjustTicketActiveCount(userRegistration.ticketId, -1)
       setCancelRegistrationSuccess('تم إلغاء تسجيلك. يمكنك التسجيل مجدداً إذا رغبت.')
       setChangeTicketSuccess(null)
       setChangeTicketError(null)
@@ -382,8 +378,8 @@ export function DashboardEventDetailsPage() {
     try {
       const payload = await changeEventRegistrationTicket(userRegistration.id, selectedChangeTicketId)
       setMyRegistration(payload.eventRegistration)
-      adjustTicketRegistrationCount(userRegistration.ticketId, -1)
-      adjustTicketRegistrationCount(payload.eventRegistration.ticketId, 1)
+      adjustTicketActiveCount(userRegistration.ticketId, -1)
+      adjustTicketActiveCount(payload.eventRegistration.ticketId, 1)
       setChangeTicketSuccess('تم تغيير التذكرة بنجاح.')
       setCancelRegistrationSuccess(null)
       setCancelRegistrationError(null)

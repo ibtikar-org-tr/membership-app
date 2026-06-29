@@ -1,4 +1,5 @@
 import type { D1DatabaseLike } from '../types/bindings'
+import { getTicketActiveRegistrationCount } from './event-registration-counts'
 
 interface EventCancellationSettings {
   startTime: string | null
@@ -83,15 +84,5 @@ export function canSelfModifyRegistration(
 }
 
 export async function countActiveRegistrationsForTicket(db: D1DatabaseLike, ticketId: string) {
-  const row = await db
-    .prepare(
-      `SELECT COUNT(*) AS count
-       FROM event_registrations
-       WHERE ticket_id = ?
-         AND status IN ('registered', 'attended')`,
-    )
-    .bind(ticketId)
-    .first<{ count: number }>()
-
-  return row?.count ?? 0
+  return getTicketActiveRegistrationCount(db, ticketId)
 }

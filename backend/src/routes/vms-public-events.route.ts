@@ -4,6 +4,7 @@ import { getEventById } from '../repositories/vms-events.repository'
 import { listEventTickets } from '../repositories/vms-event-tickets.repository'
 import { eventParamsSchema } from '../schemas/vms-event.schema'
 import type { AppBindings } from '../types/bindings'
+import { stripTicketActiveRegistrationCounts } from '../utils/event-registration-counts'
 
 export const vmsPublicEventsRoute = new Hono<{ Bindings: AppBindings }>()
 
@@ -33,7 +34,12 @@ vmsPublicEventsRoute.get('/public/events/:id/tickets', zValidator('param', event
     }
 
     const eventTickets = await listEventTickets(c.env.VMS_DB, id)
-    return c.json({ eventTickets })
+    const visibleTickets =
+      event.displayAttendeeNumbers === false
+        ? stripTicketActiveRegistrationCounts(eventTickets)
+        : eventTickets
+
+    return c.json({ eventTickets: visibleTickets })
   } catch (error) {
     console.error('Failed to fetch public event tickets', error)
     return c.json({ error: 'Could not fetch event tickets.' }, 500)

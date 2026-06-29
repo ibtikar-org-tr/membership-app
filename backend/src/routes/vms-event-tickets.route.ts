@@ -7,16 +7,48 @@ import {
   listEventTickets,
   updateEventTicketById,
 } from '../repositories/vms-event-tickets.repository'
+import { getEventById } from '../repositories/vms-events.repository'
 import { createEventTicketSchema, eventTicketParamsSchema, updateEventTicketSchema } from '../schemas/vms-event-ticket.schema'
-import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
+import { canManageEvent } from '../utils/event-permissions'
+import { stripTicketActiveRegistrationCounts } from '../utils/event-registration-counts'
 
-export const vmsEventTicketsRoute = new Hono<{ Bindings: AppBindings }>()
+export const vmsEventTicketsRoute = new Hono<AppEnv>()
+
+async function presentEventTickets(
+  db: AppEnv['Bindings']['VMS_DB'],
+  eventId: string,
+  membershipNumber: string,
+) {
+  const [event, eventTickets] = await Promise.all([getEventById(db, eventId), listEventTickets(db, eventId)])
+
+  if (!event) {
+    return { event: null, eventTickets }
+  }
+
+  if (event.displayAttendeeNumbers === false) {
+    const canManage = await canManageEvent(db, event, membershipNumber)
+    if (!canManage) {
+      return { event, eventTickets: stripTicketActiveRegistrationCounts(eventTickets) }
+    }
+  }
+
+  return { event, eventTickets }
+}
 
 vmsEventTicketsRoute.get('/event-tickets', async (c) => {
   try {
-    const eventId = c.req.query('eventId')
-    const eventTickets = await listEventTickets(c.env.VMS_DB, eventId)
-    return c.json({ eventTickets })
+    const eventId = c.req.query('eventId')?.trim()
+    const membershipNumber = getActorMembershipNumber(c)
+
+    if (eventId) {
+      const { eventTickets } = await presentEventTickets(c.env.VMS_DB, eventId, membershipNumber)
+      return c.json({ eventTickets })
+    }
+
+    const eventTickets = await listEventTickets(c.env.VMS_DB)
+    return c.json({ eventTickets: stripTicketActiveRegistrationCounts(eventTickets) })
   } catch (error) {
     console.error('Failed to list event tickets', error)
     return c.json({ error: 'Could not fetch event tickets.' }, 500)
@@ -30,6 +62,15 @@ vmsEventTicketsRoute.get('/event-tickets/:id', zValidator('param', eventTicketPa
 
     if (!eventTicket) {
       return c.json({ error: 'Event ticket not found.' }, 404)
+    }
+
+    const event = await getEventById(c.env.VMS_DB, eventTicket.eventId)
+    if (event?.displayAttendeeNumbers === false) {
+      const canManage = await canManageEvent(c.env.VMS_DB, event, getActorMembershipNumber(c))
+      if (!canManage) {
+        const [ticketWithoutCount] = stripTicketActiveRegistrationCounts([eventTicket])
+        return c.json({ eventTicket: ticketWithoutCount })
+      }
     }
 
     return c.json({ eventTicket })

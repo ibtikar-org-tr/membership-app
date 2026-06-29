@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS event_tickets ( -- the available tickets for the even
     description TEXT,
     point_price INTEGER NOT NULL, -- price in points (can be 0 for free tickets, negative for rewarding points to participants, and positive for charging points from participants)
     currency_price TEXT, -- price in currency (e.g., 10 $USD, 250 TRY, 10000 SYP, etc.)
-    quantity INTEGER NOT NULL -- total quantity of this ticket type available for the event
+    quantity INTEGER NOT NULL, -- total quantity of this ticket type available for the event
+    active_registration_count INTEGER NOT NULL DEFAULT 0 -- denormalized count of registrations with status registered or attended
 );
 
 CREATE TRIGGER IF NOT EXISTS update_event_ticket_updated_at AFTER UPDATE ON event_tickets
