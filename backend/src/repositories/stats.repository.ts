@@ -1,4 +1,7 @@
 import type { D1DatabaseLike } from '../types/bindings'
+import { getStatsCache, isStatsCacheStale, upsertStatsCache } from './stats-cache.repository'
+
+const MEMBER_STATS_KEY = 'member_stats'
 
 interface MemberStatsBaseRow {
   total_members: number | null
@@ -12,6 +15,10 @@ interface MemberStatsBaseRow {
 
 interface AgeDistributionRow {
   age_distribution: string | null
+}
+
+interface MemberStatsCachePayload extends MemberStats {
+  membershipNumberPrefix: string
 }
 
 export interface AgeDistributionItem {
@@ -68,7 +75,71 @@ function parseAgeDistribution(raw: string | null): AgeDistributionItem[] {
   }
 }
 
-export async function getMemberStats(db: D1DatabaseLike, membershipNumberPrefix: string): Promise<MemberStats> {
+function parseAgeDistributionItems(value: unknown): AgeDistributionItem[] | null {
+  if (!Array.isArray(value)) {
+    return null
+  }
+
+  const items = value
+    .map((item) => {
+      if (!item || typeof item !== 'object') {
+        return null
+      }
+
+      const record = item as Record<string, unknown>
+      const group = typeof record.group === 'string' ? record.group.trim() : ''
+      const count = typeof record.count === 'number' ? record.count : Number(record.count)
+
+      if (!group || !Number.isFinite(count) || count < 0) {
+        return null
+      }
+
+      return { group, count }
+    })
+    .filter((item): item is AgeDistributionItem => item !== null)
+
+  return items
+}
+
+function parseMemberStatsCache(raw: string | null, membershipNumberPrefix: string): MemberStats | null {
+  if (!raw) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    if (!parsed || typeof parsed !== 'object') {
+      return null
+    }
+
+    if (parsed.membershipNumberPrefix !== membershipNumberPrefix) {
+      return null
+    }
+
+    const ageDistribution = parseAgeDistributionItems(parsed.ageDistribution)
+    if (!ageDistribution) {
+      return null
+    }
+
+    return {
+      totalMembers: toSafeNumber(parsed.totalMembers as number | null | undefined),
+      cycleGrowthPercentage: toSafeNumber(parsed.cycleGrowthPercentage as number | null | undefined),
+      telegramActive: toSafeNumber(parsed.telegramActive as number | null | undefined),
+      newMembers: toSafeNumber(parsed.newMembers as number | null | undefined),
+      countriesCount: toSafeNumber(parsed.countriesCount as number | null | undefined),
+      universitiesCount: toSafeNumber(parsed.universitiesCount as number | null | undefined),
+      maleCount: toSafeNumber(parsed.maleCount as number | null | undefined),
+      femaleCount: toSafeNumber(parsed.femaleCount as number | null | undefined),
+      malePercentage: toSafeNumber(parsed.malePercentage as number | null | undefined),
+      femalePercentage: toSafeNumber(parsed.femalePercentage as number | null | undefined),
+      ageDistribution,
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function computeMemberStats(db: D1DatabaseLike, membershipNumberPrefix: string): Promise<MemberStats> {
   const baseRow = await db
     .prepare(
       `SELECT
@@ -149,4 +220,26 @@ export async function getMemberStats(db: D1DatabaseLike, membershipNumberPrefix:
     femalePercentage: totalMembers === 0 ? 0 : toRoundedPercentage((femaleCount / totalMembers) * 100),
     ageDistribution: parseAgeDistribution(ageDistributionRow?.age_distribution ?? null),
   }
+}
+
+export async function getMemberStats(
+  logsDb: D1DatabaseLike,
+  membersDb: D1DatabaseLike,
+  membershipNumberPrefix: string,
+): Promise<MemberStats> {
+  const cached = await getStatsCache(logsDb, MEMBER_STATS_KEY)
+  const parsed = cached ? parseMemberStatsCache(cached.content_json, membershipNumberPrefix) : null
+
+  if (cached && parsed && !isStatsCacheStale(cached.updated_at)) {
+    return parsed
+  }
+
+  const computed = await computeMemberStats(membersDb, membershipNumberPrefix)
+  const payload: MemberStatsCachePayload = {
+    membershipNumberPrefix,
+    ...computed,
+  }
+
+  await upsertStatsCache(logsDb, MEMBER_STATS_KEY, payload)
+  return computed
 }

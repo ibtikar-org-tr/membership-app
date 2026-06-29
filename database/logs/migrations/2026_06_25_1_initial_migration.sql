@@ -26,9 +26,3 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens (token_hash);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_membership ON refresh_tokens (membership_number);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens (expires_at);
-
-CREATE TABLE IF NOT EXISTS stats (
-    key TEXT PRIMARY KEY NOT NULL,
-    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    content_json TEXT NOT NULL DEFAULT '{}'
-);
