@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import {
@@ -366,18 +366,29 @@ export function DashboardProjectDetailsPage() {
     return projectMembers.some((member) => member.membershipNumber === user.membershipNumber)
   }, [project, projectMembers, user])
 
+  const canEditTask = useCallback(
+    (task: VmsTask) => {
+      if (!project || !user) {
+        return false
+      }
+
+      const currentMembershipNumber = user.membershipNumber
+      return (
+        task.assignedTo === currentMembershipNumber ||
+        project.owner === currentMembershipNumber ||
+        projectManagerMembershipNumbers.has(currentMembershipNumber)
+      )
+    },
+    [project, projectManagerMembershipNumbers, user],
+  )
+
   const canEditSelectedTask = useMemo(() => {
-    if (!selectedTask || !project || !user) {
+    if (!selectedTask) {
       return false
     }
 
-    const currentMembershipNumber = user.membershipNumber
-    return (
-      selectedTask.assignedTo === currentMembershipNumber ||
-      project.owner === currentMembershipNumber ||
-      projectManagerMembershipNumbers.has(currentMembershipNumber)
-    )
-  }, [project, projectManagerMembershipNumbers, selectedTask, user])
+    return canEditTask(selectedTask)
+  }, [canEditTask, selectedTask])
 
   const canRemindSelectedTask = useMemo(() => {
     if (!selectedTask || !canManageProjectMembers) {
@@ -704,9 +715,18 @@ export function DashboardProjectDetailsPage() {
 
 
   const handleUpdateTask = async (patch: TaskFieldUpdatePayload) => {
+    if (!selectedTask) {
+      return
+    }
+
+    await updateProjectTask(selectedTask.id, patch)
+  }
+
+  const updateProjectTask = async (taskId: string, patch: TaskFieldUpdatePayload) => {
     setTaskUpdateError(null)
 
-    if (!selectedTask || !canEditSelectedTask || !user) {
+    const task = projectTasks.find((entry) => entry.id === taskId)
+    if (!task || !canEditTask(task) || !user) {
       setTaskUpdateError('لا يمكن تحديث المهمة في الوقت الحالي.')
       return
     }
@@ -759,19 +779,18 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
-    const taskId = selectedTask.id
     const membershipNumber = user.membershipNumber
     let snapshot: VmsTask | null = null
 
     setProjectTasks((current) => {
-      const existing = current.find((task) => task.id === taskId)
+      const existing = current.find((entry) => entry.id === taskId)
       if (!existing) {
         return current
       }
 
       snapshot = existing
-      return current.map((task) =>
-        task.id === taskId ? applyOptimisticTaskPatch(task, payload, membershipNumber) : task,
+      return current.map((entry) =>
+        entry.id === taskId ? applyOptimisticTaskPatch(entry, payload, membershipNumber) : entry,
       )
     })
 
@@ -785,16 +804,16 @@ export function DashboardProjectDetailsPage() {
       const response = await updateTask(taskId, payload, membershipNumber)
 
       setProjectTasks((current) =>
-        current.map((task) =>
-          task.id === response.task.id
-            ? { ...response.task, subtaskProgress: task.subtaskProgress ?? null }
-            : task,
+        current.map((entry) =>
+          entry.id === response.task.id
+            ? { ...response.task, subtaskProgress: entry.subtaskProgress ?? null }
+            : entry,
         ),
       )
     } catch (requestError) {
       setProjectTasks((current) =>
-        current.map((task) =>
-          task.id === taskId ? revertOptimisticTaskPatch(task, rollbackSnapshot, payload) : task,
+        current.map((entry) =>
+          entry.id === taskId ? revertOptimisticTaskPatch(entry, rollbackSnapshot, payload) : entry,
         ),
       )
 
@@ -804,6 +823,19 @@ export function DashboardProjectDetailsPage() {
         setTaskUpdateError('تعذر تحديث المهمة.')
       }
     }
+  }
+
+  const handleMoveTask = (taskId: string, status: TaskFieldUpdatePayload['status']) => {
+    if (!status) {
+      return
+    }
+
+    const task = projectTasks.find((entry) => entry.id === taskId)
+    if (!task || task.status === status) {
+      return
+    }
+
+    void updateProjectTask(taskId, { status })
   }
 
   const handleCreateSubtask = async (name: string) => {
@@ -1145,9 +1177,12 @@ export function DashboardProjectDetailsPage() {
           setIsLeaveConfirmOpen(true)
         }}
       >
+        {taskUpdateError ? <p className="mb-2 text-sm text-red-600">{taskUpdateError}</p> : null}
         <TaskBoard
           boardColumns={boardColumns}
           onOpenTask={(taskId) => setSelectedTaskId(taskId)}
+          onMoveTask={handleMoveTask}
+          canMoveTask={canEditTask}
           formatAssignee={formatAssignee}
         />
       </ProjectHeader>
