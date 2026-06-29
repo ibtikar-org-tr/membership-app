@@ -38,6 +38,111 @@ function isOptimisticSubtaskId(subtaskId: string) {
   return subtaskId.startsWith('optimistic-')
 }
 
+type TaskFieldUpdatePayload = {
+  name?: string
+  description?: string
+  status?: 'open' | 'in_progress' | 'completed' | 'archived'
+  priority?: 'low' | 'medium' | 'high'
+  dueDate?: string
+  points?: number
+  assignedTo?: string
+  skills?: Record<string, string>
+}
+
+function applyOptimisticTaskPatch(task: VmsTask, patch: TaskFieldUpdatePayload, membershipNumber: string): VmsTask {
+  const next: VmsTask = {
+    ...task,
+    subtaskProgress: task.subtaskProgress ?? null,
+    updatedAt: new Date().toISOString(),
+  }
+
+  if (patch.name !== undefined) {
+    next.name = patch.name
+  }
+
+  if (patch.description !== undefined) {
+    next.description = patch.description ?? null
+  }
+
+  if (patch.status !== undefined) {
+    next.status = patch.status
+    if (patch.status === 'completed' && task.status !== 'completed') {
+      next.completedBy = membershipNumber
+      next.completedAt = new Date().toISOString()
+    } else if (patch.status !== 'completed' && task.status === 'completed') {
+      next.completedBy = null
+      next.completedAt = null
+      next.approvedBy = null
+    }
+  }
+
+  if (patch.priority !== undefined) {
+    next.priority = patch.priority
+  }
+
+  if (patch.points !== undefined) {
+    next.points = patch.points
+  }
+
+  if (patch.dueDate !== undefined) {
+    next.dueDate = patch.dueDate
+  }
+
+  if (patch.assignedTo !== undefined) {
+    next.assignedTo = patch.assignedTo || null
+  }
+
+  if (patch.skills !== undefined) {
+    next.skills = patch.skills
+  }
+
+  return next
+}
+
+function revertOptimisticTaskPatch(task: VmsTask, snapshot: VmsTask, patch: TaskFieldUpdatePayload): VmsTask {
+  const next: VmsTask = {
+    ...task,
+    subtaskProgress: task.subtaskProgress ?? snapshot.subtaskProgress ?? null,
+  }
+
+  if (patch.name !== undefined) {
+    next.name = snapshot.name
+  }
+
+  if (patch.description !== undefined) {
+    next.description = snapshot.description
+  }
+
+  if (patch.status !== undefined) {
+    next.status = snapshot.status
+    next.completedBy = snapshot.completedBy
+    next.completedAt = snapshot.completedAt
+    next.approvedBy = snapshot.approvedBy
+  }
+
+  if (patch.priority !== undefined) {
+    next.priority = snapshot.priority
+  }
+
+  if (patch.points !== undefined) {
+    next.points = snapshot.points
+  }
+
+  if (patch.dueDate !== undefined) {
+    next.dueDate = snapshot.dueDate
+  }
+
+  if (patch.assignedTo !== undefined) {
+    next.assignedTo = snapshot.assignedTo
+  }
+
+  if (patch.skills !== undefined) {
+    next.skills = snapshot.skills
+  }
+
+  return next
+}
+
 export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
   const navigate = useNavigate()
@@ -58,7 +163,6 @@ export function DashboardProjectDetailsPage() {
 
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const [isUpdatingTask, setIsUpdatingTask] = useState(false)
   const [isRemindingTask, setIsRemindingTask] = useState(false)
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
   const [taskRemindError, setTaskRemindError] = useState<string | null>(null)
@@ -599,38 +703,21 @@ export function DashboardProjectDetailsPage() {
   }
 
 
-  const handleUpdateTask = async (
-    patch: Partial<{
-      name: string
-      description: string
-      status: 'open' | 'in_progress' | 'completed' | 'archived'
-      priority: 'low' | 'medium' | 'high'
-      dueDate: string
-      points: number
-      assignedTo: string
-    }>,
-  ) => {
+  const handleUpdateTask = async (patch: TaskFieldUpdatePayload) => {
     setTaskUpdateError(null)
 
     if (!selectedTask || !canEditSelectedTask || !user) {
-      throw new Error('لا يمكن تحديث المهمة في الوقت الحالي.')
+      setTaskUpdateError('لا يمكن تحديث المهمة في الوقت الحالي.')
+      return
     }
 
-    const payload: Partial<{
-      name: string
-      description: string
-      status: 'open' | 'in_progress' | 'completed' | 'archived'
-      priority: 'low' | 'medium' | 'high'
-      dueDate: string
-      points: number
-      assignedTo: string
-    }> = {}
+    const payload: TaskFieldUpdatePayload = {}
 
     if (patch.name !== undefined) {
       const nextName = patch.name.trim()
       if (!nextName) {
         setTaskUpdateError('يرجى إدخال اسم المهمة.')
-        throw new Error('يرجى إدخال اسم المهمة.')
+        return
       }
       payload.name = nextName
     }
@@ -650,7 +737,7 @@ export function DashboardProjectDetailsPage() {
     if (patch.points !== undefined) {
       if (Number.isNaN(patch.points) || patch.points < 1) {
         setTaskUpdateError('يجب أن تكون النقاط 1 على الأقل.')
-        throw new Error('يجب أن تكون النقاط 1 على الأقل.')
+        return
       }
 
       payload.points = Math.max(1, Math.trunc(patch.points))
@@ -664,35 +751,58 @@ export function DashboardProjectDetailsPage() {
       payload.assignedTo = patch.assignedTo
     }
 
+    if (patch.skills !== undefined) {
+      payload.skills = patch.skills
+    }
+
     if (Object.keys(payload).length === 0) {
       return
     }
 
-    const currentUser = user
+    const taskId = selectedTask.id
+    const membershipNumber = user.membershipNumber
+    let snapshot: VmsTask | null = null
 
-    setIsUpdatingTask(true)
+    setProjectTasks((current) => {
+      const existing = current.find((task) => task.id === taskId)
+      if (!existing) {
+        return current
+      }
+
+      snapshot = existing
+      return current.map((task) =>
+        task.id === taskId ? applyOptimisticTaskPatch(task, payload, membershipNumber) : task,
+      )
+    })
+
+    if (!snapshot) {
+      return
+    }
+
+    const rollbackSnapshot = snapshot
 
     try {
-      const response = await updateTask(selectedTask.id, payload, currentUser.membershipNumber)
+      const response = await updateTask(taskId, payload, membershipNumber)
 
-      setProjectTasks((previous) =>
-        previous.map((task) =>
+      setProjectTasks((current) =>
+        current.map((task) =>
           task.id === response.task.id
             ? { ...response.task, subtaskProgress: task.subtaskProgress ?? null }
             : task,
         ),
       )
     } catch (requestError) {
+      setProjectTasks((current) =>
+        current.map((task) =>
+          task.id === taskId ? revertOptimisticTaskPatch(task, rollbackSnapshot, payload) : task,
+        ),
+      )
+
       if (requestError instanceof Error) {
         setTaskUpdateError(requestError.message)
-        throw requestError
       } else {
-        const fallbackError = new Error('تعذر تحديث المهمة.')
-        setTaskUpdateError(fallbackError.message)
-        throw fallbackError
+        setTaskUpdateError('تعذر تحديث المهمة.')
       }
-    } finally {
-      setIsUpdatingTask(false)
     }
   }
 
@@ -1047,7 +1157,6 @@ export function DashboardProjectDetailsPage() {
           selectedTask={selectedTask}
           canEditSelectedTask={canEditSelectedTask}
           canRemindTask={canRemindSelectedTask}
-          isUpdatingTask={isUpdatingTask}
           isRemindingTask={isRemindingTask}
           taskUpdateError={taskUpdateError}
           taskRemindError={taskRemindError}

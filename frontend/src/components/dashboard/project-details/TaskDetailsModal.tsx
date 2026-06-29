@@ -22,7 +22,6 @@ interface TaskDetailsModalProps {
   selectedTask: VmsTask
   canEditSelectedTask: boolean
   canRemindTask: boolean
-  isUpdatingTask: boolean
   isRemindingTask: boolean
   taskUpdateError: string | null
   taskRemindError: string | null
@@ -75,7 +74,6 @@ export function TaskDetailsModal({
   selectedTask,
   canEditSelectedTask,
   canRemindTask,
-  isUpdatingTask,
   isRemindingTask,
   taskUpdateError,
   taskRemindError,
@@ -98,11 +96,18 @@ export function TaskDetailsModal({
   const [editingField, setEditingField] = useState<EditableTaskField | null>(null)
 
   useEffect(() => {
-    setDraft(taskDraftFrom(selectedTask))
-    setEditingField(null)
-  }, [selectedTask])
+    if (editingField !== null) {
+      return
+    }
 
-  async function saveField(field: EditableTaskField, value: string) {
+    setDraft(taskDraftFrom(selectedTask))
+  }, [selectedTask, editingField])
+
+  useEffect(() => {
+    setEditingField(null)
+  }, [selectedTask.id])
+
+  function saveField(field: EditableTaskField, value: string) {
     if (!canEditSelectedTask) {
       return
     }
@@ -237,44 +242,8 @@ export function TaskDetailsModal({
       return
     }
 
-    try {
-      await onUpdateTask(nextPatch)
-      setEditingField(null)
-    } catch {
-      if (field === 'name') {
-        setDraft((current) => ({ ...current, name: selectedTask.name }))
-      }
-
-      if (field === 'description') {
-        setDraft((current) => ({ ...current, description: selectedTask.description ?? '' }))
-      }
-
-      if (field === 'status') {
-        setDraft((current) => ({ ...current, status: normalizeTaskStatus(selectedTask.status) }))
-      }
-
-      if (field === 'priority') {
-        setDraft((current) => ({ ...current, priority: normalizeTaskPriority(selectedTask.priority) }))
-      }
-
-      if (field === 'points') {
-        setDraft((current) => ({ ...current, points: String(selectedTask.points) }))
-      }
-
-      if (field === 'dueDate') {
-        setDraft((current) => ({ ...current, dueDate: selectedTask.dueDate ? formatDateEnCA(selectedTask.dueDate) : '' }))
-      }
-
-      if (field === 'assignedTo') {
-        setDraft((current) => ({ ...current, assignedTo: selectedTask.assignedTo ?? '' }))
-      }
-
-      if (field === 'skills') {
-        setDraft((current) => ({ ...current, skills: Object.keys(selectedTask.skills ?? {}).join(', ') }))
-      }
-
-      setEditingField(null)
-    }
+    setEditingField(null)
+    void onUpdateTask(nextPatch)
   }
 
   function renderValue(value: string, fallback: string) {
@@ -332,8 +301,7 @@ export function TaskDetailsModal({
                       setEditingField(null)
                     }
                   }}
-                  disabled={isUpdatingTask}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-lg font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-lg font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
                 />
               ) : (
                 <span className="mt-2 block text-lg font-semibold text-slate-950 group-hover:text-cyan-700">{draft.name}</span>
@@ -367,9 +335,8 @@ export function TaskDetailsModal({
                       void saveField('description', event.currentTarget.value)
                     }
                   }}
-                  disabled={isUpdatingTask}
                   rows={5}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
                 />
               ) : (
                 <span className={`mt-2 block text-sm leading-6 ${draft.description.trim() ? 'text-slate-700' : 'text-slate-500'} group-hover:text-cyan-700`}>
@@ -423,8 +390,7 @@ export function TaskDetailsModal({
                   onBlur={() => {
                     setEditingField(null)
                   }}
-                  disabled={isUpdatingTask}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
                 >
                   <option value="open">مفتوحة</option>
                   <option value="in_progress">قيد التنفيذ</option>
@@ -455,8 +421,7 @@ export function TaskDetailsModal({
                   onBlur={() => {
                     setEditingField(null)
                   }}
-                  disabled={isUpdatingTask}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
                 >
                   <option value="low">منخفضة</option>
                   <option value="medium">متوسطة</option>
@@ -495,8 +460,7 @@ export function TaskDetailsModal({
                       setEditingField(null)
                     }
                   }}
-                  disabled={isUpdatingTask}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
                 />
               ) : (
                 <span className="mt-2 block text-lg font-semibold text-slate-950 group-hover:text-cyan-700">{draft.points}</span>
@@ -528,11 +492,10 @@ export function TaskDetailsModal({
                       setEditingField(null)
                     }
                   }}
-                  disabled={isUpdatingTask}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
                 />
               ) : (
-                <span className="mt-2 block text-sm font-medium text-slate-700 group-hover:text-cyan-700">{formatDueDate(selectedTask.dueDate)}</span>
+                <span className="mt-2 block text-sm font-medium text-slate-700 group-hover:text-cyan-700">{formatDueDate(draft.dueDate || selectedTask.dueDate)}</span>
               )}
             </button>
 
@@ -560,8 +523,7 @@ export function TaskDetailsModal({
 
                     setEditingField(null)
                   }}
-                  disabled={isUpdatingTask}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
                 >
                   <option value="">غير مسند</option>
                   {memberOptions.map((member) => (
@@ -571,7 +533,7 @@ export function TaskDetailsModal({
                   ))}
                 </select>
               ) : (
-                <span className="mt-2 block text-sm font-medium text-slate-700 group-hover:text-cyan-700">{renderValue(formatAssignee(selectedTask.assignedTo), 'غير مسند')}</span>
+                <span className="mt-2 block text-sm font-medium text-slate-700 group-hover:text-cyan-700">{renderValue(formatAssignee(draft.assignedTo || selectedTask.assignedTo), 'غير مسند')}</span>
               )}
             </button>
             </div>
@@ -590,7 +552,7 @@ export function TaskDetailsModal({
               <button
                 type="button"
                 onClick={() => void onRemindTask()}
-                disabled={isRemindingTask || isUpdatingTask}
+                disabled={isRemindingTask}
                 className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isRemindingTask ? 'جار إرسال التذكير...' : 'إرسال تذكير عبر تيليجرام'}
