@@ -1,7 +1,15 @@
+import { useEffect } from 'react'
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom'
+import { isChunkLoadError, tryReloadForStaleChunk } from '../../utils/chunk-load-recovery'
 import { Seo } from '../Seo'
 
 function getErrorDetails(error: unknown): { title: string; message: string; status?: number } {
+  if (isChunkLoadError(error)) {
+    return {
+      title: 'تحديث جديد متاح',
+      message: 'تم تحديث التطبيق أثناء وجودك في الصفحة. سيتم إعادة التحميل تلقائياً، أو يمكنك الضغط على الزر أدناه.',
+    }
+  }
   if (isRouteErrorResponse(error)) {
     return {
       title: error.status === 404 ? 'الصفحة غير موجودة' : 'حدث خطأ أثناء تحميل الصفحة',
@@ -29,6 +37,12 @@ function getErrorDetails(error: unknown): { title: string; message: string; stat
 export function RouteErrorBoundary() {
   const routeError = useRouteError()
   const details = getErrorDetails(routeError)
+
+  useEffect(() => {
+    if (isChunkLoadError(routeError)) {
+      tryReloadForStaleChunk()
+    }
+  }, [routeError])
 
   return (
     <>

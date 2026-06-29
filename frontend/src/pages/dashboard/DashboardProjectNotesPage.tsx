@@ -12,6 +12,7 @@ import {
   updateProjectNote,
 } from '../../api/vms'
 import { CollaborativeNoteEditor } from '../../components/dashboard/project-notes/CollaborativeNoteEditor'
+import { buildMentionableMembers } from '../../components/dashboard/project-notes/mentionable-members'
 import { resolveOnlineNoteUsers } from '../../components/dashboard/project-notes/NoteOnlineUsers'
 import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollaboration'
 import type { VmsProject, VmsProjectMember, VmsProjectNote } from '../../types/vms'
@@ -166,6 +167,11 @@ export function DashboardProjectNotesPage() {
   const memberDisplayNameByNumber = useMemo(
     () => new Map(projectMembers.map((member) => [member.membershipNumber, member.displayName])),
     [projectMembers],
+  )
+
+  const mentionableMembers = useMemo(
+    () => buildMentionableMembers(project, projectMembers),
+    [project, projectMembers],
   )
 
   const resolveMemberDisplayName = useMemo(
@@ -471,6 +477,7 @@ export function DashboardProjectNotesPage() {
                 memberColor={memberColor}
                 displayName={collaboratorDisplayName}
                 membershipNumber={user?.membershipNumber ?? ''}
+                mentionableMembers={mentionableMembers}
               />
 
               {!canEditSelectedNote ? (

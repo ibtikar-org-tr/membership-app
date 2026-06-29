@@ -12,6 +12,8 @@ import { NoteEditorToolbar } from './NoteEditorToolbar'
 import { NoteFontSize } from './note-font-size'
 import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
 import { NoteTextDirection } from './note-text-direction'
+import { createNoteMemberMention } from './note-member-mention'
+import type { MentionableMember } from './mentionable-members'
 
 interface CollaborativeNoteEditorProps {
   noteId: string
@@ -24,6 +26,7 @@ interface CollaborativeNoteEditorProps {
   memberColor: string
   displayName: string
   membershipNumber: string
+  mentionableMembers: MentionableMember[]
 }
 
 const editorSurfaceClass =
@@ -40,9 +43,18 @@ export function CollaborativeNoteEditor({
   memberColor,
   displayName,
   membershipNumber,
+  mentionableMembers,
 }: CollaborativeNoteEditorProps) {
   const hasSeededRef = useRef(false)
   const seedNoteIdRef = useRef<string | null>(null)
+  const mentionableMembersRef = useRef(mentionableMembers)
+
+  mentionableMembersRef.current = mentionableMembers
+
+  const memberMentionExtension = useMemo(
+    () => createNoteMemberMention(() => mentionableMembersRef.current),
+    [],
+  )
 
   const isCollaborative = Boolean(yDoc && awareness && !readOnly)
   const canEdit = isCollaborative && connectionState === 'connected'
@@ -60,6 +72,7 @@ export function CollaborativeNoteEditor({
             Underline,
             NoteFontSize,
             NoteTextDirection,
+            memberMentionExtension,
             Placeholder.configure({
               placeholder: 'ابدأ الكتابة... سيتم مزامنة التغييرات والتنسيق مع فريق المشروع مباشرة.',
             }),
@@ -81,6 +94,7 @@ export function CollaborativeNoteEditor({
             Underline,
             NoteFontSize,
             NoteTextDirection,
+            memberMentionExtension,
             Placeholder.configure({
               placeholder: readOnly ? 'يمكنك مشاهدة هذه الملاحظة فقط.' : 'جار تحميل المحرر...',
             }),
@@ -173,6 +187,18 @@ export function CollaborativeNoteEditor({
           white-space: nowrap;
           user-select: none;
           pointer-events: none;
+        }
+        .note-rich-text .note-mention {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 9999px;
+          border: 1px solid rgb(226 232 240);
+          background: rgb(248 250 252);
+          padding: 0 0.45rem;
+          font-size: 0.875em;
+          font-weight: 600;
+          color: rgb(51 65 85);
+          white-space: nowrap;
         }
       `}</style>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
