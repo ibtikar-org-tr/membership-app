@@ -31,7 +31,7 @@ interface TaskDetailsModalProps {
   formatAssignee: (membershipNumber: string | null) => string
   subtasks: VmsTaskSubtask[]
   isLoadingSubtasks: boolean
-  isManagingSubtasks: boolean
+  subtaskLoadingPlaceholderCount?: number
   subtaskError: string | null
   onClose: () => void
   onUpdateTask: (patch: TaskUpdatePatch) => Promise<void>
@@ -84,7 +84,7 @@ export function TaskDetailsModal({
   formatAssignee,
   subtasks,
   isLoadingSubtasks,
-  isManagingSubtasks,
+  subtaskLoadingPlaceholderCount,
   subtaskError,
   onClose,
   onUpdateTask,
@@ -395,7 +395,7 @@ export function TaskDetailsModal({
               subtasks={subtasks}
               canEdit={canEditSelectedTask}
               isLoading={isLoadingSubtasks}
-              isManaging={isManagingSubtasks}
+              loadingPlaceholderCount={subtaskLoadingPlaceholderCount}
               error={subtaskError}
               onCreateSubtask={onCreateSubtask}
               onToggleSubtask={onToggleSubtask}

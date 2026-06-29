@@ -61,7 +61,6 @@ export function DashboardProjectDetailsPage() {
   const [taskRemindSuccess, setTaskRemindSuccess] = useState<string | null>(null)
   const [selectedTaskSubtasks, setSelectedTaskSubtasks] = useState<VmsTaskSubtask[]>([])
   const [isLoadingSubtasks, setIsLoadingSubtasks] = useState(false)
-  const [isManagingSubtasks, setIsManagingSubtasks] = useState(false)
   const [subtaskError, setSubtaskError] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
@@ -314,7 +313,7 @@ export function DashboardProjectDetailsPage() {
       try {
         const payload = await fetchTaskSubtasks(currentTaskId)
         if (!controller.signal.aborted) {
-          setSelectedTaskSubtasks(payload.subtasks)
+          setSelectedTaskSubtasks((current) => (current.length === 0 ? payload.subtasks : current))
         }
       } catch {
         if (!controller.signal.aborted) {
@@ -351,6 +350,21 @@ export function DashboardProjectDetailsPage() {
     setProjectTasks((previous) =>
       previous.map((task) => (task.id === taskId ? { ...task, subtaskProgress: progress } : task)),
     )
+  }
+
+  function buildOptimisticSubtask(parentTaskId: string, name: string, tempId: string): VmsTaskSubtask {
+    const now = new Date().toISOString()
+    return {
+      id: tempId,
+      parentTaskId,
+      name,
+      status: 'open',
+      completedAt: null,
+      completedBy: null,
+      sortOrder: Number.MAX_SAFE_INTEGER,
+      createdAt: now,
+      updatedAt: now,
+    }
   }
 
   const closeTaskDetails = () => {
@@ -644,22 +658,34 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
+    const taskId = selectedTask.id
+    const tempId = `optimistic-${crypto.randomUUID()}`
+    const optimisticSubtask = buildOptimisticSubtask(taskId, name, tempId)
+    let previousSubtasks: VmsTaskSubtask[] = []
+
     setSubtaskError(null)
-    setIsManagingSubtasks(true)
+    setSelectedTaskSubtasks((current) => {
+      previousSubtasks = current
+      const nextSubtasks = [...current, optimisticSubtask]
+      syncParentSubtaskProgress(taskId, nextSubtasks)
+      return nextSubtasks
+    })
 
     try {
-      const response = await createTaskSubtask(selectedTask.id, { name })
-      const nextSubtasks = [...selectedTaskSubtasks, response.subtask]
-      setSelectedTaskSubtasks(nextSubtasks)
-      syncParentSubtaskProgress(selectedTask.id, nextSubtasks)
+      const response = await createTaskSubtask(taskId, { name })
+      setSelectedTaskSubtasks((current) => {
+        const nextSubtasks = current.map((subtask) => (subtask.id === tempId ? response.subtask : subtask))
+        syncParentSubtaskProgress(taskId, nextSubtasks)
+        return nextSubtasks
+      })
     } catch (requestError) {
+      setSelectedTaskSubtasks(previousSubtasks)
+      syncParentSubtaskProgress(taskId, previousSubtasks)
       if (requestError instanceof Error) {
         setSubtaskError(requestError.message)
       } else {
         setSubtaskError('تعذر إضافة المهمة الفرعية.')
       }
-    } finally {
-      setIsManagingSubtasks(false)
     }
   }
 
@@ -668,26 +694,45 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
+    const taskId = selectedTask.id
+    let previousSubtasks: VmsTaskSubtask[] = []
+
     setSubtaskError(null)
-    setIsManagingSubtasks(true)
+    setSelectedTaskSubtasks((current) => {
+      previousSubtasks = current
+      const nextSubtasks = current.map((subtask) => {
+        if (subtask.id !== subtaskId) {
+          return subtask
+        }
+
+        return {
+          ...subtask,
+          status: completed ? 'completed' : 'open',
+          completedAt: completed ? new Date().toISOString() : null,
+          completedBy: completed ? user?.membershipNumber ?? null : null,
+        } as VmsTaskSubtask
+      })
+      syncParentSubtaskProgress(taskId, nextSubtasks)
+      return nextSubtasks
+    })
 
     try {
-      const response = await updateTaskSubtask(selectedTask.id, subtaskId, {
+      const response = await updateTaskSubtask(taskId, subtaskId, {
         status: completed ? 'completed' : 'open',
       })
-      const nextSubtasks = selectedTaskSubtasks.map((subtask) =>
-        subtask.id === subtaskId ? response.subtask : subtask,
-      )
-      setSelectedTaskSubtasks(nextSubtasks)
-      syncParentSubtaskProgress(selectedTask.id, nextSubtasks)
+      setSelectedTaskSubtasks((current) => {
+        const nextSubtasks = current.map((subtask) => (subtask.id === subtaskId ? response.subtask : subtask))
+        syncParentSubtaskProgress(taskId, nextSubtasks)
+        return nextSubtasks
+      })
     } catch (requestError) {
+      setSelectedTaskSubtasks(previousSubtasks)
+      syncParentSubtaskProgress(taskId, previousSubtasks)
       if (requestError instanceof Error) {
         setSubtaskError(requestError.message)
       } else {
         setSubtaskError('تعذر تحديث المهمة الفرعية.')
       }
-    } finally {
-      setIsManagingSubtasks(false)
     }
   }
 
@@ -696,23 +741,28 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
+    const taskId = selectedTask.id
+    let previousSubtasks: VmsTaskSubtask[] = []
+
     setSubtaskError(null)
-    setIsManagingSubtasks(true)
+    setSelectedTaskSubtasks((current) => {
+      previousSubtasks = current
+      const nextSubtasks = current.map((subtask) => (subtask.id === subtaskId ? { ...subtask, name } : subtask))
+      return nextSubtasks
+    })
 
     try {
-      const response = await updateTaskSubtask(selectedTask.id, subtaskId, { name })
-      const nextSubtasks = selectedTaskSubtasks.map((subtask) =>
-        subtask.id === subtaskId ? response.subtask : subtask,
+      const response = await updateTaskSubtask(taskId, subtaskId, { name })
+      setSelectedTaskSubtasks((current) =>
+        current.map((subtask) => (subtask.id === subtaskId ? response.subtask : subtask)),
       )
-      setSelectedTaskSubtasks(nextSubtasks)
     } catch (requestError) {
+      setSelectedTaskSubtasks(previousSubtasks)
       if (requestError instanceof Error) {
         setSubtaskError(requestError.message)
       } else {
         setSubtaskError('تعذر إعادة تسمية المهمة الفرعية.')
       }
-    } finally {
-      setIsManagingSubtasks(false)
     }
   }
 
@@ -721,22 +771,27 @@ export function DashboardProjectDetailsPage() {
       return
     }
 
+    const taskId = selectedTask.id
+    let previousSubtasks: VmsTaskSubtask[] = []
+
     setSubtaskError(null)
-    setIsManagingSubtasks(true)
+    setSelectedTaskSubtasks((current) => {
+      previousSubtasks = current
+      const nextSubtasks = current.filter((subtask) => subtask.id !== subtaskId)
+      syncParentSubtaskProgress(taskId, nextSubtasks)
+      return nextSubtasks
+    })
 
     try {
-      await deleteTaskSubtask(selectedTask.id, subtaskId)
-      const nextSubtasks = selectedTaskSubtasks.filter((subtask) => subtask.id !== subtaskId)
-      setSelectedTaskSubtasks(nextSubtasks)
-      syncParentSubtaskProgress(selectedTask.id, nextSubtasks)
+      await deleteTaskSubtask(taskId, subtaskId)
     } catch (requestError) {
+      setSelectedTaskSubtasks(previousSubtasks)
+      syncParentSubtaskProgress(taskId, previousSubtasks)
       if (requestError instanceof Error) {
         setSubtaskError(requestError.message)
       } else {
         setSubtaskError('تعذر حذف المهمة الفرعية.')
       }
-    } finally {
-      setIsManagingSubtasks(false)
     }
   }
 
@@ -915,7 +970,7 @@ export function DashboardProjectDetailsPage() {
           formatAssignee={formatAssignee}
           subtasks={selectedTaskSubtasks}
           isLoadingSubtasks={isLoadingSubtasks}
-          isManagingSubtasks={isManagingSubtasks}
+          subtaskLoadingPlaceholderCount={selectedTask.subtaskProgress?.total ?? 0}
           subtaskError={subtaskError}
           onClose={closeTaskDetails}
           onUpdateTask={handleUpdateTask}

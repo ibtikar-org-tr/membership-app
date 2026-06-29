@@ -6,7 +6,7 @@ interface TaskSubtasksChecklistProps {
   subtasks: VmsTaskSubtask[]
   canEdit: boolean
   isLoading: boolean
-  isManaging: boolean
+  loadingPlaceholderCount?: number
   error: string | null
   onCreateSubtask: (name: string) => Promise<void>
   onToggleSubtask: (subtaskId: string, completed: boolean) => Promise<void>
@@ -14,11 +14,20 @@ interface TaskSubtasksChecklistProps {
   onDeleteSubtask: (subtaskId: string) => Promise<void>
 }
 
+function SubtaskSkeletonRow() {
+  return (
+    <li className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
+      <div className="h-4 w-4 shrink-0 animate-pulse rounded border border-slate-200 bg-slate-200" />
+      <div className="h-4 min-w-0 flex-1 animate-pulse rounded bg-slate-200" />
+    </li>
+  )
+}
+
 export function TaskSubtasksChecklist({
   subtasks,
   canEdit,
   isLoading,
-  isManaging,
+  loadingPlaceholderCount = 0,
   error,
   onCreateSubtask,
   onToggleSubtask,
@@ -31,19 +40,21 @@ export function TaskSubtasksChecklist({
 
   const completedCount = subtasks.filter((subtask) => subtask.status === 'completed').length
   const allCompleted = subtasks.length > 0 && completedCount === subtasks.length
+  const skeletonCount = Math.min(Math.max(loadingPlaceholderCount, subtasks.length > 0 ? 0 : 2), 6)
+  const showSkeletons = isLoading && subtasks.length === 0 && skeletonCount > 0
 
-  async function handleAddSubtask(event: FormEvent<HTMLFormElement>) {
+  function handleAddSubtask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const trimmedName = newSubtaskName.trim()
-    if (!trimmedName || !canEdit || isManaging) {
+    if (!trimmedName || !canEdit) {
       return
     }
 
-    await onCreateSubtask(trimmedName)
     setNewSubtaskName('')
+    void onCreateSubtask(trimmedName)
   }
 
-  async function commitRename(subtaskId: string) {
+  function commitRename(subtaskId: string) {
     const trimmedName = editingName.trim()
     const existing = subtasks.find((subtask) => subtask.id === subtaskId)
     setEditingSubtaskId(null)
@@ -52,7 +63,7 @@ export function TaskSubtasksChecklist({
       return
     }
 
-    await onRenameSubtask(subtaskId, trimmedName)
+    void onRenameSubtask(subtaskId, trimmedName)
   }
 
   return (
@@ -67,32 +78,43 @@ export function TaskSubtasksChecklist({
           >
             {completedCount}/{subtasks.length} فرعية
           </span>
+        ) : isLoading ? (
+          <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+            جار التحميل...
+          </span>
         ) : null}
       </div>
 
-      {isLoading ? <p className="mt-3 text-sm text-slate-500">جار تحميل المهام الفرعية...</p> : null}
+      {showSkeletons ? (
+        <ul className="mt-3 space-y-2" aria-hidden="true">
+          {Array.from({ length: skeletonCount }).map((_, index) => (
+            <SubtaskSkeletonRow key={`subtask-skeleton-${index}`} />
+          ))}
+        </ul>
+      ) : null}
 
       {!isLoading && subtasks.length === 0 ? (
         <p className="mt-3 text-sm text-slate-500">لا توجد مهام فرعية بعد.</p>
       ) : null}
 
-      {!isLoading && subtasks.length > 0 ? (
+      {subtasks.length > 0 ? (
         <ul className="mt-3 space-y-2">
           {subtasks.map((subtask) => {
             const isCompleted = subtask.status === 'completed'
             const isEditing = editingSubtaskId === subtask.id
+            const isPending = subtask.id.startsWith('optimistic-')
 
             return (
               <li
                 key={subtask.id}
-                className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${
+                className={`flex items-center gap-2 rounded-xl border px-3 py-2 transition ${
                   isCompleted ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50/70'
-                }`}
+                } ${isPending ? 'opacity-80' : ''}`}
               >
                 <input
                   type="checkbox"
                   checked={isCompleted}
-                  disabled={!canEdit || isManaging}
+                  disabled={!canEdit}
                   onChange={(event) => {
                     void onToggleSubtask(subtask.id, event.target.checked)
                   }}
@@ -106,24 +128,23 @@ export function TaskSubtasksChecklist({
                     value={editingName}
                     onChange={(event) => setEditingName(event.target.value)}
                     onBlur={() => {
-                      void commitRename(subtask.id)
+                      commitRename(subtask.id)
                     }}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') {
                         event.preventDefault()
-                        void commitRename(subtask.id)
+                        commitRename(subtask.id)
                       }
                       if (event.key === 'Escape') {
                         setEditingSubtaskId(null)
                       }
                     }}
-                    disabled={isManaging}
                     className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-800 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15"
                   />
                 ) : (
                   <button
                     type="button"
-                    disabled={!canEdit || isManaging}
+                    disabled={!canEdit}
                     onClick={() => {
                       if (!canEdit) {
                         return
@@ -142,13 +163,12 @@ export function TaskSubtasksChecklist({
                 {canEdit ? (
                   <button
                     type="button"
-                    disabled={isManaging}
                     onClick={() => {
                       if (window.confirm('هل تريد حذف هذه المهمة الفرعية؟')) {
                         void onDeleteSubtask(subtask.id)
                       }
                     }}
-                    className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
                     aria-label={`حذف ${subtask.name}`}
                   >
                     <FiTrash2 className="h-4 w-4" />
@@ -165,18 +185,18 @@ export function TaskSubtasksChecklist({
       ) : null}
 
       {canEdit ? (
-        <form onSubmit={(event) => void handleAddSubtask(event)} className="mt-3 flex gap-2">
+        <form onSubmit={handleAddSubtask} className="mt-3 flex gap-2">
           <input
             value={newSubtaskName}
             onChange={(event) => setNewSubtaskName(event.target.value)}
             placeholder="مهمة فرعية جديدة..."
-            disabled={isManaging}
+            disabled={isLoading}
             maxLength={160}
-            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed"
+            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-60"
           />
           <button
             type="submit"
-            disabled={isManaging || !newSubtaskName.trim()}
+            disabled={isLoading || !newSubtaskName.trim()}
             className="shrink-0 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-900 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             إضافة
