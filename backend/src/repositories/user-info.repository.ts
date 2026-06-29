@@ -50,7 +50,6 @@ export interface UpdateUserInfoParams {
 
 interface UserDisplayNameRow {
   membership_number: string
-  email: string | null
   en_name: string | null
   ar_name: string | null
 }
@@ -303,21 +302,15 @@ export async function getUserDisplayNamesByMembershipNumbers(
     const placeholders = batch.map(() => '?').join(', ')
     const rows = await db
       .prepare(
-        `SELECT
-          u.membership_number,
-          u.email,
-          ui.en_name,
-          ui.ar_name
-        FROM users u
-        LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
-        WHERE u.membership_number IN (${placeholders})`
+        `SELECT membership_number, en_name, ar_name
+         FROM user_info
+         WHERE membership_number IN (${placeholders})`,
       )
       .bind(...batch)
       .all<UserDisplayNameRow>()
 
     for (const row of rows.results) {
-      const displayName =
-        row.ar_name?.trim() || row.en_name?.trim() || row.email?.trim() || row.membership_number
+      const displayName = row.ar_name?.trim() || row.en_name?.trim() || row.membership_number
 
       displayNameMap.set(row.membership_number, displayName)
     }
