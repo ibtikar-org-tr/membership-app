@@ -14,6 +14,7 @@ import type {
   VmsProjectNote,
   VmsSkill,
   VmsTask,
+  VmsTaskSubtask,
 } from '../types/vms'
 import type { ForgotPasswordResponse, LoginResponse, ResetPasswordResponse } from '../types/auth'
 import type { MemberProfile } from '../types/profile'
@@ -242,6 +243,32 @@ export function updateTask(
     `/tasks/${encodeURIComponent(taskId)}`,
     payload,
   )
+}
+
+export function fetchTaskSubtasks(taskId: string) {
+  return fetchJson<{ subtasks: VmsTaskSubtask[] }>(`/tasks/${encodeURIComponent(taskId)}/subtasks`)
+}
+
+export function createTaskSubtask(taskId: string, payload: { name: string }) {
+  return postJson<{ subtask: VmsTaskSubtask }, typeof payload>(
+    `/tasks/${encodeURIComponent(taskId)}/subtasks`,
+    payload,
+  )
+}
+
+export function updateTaskSubtask(
+  taskId: string,
+  subtaskId: string,
+  payload: Partial<{ name: string; status: 'open' | 'completed' }>,
+) {
+  return putJson<{ subtask: VmsTaskSubtask }, typeof payload>(
+    `/tasks/${encodeURIComponent(taskId)}/subtasks/${encodeURIComponent(subtaskId)}`,
+    payload,
+  )
+}
+
+export function deleteTaskSubtask(taskId: string, subtaskId: string) {
+  return deleteJson(`/tasks/${encodeURIComponent(taskId)}/subtasks/${encodeURIComponent(subtaskId)}`)
 }
 
 export function fetchEvents() {

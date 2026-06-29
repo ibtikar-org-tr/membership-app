@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import type { VmsProjectMember, VmsTask } from '../../../types/vms'
 import { SkillsField } from '../../SkillsField'
 import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
 import { formatDueDate, priorityBadgeClass, statusBadgeClass, taskPriorityLabel, taskStatusLabel } from './helpers'
+import { TaskSubtasksChecklist } from './TaskSubtasksChecklist'
+import type { VmsProjectMember, VmsTask, VmsTaskSubtask } from '../../../types/vms'
 
 type EditableTaskField = 'name' | 'description' | 'status' | 'priority' | 'points' | 'dueDate' | 'assignedTo' | 'skills'
 
@@ -28,9 +29,17 @@ interface TaskDetailsModalProps {
   taskRemindSuccess: string | null
   memberOptions: VmsProjectMember[]
   formatAssignee: (membershipNumber: string | null) => string
+  subtasks: VmsTaskSubtask[]
+  isLoadingSubtasks: boolean
+  isManagingSubtasks: boolean
+  subtaskError: string | null
   onClose: () => void
   onUpdateTask: (patch: TaskUpdatePatch) => Promise<void>
   onRemindTask: () => Promise<void>
+  onCreateSubtask: (name: string) => Promise<void>
+  onToggleSubtask: (subtaskId: string, completed: boolean) => Promise<void>
+  onRenameSubtask: (subtaskId: string, name: string) => Promise<void>
+  onDeleteSubtask: (subtaskId: string) => Promise<void>
 }
 
 function normalizeTaskPriority(priority: string) {
@@ -73,9 +82,17 @@ export function TaskDetailsModal({
   taskRemindSuccess,
   memberOptions,
   formatAssignee,
+  subtasks,
+  isLoadingSubtasks,
+  isManagingSubtasks,
+  subtaskError,
   onClose,
   onUpdateTask,
   onRemindTask,
+  onCreateSubtask,
+  onToggleSubtask,
+  onRenameSubtask,
+  onDeleteSubtask,
 }: TaskDetailsModalProps) {
   const [draft, setDraft] = useState(() => taskDraftFrom(selectedTask))
   const [editingField, setEditingField] = useState<EditableTaskField | null>(null)
@@ -373,6 +390,18 @@ export function TaskDetailsModal({
                 placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
               />
             </div>
+
+            <TaskSubtasksChecklist
+              subtasks={subtasks}
+              canEdit={canEditSelectedTask}
+              isLoading={isLoadingSubtasks}
+              isManaging={isManagingSubtasks}
+              error={subtaskError}
+              onCreateSubtask={onCreateSubtask}
+              onToggleSubtask={onToggleSubtask}
+              onRenameSubtask={onRenameSubtask}
+              onDeleteSubtask={onDeleteSubtask}
+            />
           </section>
 
           <section className="space-y-3">

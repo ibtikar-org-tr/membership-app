@@ -3,6 +3,15 @@ import { Hono } from 'hono'
 import { getProjectMember } from '../repositories/vms-project-members.repository'
 import { getDirectProjectByIdForMember, getProjectById, listDirectProjectsForMember } from '../repositories/vms-projects.repository'
 import {
+  attachSubtaskProgress,
+  createSubtask,
+  deleteSubtaskById,
+  getSubtaskById,
+  getSubtaskProgressByTaskIds,
+  listSubtasksByTaskId,
+  updateSubtaskById,
+} from '../repositories/vms-task-subtasks.repository'
+import {
   createTask,
   deleteTaskById,
   getTaskById,
@@ -11,6 +20,11 @@ import {
   updateTaskLastRemindedAt,
 } from '../repositories/vms-tasks.repository'
 import { getUserProfileByMembershipNumber } from '../repositories/user-info.repository'
+import {
+  createTaskSubtaskSchema,
+  taskSubtaskParamsSchema,
+  updateTaskSubtaskSchema,
+} from '../schemas/vms-task-subtask.schema'
 import { createTaskSchema, taskParamsSchema, updateTaskSchema } from '../schemas/vms-task.schema'
 import { notifyAssignedTask, notifyTaskReminder } from '../services/task-assignment-notification.service'
 import { syncTaskCompletionPoints, type TaskPointsState } from '../services/task-points.service'
@@ -57,6 +71,37 @@ async function canManageProjectTasks(db: AppBindings['VMS_DB'], projectId: strin
   }
 }
 
+async function canEditTask(
+  db: AppBindings['VMS_DB'],
+  task: { projectId: string; assignedTo: string | null },
+  membershipNumber: string,
+) {
+  const project = await getProjectById(db, task.projectId)
+
+  if (!project) {
+    return false
+  }
+
+  if (project.owner === membershipNumber) {
+    return true
+  }
+
+  if (task.assignedTo === membershipNumber) {
+    return true
+  }
+
+  const projectMember = await getProjectMember(db, task.projectId, membershipNumber)
+  return projectMember?.role === 'manager'
+}
+
+async function enrichTasksWithSubtaskProgress(db: AppBindings['VMS_DB'], tasks: Awaited<ReturnType<typeof listTasks>>) {
+  const progressMap = await getSubtaskProgressByTaskIds(
+    db,
+    tasks.map((task) => task.id),
+  )
+  return attachSubtaskProgress(tasks, progressMap)
+}
+
 vmsTasksRoute.get('/tasks', async (c) => {
   try {
     const membershipNumber = getActorMembershipNumber(c)
@@ -65,7 +110,9 @@ vmsTasksRoute.get('/tasks', async (c) => {
     const directProjects = await listDirectProjectsForMember(c.env.VMS_DB, membershipNumber)
     const directProjectIds = new Set(directProjects.map((project) => project.id))
     const tasks = await listTasks(c.env.VMS_DB)
-    return c.json({ tasks: tasks.filter((task) => directProjectIds.has(task.projectId)) })
+    const visibleTasks = tasks.filter((task) => directProjectIds.has(task.projectId))
+    const enrichedTasks = await enrichTasksWithSubtaskProgress(c.env.VMS_DB, visibleTasks)
+    return c.json({ tasks: enrichedTasks })
   } catch (error) {
     console.error('Failed to list tasks', error)
     return c.json({ error: 'Could not fetch tasks.' }, 500)
@@ -89,7 +136,8 @@ vmsTasksRoute.get('/tasks/:id', zValidator('param', taskParamsSchema), async (c)
       return c.json({ error: 'Task not found.' }, 404)
     }
 
-    return c.json({ task })
+    const [enrichedTask] = await enrichTasksWithSubtaskProgress(c.env.VMS_DB, [task])
+    return c.json({ task: enrichedTask })
   } catch (error) {
     console.error('Failed to fetch task', error)
     return c.json({ error: 'Could not fetch task.' }, 500)
@@ -320,3 +368,145 @@ vmsTasksRoute.delete('/tasks/:id', zValidator('param', taskParamsSchema), async 
     return c.json({ error: 'Could not delete task.' }, 500)
   }
 })
+
+vmsTasksRoute.get('/tasks/:id/subtasks', zValidator('param', taskParamsSchema), async (c) => {
+  try {
+    const { id } = c.req.valid('param')
+    const membershipNumber = getActorMembershipNumber(c)
+
+    const task = await getTaskById(c.env.VMS_DB, id)
+    if (!task) {
+      return c.json({ error: 'Task not found.' }, 404)
+    }
+
+    const project = await getDirectProjectByIdForMember(c.env.VMS_DB, task.projectId, membershipNumber)
+    if (!project) {
+      return c.json({ error: 'Task not found.' }, 404)
+    }
+
+    const subtasks = await listSubtasksByTaskId(c.env.VMS_DB, id)
+    return c.json({ subtasks })
+  } catch (error) {
+    console.error('Failed to list task subtasks', error)
+    return c.json({ error: 'Could not fetch task subtasks.' }, 500)
+  }
+})
+
+vmsTasksRoute.post(
+  '/tasks/:id/subtasks',
+  zValidator('param', taskParamsSchema),
+  zValidator('json', createTaskSubtaskSchema),
+  async (c) => {
+    try {
+      const { id } = c.req.valid('param')
+      const membershipNumber = getActorMembershipNumber(c)
+      const payload = c.req.valid('json')
+
+      const task = await getTaskById(c.env.VMS_DB, id)
+      if (!task) {
+        return c.json({ error: 'Task not found.' }, 404)
+      }
+
+      const project = await getDirectProjectByIdForMember(c.env.VMS_DB, task.projectId, membershipNumber)
+      if (!project) {
+        return c.json({ error: 'Task not found.' }, 404)
+      }
+
+      const canEdit = await canEditTask(c.env.VMS_DB, task, membershipNumber)
+      if (!canEdit) {
+        return c.json({ error: 'لا يمكنك تعديل مهام فرعية لهذه المهمة.' }, 403)
+      }
+
+      const subtaskId = crypto.randomUUID()
+      const subtask = await createSubtask(c.env.VMS_DB, subtaskId, id, payload)
+      return c.json({ subtask }, 201)
+    } catch (error) {
+      console.error('Failed to create task subtask', error)
+      return c.json({ error: 'Could not create task subtask.' }, 500)
+    }
+  },
+)
+
+vmsTasksRoute.put(
+  '/tasks/:id/subtasks/:subtaskId',
+  zValidator('param', taskSubtaskParamsSchema),
+  zValidator('json', updateTaskSubtaskSchema),
+  async (c) => {
+    try {
+      const { id, subtaskId } = c.req.valid('param')
+      const membershipNumber = getActorMembershipNumber(c)
+      const payload = c.req.valid('json')
+
+      const task = await getTaskById(c.env.VMS_DB, id)
+      if (!task) {
+        return c.json({ error: 'Task not found.' }, 404)
+      }
+
+      const project = await getDirectProjectByIdForMember(c.env.VMS_DB, task.projectId, membershipNumber)
+      if (!project) {
+        return c.json({ error: 'Task not found.' }, 404)
+      }
+
+      const existingSubtask = await getSubtaskById(c.env.VMS_DB, subtaskId)
+      if (!existingSubtask || existingSubtask.parentTaskId !== id) {
+        return c.json({ error: 'Subtask not found.' }, 404)
+      }
+
+      const canEdit = await canEditTask(c.env.VMS_DB, task, membershipNumber)
+      if (!canEdit) {
+        return c.json({ error: 'لا يمكنك تعديل مهام فرعية لهذه المهمة.' }, 403)
+      }
+
+      const subtask = await updateSubtaskById(c.env.VMS_DB, subtaskId, payload, membershipNumber)
+      if (!subtask) {
+        return c.json({ error: 'Subtask not found.' }, 404)
+      }
+
+      return c.json({ subtask })
+    } catch (error) {
+      console.error('Failed to update task subtask', error)
+      return c.json({ error: 'Could not update task subtask.' }, 500)
+    }
+  },
+)
+
+vmsTasksRoute.delete(
+  '/tasks/:id/subtasks/:subtaskId',
+  zValidator('param', taskSubtaskParamsSchema),
+  async (c) => {
+    try {
+      const { id, subtaskId } = c.req.valid('param')
+      const membershipNumber = getActorMembershipNumber(c)
+
+      const task = await getTaskById(c.env.VMS_DB, id)
+      if (!task) {
+        return c.json({ error: 'Task not found.' }, 404)
+      }
+
+      const project = await getDirectProjectByIdForMember(c.env.VMS_DB, task.projectId, membershipNumber)
+      if (!project) {
+        return c.json({ error: 'Task not found.' }, 404)
+      }
+
+      const existingSubtask = await getSubtaskById(c.env.VMS_DB, subtaskId)
+      if (!existingSubtask || existingSubtask.parentTaskId !== id) {
+        return c.json({ error: 'Subtask not found.' }, 404)
+      }
+
+      const canEdit = await canEditTask(c.env.VMS_DB, task, membershipNumber)
+      if (!canEdit) {
+        return c.json({ error: 'لا يمكنك حذف مهام فرعية لهذه المهمة.' }, 403)
+      }
+
+      const deleted = await deleteSubtaskById(c.env.VMS_DB, subtaskId)
+      if (!deleted) {
+        return c.json({ error: 'Subtask not found.' }, 404)
+      }
+
+      return c.json({ message: 'Subtask deleted successfully.' })
+    } catch (error) {
+      console.error('Failed to delete task subtask', error)
+      return c.json({ error: 'Could not delete task subtask.' }, 500)
+    }
+  },
+)

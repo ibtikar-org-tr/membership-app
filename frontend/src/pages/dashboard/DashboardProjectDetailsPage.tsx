@@ -3,9 +3,12 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import {
   createTask,
+  createTaskSubtask,
+  deleteTaskSubtask,
   fetchProjectMemberContact,
   fetchProjectById,
   fetchProjectMembers,
+  fetchTaskSubtasks,
   fetchTasks,
   leaveProject,
   remindTask,
@@ -14,8 +17,9 @@ import {
   updateProject,
   updateProjectMemberRole,
   updateTask,
+  updateTaskSubtask,
 } from '../../api/vms'
-import type { VmsProject, VmsProjectMember, VmsTask } from '../../types/vms'
+import type { VmsProject, VmsProjectMember, VmsTask, VmsTaskSubtask } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
 import {
   AddTaskModal,
@@ -55,6 +59,10 @@ export function DashboardProjectDetailsPage() {
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
   const [taskRemindError, setTaskRemindError] = useState<string | null>(null)
   const [taskRemindSuccess, setTaskRemindSuccess] = useState<string | null>(null)
+  const [selectedTaskSubtasks, setSelectedTaskSubtasks] = useState<VmsTaskSubtask[]>([])
+  const [isLoadingSubtasks, setIsLoadingSubtasks] = useState(false)
+  const [isManagingSubtasks, setIsManagingSubtasks] = useState(false)
+  const [subtaskError, setSubtaskError] = useState<string | null>(null)
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
   const [memberInfoTarget, setMemberInfoTarget] = useState<VmsProjectMember | null>(null)
@@ -286,12 +294,71 @@ export function DashboardProjectDetailsPage() {
   useEffect(() => {
     setTaskRemindError(null)
     setTaskRemindSuccess(null)
+    setSubtaskError(null)
   }, [selectedTaskId])
+
+  useEffect(() => {
+    if (!selectedTaskId) {
+      setSelectedTaskSubtasks([])
+      setIsLoadingSubtasks(false)
+      return
+    }
+
+    const currentTaskId = selectedTaskId
+    const controller = new AbortController()
+
+    async function loadSubtasks() {
+      setIsLoadingSubtasks(true)
+      setSubtaskError(null)
+
+      try {
+        const payload = await fetchTaskSubtasks(currentTaskId)
+        if (!controller.signal.aborted) {
+          setSelectedTaskSubtasks(payload.subtasks)
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setSelectedTaskSubtasks([])
+          setSubtaskError('تعذر تحميل المهام الفرعية.')
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingSubtasks(false)
+        }
+      }
+    }
+
+    void loadSubtasks()
+
+    return () => {
+      controller.abort()
+    }
+  }, [selectedTaskId])
+
+  function subtaskProgressFromList(subtasks: VmsTaskSubtask[]) {
+    if (subtasks.length === 0) {
+      return null
+    }
+
+    return {
+      completed: subtasks.filter((subtask) => subtask.status === 'completed').length,
+      total: subtasks.length,
+    }
+  }
+
+  function syncParentSubtaskProgress(taskId: string, subtasks: VmsTaskSubtask[]) {
+    const progress = subtaskProgressFromList(subtasks)
+    setProjectTasks((previous) =>
+      previous.map((task) => (task.id === taskId ? { ...task, subtaskProgress: progress } : task)),
+    )
+  }
 
   const closeTaskDetails = () => {
     setTaskUpdateError(null)
     setTaskRemindError(null)
     setTaskRemindSuccess(null)
+    setSubtaskError(null)
+    setSelectedTaskSubtasks([])
     setSelectedTaskId(null)
   }
 
@@ -308,7 +375,11 @@ export function DashboardProjectDetailsPage() {
     try {
       const payload = await remindTask(selectedTask.id, user.membershipNumber)
       setProjectTasks((previous) =>
-        previous.map((task) => (task.id === payload.task.id ? payload.task : task)),
+        previous.map((task) =>
+          task.id === payload.task.id
+            ? { ...payload.task, subtaskProgress: task.subtaskProgress ?? null }
+            : task,
+        ),
       )
       setTaskRemindSuccess('تم إرسال التذكير إلى المكلّف عبر تيليجرام.')
     } catch (requestError) {
@@ -456,7 +527,7 @@ export function DashboardProjectDetailsPage() {
         ...(skills ? { skills } : {}),
       }, currentUser.membershipNumber)
 
-      setProjectTasks((previous) => [payload.task, ...previous])
+      setProjectTasks((previous) => [{ ...payload.task, subtaskProgress: null }, ...previous])
       form.reset()
       setIsAddTaskOpen(false)
     } catch (requestError) {
@@ -547,7 +618,13 @@ export function DashboardProjectDetailsPage() {
     try {
       const response = await updateTask(selectedTask.id, payload, currentUser.membershipNumber)
 
-      setProjectTasks((previous) => previous.map((task) => (task.id === response.task.id ? response.task : task)))
+      setProjectTasks((previous) =>
+        previous.map((task) =>
+          task.id === response.task.id
+            ? { ...response.task, subtaskProgress: task.subtaskProgress ?? null }
+            : task,
+        ),
+      )
     } catch (requestError) {
       if (requestError instanceof Error) {
         setTaskUpdateError(requestError.message)
@@ -559,6 +636,107 @@ export function DashboardProjectDetailsPage() {
       }
     } finally {
       setIsUpdatingTask(false)
+    }
+  }
+
+  const handleCreateSubtask = async (name: string) => {
+    if (!selectedTask || !canEditSelectedTask) {
+      return
+    }
+
+    setSubtaskError(null)
+    setIsManagingSubtasks(true)
+
+    try {
+      const response = await createTaskSubtask(selectedTask.id, { name })
+      const nextSubtasks = [...selectedTaskSubtasks, response.subtask]
+      setSelectedTaskSubtasks(nextSubtasks)
+      syncParentSubtaskProgress(selectedTask.id, nextSubtasks)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setSubtaskError(requestError.message)
+      } else {
+        setSubtaskError('تعذر إضافة المهمة الفرعية.')
+      }
+    } finally {
+      setIsManagingSubtasks(false)
+    }
+  }
+
+  const handleToggleSubtask = async (subtaskId: string, completed: boolean) => {
+    if (!selectedTask || !canEditSelectedTask) {
+      return
+    }
+
+    setSubtaskError(null)
+    setIsManagingSubtasks(true)
+
+    try {
+      const response = await updateTaskSubtask(selectedTask.id, subtaskId, {
+        status: completed ? 'completed' : 'open',
+      })
+      const nextSubtasks = selectedTaskSubtasks.map((subtask) =>
+        subtask.id === subtaskId ? response.subtask : subtask,
+      )
+      setSelectedTaskSubtasks(nextSubtasks)
+      syncParentSubtaskProgress(selectedTask.id, nextSubtasks)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setSubtaskError(requestError.message)
+      } else {
+        setSubtaskError('تعذر تحديث المهمة الفرعية.')
+      }
+    } finally {
+      setIsManagingSubtasks(false)
+    }
+  }
+
+  const handleRenameSubtask = async (subtaskId: string, name: string) => {
+    if (!selectedTask || !canEditSelectedTask) {
+      return
+    }
+
+    setSubtaskError(null)
+    setIsManagingSubtasks(true)
+
+    try {
+      const response = await updateTaskSubtask(selectedTask.id, subtaskId, { name })
+      const nextSubtasks = selectedTaskSubtasks.map((subtask) =>
+        subtask.id === subtaskId ? response.subtask : subtask,
+      )
+      setSelectedTaskSubtasks(nextSubtasks)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setSubtaskError(requestError.message)
+      } else {
+        setSubtaskError('تعذر إعادة تسمية المهمة الفرعية.')
+      }
+    } finally {
+      setIsManagingSubtasks(false)
+    }
+  }
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    if (!selectedTask || !canEditSelectedTask) {
+      return
+    }
+
+    setSubtaskError(null)
+    setIsManagingSubtasks(true)
+
+    try {
+      await deleteTaskSubtask(selectedTask.id, subtaskId)
+      const nextSubtasks = selectedTaskSubtasks.filter((subtask) => subtask.id !== subtaskId)
+      setSelectedTaskSubtasks(nextSubtasks)
+      syncParentSubtaskProgress(selectedTask.id, nextSubtasks)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setSubtaskError(requestError.message)
+      } else {
+        setSubtaskError('تعذر حذف المهمة الفرعية.')
+      }
+    } finally {
+      setIsManagingSubtasks(false)
     }
   }
 
@@ -735,9 +913,17 @@ export function DashboardProjectDetailsPage() {
           taskRemindSuccess={taskRemindSuccess}
           memberOptions={memberOptions}
           formatAssignee={formatAssignee}
+          subtasks={selectedTaskSubtasks}
+          isLoadingSubtasks={isLoadingSubtasks}
+          isManagingSubtasks={isManagingSubtasks}
+          subtaskError={subtaskError}
           onClose={closeTaskDetails}
           onUpdateTask={handleUpdateTask}
           onRemindTask={handleRemindTask}
+          onCreateSubtask={handleCreateSubtask}
+          onToggleSubtask={handleToggleSubtask}
+          onRenameSubtask={handleRenameSubtask}
+          onDeleteSubtask={handleDeleteSubtask}
         />
       ) : null}
 

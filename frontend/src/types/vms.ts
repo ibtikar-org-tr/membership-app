@@ -30,6 +30,19 @@ export interface VmsTask {
   approvedBy: string | null
   lastRemindedAt: string | null
   skills: Record<string, string> | null
+  subtaskProgress?: { completed: number; total: number } | null
+}
+
+export interface VmsTaskSubtask {
+  id: string
+  parentTaskId: string
+  name: string
+  status: 'open' | 'completed'
+  completedAt: string | null
+  completedBy: string | null
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface VmsEvent {

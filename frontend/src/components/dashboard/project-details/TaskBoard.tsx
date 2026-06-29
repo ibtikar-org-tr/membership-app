@@ -71,6 +71,17 @@ export function TaskBoard({ boardColumns, onOpenTask, formatAssignee }: TaskBoar
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-slate-900">{task.name}</p>
+                        {task.subtaskProgress && task.subtaskProgress.total > 0 ? (
+                          <span
+                            className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                              task.subtaskProgress.completed === task.subtaskProgress.total
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                                : 'border-slate-300 bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            {task.subtaskProgress.completed}/{task.subtaskProgress.total} فرعية
+                          </span>
+                        ) : null}
                         {isOverdue ? (
                           <span className="mt-1 inline-flex rounded-full border border-red-300 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-800">
                             متأخرة
