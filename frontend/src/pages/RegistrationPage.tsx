@@ -4,6 +4,8 @@ import { FiBookOpen, FiFileText } from 'react-icons/fi'
 import { Seo } from '../components/Seo'
 import { buildWebPageJsonLd } from '../seo/json-ld'
 import { useRegistrationForm } from '../hooks/useRegistrationForm'
+import { MissingRegistrationFieldsNotice } from '../components/registration/MissingRegistrationFieldsNotice'
+import { getMissingRequiredRegistrationFields } from '../utils/registrationValidation'
 import type { RegistrationFormData } from '../types/registration'
 
 const PersonalInfoSection = lazy(() =>
@@ -22,27 +24,9 @@ const BylawsAcknowledgementSection = lazy(() =>
   import('../components/registration/sections/BylawsAcknowledgementSection').then((module) => ({ default: module.BylawsAcknowledgementSection })),
 )
 
-const ALLOWED_SEX_VALUES = new Set(['male', 'female'])
-
 function hasCompletedNonOptionalFields(formData: RegistrationFormData) {
-  const hasInterests = formData.interests
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean).length > 0
-
-  return (
-    Boolean(formData.email.trim())
-    && Boolean(formData.arName.trim())
-    && Boolean(formData.enName.trim())
-    && Boolean(formData.phoneNumber.trim())
-    && ALLOWED_SEX_VALUES.has(formData.sex.trim())
-    && Boolean(formData.country.trim())
-    && Boolean(formData.region.trim())
-    && Boolean(formData.educationLevel.trim())
-    && Boolean(formData.school.trim())
-    && Boolean(formData.fieldOfStudy.trim())
-    && Boolean(formData.graduationYear.trim())
-    && hasInterests
+  return getMissingRequiredRegistrationFields(formData).every(
+    (field) => field.fieldId === 'bylaws-acknowledgement',
   )
 }
 
@@ -86,6 +70,17 @@ export function RegistrationPage() {
     resetSubmissionStatus,
   } = useRegistrationForm()
   const canShowBylawsAcknowledgementSection = hasCompletedNonOptionalFields(formData)
+  const missingRequiredFields = useMemo(() => {
+    const allMissing = getMissingRequiredRegistrationFields(formData)
+
+    if (canShowBylawsAcknowledgementSection) {
+      return allMissing
+    }
+
+    return allMissing.filter((field) => field.fieldId !== 'bylaws-acknowledgement')
+  }, [formData, canShowBylawsAcknowledgementSection])
+  const isRegistrationFullyComplete = missingRequiredFields.length === 0
+    && getMissingRequiredRegistrationFields(formData).length === 0
   const registrationTitle = 'الانتساب إلى تجمّع إبتكار'
   const registrationDescription =
     'قدّم طلب الانتساب إلى تجمّع إبتكار وابدأ رحلة المشاركة في المشاريع والفعاليات والفرص التطوعية المتاحة للأعضاء الجدد.'
@@ -198,7 +193,12 @@ export function RegistrationPage() {
             )}
 
             <div className="rounded-2xl bg-white p-4 shadow-md md:p-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <MissingRegistrationFieldsNotice
+                missingFields={missingRequiredFields}
+                isFullyComplete={isRegistrationFullyComplete}
+              />
+
+              <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <button
                   type="submit"
                   disabled={isSubmitting}

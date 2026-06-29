@@ -4,7 +4,8 @@ import {
   initialRegistrationFormData,
 } from '../types/registration'
 import type { FormFieldName, RegistrationFormData } from '../types/registration'
-import { composeEmail, getEmailValidationMessage, splitEmailParts } from '../utils/email'
+import { composeEmail, splitEmailParts } from '../utils/email'
+import { validateRequiredFields } from '../utils/registrationValidation'
 
 const DRAFT_STORAGE_KEY = 'registration-form-draft-v1'
 const AUTOSAVE_STORAGE_KEY = 'registration-form-autosave-v1'
@@ -15,7 +16,6 @@ const REGISTRATION_ENDPOINT = MEMBER_MS_BASE_URL
   : '/ms/membership-app/api/registration'
 const ALLOWED_SEX_VALUES = new Set(['male', 'female'])
 const ALLOWED_BLOOD_TYPES = new Set(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])
-const BYLAWS_ACKNOWLEDGEMENT_REGEX = /^نعم$/
 
 type SubmissionStatus = {
   message: string
@@ -218,28 +218,6 @@ function toRegistrationPayload(formData: RegistrationFormData) {
     interestInVolunteering: toOptionalTrimmedString(formData.interestInVolunteering),
     previousExperience: toOptionalTrimmedString(formData.previousExperience),
   }
-}
-
-function validateRequiredFields(formData: RegistrationFormData) {
-  if (!formData.email.trim()) return 'يرجى إدخال البريد الإلكتروني.'
-  const emailValidationMessage = getEmailValidationMessage(formData.email)
-  if (emailValidationMessage) return emailValidationMessage
-  if (!formData.arName.trim()) return 'يرجى إدخال الاسم بالعربية.'
-  if (!formData.enName.trim()) return 'يرجى إدخال الاسم بالإنكليزية أو التركية.'
-  if (!formData.phoneNumber.trim()) return 'يرجى إدخال رقم الهاتف.'
-  if (!ALLOWED_SEX_VALUES.has(formData.sex.trim())) return 'يرجى اختيار الجنس.'
-  if (!formData.country.trim()) return 'يرجى اختيار الدولة.'
-  if (!formData.region.trim()) return 'يرجى اختيار الولاية / المحافظة.'
-  if (!formData.educationLevel.trim()) return 'يرجى اختيار مستوى التعليم.'
-  if (!formData.school.trim()) return 'يرجى إدخال اسم المدرسة أو الجامعة.'
-  if (!formData.fieldOfStudy.trim()) return 'يرجى إدخال الفرع الدراسي.'
-  if (!formData.graduationYear.trim()) return 'يرجى اختيار سنة التخرج.'
-  if (!toOptionalStringArray(formData.interests)) return 'يرجى إضافة اهتمام واحد على الأقل.'
-  if (!BYLAWS_ACKNOWLEDGEMENT_REGEX.test(formData.bylawsAcknowledgement)) {
-    return 'لإتمام التسجيل، يجب كتابة "نعم" تماماً في خانة الإقرار بالنظام الداخلي.'
-  }
-
-  return null
 }
 
 export function useRegistrationForm() {

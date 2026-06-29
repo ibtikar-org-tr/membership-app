@@ -121,6 +121,7 @@ export function SkillsField({
       allowCustom={allowCustom}
       placeholder={placeholder}
       helperText={helperText}
+      pendingSelectionHint="كتبتَ مهارة لكن لم تُضَف بعد. اضغط على المهارة في القائمة أو اضغط Enter لإضافتها."
       hiddenValue={JSON.stringify(Object.keys(skillsMap).length ? skillsMap : {})}
       renderTag={(tag, onRemove) => (
         <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">
