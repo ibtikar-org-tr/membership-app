@@ -31,6 +31,24 @@ interface TaskCardProps {
   onDragEnd: () => void
 }
 
+function TaskDropPlaceholder({ task }: { task: VmsTask }) {
+  return (
+    <article
+      aria-hidden="true"
+      className="rounded-xl border-2 border-dashed border-cyan-400 bg-gradient-to-b from-cyan-50/90 to-white/80 p-3.5 shadow-[0_18px_40px_-12px_rgba(14,116,144,0.45)] ring-2 ring-cyan-300/40"
+    >
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 h-4 w-4 shrink-0 rounded bg-cyan-200/80" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-cyan-950/75">{task.name}</p>
+          <p className="mt-2 text-xs font-medium text-cyan-700/80">أفلت المهمة هنا</p>
+        </div>
+      </div>
+      <div className="mt-3 h-10 rounded-lg bg-cyan-100/50" />
+    </article>
+  )
+}
+
 function TaskCard({ task, canMove, isDragging, formatAssignee, onOpenTask, onDragStart, onDragEnd }: TaskCardProps) {
   const didDragRef = useRef(false)
   const priority = task.priority === 'high' || task.priority === 'low' || task.priority === 'medium' ? task.priority : 'medium'
@@ -54,6 +72,23 @@ function TaskCard({ task, canMove, isDragging, formatAssignee, onOpenTask, onDra
         didDragRef.current = true
         event.dataTransfer.setData(TASK_DRAG_MIME, task.id)
         event.dataTransfer.effectAllowed = 'move'
+
+        const card = event.currentTarget
+        const dragGhost = card.cloneNode(true) as HTMLElement
+        dragGhost.style.width = `${card.offsetWidth}px`
+        dragGhost.style.position = 'absolute'
+        dragGhost.style.top = '-9999px'
+        dragGhost.style.left = '-9999px'
+        dragGhost.style.opacity = '0.96'
+        dragGhost.style.pointerEvents = 'none'
+        dragGhost.style.boxShadow = '0 22px 44px -14px rgba(15, 23, 42, 0.35), 0 10px 18px -10px rgba(8, 145, 178, 0.35)'
+        dragGhost.style.transform = 'rotate(-1deg)'
+        document.body.appendChild(dragGhost)
+        event.dataTransfer.setDragImage(dragGhost, card.offsetWidth / 2, 28)
+        window.setTimeout(() => {
+          document.body.removeChild(dragGhost)
+        }, 0)
+
         onDragStart(task.id)
       }}
       onDragEnd={() => {
@@ -79,7 +114,11 @@ function TaskCard({ task, canMove, isDragging, formatAssignee, onOpenTask, onDra
       }}
       className={`group rounded-xl border bg-white p-3.5 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-cyan-500/50 ${
         canMove ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-      } ${isDragging ? 'scale-[0.98] opacity-45' : 'hover:-translate-y-0.5 hover:shadow-md'} ${
+      } ${
+        isDragging
+          ? 'scale-[0.98] border-dashed border-slate-300 bg-slate-50/80 opacity-35 shadow-none'
+          : 'hover:-translate-y-0.5 hover:shadow-md'
+      } ${
         isOverdue
           ? 'border-red-300/90 ring-1 ring-red-200/80 hover:border-red-400'
           : isUnassigned
@@ -165,6 +204,14 @@ export function TaskBoard({ boardColumns, onOpenTask, onMoveTask, canMoveTask, f
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [dragOverColumnKey, setDragOverColumnKey] = useState<TaskBoardStatus | null>(null)
 
+  const draggingTask = draggingTaskId
+    ? boardColumns.flatMap((column) => column.items).find((task) => task.id === draggingTaskId) ?? null
+    : null
+
+  const draggingSourceColumnKey = draggingTaskId
+    ? boardColumns.find((column) => column.items.some((task) => task.id === draggingTaskId))?.key ?? null
+    : null
+
   function handleColumnDragOver(event: DragEvent<HTMLDivElement>, columnKey: TaskBoardStatus) {
     if (!event.dataTransfer.types.includes(TASK_DRAG_MIME)) {
       return
@@ -193,6 +240,8 @@ export function TaskBoard({ boardColumns, onOpenTask, onMoveTask, canMoveTask, f
       {boardColumns.map((column) => {
         const lane = laneStyle(column.key)
         const isDropTarget = dragOverColumnKey === column.key
+        const isExternalDropTarget =
+          isDropTarget && draggingTask !== null && draggingSourceColumnKey !== null && draggingSourceColumnKey !== column.key
 
         return (
           <section
@@ -212,7 +261,7 @@ export function TaskBoard({ boardColumns, onOpenTask, onMoveTask, canMoveTask, f
 
             <div
               className={`min-h-[8rem] flex-1 space-y-3 overflow-y-auto px-3 pb-3 pt-3 transition ${
-                isDropTarget ? 'bg-cyan-50/40' : ''
+                isDropTarget ? 'bg-cyan-50/30' : ''
               }`}
               onDragOver={(event) => handleColumnDragOver(event, column.key)}
               onDragLeave={(event) => {
@@ -224,10 +273,12 @@ export function TaskBoard({ boardColumns, onOpenTask, onMoveTask, canMoveTask, f
               }}
               onDrop={(event) => handleColumnDrop(event, column.key)}
             >
-              {column.items.length === 0 ? (
+              {isExternalDropTarget && draggingTask ? <TaskDropPlaceholder task={draggingTask} /> : null}
+
+              {column.items.length === 0 && !isExternalDropTarget ? (
                 <div
                   className={`rounded-xl border border-dashed px-4 py-6 text-center text-sm transition ${
-                    isDropTarget ? 'border-cyan-400 bg-cyan-50/80 text-cyan-800' : 'border-slate-300 bg-white/70 text-slate-500'
+                    isDropTarget ? 'border-cyan-400 bg-cyan-50/80 text-cyan-800 shadow-[0_16px_32px_-14px_rgba(14,116,144,0.35)]' : 'border-slate-300 bg-white/70 text-slate-500'
                   }`}
                 >
                   {isDropTarget ? 'أفلت المهمة هنا' : 'لا توجد مهام هنا بعد.'}
