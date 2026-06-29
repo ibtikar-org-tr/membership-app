@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { FormEvent } from 'react'
 import {
@@ -34,6 +34,10 @@ import { ProjectHeader } from '../../components/dashboard/project-details/Projec
 import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
 import { UnallowedAccessPage } from './UnallowedAccessPage'
 
+function isOptimisticSubtaskId(subtaskId: string) {
+  return subtaskId.startsWith('optimistic-')
+}
+
 export function DashboardProjectDetailsPage() {
   const { projectID } = useParams()
   const navigate = useNavigate()
@@ -62,6 +66,8 @@ export function DashboardProjectDetailsPage() {
   const [selectedTaskSubtasks, setSelectedTaskSubtasks] = useState<VmsTaskSubtask[]>([])
   const [isLoadingSubtasks, setIsLoadingSubtasks] = useState(false)
   const [subtaskError, setSubtaskError] = useState<string | null>(null)
+  const pendingSubtaskCreatesRef = useRef<Map<string, Promise<VmsTaskSubtask>>>(new Map())
+  const cancelledOptimisticSubtasksRef = useRef<Set<string>>(new Set())
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const [isMembersOpen, setIsMembersOpen] = useState(false)
   const [memberInfoTarget, setMemberInfoTarget] = useState<VmsProjectMember | null>(null)
@@ -367,11 +373,48 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
+  async function resolveSubtaskServerId(subtaskId: string) {
+    if (!isOptimisticSubtaskId(subtaskId)) {
+      return subtaskId
+    }
+
+    const pendingCreate = pendingSubtaskCreatesRef.current.get(subtaskId)
+    if (!pendingCreate) {
+      throw new Error('Subtask not found.')
+    }
+
+    const serverSubtask = await pendingCreate
+    return serverSubtask.id
+  }
+
+  function replaceOptimisticSubtask(taskId: string, tempId: string, serverSubtask: VmsTaskSubtask) {
+    setSelectedTaskSubtasks((current) => {
+      const optimistic = current.find((subtask) => subtask.id === tempId)
+      const mergedSubtask =
+        optimistic && optimistic.status !== serverSubtask.status
+          ? ({
+              ...serverSubtask,
+              status: optimistic.status,
+              completedAt: optimistic.completedAt,
+              completedBy: optimistic.completedBy,
+            } as VmsTaskSubtask)
+          : serverSubtask
+
+      const nextSubtasks = current.map((subtask) => (subtask.id === tempId ? mergedSubtask : subtask))
+      syncParentSubtaskProgress(taskId, nextSubtasks)
+      return nextSubtasks
+    })
+
+    return serverSubtask
+  }
+
   const closeTaskDetails = () => {
     setTaskUpdateError(null)
     setTaskRemindError(null)
     setTaskRemindSuccess(null)
     setSubtaskError(null)
+    pendingSubtaskCreatesRef.current.clear()
+    cancelledOptimisticSubtasksRef.current.clear()
     setSelectedTaskSubtasks([])
     setSelectedTaskId(null)
   }
@@ -671,14 +714,31 @@ export function DashboardProjectDetailsPage() {
       return nextSubtasks
     })
 
-    try {
-      const response = await createTaskSubtask(taskId, { name })
-      setSelectedTaskSubtasks((current) => {
-        const nextSubtasks = current.map((subtask) => (subtask.id === tempId ? response.subtask : subtask))
-        syncParentSubtaskProgress(taskId, nextSubtasks)
-        return nextSubtasks
+    const createPromise = createTaskSubtask(taskId, { name })
+      .then((response) => {
+        if (cancelledOptimisticSubtasksRef.current.has(tempId)) {
+          cancelledOptimisticSubtasksRef.current.delete(tempId)
+          void deleteTaskSubtask(taskId, response.subtask.id)
+          return response.subtask
+        }
+
+        replaceOptimisticSubtask(taskId, tempId, response.subtask)
+        return response.subtask
       })
+      .finally(() => {
+        pendingSubtaskCreatesRef.current.delete(tempId)
+      })
+
+    pendingSubtaskCreatesRef.current.set(tempId, createPromise)
+
+    try {
+      await createPromise
     } catch (requestError) {
+      if (cancelledOptimisticSubtasksRef.current.has(tempId)) {
+        cancelledOptimisticSubtasksRef.current.delete(tempId)
+        return
+      }
+
       setSelectedTaskSubtasks(previousSubtasks)
       syncParentSubtaskProgress(taskId, previousSubtasks)
       if (requestError instanceof Error) {
@@ -717,11 +777,14 @@ export function DashboardProjectDetailsPage() {
     })
 
     try {
-      const response = await updateTaskSubtask(taskId, subtaskId, {
+      const resolvedId = await resolveSubtaskServerId(subtaskId)
+      const response = await updateTaskSubtask(taskId, resolvedId, {
         status: completed ? 'completed' : 'open',
       })
       setSelectedTaskSubtasks((current) => {
-        const nextSubtasks = current.map((subtask) => (subtask.id === subtaskId ? response.subtask : subtask))
+        const nextSubtasks = current.map((subtask) =>
+          subtask.id === subtaskId || subtask.id === resolvedId ? response.subtask : subtask,
+        )
         syncParentSubtaskProgress(taskId, nextSubtasks)
         return nextSubtasks
       })
@@ -752,9 +815,12 @@ export function DashboardProjectDetailsPage() {
     })
 
     try {
-      const response = await updateTaskSubtask(taskId, subtaskId, { name })
+      const resolvedId = await resolveSubtaskServerId(subtaskId)
+      const response = await updateTaskSubtask(taskId, resolvedId, { name })
       setSelectedTaskSubtasks((current) =>
-        current.map((subtask) => (subtask.id === subtaskId ? response.subtask : subtask)),
+        current.map((subtask) =>
+          subtask.id === subtaskId || subtask.id === resolvedId ? response.subtask : subtask,
+        ),
       )
     } catch (requestError) {
       setSelectedTaskSubtasks(previousSubtasks)
@@ -781,6 +847,26 @@ export function DashboardProjectDetailsPage() {
       syncParentSubtaskProgress(taskId, nextSubtasks)
       return nextSubtasks
     })
+
+    if (isOptimisticSubtaskId(subtaskId)) {
+      cancelledOptimisticSubtasksRef.current.add(subtaskId)
+      const pendingCreate = pendingSubtaskCreatesRef.current.get(subtaskId)
+      if (pendingCreate) {
+        void pendingCreate
+          .then((serverSubtask) => {
+            if (!cancelledOptimisticSubtasksRef.current.has(subtaskId)) {
+              return
+            }
+
+            cancelledOptimisticSubtasksRef.current.delete(subtaskId)
+            return deleteTaskSubtask(taskId, serverSubtask.id)
+          })
+          .catch(() => {
+            cancelledOptimisticSubtasksRef.current.delete(subtaskId)
+          })
+      }
+      return
+    }
 
     try {
       await deleteTaskSubtask(taskId, subtaskId)
