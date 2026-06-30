@@ -64,14 +64,10 @@ export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
         </div>
       </div>
 
-      <div className="border-t border-slate-100 px-3 py-2.5 sm:px-4">
-        <p
-          className={`line-clamp-2 text-xs leading-relaxed sm:text-sm ${
-            eventItem.description ? 'text-slate-600' : 'text-slate-400 italic'
-          }`}
-        >
-          {eventItem.description?.trim() || 'لا يوجد وصف متاح للفعالية.'}
-        </p>
+      <div className="min-h-[3.25rem] border-t border-slate-100 px-3 py-2.5 sm:px-4">
+        {eventItem.description?.trim() ? (
+          <p className="line-clamp-2 text-xs leading-relaxed text-slate-600 sm:text-sm">{eventItem.description}</p>
+        ) : null}
       </div>
     </Link>
   )
