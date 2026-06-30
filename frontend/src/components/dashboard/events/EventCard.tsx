@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { CalendarDays, MapPin } from 'lucide-react'
 import type { VmsEvent } from '../../../types/vms'
 import { formatDateEnCA } from '../../../utils/date-format'
 
@@ -9,62 +10,65 @@ function eventStatusLabel(status: string) {
   return status
 }
 
+function eventStatusTone(status: string) {
+  if (status === 'public') return 'border-emerald-200/80 bg-emerald-500/90 text-white'
+  if (status === 'archived') return 'border-slate-200/80 bg-slate-600/90 text-white'
+  return 'border-amber-200/80 bg-amber-500/90 text-white'
+}
+
 export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
+  const locationLabel = [eventItem.region, eventItem.country].filter(Boolean).join(' · ')
+
   return (
-    <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-md">
-      {eventItem.imageUrl ? (
-        <div className="relative aspect-[4/1] overflow-hidden bg-slate-100">
+    <Link
+      to={`/event/${eventItem.id}`}
+      className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-md"
+    >
+      <div className="relative aspect-[4/1] overflow-hidden bg-linear-to-br from-cyan-50 to-slate-100">
+        {eventItem.imageUrl ? (
           <img
             src={eventItem.imageUrl}
             alt={eventItem.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             loading="lazy"
           />
-        </div>
-      ) : (
-        <div className="flex aspect-[4/1] items-center justify-center bg-linear-to-br from-cyan-50 to-slate-100">
-          <svg className="h-16 w-16 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-        </div>
-      )}
-      <div className="p-4">
-        <div className="mb-2 flex flex-wrap items-center gap-1.5">
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-            {eventStatusLabel(eventItem.status)}
-          </span>
-          {eventItem.country ? (
-            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700">
-              {eventItem.country}
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <CalendarDays className="h-10 w-10 text-slate-300 sm:h-12 sm:w-12" strokeWidth={1.25} />
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-linear-to-t from-slate-950/85 via-slate-950/35 to-slate-950/5" />
+
+        <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-4">
+          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold shadow-sm backdrop-blur-sm sm:text-[11px] ${eventStatusTone(eventItem.status)}`}
+            >
+              {eventStatusLabel(eventItem.status)}
             </span>
-          ) : null}
-          {eventItem.region ? (
-            <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
-              {eventItem.region}
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm sm:text-[11px]">
+              <CalendarDays className="h-3 w-3 shrink-0" />
+              {formatDateEnCA(eventItem.startTime)}
             </span>
+          </div>
+
+          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-white sm:text-base">{eventItem.name}</h3>
+
+          {locationLabel ? (
+            <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-white/85 sm:text-xs">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{locationLabel}</span>
+            </p>
           ) : null}
         </div>
-        <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-slate-900">{eventItem.name}</h3>
-        {eventItem.description ? (
-          <p className="mb-3 line-clamp-2 text-xs text-slate-600">{eventItem.description}</p>
-        ) : null}
-        <div className="space-y-1.5 text-xs text-slate-600">
-          <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
-            {formatDateEnCA(eventItem.startTime)}
-          </span>
-        </div>
-        <Link
-          to={`/event/${eventItem.id}`}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
-        >
-          عرض التفاصيل
-        </Link>
       </div>
-    </article>
+
+      {eventItem.description ? (
+        <p className="line-clamp-2 border-t border-slate-100 px-3 py-2.5 text-xs leading-relaxed text-slate-600 sm:px-4">
+          {eventItem.description}
+        </p>
+      ) : null}
+    </Link>
   )
 }

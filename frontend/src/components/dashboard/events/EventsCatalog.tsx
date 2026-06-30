@@ -137,7 +137,7 @@ export function EventsCatalog({
                 لا توجد فعاليات قادمة أو قائمة.
               </p>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 {groups.upcomingAndOngoing.map((eventItem) => (
                   <EventCard key={eventItem.id} eventItem={eventItem} />
                 ))}
@@ -157,7 +157,7 @@ export function EventsCatalog({
                 لا توجد فعاليات منتهية.
               </p>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 {groups.ended.map((eventItem) => (
                   <EventCard key={eventItem.id} eventItem={eventItem} />
                 ))}
