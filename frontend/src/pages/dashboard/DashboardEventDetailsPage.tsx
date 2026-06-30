@@ -423,7 +423,7 @@ export function DashboardEventDetailsPage() {
   }
 
   if (!eventID || notFound) {
-    return <Navigate to={isStandaloneView ? '/' : '/dashboard/events'} replace />
+    return <Navigate to={isStandaloneView ? '/' : '/events'} replace />
   }
 
   if (isLoading || !eventItem) {
@@ -446,7 +446,7 @@ export function DashboardEventDetailsPage() {
     <section className="mx-auto max-w-5xl space-y-6 pb-10">
       <div className="flex justify-start">
         <Link
-          to={isStandaloneView ? '/' : '/dashboard/events'}
+          to={isStandaloneView ? '/' : '/events'}
           className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
           {isStandaloneView ? 'العودة للرئيسية' : 'العودة للفعاليات'}
@@ -484,14 +484,14 @@ export function DashboardEventDetailsPage() {
             {canEditEvent ? (
               <>
                 <Link
-                  to={`/dashboard/event/${eventItem.id}/edit`}
+                  to={`/event/${eventItem.id}/edit`}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
                 >
                   <PencilLine className="h-4 w-4" />
                   تعديل الفعالية
                 </Link>
                 <Link
-                  to={`/dashboard/event/${eventItem.id}/admin`}
+                  to={`/event/${eventItem.id}/admin`}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-medium text-cyan-800 shadow-sm transition hover:bg-cyan-100"
                 >
                   <Users className="h-4 w-4" />
@@ -537,7 +537,7 @@ export function DashboardEventDetailsPage() {
       {canEditEvent ? (
         <div className="rounded-xl border border-dashed border-slate-300/80 bg-slate-50/50 px-4 py-3 text-center text-sm text-slate-600">
           تعديل بيانات الفعالية متاح من صفحة التحرير الموحدة، وإدارة التسجيلات من صفحة الإدارة.
-          <Link to={`/dashboard/event/${eventItem.id}/admin`} className="mr-1 font-semibold text-cyan-700 underline">
+          <Link to={`/event/${eventItem.id}/admin`} className="mr-1 font-semibold text-cyan-700 underline">
             الانتقال إلى إدارة التسجيلات
           </Link>
         </div>
@@ -720,7 +720,7 @@ export function DashboardEventDetailsPage() {
           {canEditEvent ? (
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
               إدارة التذاكر أصبحت ضمن صفحة تعديل الفعالية.
-              <Link to={`/dashboard/event/${eventItem.id}/edit`} className="mr-1 font-semibold text-cyan-700 underline">
+              <Link to={`/event/${eventItem.id}/edit`} className="mr-1 font-semibold text-cyan-700 underline">
                 الانتقال لصفحة التعديل
               </Link>
             </p>

@@ -113,7 +113,7 @@ export function DashboardClubsPage() {
 
           <div className="mt-3 text-left">
             <Link
-              to={`/dashboard/clubs/${club.id}`}
+              to={`/clubs/${club.id}`}
               className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-1 font-semibold text-slate-700 hover:bg-slate-100"
             >
               التفاصيل

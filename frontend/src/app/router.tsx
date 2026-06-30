@@ -1,14 +1,10 @@
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { lazyRoute } from './lazy-route'
 import { RouteErrorBoundary } from '../components/errors/RouteErrorBoundary'
+import { LegacyDashboardRedirect } from './LegacyDashboardRedirect'
+import { dashboardRouteChildren } from './dashboard-routes'
 
 const router = createBrowserRouter([
-  {
-    path: '/',
-    errorElement: <RouteErrorBoundary />,
-    hydrateFallbackElement: <div />,
-    lazy: lazyRoute(() => import('../pages/HomePage'), 'HomePage'),
-  },
   {
     path: '/registration',
     errorElement: <RouteErrorBoundary />,
@@ -34,129 +30,28 @@ const router = createBrowserRouter([
     lazy: lazyRoute(() => import('../pages/ResetPasswordPage'), 'ResetPasswordPage'),
   },
   {
-    path: '/event/:eventID',
-    errorElement: <RouteErrorBoundary />,
-    hydrateFallbackElement: <div />,
-    lazy: lazyRoute(() => import('../pages/PublicEventPage'), 'PublicEventPage'),
-  },
-  {
     path: '/telegram-bot',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
     lazy: lazyRoute(() => import('../pages/TelegramBotPage'), 'TelegramBotPage'),
   },
   {
-    path: '/dashboard',
+    path: '/welcome',
+    errorElement: <RouteErrorBoundary />,
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/HomePage'), 'HomePage'),
+  },
+  {
+    path: '/',
     errorElement: <RouteErrorBoundary />,
     hydrateFallbackElement: <div />,
     lazy: lazyRoute(() => import('../pages/DashboardPage'), 'DashboardPage'),
-    children: [
-      {
-        index: true,
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardMainPage'), 'DashboardMainPage'),
-      },
-      {
-        path: 'profile',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProfilePage'), 'DashboardProfilePage'),
-      },
-      {
-        path: 'community',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardCommunityPage'), 'DashboardCommunityPage'),
-      },
-      {
-        path: 'projects',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectsPage'), 'DashboardProjectsPage'),
-      },
-      {
-        path: 'projects/:projectID/sub-projects',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectSubProjectsPage'), 'DashboardProjectSubProjectsPage'),
-      },
-      {
-        path: 'projects/:projectID',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectDetailsPage'), 'DashboardProjectDetailsPage'),
-      },
-      {
-        path: 'projects/:projectID/events',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectEventsPage'), 'DashboardProjectEventsPage'),
-      },
-      {
-        path: 'projects/:projectID/clubs',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectClubsPage'), 'DashboardProjectClubsPage'),
-      },
-      {
-        path: 'projects/:projectID/positions',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectPositionsPage'), 'DashboardProjectPositionsPage'),
-      },
-      {
-        path: 'projects/:projectID/notes',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectNotesPage'), 'DashboardProjectNotesPage'),
-      },
-      {
-        path: 'volunteering',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardVolunteeringPage'), 'DashboardVolunteeringPage'),
-      },
-      {
-        path: 'events',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventsPage'), 'DashboardEventsPage'),
-      },
-      {
-        path: 'clubs',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubsPage'), 'DashboardClubsPage'),
-      },
-      {
-        path: 'clubs/:clubID',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubPage'), 'DashboardClubPage'),
-      },
-      {
-        path: 'clubs/:clubID/edit',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubDetailsPage'), 'DashboardClubDetailsPage'),
-      },
-      {
-        path: 'events/:eventID',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventDetailsPage'), 'DashboardEventDetailsPage'),
-      },
-      {
-        path: 'event/:eventID',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventDetailsPage'), 'DashboardEventDetailsPage'),
-      },
-      {
-        path: 'event/:eventID/edit',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventEditPage'), 'DashboardEventEditPage'),
-      },
-      {
-        path: 'event/:eventID/admin',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventAdminPage'), 'DashboardEventAdminPage'),
-      },
-      {
-        path: 'positions/:positionID/edit',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardPositionEditPage'), 'DashboardPositionEditPage'),
-      },
-      {
-        path: 'settings',
-        hydrateFallbackElement: <div />,
-        lazy: lazyRoute(() => import('../pages/dashboard/DashboardSettingsPage'), 'DashboardSettingsPage'),
-      },
-    ],
+    children: dashboardRouteChildren,
+  },
+  {
+    path: '/dashboard/*',
+    hydrateFallbackElement: <div />,
+    element: <LegacyDashboardRedirect />,
   },
   {
     path: '*',

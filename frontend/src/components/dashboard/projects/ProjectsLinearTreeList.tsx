@@ -65,7 +65,7 @@ function ProjectTreeRow({
             </div>
           </div>
           <Link
-            to={`/dashboard/projects/${project.id}`}
+            to={`/projects/${project.id}`}
             className="inline-flex shrink-0 items-center gap-1 self-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:border-cyan-300 group-hover:bg-cyan-50/80 group-hover:text-cyan-950"
           >
             التفاصيل

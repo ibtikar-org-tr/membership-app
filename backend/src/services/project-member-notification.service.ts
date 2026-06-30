@@ -24,12 +24,12 @@ function formatMemberLabel(displayName: string, membershipNumber: string) {
 
 function buildProjectLink(frontendBaseUrl: string | undefined, projectId: string) {
   const baseUrl = frontendBaseUrl?.trim().replace(/\/+$/, '')
-  return baseUrl ? `${baseUrl}/dashboard/projects/${encodeURIComponent(projectId)}` : null
+  return baseUrl ? `${baseUrl}/projects/${encodeURIComponent(projectId)}` : null
 }
 
 function buildProjectsListLink(frontendBaseUrl: string | undefined) {
   const baseUrl = frontendBaseUrl?.trim().replace(/\/+$/, '')
-  return baseUrl ? `${baseUrl}/dashboard/projects` : null
+  return baseUrl ? `${baseUrl}/projects` : null
 }
 
 export async function notifyProjectMemberRemoved(env: AppBindings, context: ProjectMemberRemovalNotification) {

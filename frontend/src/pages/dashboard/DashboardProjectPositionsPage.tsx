@@ -125,7 +125,7 @@ export function DashboardProjectPositionsPage() {
       setPositions((previous) => [payload.position, ...previous])
       form.reset()
       setIsCreatePositionOpen(false)
-      navigate(`/dashboard/positions/${payload.position.id}/edit`)
+      navigate(`/positions/${payload.position.id}/edit`)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -138,7 +138,7 @@ export function DashboardProjectPositionsPage() {
   }
 
   if (!projectID || notFound) {
-    return <Navigate to="/dashboard/projects" replace />
+    return <Navigate to="/projects" replace />
   }
 
   if (isLoading || !project) {
@@ -170,7 +170,7 @@ export function DashboardProjectPositionsPage() {
             </button>
           ) : null}
           <Link
-            to={`/dashboard/projects/${project.id}`}
+            to={`/projects/${project.id}`}
             className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
           >
             العودة للمشروع
@@ -221,7 +221,7 @@ export function DashboardProjectPositionsPage() {
             positions.map((position) => (
               <Link
                 key={position.id}
-                to={`/dashboard/positions/${position.id}/edit`}
+                to={`/positions/${position.id}/edit`}
                 className="block rounded-lg border border-slate-200 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:bg-slate-100"
               >
                 <div className="flex items-start justify-between">

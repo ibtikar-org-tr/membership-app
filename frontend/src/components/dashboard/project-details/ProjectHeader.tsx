@@ -109,7 +109,7 @@ export function ProjectHeader({
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:w-[20rem] lg:grid-cols-1">
               <Link
-                to="/dashboard/projects"
+                to="/projects"
                 className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
               >
                 العودة للمشاريع

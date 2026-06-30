@@ -159,7 +159,7 @@ export function DashboardProjectClubsPage() {
       form.reset()
       setClubSkills('')
       setIsCreateClubOpen(false)
-      navigate(`/dashboard/clubs/${payload.club.id}/edit`)
+      navigate(`/clubs/${payload.club.id}/edit`)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -172,7 +172,7 @@ export function DashboardProjectClubsPage() {
   }
 
   if (!projectID || notFound) {
-    return <Navigate to="/dashboard/projects" replace />
+    return <Navigate to="/projects" replace />
   }
 
   if (isLoading || !project) {
@@ -204,7 +204,7 @@ export function DashboardProjectClubsPage() {
             </button>
           ) : null}
           <Link
-            to={`/dashboard/projects/${project.id}`}
+            to={`/projects/${project.id}`}
             className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
           >
             العودة للمشروع
@@ -296,7 +296,7 @@ export function DashboardProjectClubsPage() {
                   <p className="mt-2 line-clamp-2 text-xs text-slate-600">{club.description ?? 'لا يوجد وصف.'}</p>
                   <div className="mt-3 text-left">
                     <Link
-                      to={`/dashboard/clubs/${club.id}`}
+                      to={`/clubs/${club.id}`}
                       className="inline-flex items-center rounded-md border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                     >
                       عرض التفاصيل

@@ -1089,7 +1089,7 @@ export function DashboardProjectDetailsPage() {
 
     try {
       await leaveProject(projectID, user.membershipNumber)
-      navigate('/dashboard/projects', { replace: true })
+      navigate('/projects', { replace: true })
     } catch (requestError) {
       if (requestError instanceof Error) {
         setLeaveError(requestError.message)
@@ -1128,7 +1128,7 @@ export function DashboardProjectDetailsPage() {
   }
 
   if (!projectID) {
-    return <Navigate to="/dashboard/projects" replace />
+    return <Navigate to="/projects" replace />
   }
 
   if (notFound) {
@@ -1159,11 +1159,11 @@ export function DashboardProjectDetailsPage() {
         canCreateTask={canCreateTask}
         canManageProject={canManageProject}
         onOpenAddTask={() => setIsAddTaskOpen(true)}
-        eventsPath={`/dashboard/projects/${project.id}/events`}
-        clubsPath={`/dashboard/projects/${project.id}/clubs`}
-        positionsPath={`/dashboard/projects/${project.id}/positions`}
-        notesPath={`/dashboard/projects/${project.id}/notes`}
-        subProjectsPath={`/dashboard/projects/${project.id}/sub-projects`}
+        eventsPath={`/projects/${project.id}/events`}
+        clubsPath={`/projects/${project.id}/clubs`}
+        positionsPath={`/projects/${project.id}/positions`}
+        notesPath={`/projects/${project.id}/notes`}
+        subProjectsPath={`/projects/${project.id}/sub-projects`}
         onOpenMembers={() => setIsMembersOpen(true)}
         onOpenProjectSettings={() => setIsProjectSettingsOpen(true)}
         showTelegramInvite={Boolean(project.telegramGroupId)}

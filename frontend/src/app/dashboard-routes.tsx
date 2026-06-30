@@ -1,0 +1,109 @@
+import { lazyRoute } from './lazy-route'
+
+export const dashboardRouteChildren = [
+  {
+    index: true,
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardMainPage'), 'DashboardMainPage'),
+  },
+  {
+    path: 'profile',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardProfilePage'), 'DashboardProfilePage'),
+  },
+  {
+    path: 'community',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardCommunityPage'), 'DashboardCommunityPage'),
+  },
+  {
+    path: 'projects',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectsPage'), 'DashboardProjectsPage'),
+  },
+  {
+    path: 'projects/:projectID/sub-projects',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectSubProjectsPage'), 'DashboardProjectSubProjectsPage'),
+  },
+  {
+    path: 'projects/:projectID',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectDetailsPage'), 'DashboardProjectDetailsPage'),
+  },
+  {
+    path: 'projects/:projectID/events',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectEventsPage'), 'DashboardProjectEventsPage'),
+  },
+  {
+    path: 'projects/:projectID/clubs',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectClubsPage'), 'DashboardProjectClubsPage'),
+  },
+  {
+    path: 'projects/:projectID/positions',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectPositionsPage'), 'DashboardProjectPositionsPage'),
+  },
+  {
+    path: 'projects/:projectID/notes',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardProjectNotesPage'), 'DashboardProjectNotesPage'),
+  },
+  {
+    path: 'volunteering',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardVolunteeringPage'), 'DashboardVolunteeringPage'),
+  },
+  {
+    path: 'events',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventsPage'), 'DashboardEventsPage'),
+  },
+  {
+    path: 'clubs',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubsPage'), 'DashboardClubsPage'),
+  },
+  {
+    path: 'clubs/:clubID',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubPage'), 'DashboardClubPage'),
+  },
+  {
+    path: 'clubs/:clubID/edit',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardClubDetailsPage'), 'DashboardClubDetailsPage'),
+  },
+  {
+    path: 'events/:eventID',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventDetailsPage'), 'DashboardEventDetailsPage'),
+  },
+  {
+    path: 'event/:eventID',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventDetailsPage'), 'DashboardEventDetailsPage'),
+  },
+  {
+    path: 'event/:eventID/edit',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventEditPage'), 'DashboardEventEditPage'),
+  },
+  {
+    path: 'event/:eventID/admin',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardEventAdminPage'), 'DashboardEventAdminPage'),
+  },
+  {
+    path: 'positions/:positionID/edit',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardPositionEditPage'), 'DashboardPositionEditPage'),
+  },
+  {
+    path: 'settings',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardSettingsPage'), 'DashboardSettingsPage'),
+  },
+] as const

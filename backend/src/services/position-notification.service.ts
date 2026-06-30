@@ -40,12 +40,12 @@ function trimLabel(value: string | null | undefined) {
 
 function buildOpenPositionsLink(frontendBaseUrl: string | undefined) {
   const baseUrl = frontendBaseUrl?.trim().replace(/\/+$/, '')
-  return baseUrl ? `${baseUrl}/dashboard/volunteering` : null
+  return baseUrl ? `${baseUrl}/volunteering` : null
 }
 
 function buildProjectPositionsLink(frontendBaseUrl: string | undefined, projectId: string) {
   const baseUrl = frontendBaseUrl?.trim().replace(/\/+$/, '')
-  return baseUrl ? `${baseUrl}/dashboard/projects/${encodeURIComponent(projectId)}/positions` : null
+  return baseUrl ? `${baseUrl}/projects/${encodeURIComponent(projectId)}/positions` : null
 }
 
 export async function notifyPositionApplicationSubmitted(env: AppBindings, context: PositionApplicationSubmittedNotification) {

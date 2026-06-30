@@ -393,7 +393,7 @@ export function DashboardEventEditPage() {
   }
 
   if (!eventID || notFound) {
-    return <Navigate to="/dashboard/events" replace />
+    return <Navigate to="/events" replace />
   }
 
   if (isLoading || !eventItem) {
@@ -408,7 +408,7 @@ export function DashboardEventEditPage() {
     return (
       <section className="rounded-xl border border-amber-200 bg-amber-50 p-6">
         <p className="text-sm font-medium text-amber-900">لا تملك صلاحية تعديل هذه الفعالية.</p>
-        <Link to={`/dashboard/event/${eventID}`} className="mt-3 inline-flex text-sm font-semibold text-amber-800 underline">
+        <Link to={`/event/${eventID}`} className="mt-3 inline-flex text-sm font-semibold text-amber-800 underline">
           العودة إلى صفحة الفعالية
         </Link>
       </section>
@@ -429,7 +429,7 @@ export function DashboardEventEditPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => navigate(`/dashboard/event/${eventItem.id}`)}
+              onClick={() => navigate(`/event/${eventItem.id}`)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               عرض الفعالية
@@ -645,7 +645,7 @@ export function DashboardEventEditPage() {
               {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
             </button>
             <Link
-              to={`/dashboard/event/${eventItem.id}`}
+              to={`/event/${eventItem.id}`}
               className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
               العودة لصفحة الفعالية
