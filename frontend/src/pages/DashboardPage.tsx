@@ -244,17 +244,20 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleLogout}
-                className={`relative flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 hover:shadow-md ${
+              <Link
+                to={paths.home}
+                onClick={(event) => {
+                  event.preventDefault()
+                  handleLogout()
+                }}
+                className={`relative flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 hover:shadow-md ${
                   isSidebarCollapsed ? 'px-2' : ''
                 }`}
                 title={isSidebarCollapsed ? 'تسجيل الخروج' : undefined}
               >
                 <LogOut className="h-4 w-4 shrink-0" />
                 {!isSidebarCollapsed && <span>تسجيل الخروج</span>}
-              </button>
+              </Link>
             </div>
           </aside>
 
