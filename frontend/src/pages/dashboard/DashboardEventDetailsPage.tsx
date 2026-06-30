@@ -457,7 +457,7 @@ export function DashboardEventDetailsPage() {
       {/* Hero: banner + title */}
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
         {eventItem.imageUrl ? (
-          <div className="relative h-44 sm:h-52 md:h-60">
+          <div className="relative aspect-[4/1]">
             <img
               src={eventItem.imageUrl}
               alt=""
@@ -466,7 +466,7 @@ export function DashboardEventDetailsPage() {
             <div className="absolute inset-0 bg-linear-to-t from-slate-900/50 via-slate-900/10 to-transparent" />
           </div>
         ) : (
-          <div className="relative flex h-36 items-center justify-center bg-linear-to-br from-slate-100 via-slate-50 to-cyan-50/40 sm:h-44">
+          <div className="relative flex aspect-[4/1] items-center justify-center bg-linear-to-br from-slate-100 via-slate-50 to-cyan-50/40">
             <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
               <Calendar className="h-10 w-10 text-slate-400" strokeWidth={1.25} />
             </div>

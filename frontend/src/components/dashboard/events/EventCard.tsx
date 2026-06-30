@@ -13,7 +13,7 @@ export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-md">
       {eventItem.imageUrl ? (
-        <div className="relative aspect-video overflow-hidden bg-slate-100">
+        <div className="relative aspect-[4/1] overflow-hidden bg-slate-100">
           <img
             src={eventItem.imageUrl}
             alt={eventItem.name}
@@ -22,7 +22,7 @@ export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
           />
         </div>
       ) : (
-        <div className="flex aspect-video items-center justify-center bg-linear-to-br from-cyan-50 to-slate-100">
+        <div className="flex aspect-[4/1] items-center justify-center bg-linear-to-br from-cyan-50 to-slate-100">
           <svg className="h-16 w-16 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
