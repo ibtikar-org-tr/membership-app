@@ -3,19 +3,6 @@ import { CalendarDays, MapPin } from 'lucide-react'
 import type { VmsEvent } from '../../../types/vms'
 import { formatDateEnCA } from '../../../utils/date-format'
 
-function eventStatusLabel(status: string) {
-  if (status === 'draft') return 'مسودة'
-  if (status === 'public') return 'منشورة'
-  if (status === 'archived') return 'مؤرشفة'
-  return status
-}
-
-function eventStatusTone(status: string) {
-  if (status === 'public') return 'border-emerald-200/80 bg-emerald-500/90 text-white'
-  if (status === 'archived') return 'border-slate-200/80 bg-slate-600/90 text-white'
-  return 'border-amber-200/80 bg-amber-500/90 text-white'
-}
-
 export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
   const locationLabel = [eventItem.region, eventItem.country].filter(Boolean).join(' · ')
 
@@ -41,12 +28,7 @@ export function EventCard({ eventItem }: { eventItem: VmsEvent }) {
         <div className="absolute inset-0 bg-linear-to-t from-slate-950/85 via-slate-950/35 to-slate-950/5" />
 
         <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-4">
-          <div className="mb-2 flex flex-wrap items-center gap-1.5">
-            <span
-              className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold shadow-sm backdrop-blur-sm sm:text-[11px] ${eventStatusTone(eventItem.status)}`}
-            >
-              {eventStatusLabel(eventItem.status)}
-            </span>
+          <div className="mb-2">
             <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/15 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm sm:text-[11px]">
               <CalendarDays className="h-3 w-3 shrink-0" />
               {formatDateEnCA(eventItem.startTime)}
