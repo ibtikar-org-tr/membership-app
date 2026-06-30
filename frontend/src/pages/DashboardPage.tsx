@@ -1,10 +1,10 @@
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { LoginPanel } from '../components/auth/LoginPanel'
 import { PublicEventShell } from '../components/events/PublicEventShell'
 import { Seo } from '../components/Seo'
 import type { AuthUser } from '../types/auth'
-import { getStoredUser } from '../utils/auth'
+import { clearStoredAuth, getStoredUser } from '../utils/auth'
 import { isPublicEventDetailPath } from '../utils/public-event-routes'
 import { logout } from '../api/vms'
 import { HomePage } from './HomePage'
@@ -47,10 +47,15 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
 
 export function DashboardPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [user, setUser] = useState<AuthUser | null>(() => getStoredUser())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const isGuestPublicEventView = !user && isPublicEventDetailPath(location.pathname)
+
+  useEffect(() => {
+    setUser(getStoredUser())
+  }, [location.pathname])
 
   useEffect(() => {
     if (!isMobileSidebarOpen) {
@@ -91,14 +96,16 @@ export function DashboardPage() {
     )
   }
 
-  const handleLogout = () => {
-    void logout().finally(() => {
-      setUser(null)
-    })
-  }
-
   const handleMobileNavigation = () => {
     setIsMobileSidebarOpen(false)
+  }
+
+  const handleLogout = () => {
+    clearStoredAuth()
+    setUser(null)
+    handleMobileNavigation()
+    navigate(paths.home, { replace: true })
+    void logout().catch(() => {})
   }
 
   return (
@@ -237,12 +244,9 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              <Link
-                to="/login"
-                onClick={() => {
-                  handleLogout()
-                  handleMobileNavigation()
-                }}
+              <button
+                type="button"
+                onClick={handleLogout}
                 className={`relative flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 hover:shadow-md ${
                   isSidebarCollapsed ? 'px-2' : ''
                 }`}
@@ -250,7 +254,7 @@ export function DashboardPage() {
               >
                 <LogOut className="h-4 w-4 shrink-0" />
                 {!isSidebarCollapsed && <span>تسجيل الخروج</span>}
-              </Link>
+              </button>
             </div>
           </aside>
 
