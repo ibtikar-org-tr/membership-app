@@ -31,7 +31,7 @@ import {
 import { MemberInfoModal } from '../../components/dashboard/project-details/MemberInfoModal'
 import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
 import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
-import { TaskBoard } from '../../components/dashboard/project-details/TaskBoard'
+import { TaskBoard, type TaskBoardStatus } from '../../components/dashboard/project-details/TaskBoard'
 import { UnallowedAccessPage } from './UnallowedAccessPage'
 
 function isOptimisticSubtaskId(subtaskId: string) {
@@ -308,7 +308,7 @@ export function DashboardProjectDetailsPage() {
   const hiddenMembersCount = Math.max(0, projectMembers.length - previewMembers.length)
 
   const boardColumns = useMemo(
-    () => [
+    (): Array<{ key: TaskBoardStatus; label: string; items: VmsTask[] }> => [
       { key: 'open', label: 'مفتوحة', items: projectTasks.filter((task) => task.status === 'open') },
       { key: 'in_progress', label: 'قيد التنفيذ', items: projectTasks.filter((task) => task.status === 'in_progress') },
       { key: 'completed', label: 'مكتملة', items: projectTasks.filter((task) => task.status === 'completed') },

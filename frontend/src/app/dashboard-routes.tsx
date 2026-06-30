@@ -1,6 +1,7 @@
 import { lazyRoute } from './lazy-route'
+import type { RouteObject } from 'react-router-dom'
 
-export const dashboardRouteChildren = [
+export const dashboardRouteChildren: RouteObject[] = [
   {
     index: true,
     hydrateFallbackElement: <div />,
@@ -106,4 +107,4 @@ export const dashboardRouteChildren = [
     hydrateFallbackElement: <div />,
     lazy: lazyRoute(() => import('../pages/dashboard/DashboardSettingsPage'), 'DashboardSettingsPage'),
   },
-] as const
+] 

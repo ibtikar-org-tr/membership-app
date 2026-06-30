@@ -5,7 +5,7 @@ import { formatDueDate, laneStyle, priorityBadgeClass, priorityTone, statusBadge
 
 const TASK_DRAG_MIME = 'application/x-vms-task-id'
 
-type TaskBoardStatus = 'open' | 'in_progress' | 'completed' | 'archived'
+export type TaskBoardStatus = 'open' | 'in_progress' | 'completed' | 'archived'
 
 interface BoardColumn {
   key: TaskBoardStatus
