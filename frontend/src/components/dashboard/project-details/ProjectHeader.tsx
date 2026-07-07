@@ -119,9 +119,31 @@ export function ProjectHeader({
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 backdrop-blur-sm">
                 <p className="text-xs text-cyan-100/80">المسؤول</p>
                 <p className="mt-1 text-sm font-semibold text-white">{ownerDisplayName ?? ownerFallbackName}</p>
-                <p className="mt-1 text-xs text-slate-200">
-                  {project.telegramGroupId ? 'مجموعة تلغرام مرتبطة' : 'لا توجد مجموعة تلغرام'}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs text-slate-200">
+                    {project.telegramGroupId ? 'مجموعة تلغرام مرتبطة' : 'لا توجد مجموعة تلغرام'}
+                  </p>
+                  {showTelegramInvite && onSendTelegramInvite && project.telegramGroupId ? (
+                    <button
+                      type="button"
+                      onClick={onSendTelegramInvite}
+                      disabled={isSendingTelegramInvite}
+                      title="إرسال دعوة مجموعة التلغرام عبر البوت"
+                      className="inline-flex items-center gap-1 rounded-lg border border-cyan-300/40 bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-50 transition hover:bg-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <FiSend className="h-3 w-3 shrink-0 opacity-90" aria-hidden />
+                      {isSendingTelegramInvite ? 'جار الإرسال...' : 'دعوة تلغرام'}
+                    </button>
+                  ) : null}
+                </div>
+                {telegramInviteFeedback ? (
+                  <p
+                    className={`mt-2 text-[11px] leading-4 ${telegramInviteFeedbackIsError ? 'text-red-300' : 'text-emerald-300'}`}
+                    title={telegramInviteFeedback}
+                  >
+                    {telegramInviteFeedback}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -192,28 +214,8 @@ export function ProjectHeader({
                 ) : null}
               </div>
             </button>
-            {showTelegramInvite && onSendTelegramInvite ? (
-              <button
-                type="button"
-                onClick={onSendTelegramInvite}
-                disabled={isSendingTelegramInvite}
-                title="إرسال دعوة مجموعة التلغرام عبر البوت"
-                className={toolbarBtnCyan}
-              >
-                <FiSend className={toolbarIcon} aria-hidden />
-                <span className="hidden sm:inline">{isSendingTelegramInvite ? 'جار الإرسال...' : 'دعوة تلغرام'}</span>
-              </button>
-            ) : null}
           </div>
           <div className="flex h-9 flex-wrap items-center justify-end gap-2">
-            {telegramInviteFeedback ? (
-              <span
-                className={`max-w-[12rem] truncate text-xs sm:max-w-xs ${telegramInviteFeedbackIsError ? 'text-red-600' : 'text-emerald-700'}`}
-                title={telegramInviteFeedback}
-              >
-                {telegramInviteFeedback}
-              </span>
-            ) : null}
             {canLeaveProject && onLeaveProject ? (
               <button
                 type="button"
