@@ -730,7 +730,7 @@ export function fetchPointTransactions(membershipNumber?: string) {
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)
 }
 
-export function fetchLeaderboard(limit = 50) {
+export function fetchLeaderboard(limit = 5) {
   return fetchJson<{ entries: VmsLeaderboardEntry[]; currentUser: VmsLeaderboardEntry | null }>(
     `/leaderboard?limit=${encodeURIComponent(String(limit))}`,
   )

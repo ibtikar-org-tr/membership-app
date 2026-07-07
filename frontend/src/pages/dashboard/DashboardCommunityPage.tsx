@@ -17,7 +17,7 @@ export function DashboardCommunityPage() {
     setHasError(false)
 
     try {
-      const payload = await fetchLeaderboard(50)
+      const payload = await fetchLeaderboard(5)
       setEntries(payload.entries)
       setCurrentUser(payload.currentUser)
     } catch {
@@ -32,7 +32,7 @@ export function DashboardCommunityPage() {
 
     void (async () => {
       try {
-        const payload = await fetchLeaderboard(50)
+        const payload = await fetchLeaderboard(5)
 
         if (!controller.signal.aborted) {
           setEntries(payload.entries)
