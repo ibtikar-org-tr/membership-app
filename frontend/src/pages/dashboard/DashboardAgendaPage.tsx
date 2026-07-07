@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   CalendarDays,
   CheckSquare,
-  FolderKanban,
   MapPin,
   Shapes,
 } from 'lucide-react'
@@ -33,8 +32,8 @@ import { formatDateEnCA, formatDateTimeEnCA } from '../../utils/date-format'
 function AgendaSkeleton() {
   return (
     <div className="mt-6 space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[0, 1, 2, 3].map((key) => (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2].map((key) => (
           <div key={`agenda-stat-${key}`} className="h-20 animate-pulse rounded-xl bg-slate-100" />
         ))}
       </div>
@@ -179,15 +178,10 @@ export function DashboardAgendaPage() {
     }
   }, [user?.membershipNumber])
 
-  const projectNames = useMemo(() => {
-    return new Map((agenda?.projects ?? []).map((project) => [project.id, project.name]))
-  }, [agenda?.projects])
-
   const totalItems =
     (agenda?.myTasks.length ?? 0) +
     (agenda?.upcomingEvents.length ?? 0) +
     (agenda?.volunteering.length ?? 0) +
-    (agenda?.projects.length ?? 0) +
     (agenda?.clubs.length ?? 0)
 
   return (
@@ -199,7 +193,7 @@ export function DashboardAgendaPage() {
           </span>
           <div>
             <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">جدولي</h2>
-            <p className="mt-1 text-sm text-slate-500">كل ما يخصّك في مكان واحد: مهامك، فعالياتك، مشاريعك، وأنديتك.</p>
+            <p className="mt-1 text-sm text-slate-500">كل ما يخصّك في مكان واحد: مهامك النشطة، فعالياتك القادمة، وأنديتك.</p>
           </div>
         </div>
 
@@ -228,12 +222,11 @@ export function DashboardAgendaPage() {
 
       {!isLoading && !hasError && agenda ? (
         <div className="mt-6 space-y-8">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { label: 'مهامي', value: agenda.myTasks.length, tone: 'text-violet-700 bg-violet-50 border-violet-200' },
               { label: 'فعالياتي', value: agenda.upcomingEvents.length, tone: 'text-cyan-700 bg-cyan-50 border-cyan-200' },
               { label: 'طلبات التطوع', value: agenda.volunteering.length, tone: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-              { label: 'مشاريعي', value: agenda.projects.length, tone: 'text-amber-700 bg-amber-50 border-amber-200' },
             ].map((stat) => (
               <article key={stat.label} className={`rounded-xl border px-4 py-3 ${stat.tone}`}>
                 <p className="text-xs font-medium opacity-80">{stat.label}</p>
@@ -301,7 +294,7 @@ export function DashboardAgendaPage() {
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-slate-900">{task.name}</p>
-                          <p className="mt-1 text-xs text-slate-500">{projectNames.get(task.projectId) ?? task.projectId}</p>
+                          <p className="mt-1 text-xs text-slate-500">{agenda.projectNames[task.projectId] ?? task.projectId}</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(task.status)}`}>
@@ -381,67 +374,39 @@ export function DashboardAgendaPage() {
             )}
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <section>
-              <div className="mb-4 flex items-center gap-2">
-                <FolderKanban className="h-4 w-4 text-amber-600" aria-hidden />
-                <h3 className="text-base font-semibold text-slate-900">مشاريعي</h3>
-              </div>
+          <section>
+            <div className="mb-4 flex items-center gap-2">
+              <Shapes className="h-4 w-4 text-slate-600" aria-hidden />
+              <h3 className="text-base font-semibold text-slate-900">أنديتي</h3>
+            </div>
 
-              {agenda.projects.length > 0 ? (
-                <div className="space-y-2">
-                  {agenda.projects.map((project) => (
+            {agenda.clubs.length > 0 ? (
+              <div className="space-y-2">
+                {agenda.clubs.map((club) => {
+                  const locationLabel = [club.city, club.region, club.country].filter(Boolean).join(' · ')
+
+                  return (
                     <Link
-                      key={project.id}
-                      to={paths.project(project.id)}
-                      className="block rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-amber-200 hover:bg-amber-50/40"
+                      key={club.id}
+                      to={paths.club(club.id)}
+                      className="block rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-slate-300 hover:bg-slate-50"
                     >
-                      <p className="text-sm font-semibold text-slate-900">{project.name}</p>
-                      {project.description?.trim() ? (
-                        <p className="mt-1 line-clamp-2 text-xs text-slate-500">{project.description}</p>
+                      <p className="text-sm font-semibold text-slate-900">{club.name}</p>
+                      {club.projectName ? <p className="mt-1 text-xs text-slate-500">{club.projectName}</p> : null}
+                      {locationLabel ? (
+                        <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
+                          <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                          {locationLabel}
+                        </p>
                       ) : null}
                     </Link>
-                  ))}
-                </div>
-              ) : (
-                <EmptySection message="أنت غير منضم إلى أي مشروع حالياً." />
-              )}
-            </section>
-
-            <section>
-              <div className="mb-4 flex items-center gap-2">
-                <Shapes className="h-4 w-4 text-slate-600" aria-hidden />
-                <h3 className="text-base font-semibold text-slate-900">أنديتي</h3>
+                  )
+                })}
               </div>
-
-              {agenda.clubs.length > 0 ? (
-                <div className="space-y-2">
-                  {agenda.clubs.map((club) => {
-                    const locationLabel = [club.city, club.region, club.country].filter(Boolean).join(' · ')
-
-                    return (
-                      <Link
-                        key={club.id}
-                        to={paths.club(club.id)}
-                        className="block rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-slate-300 hover:bg-slate-50"
-                      >
-                        <p className="text-sm font-semibold text-slate-900">{club.name}</p>
-                        {club.projectName ? <p className="mt-1 text-xs text-slate-500">{club.projectName}</p> : null}
-                        {locationLabel ? (
-                          <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
-                            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-                            {locationLabel}
-                          </p>
-                        ) : null}
-                      </Link>
-                    )
-                  })}
-                </div>
-              ) : (
-                <EmptySection message="لم تنضم إلى أي نادي بعد." />
-              )}
-            </section>
-          </div>
+            ) : (
+              <EmptySection message="لم تنضم إلى أي نادي بعد." />
+            )}
+          </section>
         </div>
       ) : null}
     </section>

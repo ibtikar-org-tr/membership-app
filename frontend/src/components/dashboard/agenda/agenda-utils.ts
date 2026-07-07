@@ -8,7 +8,7 @@ import type {
   VmsTask,
 } from '../../../types/vms'
 
-export type AgendaItemKind = 'task' | 'event' | 'volunteering' | 'project' | 'club'
+export type AgendaItemKind = 'task' | 'event' | 'volunteering' | 'club'
 
 export interface AgendaTimelineItem {
   id: string
@@ -28,10 +28,13 @@ export interface AgendaData {
   myTasks: VmsTask[]
   upcomingEvents: VmsEvent[]
   volunteering: AgendaVolunteeringItem[]
-  projects: VmsProject[]
   clubs: VmsClubDashboard[]
+  projectNames: Record<string, string>
   timeline: AgendaTimelineItem[]
 }
+
+const ACTIVE_TASK_STATUSES = new Set(['open', 'in_progress'])
+const ACTIVE_REGISTRATION_STATUSES = new Set(['registered'])
 
 function parseTime(value: string | null | undefined): number {
   if (!value) {
@@ -42,15 +45,35 @@ function parseTime(value: string | null | undefined): number {
   return Number.isFinite(timestamp) ? timestamp : Number.POSITIVE_INFINITY
 }
 
-function isEventUpcoming(eventItem: VmsEvent, now: Date): boolean {
+function isActiveTask(task: VmsTask, membershipNumber: string): boolean {
+  return task.assignedTo === membershipNumber && ACTIVE_TASK_STATUSES.has(task.status)
+}
+
+function isUpcomingEvent(eventItem: VmsEvent, now: Date): boolean {
+  const nowMs = now.getTime()
+
   if (eventItem.endTime) {
     const endTime = Date.parse(eventItem.endTime)
-    if (Number.isFinite(endTime) && endTime < now.getTime()) {
+    if (Number.isFinite(endTime) && endTime <= nowMs) {
       return false
     }
   }
 
-  return true
+  if (eventItem.startTime) {
+    const startTime = Date.parse(eventItem.startTime)
+    if (Number.isFinite(startTime) && startTime <= nowMs) {
+      if (!eventItem.endTime) {
+        return false
+      }
+
+      const endTime = Date.parse(eventItem.endTime)
+      return Number.isFinite(endTime) && endTime > nowMs
+    }
+
+    return true
+  }
+
+  return false
 }
 
 export function buildAgendaData(input: {
@@ -63,21 +86,20 @@ export function buildAgendaData(input: {
   clubs: VmsClubDashboard[]
 }): AgendaData {
   const now = new Date()
-  const projectNames = new Map(input.projects.map((project) => [project.id, project.name]))
+  const projectNames = Object.fromEntries(input.projects.map((project) => [project.id, project.name]))
 
   const activeRegistrationEventIds = new Set(
-    input.registrations.filter((registration) => registration.status === 'registered').map((registration) => registration.eventId),
+    input.registrations
+      .filter((registration) => ACTIVE_REGISTRATION_STATUSES.has(registration.status))
+      .map((registration) => registration.eventId),
   )
 
   const upcomingEvents = input.events
-    .filter((eventItem) => activeRegistrationEventIds.has(eventItem.id) && isEventUpcoming(eventItem, now))
+    .filter((eventItem) => activeRegistrationEventIds.has(eventItem.id) && isUpcomingEvent(eventItem, now))
     .sort((left, right) => parseTime(left.startTime) - parseTime(right.startTime))
 
   const myTasks = input.tasks
-    .filter(
-      (task) =>
-        task.assignedTo === input.membershipNumber && (task.status === 'open' || task.status === 'in_progress'),
-    )
+    .filter((task) => isActiveTask(task, input.membershipNumber))
     .sort((left, right) => {
       const dueDiff = parseTime(left.dueDate) - parseTime(right.dueDate)
       if (dueDiff !== 0) {
@@ -90,7 +112,7 @@ export function buildAgendaData(input: {
 
   const volunteering = input.positions.flatMap((position) => {
     const application = position.applications.find(
-      (entry) => entry.membershipNumber === input.membershipNumber && entry.status !== 'rejected',
+      (entry) => entry.membershipNumber === input.membershipNumber && entry.status === 'pending',
     )
 
     if (!application) {
@@ -107,7 +129,7 @@ export function buildAgendaData(input: {
       id: `task-${task.id}`,
       kind: 'task' as const,
       title: task.name,
-      subtitle: projectNames.get(task.projectId) ?? null,
+      subtitle: projectNames[task.projectId] ?? null,
       date: task.dueDate,
       href: `/projects/${encodeURIComponent(task.projectId)}`,
     })),
@@ -125,8 +147,8 @@ export function buildAgendaData(input: {
     myTasks,
     upcomingEvents,
     volunteering,
-    projects: input.projects,
     clubs: joinedClubs,
+    projectNames,
     timeline: timeline.slice(0, 8),
   }
 }
