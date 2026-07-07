@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { FiArrowDown, FiArrowUp, FiSearch, FiUserMinus, FiX } from 'react-icons/fi'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../../types/vms'
-import { formatDateTimeEnCA } from '../../../utils/date-format'
+import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
 import {
   memberAvatarTone,
   memberInitials,
