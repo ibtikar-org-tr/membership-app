@@ -2,12 +2,14 @@ import { aiGeneratedTaskSchema, type AiGeneratedTask } from '../schemas/vms-ai-t
 import type { AppBindings } from '../types/bindings'
 
 const TASK_GENERATION_MODELS = [
-  '@cf/meta/llama-3.1-8b-instruct-fast',
-  '@cf/meta/llama-3.2-3b-instruct',
-  '@cf/meta/llama-3.2-1b-instruct',
+  '@cf/google/gemma-4-26b-a4b-it',
+  '@cf/qwen/qwen3-30b-a3b-fp8',
 ] as const
 
-const JSON_MODE_MODELS = new Set<string>(['@cf/meta/llama-3.1-8b-instruct-fast'])
+const JSON_MODE_MODELS = new Set<string>([
+  '@cf/google/gemma-4-26b-a4b-it',
+  '@cf/qwen/qwen3-30b-a3b-fp8',
+])
 
 const TASK_JSON_SCHEMA = {
   type: 'object',
@@ -155,31 +157,38 @@ export async function generateTaskFromPrompt(
   let lastError: unknown
 
   for (const model of TASK_GENERATION_MODELS) {
-    try {
-      const inputs: Parameters<CloudflareAiBinding['run']>[1] = {
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userMessage },
-        ],
-        max_tokens: 1200,
-        temperature: 0.4,
-      }
+    const useJsonSchemaAttempts = JSON_MODE_MODELS.has(model) ? [true, false] : [false]
 
-      if (JSON_MODE_MODELS.has(model)) {
-        inputs.response_format = {
-          type: 'json_schema',
-          json_schema: TASK_JSON_SCHEMA,
+    for (const useJsonSchema of useJsonSchemaAttempts) {
+      try {
+        const inputs: Parameters<CloudflareAiBinding['run']>[1] = {
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: userMessage },
+          ],
+          max_tokens: 1200,
+          temperature: 0.4,
         }
-      }
 
-      const response = await ai.run(model, inputs)
-      parsedPayload = normalizeAiResponsePayload(response)
-      if (parsedPayload) {
-        return parseGeneratedTask(parsedPayload)
+        if (useJsonSchema) {
+          inputs.response_format = {
+            type: 'json_schema',
+            json_schema: TASK_JSON_SCHEMA,
+          }
+        }
+
+        const response = await ai.run(model, inputs)
+        parsedPayload = normalizeAiResponsePayload(response)
+        if (parsedPayload) {
+          return parseGeneratedTask(parsedPayload)
+        }
+      } catch (error) {
+        lastError = error
+        console.warn(
+          `Cloudflare AI task generation failed for model ${model}${useJsonSchema ? ' (json schema)' : ''}`,
+          error,
+        )
       }
-    } catch (error) {
-      lastError = error
-      console.warn(`Cloudflare AI task generation failed for model ${model}`, error)
     }
   }
 
