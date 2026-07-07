@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { FiPlus, FiTrash2, FiZap } from 'react-icons/fi'
+import { useCallback, useEffect, useState } from 'react'
+import { FiMic, FiPlus, FiSquare, FiTrash2, FiZap } from 'react-icons/fi'
 import type { VmsProjectMember } from '../../../types/vms'
+import { useSpeechToText } from '../../../hooks/useSpeechToText'
 
 export interface AiGeneratedTaskDraft {
   name: string
@@ -45,6 +46,33 @@ export function AiAddTaskModal({
   const [localError, setLocalError] = useState<string | null>(null)
 
   const isBusy = isGenerating || isCreating
+
+  const getPromptBaseText = useCallback(() => prompt, [prompt])
+
+  const {
+    isSupported: isSpeechSupported,
+    isListening,
+    speechError,
+    toggleListening,
+    stopListening,
+  } = useSpeechToText({
+    getBaseText: getPromptBaseText,
+    onTranscript: setPrompt,
+    disabled: isBusy || phase !== 'prompt',
+  })
+
+  const handlePromptChange = (value: string) => {
+    if (isListening) {
+      stopListening()
+    }
+    setPrompt(value)
+  }
+
+  useEffect(() => {
+    if (phase !== 'prompt' && isListening) {
+      stopListening()
+    }
+  }, [phase, isListening, stopListening])
 
   const handleGenerate = async () => {
     setLocalError(null)
@@ -109,7 +137,7 @@ export function AiAddTaskModal({
     }))
   }
 
-  const displayError = localError ?? createError ?? generateError
+  const displayError = localError ?? createError ?? generateError ?? speechError
 
   return (
     <div
@@ -147,15 +175,45 @@ export function AiAddTaskModal({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
           {phase === 'prompt' ? (
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
-              <label className="mb-2 block text-xs font-semibold tracking-wide text-slate-500">وصف المطلوب</label>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label className="block text-xs font-semibold tracking-wide text-slate-500">وصف المطلوب</label>
+                {isSpeechSupported ? (
+                  <button
+                    type="button"
+                    onClick={toggleListening}
+                    disabled={isBusy}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isListening
+                        ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                        : 'border-violet-300 bg-violet-50 text-violet-800 hover:bg-violet-100'
+                    }`}
+                    aria-pressed={isListening}
+                  >
+                    {isListening ? (
+                      <>
+                        <FiSquare className="h-3.5 w-3.5" aria-hidden />
+                        إيقاف التحدث
+                      </>
+                    ) : (
+                      <>
+                        <FiMic className="h-3.5 w-3.5" aria-hidden />
+                        تحدّث
+                      </>
+                    )}
+                  </button>
+                ) : null}
+              </div>
               <textarea
                 value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
+                onChange={(event) => handlePromptChange(event.target.value)}
                 placeholder="مثال: أحتاج مهمة لتنظيم ورشة عمل عن الذكاء الاصطناعي للمبتدئين، تشمل التحضير والترويج وتقييم الحضور..."
                 className="min-h-40 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
                 rows={6}
                 disabled={isBusy}
               />
+              {isSpeechSupported && isListening ? (
+                <p className="mt-2 text-xs text-violet-700">جار الاستماع… تحدّث الآن وسيُضاف النص إلى ما كتبته.</p>
+              ) : null}
             </div>
           ) : (
             <>
