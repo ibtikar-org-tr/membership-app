@@ -215,7 +215,7 @@ export function DashboardProjectNotesPage() {
       setNotes((current) => [payload.note, ...current])
       setNewNoteTitle('')
       setIsCreateOpen(false)
-      navigate(`/dashboard/projects/${projectID}/notes?note=${encodeURIComponent(payload.note.id)}`)
+      navigate(`/projects/${projectID}/notes?note=${encodeURIComponent(payload.note.id)}`)
     } catch (requestError) {
       setCreateError(requestError instanceof Error ? requestError.message : 'تعذر إنشاء الملاحظة.')
     } finally {
@@ -277,7 +277,7 @@ export function DashboardProjectNotesPage() {
     try {
       await deleteProjectNote(selectedNote.id)
       setNotes((current) => current.filter((note) => note.id !== selectedNote.id))
-      navigate(`/dashboard/projects/${projectID}/notes`)
+      navigate(`/projects/${projectID}/notes`)
     } catch (requestError) {
       setActionError(requestError instanceof Error ? requestError.message : 'تعذر حذف الملاحظة.')
     } finally {
@@ -301,7 +301,7 @@ export function DashboardProjectNotesPage() {
     return (
       <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
         <p className="text-sm text-red-600">تعذر تحميل ملاحظات المشروع.</p>
-        <Link to="/dashboard/projects" className="mt-3 inline-flex text-sm font-medium text-slate-700 underline">
+        <Link to="/projects" className="mt-3 inline-flex text-sm font-medium text-slate-700 underline">
           العودة للمشاريع
         </Link>
       </section>
@@ -329,7 +329,7 @@ export function DashboardProjectNotesPage() {
             </button>
           ) : null}
           <Link
-            to={`/dashboard/projects/${project.id}`}
+            to={`/projects/${project.id}`}
             className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
           >
             العودة للمشروع
@@ -372,7 +372,7 @@ export function DashboardProjectNotesPage() {
                 return (
                   <Link
                     key={note.id}
-                    to={`/dashboard/projects/${projectID}/notes?note=${encodeURIComponent(note.id)}`}
+                    to={`/projects/${projectID}/notes?note=${encodeURIComponent(note.id)}`}
                     className={`block rounded-xl px-3 py-2 transition ${
                       isActive ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'hover:bg-white/80'
                     }`}

@@ -163,7 +163,7 @@ export function DashboardPositionEditPage() {
     try {
       await deleteProjectPosition(positionID, user.membershipNumber)
       // Navigate back to project positions
-      window.location.href = `/dashboard/projects/${position.projectId}/positions`
+      window.location.href = `/projects/${position.projectId}/positions`
     } catch (requestError) {
       if (requestError instanceof Error) {
         setDeleteError(requestError.message)
@@ -203,7 +203,7 @@ export function DashboardPositionEditPage() {
   }
 
   if (!positionID || notFound) {
-    return <Navigate to="/dashboard/projects" replace />
+    return <Navigate to="/projects" replace />
   }
 
   if (isLoading || !position) {
@@ -220,7 +220,7 @@ export function DashboardPositionEditPage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">{position.name}</h2>
           <Link
-            to={`/dashboard/projects/${position.projectId}/positions`}
+            to={`/projects/${position.projectId}/positions`}
             className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
           >
             العودة للقائمة

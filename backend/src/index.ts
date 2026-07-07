@@ -11,6 +11,7 @@ import { vmsEventTicketsRoute } from './routes/vms-event-tickets.route'
 import { vmsPublicEventsRoute } from './routes/vms-public-events.route'
 import { vmsEventsRoute } from './routes/vms-events.route'
 import { vmsClubsRoute } from './routes/vms-clubs.route'
+import { vmsLeaderboardRoute } from './routes/vms-leaderboard.route'
 import { vmsPointTransactionsRoute } from './routes/vms-point-transactions.route'
 import { vmsProjectMembersRoute } from './routes/vms-project-members.route'
 import { vmsProjectsRoute } from './routes/vms-projects.route'
@@ -84,6 +85,7 @@ securedApi.route('/', vmsClubsRoute)
 securedApi.route('/', vmsEventTicketsRoute)
 securedApi.route('/', vmsEventRegistrationsRoute)
 securedApi.route('/', vmsSkillsRoute)
+securedApi.route('/', vmsLeaderboardRoute)
 securedApi.route('/', vmsPointTransactionsRoute)
 securedApi.route('/', vmsProjectNotesRoute)
 securedApi.post('/images/upload', uploadImages)

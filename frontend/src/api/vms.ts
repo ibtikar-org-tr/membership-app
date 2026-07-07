@@ -5,6 +5,8 @@ import type {
   VmsEvent,
   VmsEventRegistration,
   VmsEventTicket,
+  VmsLeaderboardEntry,
+  VmsLeaderboardViewer,
   VmsPointTransaction,
   VmsPosition,
   VmsPositionApplication,
@@ -14,6 +16,7 @@ import type {
   VmsProjectNote,
   VmsSkill,
   VmsTask,
+  VmsTaskSubtask,
 } from '../types/vms'
 import type { ForgotPasswordResponse, LoginResponse, ResetPasswordResponse } from '../types/auth'
 import type { MemberProfile } from '../types/profile'
@@ -212,6 +215,20 @@ export function createTask(payload: {
   )
 }
 
+export function generateTaskWithAi(payload: { projectId: string; prompt: string }) {
+  return postJson<
+    {
+      generated: {
+        name: string
+        description?: string
+        priority: 'low' | 'medium' | 'high'
+        subtasks: string[]
+      }
+    },
+    typeof payload
+  >(`/tasks/ai-generate`, payload)
+}
+
 export function remindTask(taskId: string, membershipNumber: string) {
   return postJson<{ task: VmsTask; remindedAt: string }, Record<string, never>>(
     `/tasks/${encodeURIComponent(taskId)}/remind`,
@@ -242,6 +259,32 @@ export function updateTask(
     `/tasks/${encodeURIComponent(taskId)}`,
     payload,
   )
+}
+
+export function fetchTaskSubtasks(taskId: string) {
+  return fetchJson<{ subtasks: VmsTaskSubtask[] }>(`/tasks/${encodeURIComponent(taskId)}/subtasks`)
+}
+
+export function createTaskSubtask(taskId: string, payload: { name: string }) {
+  return postJson<{ subtask: VmsTaskSubtask }, typeof payload>(
+    `/tasks/${encodeURIComponent(taskId)}/subtasks`,
+    payload,
+  )
+}
+
+export function updateTaskSubtask(
+  taskId: string,
+  subtaskId: string,
+  payload: Partial<{ name: string; status: 'open' | 'completed' }>,
+) {
+  return putJson<{ subtask: VmsTaskSubtask }, typeof payload>(
+    `/tasks/${encodeURIComponent(taskId)}/subtasks/${encodeURIComponent(subtaskId)}`,
+    payload,
+  )
+}
+
+export function deleteTaskSubtask(taskId: string, subtaskId: string) {
+  return deleteJson(`/tasks/${encodeURIComponent(taskId)}/subtasks/${encodeURIComponent(subtaskId)}`)
 }
 
 export function fetchEvents() {
@@ -686,6 +729,10 @@ export function deleteClubMember(clubId: string, membershipNumber: string, actor
 export function fetchPointTransactions(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)
+}
+
+export function fetchLeaderboard() {
+  return fetchJson<{ entries: VmsLeaderboardEntry[]; viewer: VmsLeaderboardViewer | null }>('/leaderboard')
 }
 
 export function fetchProjectNotes(projectId: string) {

@@ -94,7 +94,7 @@ export async function notifyTaskReminder(env: AppBindings, options: TaskAssignme
 
   const frontendBaseUrl = env.FRONTEND_BASE_URL?.trim().replace(/\/+$/, '')
   const projectUrl = frontendBaseUrl
-    ? `${frontendBaseUrl}/dashboard/projects/${encodeURIComponent(options.projectId)}`
+    ? `${frontendBaseUrl}/projects/${encodeURIComponent(options.projectId)}`
     : null
   const ownerDmLink = buildMemberTelegramDmLink(buildProjectOwnerContact(options))
 
@@ -137,7 +137,7 @@ export async function notifyAssignedTask(env: AppBindings, options: TaskAssignme
   const message = buildTaskAssignmentMessage(options)
   const frontendBaseUrl = env.FRONTEND_BASE_URL?.trim().replace(/\/+$/, '')
   const projectUrl = frontendBaseUrl
-    ? `${frontendBaseUrl}/dashboard/projects/${encodeURIComponent(options.projectId)}`
+    ? `${frontendBaseUrl}/projects/${encodeURIComponent(options.projectId)}`
     : null
   const ownerDmLink = buildMemberTelegramDmLink(buildProjectOwnerContact(options))
 

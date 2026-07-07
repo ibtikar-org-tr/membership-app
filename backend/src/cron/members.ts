@@ -41,7 +41,7 @@ export function getFrontendProjectUrl(bindings: AppBindings, projectId: string):
     return null
   }
 
-  return `${base}/dashboard/projects/${encodeURIComponent(projectId)}`
+  return `${base}/projects/${encodeURIComponent(projectId)}`
 }
 
 export function getFrontendEventUrl(bindings: AppBindings, eventId: string): string | null {
@@ -50,5 +50,5 @@ export function getFrontendEventUrl(bindings: AppBindings, eventId: string): str
     return null
   }
 
-  return `${base}/dashboard/events/${encodeURIComponent(eventId)}`
+  return `${base}/events/${encodeURIComponent(eventId)}`
 }

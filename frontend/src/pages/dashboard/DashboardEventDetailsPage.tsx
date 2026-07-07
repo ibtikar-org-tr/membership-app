@@ -423,7 +423,7 @@ export function DashboardEventDetailsPage() {
   }
 
   if (!eventID || notFound) {
-    return <Navigate to={isStandaloneView ? '/' : '/dashboard/events'} replace />
+    return <Navigate to={isStandaloneView ? '/' : '/events'} replace />
   }
 
   if (isLoading || !eventItem) {
@@ -446,7 +446,7 @@ export function DashboardEventDetailsPage() {
     <section className="mx-auto max-w-5xl space-y-6 pb-10">
       <div className="flex justify-start">
         <Link
-          to={isStandaloneView ? '/' : '/dashboard/events'}
+          to={isStandaloneView ? '/' : '/events'}
           className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
           {isStandaloneView ? 'العودة للرئيسية' : 'العودة للفعاليات'}
@@ -457,7 +457,7 @@ export function DashboardEventDetailsPage() {
       {/* Hero: banner + title */}
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
         {eventItem.imageUrl ? (
-          <div className="relative h-44 sm:h-52 md:h-60">
+          <div className="relative aspect-[4/1]">
             <img
               src={eventItem.imageUrl}
               alt=""
@@ -466,7 +466,7 @@ export function DashboardEventDetailsPage() {
             <div className="absolute inset-0 bg-linear-to-t from-slate-900/50 via-slate-900/10 to-transparent" />
           </div>
         ) : (
-          <div className="relative flex h-36 items-center justify-center bg-linear-to-br from-slate-100 via-slate-50 to-cyan-50/40 sm:h-44">
+          <div className="relative flex aspect-[4/1] items-center justify-center bg-linear-to-br from-slate-100 via-slate-50 to-cyan-50/40">
             <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
               <Calendar className="h-10 w-10 text-slate-400" strokeWidth={1.25} />
             </div>
@@ -484,14 +484,14 @@ export function DashboardEventDetailsPage() {
             {canEditEvent ? (
               <>
                 <Link
-                  to={`/dashboard/event/${eventItem.id}/edit`}
+                  to={`/event/${eventItem.id}/edit`}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-950 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
                 >
                   <PencilLine className="h-4 w-4" />
                   تعديل الفعالية
                 </Link>
                 <Link
-                  to={`/dashboard/event/${eventItem.id}/admin`}
+                  to={`/event/${eventItem.id}/admin`}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-medium text-cyan-800 shadow-sm transition hover:bg-cyan-100"
                 >
                   <Users className="h-4 w-4" />
@@ -537,7 +537,7 @@ export function DashboardEventDetailsPage() {
       {canEditEvent ? (
         <div className="rounded-xl border border-dashed border-slate-300/80 bg-slate-50/50 px-4 py-3 text-center text-sm text-slate-600">
           تعديل بيانات الفعالية متاح من صفحة التحرير الموحدة، وإدارة التسجيلات من صفحة الإدارة.
-          <Link to={`/dashboard/event/${eventItem.id}/admin`} className="mr-1 font-semibold text-cyan-700 underline">
+          <Link to={`/event/${eventItem.id}/admin`} className="mr-1 font-semibold text-cyan-700 underline">
             الانتقال إلى إدارة التسجيلات
           </Link>
         </div>
@@ -720,7 +720,7 @@ export function DashboardEventDetailsPage() {
           {canEditEvent ? (
             <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
               إدارة التذاكر أصبحت ضمن صفحة تعديل الفعالية.
-              <Link to={`/dashboard/event/${eventItem.id}/edit`} className="mr-1 font-semibold text-cyan-700 underline">
+              <Link to={`/event/${eventItem.id}/edit`} className="mr-1 font-semibold text-cyan-700 underline">
                 الانتقال لصفحة التعديل
               </Link>
             </p>

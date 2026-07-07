@@ -326,7 +326,7 @@ export function DashboardClubDetailsPage() {
   }
 
   if (!clubID || notFound) {
-    return <Navigate to="/dashboard/clubs" replace />
+    return <Navigate to="/clubs" replace />
   }
 
   if (isLoading || !club) {
@@ -348,14 +348,14 @@ export function DashboardClubDetailsPage() {
         <div className="flex items-center gap-2">
           {project ? (
             <Link
-              to={`/dashboard/projects/${project.id}/clubs`}
+              to={`/projects/${project.id}/clubs`}
               className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >
               أندية المشروع
             </Link>
           ) : null}
           <Link
-            to="/dashboard/clubs"
+            to="/clubs"
             className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
           >
             كل الأندية

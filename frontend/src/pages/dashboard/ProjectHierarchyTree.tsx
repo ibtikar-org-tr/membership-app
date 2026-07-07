@@ -343,7 +343,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
                 return
               }
 
-              navigate(`/dashboard/projects/${projectId}`)
+              navigate(`/projects/${projectId}`)
             }
 
             const handleKeyDown = (event: Event) => {

@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { FiArrowDown, FiArrowUp, FiSearch, FiUserMinus, FiX } from 'react-icons/fi'
 import type { VmsEvent, VmsProject, VmsProjectMember } from '../../../types/vms'
-import { formatDateTimeEnCA } from '../../../utils/date-format'
+import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
 import {
   memberAvatarTone,
   memberInitials,
@@ -50,7 +50,10 @@ export function ProjectSettingsModal({
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <article className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <p className="text-base font-semibold text-slate-950">إعدادات المشروع</p>
+          <div>
+            <p className="text-base font-semibold text-slate-950">إعدادات المشروع</p>
+            <p className="mt-1 text-xs text-slate-500">آخر تحديث: {formatDateEnCA(project.updatedAt)}</p>
+          </div>
           <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
         </div>
         <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -729,7 +732,7 @@ export function ProjectEventsModal({
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <p className="text-sm font-semibold text-slate-900">{eventItem.name}</p>
                   <Link
-                    to={`/dashboard/event/${eventItem.id}`}
+                    to={`/event/${eventItem.id}`}
                     className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                   >
                     عرض الفعالية

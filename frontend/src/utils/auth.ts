@@ -103,5 +103,12 @@ export function getSafeRedirectPath(path: string | null | undefined): string | n
     return null
   }
 
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+    const remainder = pathname.replace(/^\/dashboard\/?/, '')
+    const normalizedPath = remainder ? `/${remainder}` : '/'
+    const suffix = trimmed.slice(pathname.length)
+    return `${normalizedPath}${suffix}`
+  }
+
   return trimmed
 }

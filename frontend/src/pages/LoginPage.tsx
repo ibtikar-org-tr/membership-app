@@ -12,7 +12,7 @@ export function LoginPage() {
   const redirectTo = useMemo(() => {
     const fromQuery = searchParams.get('redirect')
     const fromState = (location.state as { from?: string } | null)?.from
-    return getSafeRedirectPath(fromQuery ?? fromState) ?? '/dashboard'
+    return getSafeRedirectPath(fromQuery ?? fromState) ?? '/'
   }, [location.state, searchParams])
 
   const user = getStoredUser()

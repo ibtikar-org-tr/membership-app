@@ -1,12 +1,14 @@
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { LoginPanel } from '../components/auth/LoginPanel'
 import { PublicEventShell } from '../components/events/PublicEventShell'
 import { Seo } from '../components/Seo'
 import type { AuthUser } from '../types/auth'
-import { getStoredUser } from '../utils/auth'
+import { clearStoredAuth, getStoredUser } from '../utils/auth'
 import { isPublicEventDetailPath } from '../utils/public-event-routes'
 import { logout } from '../api/vms'
+import { HomePage } from './HomePage'
+import { paths } from '../routes/paths'
 import {
   LayoutDashboard,
   HeartHandshake,
@@ -33,22 +35,27 @@ interface SidebarItem {
 }
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
-  { to: '/dashboard', label: 'الرئيسية', helper: 'الإحصائيات والأخبار', icon: LayoutDashboard, end: true },
-  { to: '/dashboard/community', label: 'المجتمع', helper: 'قنوات ومجموعات الأعضاء', icon: Users },
-  { to: '/dashboard/projects', label: 'المشاريع', helper: 'متابعة المبادرات النشطة', icon: FolderKanban },
-  { to: '/dashboard/events', label: 'الفعاليات', helper: 'اللقاءات والورش القادمة', icon: CalendarDays },
-  { to: '/dashboard/clubs', label: 'الأندية', helper: 'استكشاف أندية المشاريع', icon: Shapes },
-  { to: '/dashboard/volunteering', label: 'التطوع', helper: 'الفرص التطوعية المفتوحة', icon: HeartHandshake },
-  { to: '/dashboard/profile', label: 'الملف الشخصي', helper: 'بياناتك الشخصية', icon: UserCircle },
-  { to: '/dashboard/settings', label: 'الإعدادات', helper: 'تفضيلات الحساب', icon: Settings },
+  { to: paths.home, label: 'الرئيسية', helper: 'الإحصائيات والأخبار', icon: LayoutDashboard, end: true },
+  { to: paths.community, label: 'المجتمع', helper: 'قنوات ومجموعات الأعضاء', icon: Users },
+  { to: paths.projects, label: 'المشاريع', helper: 'متابعة المبادرات النشطة', icon: FolderKanban },
+  { to: paths.events, label: 'الفعاليات', helper: 'اللقاءات والورش القادمة', icon: CalendarDays },
+  { to: paths.clubs, label: 'الأندية', helper: 'استكشاف أندية المشاريع', icon: Shapes },
+  { to: paths.volunteering, label: 'التطوع', helper: 'الفرص التطوعية المفتوحة', icon: HeartHandshake },
+  { to: paths.profile, label: 'الملف الشخصي', helper: 'بياناتك الشخصية', icon: UserCircle },
+  { to: paths.settings, label: 'الإعدادات', helper: 'تفضيلات الحساب', icon: Settings },
 ]
 
 export function DashboardPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [user, setUser] = useState<AuthUser | null>(() => getStoredUser())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const isGuestPublicEventView = !user && isPublicEventDetailPath(location.pathname)
+
+  useEffect(() => {
+    setUser(getStoredUser())
+  }, [location.pathname])
 
   useEffect(() => {
     if (!isMobileSidebarOpen) {
@@ -72,6 +79,11 @@ export function DashboardPage() {
   }
 
   if (!user) {
+    const isMarketingHome = location.pathname === '/' || location.pathname === ''
+    if (isMarketingHome) {
+      return <HomePage />
+    }
+
     return (
       <>
         <Seo
@@ -84,14 +96,16 @@ export function DashboardPage() {
     )
   }
 
-  const handleLogout = () => {
-    void logout().finally(() => {
-      setUser(null)
-    })
-  }
-
   const handleMobileNavigation = () => {
     setIsMobileSidebarOpen(false)
+  }
+
+  const handleLogout = () => {
+    clearStoredAuth()
+    setUser(null)
+    handleMobileNavigation()
+    navigate(paths.home, { replace: true })
+    void logout().catch(() => {})
   }
 
   return (
@@ -199,7 +213,7 @@ export function DashboardPage() {
             </nav>
 
             <Link
-              to="/"
+              to={paths.welcome}
               onClick={handleMobileNavigation}
               className={`group relative mt-6 flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-400 hover:bg-slate-50 hover:shadow-md ${
                 isSidebarCollapsed ? 'px-2' : ''
@@ -231,12 +245,12 @@ export function DashboardPage() {
               </div>
 
               <Link
-                to="/login"
-                onClick={() => {
+                to={paths.home}
+                onClick={(event) => {
+                  event.preventDefault()
                   handleLogout()
-                  handleMobileNavigation()
                 }}
-                className={`relative flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 hover:shadow-md ${
+                className={`relative flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 hover:shadow-md ${
                   isSidebarCollapsed ? 'px-2' : ''
                 }`}
                 title={isSidebarCollapsed ? 'تسجيل الخروج' : undefined}

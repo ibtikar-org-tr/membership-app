@@ -59,12 +59,24 @@ export interface DurableObjectStubLike<T = unknown> {
   id: DurableObjectIdLike
 }
 
+export interface CloudflareAiBindingLike {
+  run(
+    model: string,
+    inputs: {
+      messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>
+      max_tokens?: number
+      temperature?: number
+    },
+  ): Promise<{ response?: string }>
+}
+
 export interface AppBindings {
   MEMBERS_DB: D1DatabaseLike
   VMS_DB: D1DatabaseLike
   VMS_LOGS_DB: D1DatabaseLike
   MY_BUCKET: R2BucketLike
   PROJECT_NOTE_ROOM: DurableObjectNamespaceLike
+  AI?: CloudflareAiBindingLike
   TELEGRAM_MS_SERVICE?: Fetcher
   MEMBERSHIP_NUMBER_PREFIX: string
   SMTP_HOST: string

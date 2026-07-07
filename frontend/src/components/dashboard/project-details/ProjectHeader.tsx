@@ -9,10 +9,10 @@ import {
   FiSend,
   FiSettings,
   FiUsers,
+  FiZap,
 } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import type { VmsProject, VmsProjectMember } from '../../../types/vms'
-import { formatDateEnCA } from '../../../utils/date-format'
 import { memberAvatarTone, memberInitials, statusBadgeClass, statusLabel } from './helpers'
 
 const toolbarBtn =
@@ -37,6 +37,7 @@ interface ProjectHeaderProps {
   canCreateTask: boolean
   canManageProject: boolean
   onOpenAddTask: () => void
+  onOpenAiAddTask?: () => void
   eventsPath: string
   clubsPath: string
   positionsPath: string
@@ -66,6 +67,7 @@ export function ProjectHeader({
   canCreateTask,
   canManageProject,
   onOpenAddTask,
+  onOpenAiAddTask,
   eventsPath,
   clubsPath,
   positionsPath,
@@ -109,7 +111,7 @@ export function ProjectHeader({
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:w-[20rem] lg:grid-cols-1">
               <Link
-                to="/dashboard/projects"
+                to="/projects"
                 className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
               >
                 العودة للمشاريع
@@ -117,9 +119,31 @@ export function ProjectHeader({
               <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5 backdrop-blur-sm">
                 <p className="text-xs text-cyan-100/80">المسؤول</p>
                 <p className="mt-1 text-sm font-semibold text-white">{ownerDisplayName ?? ownerFallbackName}</p>
-                <p className="mt-1 text-xs text-slate-200">
-                  {project.telegramGroupId ? 'مجموعة تلغرام مرتبطة' : 'لا توجد مجموعة تلغرام'}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs text-slate-200">
+                    {project.telegramGroupId ? 'مجموعة تلغرام مرتبطة' : 'لا توجد مجموعة تلغرام'}
+                  </p>
+                  {showTelegramInvite && onSendTelegramInvite && project.telegramGroupId ? (
+                    <button
+                      type="button"
+                      onClick={onSendTelegramInvite}
+                      disabled={isSendingTelegramInvite}
+                      title="إرسال دعوة مجموعة التلغرام عبر البوت"
+                      className="inline-flex items-center gap-1 rounded-lg border border-cyan-300/40 bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-50 transition hover:bg-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <FiSend className="h-3 w-3 shrink-0 opacity-90" aria-hidden />
+                      {isSendingTelegramInvite ? 'جار الإرسال...' : 'دعوة تلغرام'}
+                    </button>
+                  ) : null}
+                </div>
+                {telegramInviteFeedback ? (
+                  <p
+                    className={`mt-2 text-[11px] leading-4 ${telegramInviteFeedbackIsError ? 'text-red-300' : 'text-emerald-300'}`}
+                    title={telegramInviteFeedback}
+                  >
+                    {telegramInviteFeedback}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -130,10 +154,18 @@ export function ProjectHeader({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/85 p-2 backdrop-blur-sm">
           <div className="flex flex-wrap items-center gap-2">
             {canCreateTask ? (
-              <button type="button" onClick={onOpenAddTask} className={toolbarBtnPrimary}>
-                <FiPlus className={toolbarIcon} aria-hidden />
-                إضافة مهمة
-              </button>
+              <>
+                <button type="button" onClick={onOpenAddTask} className={toolbarBtnPrimary}>
+                  <FiPlus className={toolbarIcon} aria-hidden />
+                  إضافة مهمة
+                </button>
+                {onOpenAiAddTask ? (
+                  <button type="button" onClick={onOpenAiAddTask} className={toolbarBtnCyan}>
+                    <FiZap className={toolbarIcon} aria-hidden />
+                    إنشاء بالذكاء الاصطناعي
+                  </button>
+                ) : null}
+              </>
             ) : null}
             <Link to={eventsPath} className={toolbarBtn}>
               <FiCalendar className={toolbarIcon} aria-hidden />
@@ -181,33 +213,9 @@ export function ProjectHeader({
                   </span>
                 ) : null}
               </div>
-              <span className="truncate">
-                الأعضاء
-                {memberCount > 0 ? ` (${memberCount})` : ''}
-              </span>
             </button>
-            {showTelegramInvite && onSendTelegramInvite ? (
-              <button
-                type="button"
-                onClick={onSendTelegramInvite}
-                disabled={isSendingTelegramInvite}
-                title="إرسال دعوة مجموعة التلغرام عبر البوت"
-                className={toolbarBtnCyan}
-              >
-                <FiSend className={toolbarIcon} aria-hidden />
-                <span className="hidden sm:inline">{isSendingTelegramInvite ? 'جار الإرسال...' : 'دعوة تلغرام'}</span>
-              </button>
-            ) : null}
           </div>
           <div className="flex h-9 flex-wrap items-center justify-end gap-2">
-            {telegramInviteFeedback ? (
-              <span
-                className={`max-w-[12rem] truncate text-xs sm:max-w-xs ${telegramInviteFeedbackIsError ? 'text-red-600' : 'text-emerald-700'}`}
-                title={telegramInviteFeedback}
-              >
-                {telegramInviteFeedback}
-              </span>
-            ) : null}
             {canLeaveProject && onLeaveProject ? (
               <button
                 type="button"
@@ -230,9 +238,6 @@ export function ProjectHeader({
                 <FiSettings className={toolbarIcon} />
               </button>
             ) : null}
-            <span className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700">
-              آخر تحديث: {formatDateEnCA(project.updatedAt)}
-            </span>
           </div>
         </div>
 

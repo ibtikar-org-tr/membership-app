@@ -30,6 +30,19 @@ export interface VmsTask {
   approvedBy: string | null
   lastRemindedAt: string | null
   skills: Record<string, string> | null
+  subtaskProgress?: { completed: number; total: number } | null
+}
+
+export interface VmsTaskSubtask {
+  id: string
+  parentTaskId: string
+  name: string
+  status: 'open' | 'completed'
+  completedAt: string | null
+  completedBy: string | null
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface VmsEvent {
@@ -178,6 +191,17 @@ export interface VmsPointTransaction {
   taskId: string | null
   amount: number
   type: 'task_reward' | 'task_reward_reversal' | 'purchase' | 'event_attendance' | 'other' | string
+}
+
+export interface VmsLeaderboardEntry {
+  name: string
+  points: number
+  isViewer?: boolean
+}
+
+export interface VmsLeaderboardViewer {
+  rank: number
+  points: number
 }
 
 export interface VmsProjectNote {

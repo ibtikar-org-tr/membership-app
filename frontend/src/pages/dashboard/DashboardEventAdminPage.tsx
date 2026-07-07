@@ -166,7 +166,7 @@ export function DashboardEventAdminPage() {
     }
   }
 
-  if (!eventID || notFound) return <Navigate to="/dashboard/events" replace />
+  if (!eventID || notFound) return <Navigate to="/events" replace />
 
   if (isLoading || !eventItem) {
     return (
@@ -180,7 +180,7 @@ export function DashboardEventAdminPage() {
     return (
       <section className="rounded-xl border border-amber-200 bg-amber-50 p-6">
         <p className="text-sm font-medium text-amber-900">لا تملك صلاحية إدارة تسجيلات هذه الفعالية.</p>
-        <Link to={`/dashboard/event/${eventID}`} className="mt-3 inline-flex text-sm font-semibold text-amber-800 underline">
+        <Link to={`/event/${eventID}`} className="mt-3 inline-flex text-sm font-semibold text-amber-800 underline">
           العودة إلى الفعالية
         </Link>
       </section>
@@ -197,10 +197,10 @@ export function DashboardEventAdminPage() {
             <p className="mt-2 text-sm text-slate-600">إدارة جميع المسجلين وتحديث الحالات أو حذف التسجيل.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link to={`/dashboard/event/${eventID}`} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <Link to={`/event/${eventID}`} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
               صفحة الفعالية
             </Link>
-            <Link to={`/dashboard/event/${eventID}/edit`} className="rounded-lg border border-slate-200 bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+            <Link to={`/event/${eventID}/edit`} className="rounded-lg border border-slate-200 bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
               تعديل الفعالية
             </Link>
           </div>

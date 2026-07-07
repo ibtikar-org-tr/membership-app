@@ -246,11 +246,11 @@ export function DashboardProjectSubProjectsPage() {
   }
 
   if (!projectID || !user) {
-    return <Navigate to="/dashboard/projects" replace />
+    return <Navigate to="/projects" replace />
   }
 
   if (!isLoading && notFound) {
-    return <Navigate to="/dashboard/projects" replace />
+    return <Navigate to="/projects" replace />
   }
 
   if (isLoading || !parentProject) {
@@ -282,13 +282,13 @@ export function DashboardProjectSubProjectsPage() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Link
-                to={`/dashboard/projects/${parentProject.id}`}
+                to={`/projects/${parentProject.id}`}
                 className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
               >
                 لوحة المشروع
               </Link>
               <Link
-                to="/dashboard/projects"
+                to="/projects"
                 className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
               >
                 كل المشاريع
@@ -446,7 +446,7 @@ export function DashboardProjectSubProjectsPage() {
                             <span className="text-slate-400">آخر تحديث:</span> {formatDateEnCA(project.updatedAt)}
                           </p>
                           <Link
-                            to={`/dashboard/projects/${project.id}`}
+                            to={`/projects/${project.id}`}
                             className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:border-cyan-300 group-hover:bg-cyan-50/80"
                           >
                             التفاصيل

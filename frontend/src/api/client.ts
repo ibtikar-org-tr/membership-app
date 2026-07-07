@@ -139,9 +139,10 @@ export async function apiDelete(path: string): Promise<void> {
 }
 
 export async function logoutRequest() {
+  clearStoredAuth()
   try {
     await apiFetch('/logout', { method: 'POST' }, false)
-  } finally {
-    clearStoredAuth()
+  } catch {
+    // Local session is already cleared; ignore network errors during logout.
   }
 }

@@ -125,7 +125,7 @@ export function DashboardProjectEventsPage() {
       setEvents((previous) => [payload.event, ...previous])
       form.reset()
       setIsCreateEventOpen(false)
-      navigate(`/dashboard/event/${payload.event.id}/edit`)
+      navigate(`/event/${payload.event.id}/edit`)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setCreateError(requestError.message)
@@ -138,7 +138,7 @@ export function DashboardProjectEventsPage() {
   }
 
   if (!projectID || notFound) {
-    return <Navigate to="/dashboard/projects" replace />
+    return <Navigate to="/projects" replace />
   }
 
   if (isLoading || !project) {
@@ -170,7 +170,7 @@ export function DashboardProjectEventsPage() {
             </button>
           ) : null}
           <Link
-            to={`/dashboard/projects/${project.id}`}
+            to={`/projects/${project.id}`}
             className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
           >
             العودة للمشروع
