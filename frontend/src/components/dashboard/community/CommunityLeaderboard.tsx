@@ -1,5 +1,5 @@
 import { Crown, Medal, Trophy } from 'lucide-react'
-import type { VmsLeaderboardEntry, VmsLeaderboardViewer } from '../../types/vms'
+import type { VmsLeaderboardEntry, VmsLeaderboardViewer } from '../../../types/vms'
 
 interface CommunityLeaderboardProps {
   entries: VmsLeaderboardEntry[]

@@ -1,12 +1,3 @@
-type SpeechRecognitionConstructor = new () => SpeechRecognition
-
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionConstructor
-    webkitSpeechRecognition?: SpeechRecognitionConstructor
-  }
-}
-
 export function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
   if (typeof window === 'undefined') {
     return null

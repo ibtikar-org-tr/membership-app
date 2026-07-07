@@ -84,7 +84,7 @@ export function useSpeechToText({
     recognition.interimResults = true
     recognition.maxAlternatives = 1
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let spoken = ''
       for (let index = 0; index < event.results.length; index += 1) {
         spoken += event.results[index][0]?.transcript ?? ''
@@ -93,7 +93,7 @@ export function useSpeechToText({
       onTranscriptRef.current(appendSpeechTranscript(sessionBaseRef.current, spoken))
     }
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (event.error === 'aborted') {
         return
       }
