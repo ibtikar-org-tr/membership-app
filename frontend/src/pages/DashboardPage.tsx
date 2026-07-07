@@ -15,6 +15,7 @@ import {
   Users,
   FolderKanban,
   CalendarDays,
+  CalendarCheck,
   Shapes,
   UserCircle,
   LogOut,
@@ -35,6 +36,7 @@ interface SidebarItem {
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
   { to: paths.home, label: 'الرئيسية', helper: 'الإحصائيات والأخبار', icon: LayoutDashboard, end: true },
+  { to: paths.agenda, label: 'جدولي', helper: 'مهامك وفعالياتك', icon: CalendarCheck },
   { to: paths.community, label: 'المجتمع', helper: 'قنوات ومجموعات الأعضاء', icon: Users },
   { to: paths.projects, label: 'المشاريع', helper: 'متابعة المبادرات النشطة', icon: FolderKanban },
   { to: paths.events, label: 'الفعاليات', helper: 'اللقاءات والورش القادمة', icon: CalendarDays },

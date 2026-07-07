@@ -8,6 +8,11 @@ export const dashboardRouteChildren: RouteObject[] = [
     lazy: lazyRoute(() => import('../pages/dashboard/DashboardMainPage'), 'DashboardMainPage'),
   },
   {
+    path: 'agenda',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardAgendaPage'), 'DashboardAgendaPage'),
+  },
+  {
     path: 'profile',
     hydrateFallbackElement: <div />,
     lazy: lazyRoute(() => import('../pages/dashboard/DashboardProfilePage'), 'DashboardProfilePage'),

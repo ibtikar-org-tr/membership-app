@@ -20,4 +20,5 @@ export const paths = {
   clubEdit: (clubId: string) => `/clubs/${encodeURIComponent(clubId)}/edit`,
   positionEdit: (positionId: string) => `/positions/${encodeURIComponent(positionId)}/edit`,
   profile: '/profile',
+  agenda: '/agenda',
 } as const
