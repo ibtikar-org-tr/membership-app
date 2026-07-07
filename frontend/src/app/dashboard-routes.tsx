@@ -102,9 +102,4 @@ export const dashboardRouteChildren: RouteObject[] = [
     hydrateFallbackElement: <div />,
     lazy: lazyRoute(() => import('../pages/dashboard/DashboardPositionEditPage'), 'DashboardPositionEditPage'),
   },
-  {
-    path: 'settings',
-    hydrateFallbackElement: <div />,
-    lazy: lazyRoute(() => import('../pages/dashboard/DashboardSettingsPage'), 'DashboardSettingsPage'),
-  },
 ] 

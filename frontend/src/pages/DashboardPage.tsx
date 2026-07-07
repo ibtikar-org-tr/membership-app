@@ -17,7 +17,6 @@ import {
   CalendarDays,
   Shapes,
   UserCircle,
-  Settings,
   LogOut,
   Home,
   ChevronRight,
@@ -42,7 +41,6 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { to: paths.clubs, label: 'الأندية', helper: 'استكشاف أندية المشاريع', icon: Shapes },
   { to: paths.volunteering, label: 'التطوع', helper: 'الفرص التطوعية المفتوحة', icon: HeartHandshake },
   { to: paths.profile, label: 'الملف الشخصي', helper: 'بياناتك الشخصية', icon: UserCircle },
-  { to: paths.settings, label: 'الإعدادات', helper: 'تفضيلات الحساب', icon: Settings },
 ]
 
 export function DashboardPage() {
@@ -112,7 +110,7 @@ export function DashboardPage() {
     <>
       <Seo
         title="لوحة التحكم"
-        description="لوحة التحكم الخاصة بالأعضاء في منصة أعضاء إبتكار لمتابعة المشاريع والفعاليات والأندية وإعدادات الحساب."
+        description="لوحة التحكم الخاصة بالأعضاء في منصة أعضاء إبتكار لمتابعة المشاريع والفعاليات والأندية."
         noIndex
       />
       <main className="min-h-screen w-full bg-slate-50 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
