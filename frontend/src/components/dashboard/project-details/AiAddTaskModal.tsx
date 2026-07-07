@@ -113,14 +113,14 @@ export function AiAddTaskModal({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-[2px] sm:p-4"
+      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
       onClick={onClose}
     >
       <article
-        className="w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+        className="flex max-h-[min(92dvh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-slate-200 bg-linear-to-l from-violet-50 via-white to-cyan-50 px-5 py-4 sm:px-6">
+        <div className="shrink-0 border-b border-slate-200 bg-linear-to-l from-violet-50 via-white to-cyan-50 px-5 py-4 sm:px-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="inline-flex items-center gap-2 text-lg font-bold text-slate-950">
@@ -144,41 +144,19 @@ export function AiAddTaskModal({
           </div>
         </div>
 
-        <div className="space-y-4 p-5 sm:p-6">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
           {phase === 'prompt' ? (
-            <>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
-                <label className="mb-2 block text-xs font-semibold tracking-wide text-slate-500">وصف المطلوب</label>
-                <textarea
-                  value={prompt}
-                  onChange={(event) => setPrompt(event.target.value)}
-                  placeholder="مثال: أحتاج مهمة لتنظيم ورشة عمل عن الذكاء الاصطناعي للمبتدئين، تشمل التحضير والترويج وتقييم الحضور..."
-                  className="min-h-40 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
-                  rows={6}
-                  disabled={isBusy}
-                />
-              </div>
-
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isBusy}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleGenerate()}
-                  disabled={isBusy}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-violet-400"
-                >
-                  <FiZap className="h-4 w-4" aria-hidden />
-                  {isGenerating ? 'جار التوليد...' : 'توليد المهمة'}
-                </button>
-              </div>
-            </>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+              <label className="mb-2 block text-xs font-semibold tracking-wide text-slate-500">وصف المطلوب</label>
+              <textarea
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder="مثال: أحتاج مهمة لتنظيم ورشة عمل عن الذكاء الاصطناعي للمبتدئين، تشمل التحضير والترويج وتقييم الحضور..."
+                className="min-h-40 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm leading-6 text-slate-800 outline-none transition focus:border-violet-600 focus:ring-2 focus:ring-violet-100"
+                rows={6}
+                disabled={isBusy}
+              />
+            </div>
           ) : (
             <>
               <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
@@ -254,7 +232,10 @@ export function AiAddTaskModal({
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold tracking-wide text-slate-500">المهام الفرعية</p>
+                  <p className="text-xs font-semibold tracking-wide text-slate-500">
+                    المهام الفرعية
+                    {draft.subtasks.length > 0 ? ` (${draft.subtasks.length})` : ''}
+                  </p>
                   <button
                     type="button"
                     onClick={addSubtask}
@@ -291,44 +272,68 @@ export function AiAddTaskModal({
                   </ul>
                 )}
               </div>
-
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhase('prompt')
-                    setLocalError(null)
-                  }}
-                  disabled={isBusy}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60"
-                >
-                  تعديل الوصف
-                </button>
-                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    disabled={isBusy}
-                    className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60"
-                  >
-                    إلغاء
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleCreate()}
-                    disabled={isBusy}
-                    className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                  >
-                    {isCreating ? 'جار الإنشاء...' : 'إنشاء المهمة'}
-                  </button>
-                </div>
-              </div>
             </>
           )}
+        </div>
 
+        <div className="shrink-0 space-y-3 border-t border-slate-200 bg-slate-50/80 px-5 py-4 sm:px-6">
           {displayError ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{displayError}</p>
           ) : null}
+
+          {phase === 'prompt' ? (
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isBusy}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleGenerate()}
+                disabled={isBusy}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-violet-400"
+              >
+                <FiZap className="h-4 w-4" aria-hidden />
+                {isGenerating ? 'جار التوليد...' : 'توليد المهمة'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setPhase('prompt')
+                  setLocalError(null)
+                }}
+                disabled={isBusy}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60"
+              >
+                تعديل الوصف
+              </button>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isBusy}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-60"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCreate()}
+                  disabled={isBusy}
+                  className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {isCreating ? 'جار الإنشاء...' : 'إنشاء المهمة'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </article>
     </div>
