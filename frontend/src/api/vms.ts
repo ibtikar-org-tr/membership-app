@@ -5,6 +5,7 @@ import type {
   VmsEvent,
   VmsEventRegistration,
   VmsEventTicket,
+  VmsLeaderboardEntry,
   VmsPointTransaction,
   VmsPosition,
   VmsPositionApplication,
@@ -727,6 +728,12 @@ export function deleteClubMember(clubId: string, membershipNumber: string, actor
 export function fetchPointTransactions(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)
+}
+
+export function fetchLeaderboard(limit = 50) {
+  return fetchJson<{ entries: VmsLeaderboardEntry[]; currentUser: VmsLeaderboardEntry | null }>(
+    `/leaderboard?limit=${encodeURIComponent(String(limit))}`,
+  )
 }
 
 export function fetchProjectNotes(projectId: string) {

@@ -117,3 +117,74 @@ export async function getUserPointBalance(
 
   return row?.point_balance ?? null
 }
+
+interface LeaderboardRow {
+  membership_number: string
+  point_balance: number
+  en_name: string | null
+  ar_name: string | null
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  membershipNumber: string
+  points: number
+  displayName: string
+}
+
+function mapLeaderboardRow(row: LeaderboardRow, rank: number): LeaderboardEntry {
+  return {
+    rank,
+    membershipNumber: row.membership_number,
+    points: row.point_balance,
+    displayName: row.ar_name?.trim() || row.en_name?.trim() || row.membership_number,
+  }
+}
+
+export async function listLeaderboard(db: D1DatabaseLike, limit = 50): Promise<LeaderboardEntry[]> {
+  const safeLimit = Math.min(Math.max(1, Math.trunc(limit)), 100)
+  const result = await db
+    .prepare(
+      `SELECT u.membership_number, u.point_balance, ui.en_name, ui.ar_name
+       FROM users u
+       LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
+       ORDER BY u.point_balance DESC, u.membership_number ASC
+       LIMIT ?`,
+    )
+    .bind(safeLimit)
+    .all<LeaderboardRow>()
+
+  return result.results.map((row, index) => mapLeaderboardRow(row, index + 1))
+}
+
+export async function getLeaderboardEntryForMember(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+): Promise<LeaderboardEntry | null> {
+  const normalizedMembershipNumber = membershipNumber.trim()
+  const memberRow = await db
+    .prepare(
+      `SELECT u.membership_number, u.point_balance, ui.en_name, ui.ar_name
+       FROM users u
+       LEFT JOIN user_info ui ON ui.membership_number = u.membership_number
+       WHERE u.membership_number = ?`,
+    )
+    .bind(normalizedMembershipNumber)
+    .first<LeaderboardRow>()
+
+  if (!memberRow) {
+    return null
+  }
+
+  const rankRow = await db
+    .prepare(
+      `SELECT COUNT(*) AS higher_count
+       FROM users
+       WHERE point_balance > ?
+          OR (point_balance = ? AND membership_number < ?)`,
+    )
+    .bind(memberRow.point_balance, memberRow.point_balance, memberRow.membership_number)
+    .first<{ higher_count: number }>()
+
+  return mapLeaderboardRow(memberRow, (rankRow?.higher_count ?? 0) + 1)
+}

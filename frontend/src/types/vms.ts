@@ -193,6 +193,13 @@ export interface VmsPointTransaction {
   type: 'task_reward' | 'task_reward_reversal' | 'purchase' | 'event_attendance' | 'other' | string
 }
 
+export interface VmsLeaderboardEntry {
+  rank: number
+  membershipNumber: string
+  points: number
+  displayName: string
+}
+
 export interface VmsProjectNote {
   id: string
   createdAt: string
