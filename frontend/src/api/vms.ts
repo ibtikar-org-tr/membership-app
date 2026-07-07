@@ -213,6 +213,20 @@ export function createTask(payload: {
   )
 }
 
+export function generateTaskWithAi(payload: { projectId: string; prompt: string }) {
+  return postJson<
+    {
+      generated: {
+        name: string
+        description?: string
+        priority: 'low' | 'medium' | 'high'
+        subtasks: string[]
+      }
+    },
+    typeof payload
+  >(`/tasks/ai-generate`, payload)
+}
+
 export function remindTask(taskId: string, membershipNumber: string) {
   return postJson<{ task: VmsTask; remindedAt: string }, Record<string, never>>(
     `/tasks/${encodeURIComponent(taskId)}/remind`,

@@ -25,7 +25,9 @@ import {
   taskSubtaskParamsSchema,
   updateTaskSubtaskSchema,
 } from '../schemas/vms-task-subtask.schema'
+import { generateTaskWithAiSchema } from '../schemas/vms-ai-task.schema'
 import { createTaskSchema, taskParamsSchema, updateTaskSchema } from '../schemas/vms-task.schema'
+import { generateTaskFromPrompt } from '../services/ai-task-generation.service'
 import { notifyAssignedTask, notifyTaskReminder } from '../services/task-assignment-notification.service'
 import { syncTaskCompletionPoints, type TaskPointsState } from '../services/task-points.service'
 
@@ -141,6 +143,31 @@ vmsTasksRoute.get('/tasks/:id', zValidator('param', taskParamsSchema), async (c)
   } catch (error) {
     console.error('Failed to fetch task', error)
     return c.json({ error: 'Could not fetch task.' }, 500)
+  }
+})
+
+vmsTasksRoute.post('/tasks/ai-generate', zValidator('json', generateTaskWithAiSchema), async (c) => {
+  try {
+    const membershipNumber = getActorMembershipNumber(c)
+    const payload = c.req.valid('json')
+
+    const project = await getDirectProjectByIdForMember(c.env.VMS_DB, payload.projectId, membershipNumber)
+    if (!project) {
+      return c.json({ error: 'Project not found.' }, 404)
+    }
+
+    const generated = await generateTaskFromPrompt(c.env, payload.prompt, {
+      projectName: project.name,
+      projectDescription: project.description,
+    })
+
+    return c.json({ generated })
+  } catch (error) {
+    console.error('Failed to generate task with AI', error)
+    if (error instanceof Error && error.message.trim()) {
+      return c.json({ error: error.message }, 502)
+    }
+    return c.json({ error: 'تعذر توليد المهمة بالذكاء الاصطناعي.' }, 502)
   }
 })
 

@@ -9,6 +9,7 @@ import {
   FiSend,
   FiSettings,
   FiUsers,
+  FiZap,
 } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import type { VmsProject, VmsProjectMember } from '../../../types/vms'
@@ -37,6 +38,7 @@ interface ProjectHeaderProps {
   canCreateTask: boolean
   canManageProject: boolean
   onOpenAddTask: () => void
+  onOpenAiAddTask?: () => void
   eventsPath: string
   clubsPath: string
   positionsPath: string
@@ -66,6 +68,7 @@ export function ProjectHeader({
   canCreateTask,
   canManageProject,
   onOpenAddTask,
+  onOpenAiAddTask,
   eventsPath,
   clubsPath,
   positionsPath,
@@ -130,10 +133,18 @@ export function ProjectHeader({
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/85 p-2 backdrop-blur-sm">
           <div className="flex flex-wrap items-center gap-2">
             {canCreateTask ? (
-              <button type="button" onClick={onOpenAddTask} className={toolbarBtnPrimary}>
-                <FiPlus className={toolbarIcon} aria-hidden />
-                إضافة مهمة
-              </button>
+              <>
+                <button type="button" onClick={onOpenAddTask} className={toolbarBtnPrimary}>
+                  <FiPlus className={toolbarIcon} aria-hidden />
+                  إضافة مهمة
+                </button>
+                {onOpenAiAddTask ? (
+                  <button type="button" onClick={onOpenAiAddTask} className={toolbarBtnCyan}>
+                    <FiZap className={toolbarIcon} aria-hidden />
+                    إنشاء بالذكاء الاصطناعي
+                  </button>
+                ) : null}
+              </>
             ) : null}
             <Link to={eventsPath} className={toolbarBtn}>
               <FiCalendar className={toolbarIcon} aria-hidden />

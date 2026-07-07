@@ -37,6 +37,10 @@
       "remote": true
     }
   ],
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
   "services": [
     {
       "binding": "TELEGRAM_MS_SERVICE",

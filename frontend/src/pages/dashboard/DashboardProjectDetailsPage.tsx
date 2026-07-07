@@ -10,6 +10,7 @@ import {
   fetchProjectMembers,
   fetchTaskSubtasks,
   fetchTasks,
+  generateTaskWithAi,
   leaveProject,
   remindTask,
   removeProjectMember,
@@ -30,6 +31,7 @@ import {
 } from '../../components/dashboard/project-details/ProjectDetailsModals'
 import { MemberInfoModal } from '../../components/dashboard/project-details/MemberInfoModal'
 import { TaskDetailsModal } from '../../components/dashboard/project-details/TaskDetailsModal'
+import { AiAddTaskModal, type AiGeneratedTaskDraft } from '../../components/dashboard/project-details/AiAddTaskModal'
 import { ProjectHeader } from '../../components/dashboard/project-details/ProjectHeader'
 import { TaskBoard, type TaskBoardStatus } from '../../components/dashboard/project-details/TaskBoard'
 import { UnallowedAccessPage } from './UnallowedAccessPage'
@@ -162,6 +164,11 @@ export function DashboardProjectDetailsPage() {
   const [taskError, setTaskError] = useState<string | null>(null)
 
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
+  const [isAiAddTaskOpen, setIsAiAddTaskOpen] = useState(false)
+  const [isGeneratingAiTask, setIsGeneratingAiTask] = useState(false)
+  const [isCreatingAiTask, setIsCreatingAiTask] = useState(false)
+  const [aiTaskGenerateError, setAiTaskGenerateError] = useState<string | null>(null)
+  const [aiTaskCreateError, setAiTaskCreateError] = useState<string | null>(null)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [isRemindingTask, setIsRemindingTask] = useState(false)
   const [taskUpdateError, setTaskUpdateError] = useState<string | null>(null)
@@ -713,6 +720,110 @@ export function DashboardProjectDetailsPage() {
     }
   }
 
+  const handleGenerateAiTask = async (prompt: string): Promise<AiGeneratedTaskDraft | null> => {
+    setAiTaskGenerateError(null)
+
+    if (!projectID || !user) {
+      setAiTaskGenerateError('يجب تسجيل الدخول لإنشاء مهمة.')
+      return null
+    }
+
+    if (!canCreateTask) {
+      setAiTaskGenerateError('إضافة المهام متاحة فقط لأعضاء المشروع المباشرين.')
+      return null
+    }
+
+    setIsGeneratingAiTask(true)
+
+    try {
+      const payload = await generateTaskWithAi({
+        projectId: projectID,
+        prompt,
+      })
+
+      return {
+        name: payload.generated.name,
+        description: payload.generated.description ?? '',
+        priority: payload.generated.priority,
+        subtasks: payload.generated.subtasks ?? [],
+      }
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setAiTaskGenerateError(requestError.message)
+      } else {
+        setAiTaskGenerateError('تعذر توليد المهمة بالذكاء الاصطناعي.')
+      }
+      return null
+    } finally {
+      setIsGeneratingAiTask(false)
+    }
+  }
+
+  const handleCreateAiTask = async (
+    draft: AiGeneratedTaskDraft & { assignedTo?: string; points: number },
+  ) => {
+    setAiTaskCreateError(null)
+
+    if (!projectID || !user) {
+      setAiTaskCreateError('يجب تسجيل الدخول لإنشاء مهمة.')
+      return
+    }
+
+    if (!canCreateTask) {
+      setAiTaskCreateError('إضافة المهام متاحة فقط لأعضاء المشروع المباشرين.')
+      return
+    }
+
+    setIsCreatingAiTask(true)
+    const currentUser = user
+
+    try {
+      const payload = await createTask(
+        {
+          projectId: projectID,
+          name: draft.name,
+          description: draft.description || undefined,
+          createdBy: currentUser.membershipNumber,
+          status: 'open',
+          priority: draft.priority,
+          points: draft.points,
+          assignedTo: draft.assignedTo,
+        },
+        currentUser.membershipNumber,
+      )
+
+      const subtaskNames = draft.subtasks.map((item) => item.trim()).filter(Boolean)
+      await Promise.all(
+        subtaskNames.map((name) => createTaskSubtask(payload.task.id, { name })),
+      )
+
+      setProjectTasks((previous) => [
+        {
+          ...payload.task,
+          subtaskProgress:
+            subtaskNames.length > 0
+              ? {
+                  total: subtaskNames.length,
+                  completed: 0,
+                }
+              : null,
+        },
+        ...previous,
+      ])
+      setIsAiAddTaskOpen(false)
+      setAiTaskGenerateError(null)
+      setAiTaskCreateError(null)
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setAiTaskCreateError(requestError.message)
+      } else {
+        setAiTaskCreateError('تعذر إنشاء المهمة.')
+      }
+    } finally {
+      setIsCreatingAiTask(false)
+    }
+  }
+
 
   const handleUpdateTask = async (patch: TaskFieldUpdatePayload) => {
     if (!selectedTask) {
@@ -1159,6 +1270,11 @@ export function DashboardProjectDetailsPage() {
         canCreateTask={canCreateTask}
         canManageProject={canManageProject}
         onOpenAddTask={() => setIsAddTaskOpen(true)}
+        onOpenAiAddTask={() => {
+          setAiTaskGenerateError(null)
+          setAiTaskCreateError(null)
+          setIsAiAddTaskOpen(true)
+        }}
         eventsPath={`/projects/${project.id}/events`}
         clubsPath={`/projects/${project.id}/clubs`}
         positionsPath={`/projects/${project.id}/positions`}
@@ -1231,6 +1347,25 @@ export function DashboardProjectDetailsPage() {
           memberOptions={memberOptions}
           onClose={() => setIsAddTaskOpen(false)}
           onSubmit={handleCreateTask}
+        />
+      ) : null}
+
+      {isAiAddTaskOpen ? (
+        <AiAddTaskModal
+          isGenerating={isGeneratingAiTask}
+          isCreating={isCreatingAiTask}
+          generateError={aiTaskGenerateError}
+          createError={aiTaskCreateError}
+          memberOptions={memberOptions}
+          onClose={() => {
+            if (!isGeneratingAiTask && !isCreatingAiTask) {
+              setIsAiAddTaskOpen(false)
+              setAiTaskGenerateError(null)
+              setAiTaskCreateError(null)
+            }
+          }}
+          onGenerate={handleGenerateAiTask}
+          onCreate={handleCreateAiTask}
         />
       ) : null}
 
