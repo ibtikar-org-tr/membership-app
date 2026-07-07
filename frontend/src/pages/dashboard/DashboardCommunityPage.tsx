@@ -73,7 +73,7 @@ export function DashboardCommunityPage() {
         {!isLoading && !hasError ? (
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-              أفضل {entries.length} أعضاء
+              أفضل 3 أعضاء
             </span>
             {viewerRank ? (
               <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">

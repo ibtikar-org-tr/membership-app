@@ -145,7 +145,7 @@ function mapLeaderboardRow(row: LeaderboardRow, rank: number): LeaderboardEntry 
   }
 }
 
-export async function listLeaderboard(db: D1DatabaseLike, limit = 5): Promise<LeaderboardEntry[]> {
+export async function listLeaderboard(db: D1DatabaseLike, limit = 3): Promise<LeaderboardEntry[]> {
   const safeLimit = Math.min(Math.max(1, Math.trunc(limit)), 100)
   const result = await db
     .prepare(

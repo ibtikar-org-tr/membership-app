@@ -3,7 +3,7 @@ import { getLeaderboardEntryForMember, listLeaderboard } from '../repositories/u
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
 
-const LEADERBOARD_LIMIT = 5
+const LEADERBOARD_LIMIT = 3
 
 export const vmsLeaderboardRoute = new Hono<AppEnv>()
 
@@ -16,7 +16,7 @@ vmsLeaderboardRoute.get('/leaderboard', async (c) => {
       getLeaderboardEntryForMember(c.env.MEMBERS_DB, actorMembershipNumber),
     ])
 
-    const viewerInTopFive = entries.some((entry) => entry.membershipNumber === actorMembershipNumber)
+    const viewerInTopThree = entries.some((entry) => entry.membershipNumber === actorMembershipNumber)
 
     return c.json({
       entries: entries.map((entry) => ({
@@ -25,7 +25,7 @@ vmsLeaderboardRoute.get('/leaderboard', async (c) => {
         ...(entry.membershipNumber === actorMembershipNumber ? { isViewer: true } : {}),
       })),
       viewer:
-        viewerEntry && !viewerInTopFive
+        viewerEntry && !viewerInTopThree
           ? {
               rank: viewerEntry.rank,
               points: viewerEntry.points,

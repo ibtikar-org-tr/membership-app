@@ -54,52 +54,6 @@ function formatPoints(points: number) {
   return points.toLocaleString('en-US')
 }
 
-function LeaderboardRow({
-  entry,
-  rank,
-  isViewer,
-}: {
-  entry: VmsLeaderboardEntry
-  rank: number
-  isViewer: boolean
-}) {
-  return (
-    <div
-      className={[
-        'flex items-center gap-3 rounded-xl border px-3 py-3 transition',
-        isViewer ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/60',
-      ].join(' ')}
-    >
-      <span
-        className={[
-          'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold',
-          isViewer ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700',
-        ].join(' ')}
-      >
-        {rank}
-      </span>
-
-      <span
-        className={[
-          'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
-          isViewer ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700',
-        ].join(' ')}
-      >
-        {getInitials(entry.name)}
-      </span>
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900">{entry.name}</p>
-      </div>
-
-      <div className="text-left">
-        <p className="text-sm font-bold text-slate-900">{formatPoints(entry.points)}</p>
-        <p className="text-[11px] text-slate-500">نقطة</p>
-      </div>
-    </div>
-  )
-}
-
 function PodiumCard({
   entry,
   rank,
@@ -141,9 +95,6 @@ function PodiumCard({
 }
 
 export function CommunityLeaderboard({ entries, viewer }: CommunityLeaderboardProps) {
-  const topThree = entries.slice(0, 3)
-  const rest = entries.slice(3)
-
   if (entries.length === 0) {
     return (
       <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-10 text-center">
@@ -156,26 +107,24 @@ export function CommunityLeaderboard({ entries, viewer }: CommunityLeaderboardPr
 
   return (
     <div className="mt-6 space-y-6">
-      {topThree.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:items-end">
-          {PODIUM_STYLES.map((style) => {
-            const entry = topThree[style.rank - 1]
-            if (!entry) {
-              return <div key={`podium-empty-${style.rank}`} className="hidden sm:block" />
-            }
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:items-end">
+        {PODIUM_STYLES.map((style) => {
+          const entry = entries[style.rank - 1]
+          if (!entry) {
+            return <div key={`podium-empty-${style.rank}`} className="hidden sm:block" />
+          }
 
-            return (
-              <PodiumCard
-                key={`podium-${style.rank}-${entry.name}`}
-                entry={entry}
-                rank={style.rank}
-                style={style}
-                isViewer={entry.isViewer === true}
-              />
-            )
-          })}
-        </div>
-      ) : null}
+          return (
+            <PodiumCard
+              key={`podium-${style.rank}-${entry.name}`}
+              entry={entry}
+              rank={style.rank}
+              style={style}
+              isViewer={entry.isViewer === true}
+            />
+          )
+        })}
+      </div>
 
       {viewer ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
@@ -194,39 +143,18 @@ export function CommunityLeaderboard({ entries, viewer }: CommunityLeaderboardPr
           </div>
         </div>
       ) : null}
-
-      {rest.length > 0 ? (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-800">بقية المتصدرين</h3>
-          <div className="space-y-2">
-            {rest.map((entry, index) => (
-              <LeaderboardRow
-                key={`leaderboard-row-${index + 4}-${entry.name}`}
-                entry={entry}
-                rank={index + 4}
-                isViewer={entry.isViewer === true}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
     </div>
   )
 }
 
 function LeaderboardSkeleton() {
   return (
-    <div className="mt-6 space-y-6">
+    <div className="mt-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:items-end">
         {[0, 1, 2].map((key) => (
           <div key={`leaderboard-podium-skeleton-${key}`} className="flex justify-center">
             <div className="h-52 w-full max-w-44 animate-pulse rounded-2xl bg-slate-100" />
           </div>
-        ))}
-      </div>
-      <div className="space-y-2">
-        {[0, 1].map((key) => (
-          <div key={`leaderboard-row-skeleton-${key}`} className="h-16 animate-pulse rounded-xl bg-slate-100" />
         ))}
       </div>
     </div>
