@@ -211,8 +211,13 @@ export function AiAddTaskModal({
                 rows={6}
                 disabled={isBusy}
               />
+              {isSpeechSupported ? (
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  للإدخال الصوتي، يُفضّل التحدث بالعربية الفصحى للحصول على أفضل دقة.
+                </p>
+              ) : null}
               {isSpeechSupported && isListening ? (
-                <p className="mt-2 text-xs text-violet-700">جار الاستماع… تحدّث الآن وسيُضاف النص إلى ما كتبته.</p>
+                <p className="mt-1 text-xs text-violet-700">جار الاستماع… تحدّث الآن وسيُضاف النص إلى ما كتبته.</p>
               ) : null}
             </div>
           ) : (

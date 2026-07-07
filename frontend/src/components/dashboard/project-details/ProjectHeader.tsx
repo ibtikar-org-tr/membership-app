@@ -13,7 +13,6 @@ import {
 } from 'react-icons/fi'
 import type { ReactNode } from 'react'
 import type { VmsProject, VmsProjectMember } from '../../../types/vms'
-import { formatDateEnCA } from '../../../utils/date-format'
 import { memberAvatarTone, memberInitials, statusBadgeClass, statusLabel } from './helpers'
 
 const toolbarBtn =
@@ -192,10 +191,6 @@ export function ProjectHeader({
                   </span>
                 ) : null}
               </div>
-              <span className="truncate">
-                الأعضاء
-                {memberCount > 0 ? ` (${memberCount})` : ''}
-              </span>
             </button>
             {showTelegramInvite && onSendTelegramInvite ? (
               <button
@@ -241,9 +236,6 @@ export function ProjectHeader({
                 <FiSettings className={toolbarIcon} />
               </button>
             ) : null}
-            <span className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700">
-              آخر تحديث: {formatDateEnCA(project.updatedAt)}
-            </span>
           </div>
         </div>
 

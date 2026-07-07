@@ -50,7 +50,10 @@ export function ProjectSettingsModal({
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
       <article className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <p className="text-base font-semibold text-slate-950">إعدادات المشروع</p>
+          <div>
+            <p className="text-base font-semibold text-slate-950">إعدادات المشروع</p>
+            <p className="mt-1 text-xs text-slate-500">آخر تحديث: {formatDateEnCA(project.updatedAt)}</p>
+          </div>
           <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
         </div>
         <form onSubmit={onSubmit} className="mt-4 space-y-3">
