@@ -6,6 +6,7 @@ import type {
   VmsEventRegistration,
   VmsEventTicket,
   VmsLeaderboardEntry,
+  VmsLeaderboardViewer,
   VmsPointTransaction,
   VmsPosition,
   VmsPositionApplication,
@@ -730,10 +731,8 @@ export function fetchPointTransactions(membershipNumber?: string) {
   return fetchJson<{ pointTransactions: VmsPointTransaction[] }>(`/point-transactions${query}`)
 }
 
-export function fetchLeaderboard(limit = 5) {
-  return fetchJson<{ entries: VmsLeaderboardEntry[]; currentUser: VmsLeaderboardEntry | null }>(
-    `/leaderboard?limit=${encodeURIComponent(String(limit))}`,
-  )
+export function fetchLeaderboard() {
+  return fetchJson<{ entries: VmsLeaderboardEntry[]; viewer: VmsLeaderboardViewer | null }>('/leaderboard')
 }
 
 export function fetchProjectNotes(projectId: string) {

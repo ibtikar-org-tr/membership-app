@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Trophy } from 'lucide-react'
 import { fetchLeaderboard } from '../../api/vms'
 import { CommunityLeaderboard } from '../../components/dashboard/community/CommunityLeaderboard'
-import type { VmsLeaderboardEntry } from '../../types/vms'
-import { getStoredUser } from '../../utils/auth'
+import type { VmsLeaderboardEntry, VmsLeaderboardViewer } from '../../types/vms'
 
 export function DashboardCommunityPage() {
-  const user = useMemo(() => getStoredUser(), [])
   const [entries, setEntries] = useState<VmsLeaderboardEntry[]>([])
-  const [currentUser, setCurrentUser] = useState<VmsLeaderboardEntry | null>(null)
+  const [viewer, setViewer] = useState<VmsLeaderboardViewer | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
@@ -17,9 +15,9 @@ export function DashboardCommunityPage() {
     setHasError(false)
 
     try {
-      const payload = await fetchLeaderboard(5)
+      const payload = await fetchLeaderboard()
       setEntries(payload.entries)
-      setCurrentUser(payload.currentUser)
+      setViewer(payload.viewer)
     } catch {
       setHasError(true)
     } finally {
@@ -32,11 +30,11 @@ export function DashboardCommunityPage() {
 
     void (async () => {
       try {
-        const payload = await fetchLeaderboard(5)
+        const payload = await fetchLeaderboard()
 
         if (!controller.signal.aborted) {
           setEntries(payload.entries)
-          setCurrentUser(payload.currentUser)
+          setViewer(payload.viewer)
           setHasError(false)
         }
       } catch {
@@ -55,6 +53,9 @@ export function DashboardCommunityPage() {
     }
   }, [])
 
+  const viewerIndex = entries.findIndex((entry) => entry.isViewer)
+  const viewerRank = viewerIndex >= 0 ? viewerIndex + 1 : viewer?.rank
+
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -72,11 +73,11 @@ export function DashboardCommunityPage() {
         {!isLoading && !hasError ? (
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex w-fit rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
-              {entries.length} عضو
+              أفضل {entries.length} أعضاء
             </span>
-            {currentUser ? (
+            {viewerRank ? (
               <span className="inline-flex w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
-                ترتيبك: {currentUser.rank}
+                ترتيبك: {viewerRank}
               </span>
             ) : null}
           </div>
@@ -99,13 +100,7 @@ export function DashboardCommunityPage() {
         </div>
       ) : null}
 
-      {!isLoading && !hasError ? (
-        <CommunityLeaderboard
-          entries={entries}
-          currentUser={currentUser}
-          currentMembershipNumber={user?.membershipNumber}
-        />
-      ) : null}
+      {!isLoading && !hasError ? <CommunityLeaderboard entries={entries} viewer={viewer} /> : null}
     </section>
   )
 }

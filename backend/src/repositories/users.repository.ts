@@ -132,16 +132,20 @@ export interface LeaderboardEntry {
   displayName: string
 }
 
+function resolveDisplayName(row: LeaderboardRow): string {
+  return row.ar_name?.trim() || row.en_name?.trim() || 'عضو'
+}
+
 function mapLeaderboardRow(row: LeaderboardRow, rank: number): LeaderboardEntry {
   return {
     rank,
     membershipNumber: row.membership_number,
     points: row.point_balance,
-    displayName: row.ar_name?.trim() || row.en_name?.trim() || row.membership_number,
+    displayName: resolveDisplayName(row),
   }
 }
 
-export async function listLeaderboard(db: D1DatabaseLike, limit = 50): Promise<LeaderboardEntry[]> {
+export async function listLeaderboard(db: D1DatabaseLike, limit = 5): Promise<LeaderboardEntry[]> {
   const safeLimit = Math.min(Math.max(1, Math.trunc(limit)), 100)
   const result = await db
     .prepare(

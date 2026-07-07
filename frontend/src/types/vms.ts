@@ -194,10 +194,14 @@ export interface VmsPointTransaction {
 }
 
 export interface VmsLeaderboardEntry {
-  rank: number
-  membershipNumber: string
+  name: string
   points: number
-  displayName: string
+  isViewer?: boolean
+}
+
+export interface VmsLeaderboardViewer {
+  rank: number
+  points: number
 }
 
 export interface VmsProjectNote {
