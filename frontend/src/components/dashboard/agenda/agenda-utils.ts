@@ -24,17 +24,38 @@ export interface AgendaVolunteeringItem {
   application: VmsPositionApplication
 }
 
+export interface AgendaCalendarEvent {
+  id: string
+  title: string
+  start: string
+  end?: string
+  allDay: boolean
+  kind: 'task' | 'event' | 'volunteering'
+  href: string
+  subtitle: string | null
+  backgroundColor: string
+  borderColor: string
+  textColor: string
+}
+
 export interface AgendaData {
   myTasks: VmsTask[]
+  unscheduledTasks: VmsTask[]
   upcomingEvents: VmsEvent[]
   volunteering: AgendaVolunteeringItem[]
   clubs: VmsClubDashboard[]
   projectNames: Record<string, string>
-  timeline: AgendaTimelineItem[]
+  calendarEvents: AgendaCalendarEvent[]
 }
 
 const ACTIVE_TASK_STATUSES = new Set(['open', 'in_progress'])
 const ACTIVE_REGISTRATION_STATUSES = new Set(['registered'])
+
+const CALENDAR_COLORS = {
+  task: { backgroundColor: '#ede9fe', borderColor: '#8b5cf6', textColor: '#5b21b6' },
+  event: { backgroundColor: '#ecfeff', borderColor: '#06b6d4', textColor: '#0e7490' },
+  volunteering: { backgroundColor: '#ecfdf5', borderColor: '#10b981', textColor: '#047857' },
+} as const
 
 function parseTime(value: string | null | undefined): number {
   if (!value) {
@@ -43,6 +64,14 @@ function parseTime(value: string | null | undefined): number {
 
   const timestamp = Date.parse(value)
   return Number.isFinite(timestamp) ? timestamp : Number.POSITIVE_INFINITY
+}
+
+function toDateKey(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function isActiveTask(task: VmsTask, membershipNumber: string): boolean {
@@ -74,6 +103,93 @@ function isUpcomingEvent(eventItem: VmsEvent, now: Date): boolean {
   }
 
   return false
+}
+
+export function buildAgendaCalendarEvents(input: {
+  myTasks: VmsTask[]
+  upcomingEvents: VmsEvent[]
+  projectNames: Record<string, string>
+}): AgendaCalendarEvent[] {
+  const events: AgendaCalendarEvent[] = []
+
+  for (const task of input.myTasks) {
+    if (!task.dueDate) {
+      continue
+    }
+
+    const colors = CALENDAR_COLORS.task
+    events.push({
+      id: `task-${task.id}`,
+      title: task.name,
+      start: task.dueDate,
+      allDay: true,
+      kind: 'task',
+      href: `/projects/${encodeURIComponent(task.projectId)}`,
+      subtitle: input.projectNames[task.projectId] ?? null,
+      ...colors,
+    })
+  }
+
+  for (const eventItem of input.upcomingEvents) {
+    if (!eventItem.startTime) {
+      continue
+    }
+
+    const colors = CALENDAR_COLORS.event
+    events.push({
+      id: `event-${eventItem.id}`,
+      title: eventItem.name,
+      start: eventItem.startTime,
+      end: eventItem.endTime ?? undefined,
+      allDay: !eventItem.endTime,
+      kind: 'event',
+      href: `/event/${encodeURIComponent(eventItem.id)}`,
+      subtitle: eventItem.projectName,
+      ...colors,
+    })
+  }
+
+  return events
+}
+
+export function groupCalendarEventsByDate(events: AgendaCalendarEvent[]): Map<string, AgendaCalendarEvent[]> {
+  const grouped = new Map<string, AgendaCalendarEvent[]>()
+
+  for (const eventItem of events) {
+    const startKey = toDateKey(eventItem.start)
+    const existing = grouped.get(startKey) ?? []
+    existing.push(eventItem)
+    grouped.set(startKey, existing)
+
+    if (eventItem.end && !eventItem.allDay) {
+      const startDate = new Date(eventItem.start)
+      const endDate = new Date(eventItem.end)
+      const cursor = new Date(startDate)
+      cursor.setDate(cursor.getDate() + 1)
+      cursor.setHours(0, 0, 0, 0)
+
+      while (cursor < endDate) {
+        const key = toDateKey(cursor)
+        if (key !== startKey) {
+          const dayEvents = grouped.get(key) ?? []
+          if (!dayEvents.some((entry) => entry.id === eventItem.id)) {
+            dayEvents.push(eventItem)
+            grouped.set(key, dayEvents)
+          }
+        }
+        cursor.setDate(cursor.getDate() + 1)
+      }
+    }
+  }
+
+  for (const [key, dayEvents] of grouped) {
+    grouped.set(
+      key,
+      [...dayEvents].sort((left, right) => parseTime(left.start) - parseTime(right.start)),
+    )
+  }
+
+  return grouped
 }
 
 export function buildAgendaData(input: {
@@ -110,6 +226,8 @@ export function buildAgendaData(input: {
       return (priorityOrder[left.priority] ?? 3) - (priorityOrder[right.priority] ?? 3)
     })
 
+  const unscheduledTasks = myTasks.filter((task) => !task.dueDate)
+
   const volunteering = input.positions.flatMap((position) => {
     const application = position.applications.find(
       (entry) => entry.membershipNumber === input.membershipNumber && entry.status === 'pending',
@@ -124,31 +242,21 @@ export function buildAgendaData(input: {
 
   const joinedClubs = input.clubs.filter((club) => club.isJoined)
 
-  const timeline: AgendaTimelineItem[] = [
-    ...myTasks.map((task) => ({
-      id: `task-${task.id}`,
-      kind: 'task' as const,
-      title: task.name,
-      subtitle: projectNames[task.projectId] ?? null,
-      date: task.dueDate,
-      href: `/projects/${encodeURIComponent(task.projectId)}`,
-    })),
-    ...upcomingEvents.map((eventItem) => ({
-      id: `event-${eventItem.id}`,
-      kind: 'event' as const,
-      title: eventItem.name,
-      subtitle: eventItem.projectName,
-      date: eventItem.startTime,
-      href: `/event/${encodeURIComponent(eventItem.id)}`,
-    })),
-  ].sort((left, right) => parseTime(left.date) - parseTime(right.date))
+  const calendarEvents = buildAgendaCalendarEvents({
+    myTasks,
+    upcomingEvents,
+    projectNames,
+  })
 
   return {
     myTasks,
+    unscheduledTasks,
     upcomingEvents,
     volunteering,
     clubs: joinedClubs,
     projectNames,
-    timeline: timeline.slice(0, 8),
+    calendarEvents,
   }
 }
+
+export { toDateKey }
