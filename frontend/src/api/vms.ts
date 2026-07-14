@@ -193,8 +193,18 @@ export function updateProject(
   )
 }
 
-export function fetchTasks(membershipNumber: string) {
-  return fetchJson<{ tasks: VmsTask[] }>(`/tasks`)
+export function fetchTasks(
+  membershipNumber: string,
+  options?: {
+    statuses?: Array<'open' | 'in_progress' | 'completed' | 'archived' | string>
+  },
+) {
+  const params = new URLSearchParams()
+  if (options?.statuses && options.statuses.length > 0) {
+    params.set('status', options.statuses.join(','))
+  }
+  const query = params.toString() ? `?${params.toString()}` : ''
+  return fetchJson<{ tasks: VmsTask[] }>(`/tasks${query}`)
 }
 
 export function createTask(payload: {

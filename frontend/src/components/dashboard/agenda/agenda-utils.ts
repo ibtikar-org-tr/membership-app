@@ -75,7 +75,16 @@ function toDateKey(value: string | Date): string {
 }
 
 function isActiveTask(task: VmsTask, membershipNumber: string): boolean {
-  return task.assignedTo === membershipNumber && ACTIVE_TASK_STATUSES.has(task.status)
+  if (task.assignedTo !== membershipNumber) {
+    return false
+  }
+
+  // Completed / archived tasks must never appear on the agenda.
+  if (task.status === 'completed' || task.status === 'archived' || Boolean(task.completedAt)) {
+    return false
+  }
+
+  return ACTIVE_TASK_STATUSES.has(task.status)
 }
 
 function isUpcomingEvent(eventItem: VmsEvent, now: Date): boolean {
@@ -113,7 +122,7 @@ export function buildAgendaCalendarEvents(input: {
   const events: AgendaCalendarEvent[] = []
 
   for (const task of input.myTasks) {
-    if (!task.dueDate) {
+    if (!task.dueDate || task.status === 'completed' || task.status === 'archived' || Boolean(task.completedAt)) {
       continue
     }
 

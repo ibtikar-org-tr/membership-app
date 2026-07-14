@@ -42,7 +42,7 @@ export function DashboardAgendaPage() {
     try {
       const [tasksPayload, registrationsPayload, eventsPayload, positionsPayload, projectsPayload, clubsPayload] =
         await Promise.all([
-          fetchTasks(user.membershipNumber),
+          fetchTasks(user.membershipNumber, { statuses: ['open', 'in_progress'] }),
           fetchEventRegistrations(undefined, { membershipNumber: user.membershipNumber }),
           fetchEvents(),
           fetchOpenPositions(user.membershipNumber),
@@ -82,7 +82,7 @@ export function DashboardAgendaPage() {
       try {
         const [tasksPayload, registrationsPayload, eventsPayload, positionsPayload, projectsPayload, clubsPayload] =
           await Promise.all([
-            fetchTasks(user.membershipNumber),
+            fetchTasks(user.membershipNumber, { statuses: ['open', 'in_progress'] }),
             fetchEventRegistrations(undefined, { membershipNumber: user.membershipNumber }),
             fetchEvents(),
             fetchOpenPositions(user.membershipNumber),

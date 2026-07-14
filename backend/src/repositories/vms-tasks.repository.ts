@@ -51,7 +51,21 @@ async function hydrateTaskRow(db: D1DatabaseLike, row: TaskRow) {
   }
 }
 
-export async function listTasks(db: D1DatabaseLike) {
+export async function listTasks(db: D1DatabaseLike, options?: { statuses?: string[] }) {
+  const statuses = options?.statuses?.filter((status) => status.trim().length > 0)
+
+  if (statuses && statuses.length > 0) {
+    const placeholders = statuses.map(() => '?').join(', ')
+    const result = await db
+      .prepare(
+        `SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, last_reminded_at FROM tasks WHERE status IN (${placeholders}) ORDER BY created_at DESC`,
+      )
+      .bind(...statuses)
+      .all<TaskRow>()
+
+    return Promise.all(result.results.map((row) => hydrateTaskRow(db, row)))
+  }
+
   const result = await db
     .prepare(
       'SELECT id, created_at, updated_at, project_id, name, description, created_by, status, priority, due_date, points, assigned_to, completed_by, completed_at, approved_by, last_reminded_at FROM tasks ORDER BY created_at DESC',
