@@ -1,5 +1,5 @@
 import { zValidator } from '@hono/zod-validator'
-import { Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 import { WorkerMailer } from 'worker-mailer'
 import { memberHasTelegramId } from '../repositories/user-info.repository'
 import { getUserByEmail, getUserByMembershipNumber, updateUserPasswordHash } from '../repositories/users.repository'
@@ -317,6 +317,36 @@ async function sendRecoveryEmail(
   }
 }
 
+type AuthContext = Context<{ Bindings: AppBindings }>
+
+function isMobileClient(c: AuthContext): boolean {
+  return c.req.header('X-Client')?.trim().toLowerCase() === 'mobile'
+}
+
+async function resolveRefreshToken(c: AuthContext): Promise<string | null> {
+  const fromCookie = getRefreshTokenFromCookie(c)
+  if (fromCookie) {
+    return fromCookie
+  }
+
+  try {
+    const body = await c.req.json()
+    if (
+      body &&
+      typeof body === 'object' &&
+      'refreshToken' in body &&
+      typeof (body as { refreshToken: unknown }).refreshToken === 'string'
+    ) {
+      const token = (body as { refreshToken: string }).refreshToken.trim()
+      return token || null
+    }
+  } catch {
+    // No JSON body (cookie-only web clients).
+  }
+
+  return null
+}
+
 authRoute.post('/login', zValidator('json', loginSchema), async (c) => {
   try {
     const payload = c.req.valid('json')
@@ -357,11 +387,22 @@ authRoute.post('/login', zValidator('json', loginSchema), async (c) => {
     const refresh = await createRefreshToken(c.env.VMS_LOGS_DB, authUser.membershipNumber)
     setRefreshTokenCookie(c, refresh.token, refresh.expiresAt)
 
-    return c.json({
+    const response: {
+      accessToken: string
+      expiresIn: number
+      user: typeof authUser
+      refreshToken?: string
+    } = {
       accessToken,
       expiresIn: 60 * 60 * 24,
       user: authUser,
-    })
+    }
+
+    if (isMobileClient(c)) {
+      response.refreshToken = refresh.token
+    }
+
+    return c.json(response)
   } catch (error) {
     console.error('Failed to login', error)
     return c.json({ error: 'Could not log in.' }, 500)
@@ -370,7 +411,7 @@ authRoute.post('/login', zValidator('json', loginSchema), async (c) => {
 
 authRoute.post('/refresh', async (c) => {
   try {
-    const refreshToken = getRefreshTokenFromCookie(c)
+    const refreshToken = await resolveRefreshToken(c)
     if (!refreshToken) {
       return c.json({ error: 'Refresh token is required.' }, 401)
     }
@@ -400,11 +441,22 @@ authRoute.post('/refresh', async (c) => {
     const nextRefresh = await createRefreshToken(c.env.VMS_LOGS_DB, authUser.membershipNumber)
     setRefreshTokenCookie(c, nextRefresh.token, nextRefresh.expiresAt)
 
-    return c.json({
+    const response: {
+      accessToken: string
+      expiresIn: number
+      user: typeof authUser
+      refreshToken?: string
+    } = {
       accessToken,
       expiresIn: 60 * 60 * 24,
       user: authUser,
-    })
+    }
+
+    if (isMobileClient(c)) {
+      response.refreshToken = nextRefresh.token
+    }
+
+    return c.json(response)
   } catch (error) {
     console.error('Failed to refresh session', error)
     return c.json({ error: 'Could not refresh session.' }, 500)
@@ -413,7 +465,7 @@ authRoute.post('/refresh', async (c) => {
 
 authRoute.post('/logout', async (c) => {
   try {
-    const refreshToken = getRefreshTokenFromCookie(c)
+    const refreshToken = await resolveRefreshToken(c)
     if (refreshToken) {
       await revokeRefreshToken(c.env.VMS_LOGS_DB, refreshToken)
     }
