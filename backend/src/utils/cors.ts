@@ -7,6 +7,8 @@ const LOCAL_DEV_ORIGINS = [
   'http://127.0.0.1:5173',
   'http://localhost:4173',
   'http://127.0.0.1:4173',
+  'http://localhost:8081',
+  'http://127.0.0.1:8081',
 ]
 
 function isLocalWorkerRequest(c: Context<{ Bindings: AppBindings }>): boolean {
@@ -14,12 +16,27 @@ function isLocalWorkerRequest(c: Context<{ Bindings: AppBindings }>): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1'
 }
 
+function parseOriginList(value: string | undefined): string[] {
+  if (!value?.trim()) {
+    return []
+  }
+
+  return value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+}
+
 function buildAllowedOrigins(c: Context<{ Bindings: AppBindings }>): Set<string> {
   const allowed = new Set<string>()
-  const configured = c.env.FRONTEND_BASE_URL?.trim()
 
-  if (configured) {
-    allowed.add(configured)
+  for (const origin of parseOriginList(c.env.CORS_ALLOW_ORIGINS)) {
+    allowed.add(origin)
+  }
+
+  const frontendBaseUrl = c.env.FRONTEND_BASE_URL?.trim()
+  if (frontendBaseUrl) {
+    allowed.add(frontendBaseUrl)
   }
 
   if (isLocalWorkerRequest(c)) {
@@ -34,17 +51,15 @@ function buildAllowedOrigins(c: Context<{ Bindings: AppBindings }>): Set<string>
 export function membershipAppCors() {
   return cors({
     origin: (origin, c) => {
-      const allowed = buildAllowedOrigins(c as Context<{ Bindings: AppBindings }>)
-
-      if (origin && allowed.has(origin)) {
-        return origin
+      if (!origin) {
+        return ''
       }
 
-      const configured = (c.env as AppBindings).FRONTEND_BASE_URL?.trim()
-      return configured || origin || ''
+      const allowed = buildAllowedOrigins(c as Context<{ Bindings: AppBindings }>)
+      return allowed.has(origin) ? origin : ''
     },
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Client'],
   })
 }
