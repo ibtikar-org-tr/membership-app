@@ -1,0 +1,64 @@
+name: (dev) [mobile] EAS Android APK
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-dev.yml'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    environment: dev
+    defaults:
+      run:
+        working-directory: ./mobile
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Require Expo project id
+        run: |
+          PROJECT_ID="$(jq -r '.expo.extra.eas.projectId // empty' app.json)"
+          if [ -z "$PROJECT_ID" ]; then
+            echo "Missing expo.extra.eas.projectId in mobile/app.json."
+            echo "Run locally: cd mobile && npx eas-cli login && npx eas-cli init"
+            echo "Commit the generated projectId, then re-run this workflow."
+            exit 1
+          fi
+
+      - name: Inject API base into EAS preview profile
+        env:
+          EXPO_PUBLIC_API_BASE: ${{ vars.EXPO_PUBLIC_API_BASE }}
+        run: |
+          if [ -z "$EXPO_PUBLIC_API_BASE" ]; then
+            echo "Missing GitHub Actions variable EXPO_PUBLIC_API_BASE (dev environment)."
+            echo "Set it to your deployed API root including /api, e.g. https://host/ms/membership-app/api"
+            exit 1
+          fi
+          jq --arg api "$EXPO_PUBLIC_API_BASE" \
+            '.build.preview.env.EXPO_PUBLIC_API_BASE = $api' \
+            eas.json > eas.json.tmp
+          mv eas.json.tmp eas.json
+
+      - name: Build Android APK on EAS
+        run: eas build --platform android --profile preview --non-interactive --no-wait
