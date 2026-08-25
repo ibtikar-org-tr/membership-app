@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,7 +10,10 @@ import {
   Text,
   TextInput,
   View,
+  type ScrollView as ScrollViewType,
+  type TextInput as TextInputType,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { login } from '@/src/api/auth'
 import { useAuth } from '@/src/auth/AuthContext'
 import { colors } from '@/src/theme/colors'
@@ -20,6 +23,8 @@ const TELEGRAM_BOT_URL = 'https://t.me/ibtikar_bot'
 
 export default function LoginScreen() {
   const { refreshAuth } = useAuth()
+  const scrollRef = useRef<ScrollViewType>(null)
+  const passwordRef = useRef<TextInputType>(null)
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -54,77 +59,100 @@ export default function LoginScreen() {
     }
   }
 
+  const scrollFieldIntoView = () => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollToEnd({ animated: true })
+    })
+  }
+
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.hero}>
-          <Text style={styles.badge}>بوابة الأعضاء</Text>
-          <Text style={styles.title}>تسجيل الدخول إلى حسابك</Text>
-          <Text style={styles.subtitle}>
-            استخدم بريدك الإلكتروني أو رقم العضوية وكلمة المرور للوصول إلى التطبيق.
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.label}>البريد الإلكتروني أو رقم العضوية</Text>
-          <TextInput
-            value={identifier}
-            onChangeText={setIdentifier}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="username"
-            style={styles.input}
-            placeholder="example@email.com"
-            placeholderTextColor={colors.textMuted}
-          />
-
-          <Text style={styles.label}>كلمة المرور</Text>
-          <View style={styles.passwordRow}>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              textContentType="password"
-              style={[styles.input, styles.passwordInput]}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textMuted}
-            />
-            <Pressable onPress={() => setShowPassword((value) => !value)} style={styles.showButton}>
-              <Text style={styles.showButtonText}>{showPassword ? 'إخفاء' : 'إظهار'}</Text>
-            </Pressable>
+    <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+      >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.hero}>
+            <Text style={styles.badge}>بوابة الأعضاء</Text>
+            <Text style={styles.title}>تسجيل الدخول إلى حسابك</Text>
+            <Text style={styles.subtitle}>
+              استخدم بريدك الإلكتروني أو رقم العضوية وكلمة المرور للوصول إلى التطبيق.
+            </Text>
           </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <View style={styles.card}>
+            <Text style={styles.label}>البريد الإلكتروني أو رقم العضوية</Text>
+            <TextInput
+              value={identifier}
+              onChangeText={setIdentifier}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="username"
+              style={styles.input}
+              placeholder="example@email.com"
+              placeholderTextColor={colors.textMuted}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              onFocus={scrollFieldIntoView}
+            />
 
-          {telegramRequired ? (
-            <View style={styles.telegramBox}>
-              <Text style={styles.telegramText}>
-                يجب تفعيل بوت تيليغرام قبل تسجيل الدخول. افتح البوت وأرسل /verify ثم أكمل التحقق.
-              </Text>
-              <Pressable onPress={() => void Linking.openURL(TELEGRAM_BOT_URL)}>
-                <Text style={styles.telegramLink}>فتح بوت تيليغرام</Text>
+            <Text style={styles.label}>كلمة المرور</Text>
+            <View style={styles.passwordRow}>
+              <TextInput
+                ref={passwordRef}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                textContentType="password"
+                style={[styles.input, styles.passwordInput]}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textMuted}
+                returnKeyType="done"
+                onSubmitEditing={() => void handleSubmit()}
+                onFocus={scrollFieldIntoView}
+              />
+              <Pressable onPress={() => setShowPassword((value) => !value)} style={styles.showButton}>
+                <Text style={styles.showButtonText}>{showPassword ? 'إخفاء' : 'إظهار'}</Text>
               </Pressable>
             </View>
-          ) : null}
 
-          <Pressable
-            onPress={() => void handleSubmit()}
-            disabled={isSubmitting}
-            style={[styles.submit, isSubmitting && styles.submitDisabled]}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitText}>تسجيل الدخول</Text>
-            )}
-          </Pressable>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            {telegramRequired ? (
+              <View style={styles.telegramBox}>
+                <Text style={styles.telegramText}>
+                  يجب تفعيل بوت تيليغرام قبل تسجيل الدخول. افتح البوت وأرسل /verify ثم أكمل التحقق.
+                </Text>
+                <Pressable onPress={() => void Linking.openURL(TELEGRAM_BOT_URL)}>
+                  <Text style={styles.telegramLink}>فتح بوت تيليغرام</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            <Pressable
+              onPress={() => void handleSubmit()}
+              disabled={isSubmitting}
+              style={[styles.submit, isSubmitting && styles.submitDisabled]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitText}>تسجيل الدخول</Text>
+              )}
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 
@@ -136,7 +164,9 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 32,
     gap: 16,
   },
   hero: {

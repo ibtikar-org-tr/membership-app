@@ -1,7 +1,8 @@
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { ActivityIndicator, I18nManager, StyleSheet, View } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AuthProvider, useAuth } from '@/src/auth/AuthContext'
 import { colors } from '@/src/theme/colors'
 
@@ -10,7 +11,7 @@ if (!I18nManager.isRTL) {
   I18nManager.forceRTL(true)
 }
 
-function AuthGate({ children }: { children: React.ReactNode }) {
+function AuthGate({ children }: { children: ReactNode }) {
   const { status } = useAuth()
   const segments = useSegments()
   const router = useRouter()
@@ -45,15 +46,17 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="dark" />
-      <AuthGate>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-          <Stack.Screen name="login" />
-          <Stack.Screen name="(app)" />
-        </Stack>
-      </AuthGate>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <AuthGate>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+            <Stack.Screen name="login" />
+            <Stack.Screen name="(app)" />
+          </Stack>
+        </AuthGate>
+      </AuthProvider>
+    </SafeAreaProvider>
   )
 }
 
