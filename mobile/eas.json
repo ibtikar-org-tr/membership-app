@@ -14,7 +14,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE": ""
+        "EXPO_PUBLIC_API_BASE": "https://ibtikar.ctf.web.tr/ms/membership-app/api"
       }
     },
     "production": {

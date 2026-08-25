@@ -41,6 +41,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d5c9cb9c-9aeb-436e-a781-cf12c6740c26"
+      }
+    },
+    "owner": "ibtikar"
   }
 }
