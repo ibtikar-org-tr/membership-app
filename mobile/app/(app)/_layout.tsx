@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router'
 import { TelegramTabBar } from '@/src/components/TelegramTabBar'
-import { colors } from '@/src/theme/colors'
+import { colors, telegram } from '@/src/theme/colors'
 
 export default function AppTabsLayout() {
   return (
@@ -11,7 +11,10 @@ export default function AppTabsLayout() {
         headerTitleStyle: { fontWeight: '700', color: colors.text },
         headerTitleAlign: 'center',
         headerShadowVisible: false,
-        sceneStyle: { backgroundColor: colors.background },
+        sceneStyle: {
+          backgroundColor: colors.background,
+          paddingBottom: telegram.tabBarScenePadding,
+        },
       }}
     >
       <Tabs.Screen

@@ -12,15 +12,22 @@ export const colors = {
   dangerBg: '#fef2f2',
 }
 
-/** Telegram Liquid Glass tab bar (Android 12.4+ style) */
+/** Telegram Liquid Glass floating tab bar */
 export const telegram = {
   tabActive: '#3390EC',
-  tabInactive: '#8E8E93',
-  tabBarBackground: 'rgba(255, 255, 255, 0.78)',
-  tabBarBorder: 'rgba(0, 0, 0, 0.06)',
+  tabInactive: '#1C1C1E',
+  tabActivePill: 'rgba(51, 144, 236, 0.18)',
+  tabBarBackground: 'rgba(255, 255, 255, 0.72)',
+  tabBarBorder: 'rgba(255, 255, 255, 0.85)',
+  tabBarShadow: '#000000',
+  tabBarHorizontalMargin: 18,
+  tabBarRadius: 32,
   tabBarBlurTint: 'light' as const,
-  tabBarBlurIntensity: 92,
-  tabIconSize: 26,
+  tabBarBlurIntensity: 85,
+  tabIconSize: 24,
   tabLabelSize: 10,
-  tabBarContentHeight: 52,
+  tabBarContentHeight: 58,
+  tabBarBottomGap: 10,
+  tabActivePillRadius: 22,
+  tabBarScenePadding: 88,
 }
