@@ -77,11 +77,8 @@ export function AgendaCalendar({
     const formatter = new Intl.DateTimeFormat('ar', { month: 'long', year: 'numeric' })
     setVisibleRangeLabel(formatter.format(info.view.currentStart))
 
-    // Use the actual calendar month being viewed (not padded grid edges) so each
-    // navigation loads exactly one month of rows from D1.
-    const monthStart = info.view.currentStart
-    const monthEnd = info.view.currentEnd
-    const range = rangeFromDatesSet(monthStart, monthEnd)
+    // Load exactly one calendar month per navigation to keep D1 row reads low.
+    const range = rangeFromDatesSet(info.view.currentStart, info.view.currentEnd)
     const rangeKey = `${range.from}|${range.to}`
 
     if (lastRangeKeyRef.current === rangeKey) {
@@ -125,7 +122,7 @@ export function AgendaCalendar({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="agenda-calendar [&_.fc]:font-[inherit] [&_.fc-toolbar-title]:text-lg [&_.fc-toolbar-title]:font-semibold [&_.fc-toolbar-title]:text-slate-900 [&_.fc-button]:rounded-lg [&_.fc-button]:border-slate-200 [&_.fc-button]:bg-white [&_.fc-button]:px-3 [&_.fc-button]:py-1.5 [&_.fc-button]:text-sm [&_.fc-button]:font-medium [&_.fc-button]:text-slate-700 [&_.fc-button]:shadow-sm [&_.fc-button:hover]:border-slate-300 [&_.fc-button:hover]:bg-slate-50 [&_.fc-button-primary:not(:disabled).fc-button-active]:border-indigo-300 [&_.fc-button-primary:not(:disabled).fc-button-active]:bg-indigo-50 [&_.fc-button-primary:not(:disabled).fc-button-active]:text-indigo-700 [&_.fc-col-header-cell-cushion]:py-2 [&_.fc-col-header-cell-cushion]:text-xs [&_.fc-col-header-cell-cushion]:font-semibold [&_.fc-col-header-cell-cushion]:text-slate-600 [&_.fc-daygrid-day-number]:text-xs [&_.fc-daygrid-day-number]:font-medium [&_.fc-daygrid-day-number]:text-slate-600 [&_.fc-daygrid-day.fc-day-today]:bg-indigo-50/60 [&_.fc-daygrid-day.fc-day-selected]:bg-indigo-100/70 [&_.fc-daygrid-event]:rounded-md [&_.fc-daygrid-event]:border [&_.fc-daygrid-event]:px-1.5 [&_.fc-daygrid-event]:py-0.5 [&_.fc-daygrid-event]:text-[11px] [&_.fc-daygrid-event]:font-semibold [&_.fc-daygrid-day-frame]:min-h-26 [&_.fc-scrollgrid]:border-slate-200 [&_.fc-theme-standard td]:border-slate-100 [&_.fc-theme-standard th]:border-slate-100">
+        <div className="agenda-calendar [&_.fc]:font-[inherit] [&_.fc-toolbar-title]:text-lg [&_.fc-toolbar-title]:font-semibold [&_.fc-toolbar-title]:text-slate-900 [&_.fc-button]:rounded-lg [&_.fc-button]:border-slate-200 [&_.fc-button]:bg-white [&_.fc-button]:px-3 [&_.fc-button]:py-1.5 [&_.fc-button]:text-sm [&_.fc-button]:font-medium [&_.fc-button]:text-slate-700 [&_.fc-button]:shadow-sm hover:[&_.fc-button]:border-slate-300 hover:[&_.fc-button]:bg-slate-50 [&_.fc-button-primary:not(:disabled).fc-button-active]:border-indigo-300 [&_.fc-button-primary:not(:disabled).fc-button-active]:bg-indigo-50 [&_.fc-button-primary:not(:disabled).fc-button-active]:text-indigo-700 [&_.fc-col-header-cell-cushion]:py-2 [&_.fc-col-header-cell-cushion]:text-xs [&_.fc-col-header-cell-cushion]:font-semibold [&_.fc-col-header-cell-cushion]:text-slate-600 [&_.fc-daygrid-day-number]:text-xs [&_.fc-daygrid-day-number]:font-medium [&_.fc-daygrid-day-number]:text-slate-600 [&_.fc-daygrid-day.fc-day-today]:bg-indigo-50/60 [&_.fc-daygrid-day.fc-day-selected]:bg-indigo-100/70 [&_.fc-daygrid-event]:rounded-md [&_.fc-daygrid-event]:border [&_.fc-daygrid-event]:px-1.5 [&_.fc-daygrid-event]:py-0.5 [&_.fc-daygrid-event]:text-[11px] [&_.fc-daygrid-event]:font-semibold [&_.fc-daygrid-day-frame]:min-h-26 [&_.fc-scrollgrid]:border-slate-200 [&_.fc-theme-standard_td]:border-slate-100 [&_.fc-theme-standard_th]:border-slate-100 [&_td]:border-slate-100 [&_th]:border-slate-100">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, interactionPlugin]}
@@ -183,7 +180,7 @@ export function AgendaCalendar({
           </div>
 
           {selectedDayEvents.length > 0 ? (
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {selectedDayEvents.map((eventItem) => {
                 const Icon = kindIcon(eventItem.kind)
 
@@ -191,31 +188,35 @@ export function AgendaCalendar({
                   <Link
                     key={`${selectedDateKey}-${eventItem.id}`}
                     to={eventItem.href}
-                    className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-indigo-200 hover:shadow-sm"
+                    className="flex h-full min-h-22 flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:border-indigo-200 hover:shadow-sm"
                     style={{ borderRightWidth: 3, borderRightColor: eventItem.borderColor }}
                   >
-                    <span
-                      className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                      style={{ backgroundColor: eventItem.backgroundColor, color: eventItem.textColor }}
-                    >
-                      <Icon className="h-4 w-4" aria-hidden />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-semibold text-slate-900">{eventItem.title}</p>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                          {kindLabel(eventItem.kind)}
-                        </span>
+                    <div className="flex items-start gap-2.5">
+                      <span
+                        className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: eventItem.backgroundColor, color: eventItem.textColor }}
+                      >
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="line-clamp-2 text-sm font-semibold text-slate-900">{eventItem.title}</p>
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                            {kindLabel(eventItem.kind)}
+                          </span>
+                        </div>
+                        {eventItem.subtitle ? (
+                          <p className="mt-1 truncate text-xs text-slate-500">{eventItem.subtitle}</p>
+                        ) : null}
                       </div>
-                      {eventItem.subtitle ? (
-                        <p className="mt-1 truncate text-xs text-slate-500">{eventItem.subtitle}</p>
-                      ) : null}
-                      <p className="mt-1 text-xs text-slate-600">
-                        {eventItem.allDay
-                          ? 'طوال اليوم'
-                          : `${formatDateTimeEnCA(eventItem.start)}${eventItem.end ? ` – ${formatTimeEnCA(eventItem.end)}` : ''}`}
-                      </p>
                     </div>
+                    <p className="mt-auto text-xs text-slate-600">
+                      {eventItem.allDay
+                        ? 'طوال اليوم'
+                        : `${formatDateTimeEnCA(eventItem.start)}${
+                            eventItem.end ? ` – ${formatTimeEnCA(eventItem.end)}` : ''
+                          }`}
+                    </p>
                   </Link>
                 )
               })}

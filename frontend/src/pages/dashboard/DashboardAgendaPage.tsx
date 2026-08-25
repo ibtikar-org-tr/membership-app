@@ -175,15 +175,15 @@ export function DashboardAgendaPage() {
             <aside className="mt-6 rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
               <h3 className="text-sm font-semibold text-violet-900">مهام بدون موعد نهائي</h3>
               <p className="mt-1 text-xs text-violet-800/80">هذه المهام نشطة لكن لم يُحدد لها تاريخ استحقاق بعد.</p>
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {unscheduledTasks.map((task) => (
                   <Link
                     key={task.id}
                     to={paths.project(task.projectId)}
-                    className="block rounded-xl border border-violet-100 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-violet-200"
+                    className="block h-full rounded-xl border border-violet-100 bg-white px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-violet-200"
                   >
-                    {task.name}
-                    <span className="mt-1 block text-xs font-normal text-slate-500">
+                    <span className="line-clamp-2">{task.name}</span>
+                    <span className="mt-1 block truncate text-xs font-normal text-slate-500">
                       {task.projectName ?? task.projectId}
                     </span>
                   </Link>
