@@ -5,21 +5,19 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import type { DatesSetArg, EventClickArg, EventInput } from '@fullcalendar/core'
 import arLocale from '@fullcalendar/core/locales/ar'
-import { Briefcase, CalendarDays, CheckSquare, X } from 'lucide-react'
+import { CalendarDays, CheckSquare, X } from 'lucide-react'
 import type { AgendaCalendarEvent } from './agenda-utils'
-import { groupCalendarEventsByDate, toDateKey } from './agenda-utils'
+import { groupCalendarEventsByDate, rangeFromDatesSet, toDateKey } from './agenda-utils'
 import { formatDateTimeEnCA, formatTimeEnCA } from '../../../utils/date-format'
 
 function kindLabel(kind: AgendaCalendarEvent['kind']) {
   if (kind === 'task') return 'مهمة'
-  if (kind === 'event') return 'فعالية'
-  return 'تطوع'
+  return 'فعالية'
 }
 
 function kindIcon(kind: AgendaCalendarEvent['kind']) {
   if (kind === 'task') return CheckSquare
-  if (kind === 'event') return CalendarDays
-  return Briefcase
+  return CalendarDays
 }
 
 function formatDayHeading(dateKey: string) {
@@ -36,10 +34,18 @@ function formatDayHeading(dateKey: string) {
 interface AgendaCalendarProps {
   events: AgendaCalendarEvent[]
   unscheduledCount: number
+  isRefreshing?: boolean
+  onVisibleRangeChange: (range: { from: string; to: string }) => void
 }
 
-export function AgendaCalendar({ events, unscheduledCount }: AgendaCalendarProps) {
+export function AgendaCalendar({
+  events,
+  unscheduledCount,
+  isRefreshing = false,
+  onVisibleRangeChange,
+}: AgendaCalendarProps) {
   const calendarRef = useRef<FullCalendar>(null)
+  const lastRangeKeyRef = useRef<string | null>(null)
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(() => toDateKey(new Date()))
   const [visibleRangeLabel, setVisibleRangeLabel] = useState('')
 
@@ -70,6 +76,20 @@ export function AgendaCalendar({ events, unscheduledCount }: AgendaCalendarProps
   const handleDatesSet = (info: DatesSetArg) => {
     const formatter = new Intl.DateTimeFormat('ar', { month: 'long', year: 'numeric' })
     setVisibleRangeLabel(formatter.format(info.view.currentStart))
+
+    // Use the actual calendar month being viewed (not padded grid edges) so each
+    // navigation loads exactly one month of rows from D1.
+    const monthStart = info.view.currentStart
+    const monthEnd = info.view.currentEnd
+    const range = rangeFromDatesSet(monthStart, monthEnd)
+    const rangeKey = `${range.from}|${range.to}`
+
+    if (lastRangeKeyRef.current === rangeKey) {
+      return
+    }
+
+    lastRangeKeyRef.current = rangeKey
+    onVisibleRangeChange(range)
   }
 
   const handleDateClick = (dateKey: string) => {
@@ -98,9 +118,10 @@ export function AgendaCalendar({ events, unscheduledCount }: AgendaCalendarProps
           </span>
         </div>
 
-        {unscheduledCount > 0 ? (
-          <span className="text-xs text-slate-500">{unscheduledCount} مهمة بدون موعد نهائي</span>
-        ) : null}
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          {isRefreshing ? <span className="text-indigo-600">جارِ تحديث الشهر...</span> : null}
+          {unscheduledCount > 0 ? <span>{unscheduledCount} مهمة بدون موعد نهائي</span> : null}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

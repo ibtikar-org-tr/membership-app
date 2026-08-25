@@ -1,28 +1,4 @@
-import type {
-  VmsClubDashboard,
-  VmsEvent,
-  VmsEventRegistration,
-  VmsPosition,
-  VmsPositionApplication,
-  VmsProject,
-  VmsTask,
-} from '../../../types/vms'
-
-export type AgendaItemKind = 'task' | 'event' | 'volunteering' | 'club'
-
-export interface AgendaTimelineItem {
-  id: string
-  kind: AgendaItemKind
-  title: string
-  subtitle: string | null
-  date: string | null
-  href: string
-}
-
-export interface AgendaVolunteeringItem {
-  position: VmsPosition
-  application: VmsPositionApplication
-}
+export type AgendaItemKind = 'task' | 'event'
 
 export interface AgendaCalendarEvent {
   id: string
@@ -30,7 +6,7 @@ export interface AgendaCalendarEvent {
   start: string
   end?: string
   allDay: boolean
-  kind: 'task' | 'event' | 'volunteering'
+  kind: AgendaItemKind
   href: string
   subtitle: string | null
   backgroundColor: string
@@ -38,23 +14,35 @@ export interface AgendaCalendarEvent {
   textColor: string
 }
 
-export interface AgendaData {
-  myTasks: VmsTask[]
-  unscheduledTasks: VmsTask[]
-  upcomingEvents: VmsEvent[]
-  volunteering: AgendaVolunteeringItem[]
-  clubs: VmsClubDashboard[]
-  projectNames: Record<string, string>
-  calendarEvents: AgendaCalendarEvent[]
+export interface AgendaTaskItem {
+  id: string
+  name: string
+  status: string
+  priority: string
+  dueDate: string | null
+  projectId: string
+  projectName: string | null
 }
 
-const ACTIVE_TASK_STATUSES = new Set(['open', 'in_progress'])
-const ACTIVE_REGISTRATION_STATUSES = new Set(['registered'])
+export interface AgendaEventItem {
+  id: string
+  name: string
+  startTime: string | null
+  endTime: string | null
+  projectId: string | null
+  projectName: string | null
+}
+
+export interface AgendaData {
+  tasks: AgendaTaskItem[]
+  unscheduledTasks: AgendaTaskItem[]
+  events: AgendaEventItem[]
+  calendarEvents: AgendaCalendarEvent[]
+}
 
 const CALENDAR_COLORS = {
   task: { backgroundColor: '#ede9fe', borderColor: '#8b5cf6', textColor: '#5b21b6' },
   event: { backgroundColor: '#ecfeff', borderColor: '#06b6d4', textColor: '#0e7490' },
-  volunteering: { backgroundColor: '#ecfdf5', borderColor: '#10b981', textColor: '#047857' },
 } as const
 
 function parseTime(value: string | null | undefined): number {
@@ -66,7 +54,7 @@ function parseTime(value: string | null | undefined): number {
   return Number.isFinite(timestamp) ? timestamp : Number.POSITIVE_INFINITY
 }
 
-function toDateKey(value: string | Date): string {
+export function toDateKey(value: string | Date): string {
   const date = value instanceof Date ? value : new Date(value)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -74,78 +62,35 @@ function toDateKey(value: string | Date): string {
   return `${year}-${month}-${day}`
 }
 
-function isActiveTask(task: VmsTask, membershipNumber: string): boolean {
-  if (task.assignedTo !== membershipNumber) {
-    return false
-  }
-
-  // Completed / archived tasks must never appear on the agenda.
-  if (task.status === 'completed' || task.status === 'archived' || Boolean(task.completedAt)) {
-    return false
-  }
-
-  return ACTIVE_TASK_STATUSES.has(task.status)
-}
-
-function isUpcomingEvent(eventItem: VmsEvent, now: Date): boolean {
-  const nowMs = now.getTime()
-
-  if (eventItem.endTime) {
-    const endTime = Date.parse(eventItem.endTime)
-    if (Number.isFinite(endTime) && endTime <= nowMs) {
-      return false
-    }
-  }
-
-  if (eventItem.startTime) {
-    const startTime = Date.parse(eventItem.startTime)
-    if (Number.isFinite(startTime) && startTime <= nowMs) {
-      if (!eventItem.endTime) {
-        return false
-      }
-
-      const endTime = Date.parse(eventItem.endTime)
-      return Number.isFinite(endTime) && endTime > nowMs
-    }
-
-    return true
-  }
-
-  return false
-}
-
 export function buildAgendaCalendarEvents(input: {
-  myTasks: VmsTask[]
-  upcomingEvents: VmsEvent[]
-  projectNames: Record<string, string>
+  tasks: AgendaTaskItem[]
+  events: AgendaEventItem[]
 }): AgendaCalendarEvent[] {
-  const events: AgendaCalendarEvent[] = []
+  const calendarEvents: AgendaCalendarEvent[] = []
 
-  for (const task of input.myTasks) {
-    if (!task.dueDate || task.status === 'completed' || task.status === 'archived' || Boolean(task.completedAt)) {
+  for (const task of input.tasks) {
+    if (!task.dueDate || task.status === 'completed' || task.status === 'archived') {
       continue
     }
 
-    const colors = CALENDAR_COLORS.task
-    events.push({
+    calendarEvents.push({
       id: `task-${task.id}`,
       title: task.name,
       start: task.dueDate,
       allDay: true,
       kind: 'task',
       href: `/projects/${encodeURIComponent(task.projectId)}`,
-      subtitle: input.projectNames[task.projectId] ?? null,
-      ...colors,
+      subtitle: task.projectName,
+      ...CALENDAR_COLORS.task,
     })
   }
 
-  for (const eventItem of input.upcomingEvents) {
+  for (const eventItem of input.events) {
     if (!eventItem.startTime) {
       continue
     }
 
-    const colors = CALENDAR_COLORS.event
-    events.push({
+    calendarEvents.push({
       id: `event-${eventItem.id}`,
       title: eventItem.name,
       start: eventItem.startTime,
@@ -154,11 +99,27 @@ export function buildAgendaCalendarEvents(input: {
       kind: 'event',
       href: `/event/${encodeURIComponent(eventItem.id)}`,
       subtitle: eventItem.projectName,
-      ...colors,
+      ...CALENDAR_COLORS.event,
     })
   }
 
-  return events
+  return calendarEvents
+}
+
+export function buildAgendaData(input: {
+  tasks: AgendaTaskItem[]
+  events: AgendaEventItem[]
+  unscheduledTasks?: AgendaTaskItem[]
+}): AgendaData {
+  return {
+    tasks: input.tasks,
+    events: input.events,
+    unscheduledTasks: input.unscheduledTasks ?? [],
+    calendarEvents: buildAgendaCalendarEvents({
+      tasks: input.tasks,
+      events: input.events,
+    }),
+  }
 }
 
 export function groupCalendarEventsByDate(events: AgendaCalendarEvent[]): Map<string, AgendaCalendarEvent[]> {
@@ -201,71 +162,20 @@ export function groupCalendarEventsByDate(events: AgendaCalendarEvent[]): Map<st
   return grouped
 }
 
-export function buildAgendaData(input: {
-  membershipNumber: string
-  tasks: VmsTask[]
-  events: VmsEvent[]
-  registrations: VmsEventRegistration[]
-  positions: VmsPosition[]
-  projects: VmsProject[]
-  clubs: VmsClubDashboard[]
-}): AgendaData {
-  const now = new Date()
-  const projectNames = Object.fromEntries(input.projects.map((project) => [project.id, project.name]))
-
-  const activeRegistrationEventIds = new Set(
-    input.registrations
-      .filter((registration) => ACTIVE_REGISTRATION_STATUSES.has(registration.status))
-      .map((registration) => registration.eventId),
-  )
-
-  const upcomingEvents = input.events
-    .filter((eventItem) => activeRegistrationEventIds.has(eventItem.id) && isUpcomingEvent(eventItem, now))
-    .sort((left, right) => parseTime(left.startTime) - parseTime(right.startTime))
-
-  const myTasks = input.tasks
-    .filter((task) => isActiveTask(task, input.membershipNumber))
-    .sort((left, right) => {
-      const dueDiff = parseTime(left.dueDate) - parseTime(right.dueDate)
-      if (dueDiff !== 0) {
-        return dueDiff
-      }
-
-      const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 }
-      return (priorityOrder[left.priority] ?? 3) - (priorityOrder[right.priority] ?? 3)
-    })
-
-  const unscheduledTasks = myTasks.filter((task) => !task.dueDate)
-
-  const volunteering = input.positions.flatMap((position) => {
-    const application = position.applications.find(
-      (entry) => entry.membershipNumber === input.membershipNumber && entry.status === 'pending',
-    )
-
-    if (!application) {
-      return []
-    }
-
-    return [{ position, application }]
-  })
-
-  const joinedClubs = input.clubs.filter((club) => club.isJoined)
-
-  const calendarEvents = buildAgendaCalendarEvents({
-    myTasks,
-    upcomingEvents,
-    projectNames,
-  })
-
+/** Calendar-month bounds as ISO date strings: [from, to) */
+export function getMonthRange(anchor: Date = new Date()): { from: string; to: string } {
+  const fromDate = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
+  const toDate = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1)
   return {
-    myTasks,
-    unscheduledTasks,
-    upcomingEvents,
-    volunteering,
-    clubs: joinedClubs,
-    projectNames,
-    calendarEvents,
+    from: toDateKey(fromDate),
+    to: toDateKey(toDate),
   }
 }
 
-export { toDateKey }
+/** Prefer FullCalendar visible range, but clamp to one month when possible. */
+export function rangeFromDatesSet(start: Date, end: Date): { from: string; to: string } {
+  return {
+    from: toDateKey(start),
+    to: toDateKey(end),
+  }
+}
