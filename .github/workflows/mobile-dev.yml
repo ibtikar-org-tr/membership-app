@@ -16,9 +16,20 @@ jobs:
     defaults:
       run:
         working-directory: ./mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Require EXPO_TOKEN
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "Missing secret EXPO_TOKEN."
+            echo "Add it under Settings → Environments → dev → Environment secrets"
+            echo "(or repository secrets), from https://expo.dev/settings/access-tokens"
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
