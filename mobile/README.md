@@ -48,7 +48,7 @@ Dev branch builds an internal APK via [`.github/workflows/mobile-dev.yml`](../.g
 
 2. In GitHub → **Settings → Secrets and variables → Actions** (environment **dev**):
    - Secret: `EXPO_TOKEN` — Expo access token from https://expo.dev/settings/access-tokens
-   - Variable: `EXPO_PUBLIC_API_BASE` — deployed API root including `/api`
+   - Variable: `VITE_MEMBER_MS` — same as frontend (e.g. `https://ibtikar.ctf.web.tr/ms/membership-app`); the workflow appends `/api` for the mobile client
 
 ### Trigger
 

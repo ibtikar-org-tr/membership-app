@@ -48,17 +48,18 @@ jobs:
 
       - name: Inject API base into EAS preview profile
         env:
-          EXPO_PUBLIC_API_BASE: ${{ vars.EXPO_PUBLIC_API_BASE }}
+          VITE_MEMBER_MS: ${{ vars.VITE_MEMBER_MS }}
         run: |
-          if [ -z "$EXPO_PUBLIC_API_BASE" ]; then
-            echo "Missing GitHub Actions variable EXPO_PUBLIC_API_BASE (dev environment)."
-            echo "Set it to your deployed API root including /api, e.g. https://host/ms/membership-app/api"
+          if [ -z "$VITE_MEMBER_MS" ]; then
+            echo "Missing GitHub Actions variable VITE_MEMBER_MS (dev environment)."
             exit 1
           fi
-          jq --arg api "$EXPO_PUBLIC_API_BASE" \
+          API_BASE="${VITE_MEMBER_MS%/}/api"
+          jq --arg api "$API_BASE" \
             '.build.preview.env.EXPO_PUBLIC_API_BASE = $api' \
             eas.json > eas.json.tmp
           mv eas.json.tmp eas.json
+          echo "EXPO_PUBLIC_API_BASE=$API_BASE"
 
       - name: Build Android APK on EAS
         run: eas build --platform android --profile preview --non-interactive --no-wait
