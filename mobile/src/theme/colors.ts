@@ -11,3 +11,16 @@ export const colors = {
   danger: '#b91c1c',
   dangerBg: '#fef2f2',
 }
+
+/** Telegram Liquid Glass tab bar (Android 12.4+ style) */
+export const telegram = {
+  tabActive: '#3390EC',
+  tabInactive: '#8E8E93',
+  tabBarBackground: 'rgba(255, 255, 255, 0.78)',
+  tabBarBorder: 'rgba(0, 0, 0, 0.06)',
+  tabBarBlurTint: 'light' as const,
+  tabBarBlurIntensity: 92,
+  tabIconSize: 26,
+  tabLabelSize: 10,
+  tabBarContentHeight: 52,
+}
