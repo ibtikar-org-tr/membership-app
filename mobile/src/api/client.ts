@@ -135,4 +135,21 @@ export async function apiPostJson<TResponse, TPayload>(
   return (await response.json()) as TResponse
 }
 
+export async function apiPutJson<TResponse, TPayload>(
+  path: string,
+  payload: TPayload,
+): Promise<TResponse> {
+  const response = await apiFetch(path, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const { message } = await parseErrorMessage(response, `Request failed (${response.status})`)
+    throw new Error(message)
+  }
+
+  return (await response.json()) as TResponse
+}
+
 export { parseErrorMessage }

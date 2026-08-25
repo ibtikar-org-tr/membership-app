@@ -17,6 +17,23 @@ export function formatEventDate(value: string | null): string {
   })
 }
 
+export function formatEventDateShort(value: string | null): string {
+  if (!value) {
+    return 'غير محدد'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleDateString('ar', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 export function formatEventLocation(event: {
   city: string | null
   region: string | null
@@ -36,4 +53,22 @@ export function formatEventLocation(event: {
   }
 
   return 'الموقع غير محدد'
+}
+
+export function isEventUpcomingOrOngoing(event: {
+  startTime: string | null
+  endTime: string | null
+}): boolean {
+  const now = Date.now()
+  const end = event.endTime ? new Date(event.endTime).getTime() : NaN
+  if (!Number.isNaN(end)) {
+    return end >= now
+  }
+
+  const start = event.startTime ? new Date(event.startTime).getTime() : NaN
+  if (!Number.isNaN(start)) {
+    return start >= now
+  }
+
+  return true
 }

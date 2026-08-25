@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -8,20 +8,28 @@ import {
   Text,
   View,
 } from 'react-native'
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { fetchEvents } from '@/src/api/events'
+import { fetchDirectProjects } from '@/src/api/projects'
 import { fetchStats } from '@/src/api/stats'
 import { useAuth } from '@/src/auth/AuthContext'
+import { ErrorBanner, SectionTitle } from '@/src/components/ui'
 import { colors } from '@/src/theme/colors'
 import type { MemberStats } from '@/src/types/stats'
 
 export default function HomeScreen() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
+  const router = useRouter()
   const [stats, setStats] = useState<MemberStats | null>(null)
+  const [projectsCount, setProjectsCount] = useState(0)
   const [eventsCount, setEventsCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const displayName = useMemo(() => {
+    return user?.email ?? user?.membershipNumber ?? 'عضو'
+  }, [user])
 
   const load = useCallback(async (refreshing = false) => {
     if (refreshing) {
@@ -32,9 +40,14 @@ export default function HomeScreen() {
     setError(null)
 
     try {
-      const [statsPayload, eventsPayload] = await Promise.all([fetchStats(), fetchEvents()])
+      const [statsPayload, eventsPayload, projectsPayload] = await Promise.all([
+        fetchStats(),
+        fetchEvents(),
+        fetchDirectProjects(),
+      ])
       setStats(statsPayload)
-      setEventsCount(eventsPayload.events.length)
+      setEventsCount(eventsPayload.events.filter((event) => event.status === 'public').length)
+      setProjectsCount(projectsPayload.projects.length)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'تعذر تحميل البيانات.')
     } finally {
@@ -59,12 +72,14 @@ export default function HomeScreen() {
       value: (stats?.overview.telegramActive ?? 0).toLocaleString('en-US'),
     },
     {
-      label: 'الفعاليات',
-      value: eventsCount.toLocaleString('en-US'),
+      label: 'مشاريعي',
+      value: projectsCount.toLocaleString('en-US'),
+      onPress: () => router.push('/projects'),
     },
     {
-      label: 'الدول',
-      value: (stats?.overview.countriesCount ?? 0).toLocaleString('en-US'),
+      label: 'الفعاليات',
+      value: eventsCount.toLocaleString('en-US'),
+      onPress: () => router.push('/events'),
     },
   ]
 
@@ -76,27 +91,26 @@ export default function HomeScreen() {
     >
       <View style={styles.headerCard}>
         <Text style={styles.greeting}>مرحباً</Text>
-        <Text style={styles.email}>{user?.email}</Text>
+        <Text style={styles.email}>{displayName}</Text>
         <Text style={styles.membership}>رقم العضوية: {user?.membershipNumber}</Text>
-        <Pressable onPress={() => void signOut()} style={styles.logout}>
-          <Text style={styles.logoutText}>تسجيل الخروج</Text>
-        </Pressable>
       </View>
 
-      <Text style={styles.sectionTitle}>ملخص سريع</Text>
+      <SectionTitle title="ملخص سريع" subtitle="بيانات مباشرة من الواجهة الخلفية." />
 
-      {isLoading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
-      ) : null}
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {isLoading ? <ActivityIndicator color={colors.primary} style={{ marginTop: 16 }} /> : null}
+      {error ? <ErrorBanner message={error} /> : null}
 
       <View style={styles.grid}>
         {cards.map((card) => (
-          <View key={card.label} style={styles.card}>
+          <Pressable
+            key={card.label}
+            style={styles.card}
+            onPress={card.onPress}
+            disabled={!card.onPress}
+          >
             <Text style={styles.cardLabel}>{card.label}</Text>
             <Text style={styles.cardValue}>{card.value}</Text>
-          </View>
+          </Pressable>
         ))}
       </View>
     </ScrollView>
@@ -136,26 +150,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'right',
   },
-  logout: {
-    alignSelf: 'flex-start',
-    marginTop: 10,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  logoutText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  sectionTitle: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'right',
-  },
   grid: {
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
@@ -181,13 +175,5 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     textAlign: 'right',
-  },
-  error: {
-    color: colors.danger,
-    backgroundColor: colors.dangerBg,
-    borderRadius: 12,
-    padding: 12,
-    textAlign: 'right',
-    overflow: 'hidden',
   },
 })
