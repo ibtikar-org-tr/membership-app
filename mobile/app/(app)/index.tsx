@@ -12,6 +12,7 @@ import { useFocusEffect, useRouter } from 'expo-router'
 import { fetchEvents } from '@/src/api/events'
 import { fetchDirectProjects } from '@/src/api/projects'
 import { fetchStats } from '@/src/api/stats'
+import { fetchTasks } from '@/src/api/tasks'
 import { useAuth } from '@/src/auth/AuthContext'
 import { ErrorBanner, SectionTitle } from '@/src/components/ui'
 import { colors } from '@/src/theme/colors'
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<MemberStats | null>(null)
   const [projectsCount, setProjectsCount] = useState(0)
   const [eventsCount, setEventsCount] = useState(0)
+  const [openTasksCount, setOpenTasksCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,14 +42,16 @@ export default function HomeScreen() {
     setError(null)
 
     try {
-      const [statsPayload, eventsPayload, projectsPayload] = await Promise.all([
+      const [statsPayload, eventsPayload, projectsPayload, tasksPayload] = await Promise.all([
         fetchStats(),
         fetchEvents(),
         fetchDirectProjects(),
+        fetchTasks({ statuses: ['open', 'in_progress'] }),
       ])
       setStats(statsPayload)
       setEventsCount(eventsPayload.events.filter((event) => event.status === 'public').length)
       setProjectsCount(projectsPayload.projects.length)
+      setOpenTasksCount(tasksPayload.tasks.length)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'تعذر تحميل البيانات.')
     } finally {
@@ -81,7 +85,18 @@ export default function HomeScreen() {
       value: eventsCount.toLocaleString('en-US'),
       onPress: () => router.push('/events'),
     },
+    {
+      label: 'مهامي المفتوحة',
+      value: openTasksCount.toLocaleString('en-US'),
+      onPress: () => router.push('/agenda'),
+    },
+    {
+      label: 'الدول',
+      value: (stats?.overview.countriesCount ?? 0).toLocaleString('en-US'),
+    },
   ]
+
+  const gender = stats?.genderDistribution
 
   return (
     <ScrollView
@@ -93,6 +108,18 @@ export default function HomeScreen() {
         <Text style={styles.greeting}>مرحباً</Text>
         <Text style={styles.email}>{displayName}</Text>
         <Text style={styles.membership}>رقم العضوية: {user?.membershipNumber}</Text>
+      </View>
+
+      <View style={styles.quickLinks}>
+        <Pressable style={styles.quickLink} onPress={() => router.push('/agenda')}>
+          <Text style={styles.quickLinkText}>جدولي</Text>
+        </Pressable>
+        <Pressable style={styles.quickLink} onPress={() => router.push('/community/clubs')}>
+          <Text style={styles.quickLinkText}>الأندية</Text>
+        </Pressable>
+        <Pressable style={styles.quickLink} onPress={() => router.push('/community')}>
+          <Text style={styles.quickLinkText}>التطوع</Text>
+        </Pressable>
       </View>
 
       <SectionTitle title="ملخص سريع" subtitle="بيانات مباشرة من الواجهة الخلفية." />
@@ -113,6 +140,22 @@ export default function HomeScreen() {
           </Pressable>
         ))}
       </View>
+
+      {gender ? (
+        <View style={styles.genderCard}>
+          <Text style={styles.genderTitle}>توزيع الجنس</Text>
+          <View style={styles.genderRow}>
+            <View style={styles.genderItem}>
+              <Text style={styles.genderValue}>{gender.maleCount}</Text>
+              <Text style={styles.genderLabel}>ذكور ({gender.malePercentage}%)</Text>
+            </View>
+            <View style={styles.genderItem}>
+              <Text style={styles.genderValue}>{gender.femaleCount}</Text>
+              <Text style={styles.genderLabel}>إناث ({gender.femalePercentage}%)</Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </ScrollView>
   )
 }
@@ -150,6 +193,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'right',
   },
+  quickLinks: {
+    flexDirection: 'row-reverse',
+    gap: 8,
+  },
+  quickLink: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  quickLinkText: {
+    color: colors.primary,
+    fontWeight: '800',
+    fontSize: 13,
+  },
   grid: {
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
@@ -174,6 +235,42 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 22,
     fontWeight: '800',
+    textAlign: 'right',
+  },
+  genderCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    gap: 10,
+  },
+  genderTitle: {
+    color: colors.text,
+    fontWeight: '800',
+    fontSize: 15,
+    textAlign: 'right',
+  },
+  genderRow: {
+    flexDirection: 'row-reverse',
+    gap: 10,
+  },
+  genderItem: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+  },
+  genderValue: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '800',
+    textAlign: 'right',
+  },
+  genderLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
     textAlign: 'right',
   },
 })

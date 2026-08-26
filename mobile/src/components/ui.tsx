@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, TextInput, View } from 'react-native'
 import { colors } from '@/src/theme/colors'
 
 export function ErrorBanner({ message }: { message: string }) {
@@ -28,6 +28,47 @@ export function StatusPill({
   return (
     <View style={[styles.pill, toneStyles[tone]]}>
       <Text style={[styles.pillText, toneTextStyles[tone]]}>{label}</Text>
+    </View>
+  )
+}
+
+export function ProgressBar({ value, label }: { value: number; label?: string }) {
+  const clamped = Math.max(0, Math.min(100, value))
+  return (
+    <View style={styles.progressWrap}>
+      {label ? (
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressLabel}>{label}</Text>
+          <Text style={styles.progressValue}>{clamped}%</Text>
+        </View>
+      ) : null}
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${clamped}%` }]} />
+      </View>
+    </View>
+  )
+}
+
+export function SearchField({
+  value,
+  onChangeText,
+  placeholder,
+}: {
+  value: string
+  onChangeText: (value: string) => void
+  placeholder: string
+}) {
+  return (
+    <View style={styles.searchWrap}>
+      <Text style={styles.searchIcon}>⌕</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        style={styles.searchInput}
+        textAlign="right"
+      />
     </View>
   )
 }
@@ -89,5 +130,54 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  progressWrap: { gap: 6 },
+  progressHeader: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  progressValue: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#e2e8f0',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+  },
+  searchWrap: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchIcon: {
+    color: colors.textMuted,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    padding: 0,
   },
 })

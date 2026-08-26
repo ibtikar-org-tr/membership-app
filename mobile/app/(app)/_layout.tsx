@@ -25,6 +25,14 @@ export default function AppTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="agenda"
+        options={{
+          title: 'جدولي',
+          headerShown: false,
+          tabBarLabel: 'جدولي',
+        }}
+      />
+      <Tabs.Screen
         name="projects"
         options={{
           title: 'المشاريع',

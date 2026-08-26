@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router'
 import { colors } from '@/src/theme/colors'
 
-export default function CommunityLayout() {
+export default function AgendaLayout() {
   return (
     <Stack
       screenOptions={{
@@ -12,8 +12,7 @@ export default function CommunityLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'المجتمع' }} />
-      <Stack.Screen name="clubs" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ title: 'جدولي' }} />
     </Stack>
   )
 }

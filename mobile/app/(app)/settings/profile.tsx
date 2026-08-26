@@ -11,9 +11,10 @@ import {
 } from 'react-native'
 import { fetchProfile, updateProfile } from '@/src/api/profile'
 import { useAuth } from '@/src/auth/AuthContext'
-import { ErrorBanner, SectionTitle } from '@/src/components/ui'
+import { ErrorBanner, ProgressBar, SectionTitle } from '@/src/components/ui'
 import { colors } from '@/src/theme/colors'
 import type { MemberProfile } from '@/src/types/profile'
+import { calculateProfileCompletion } from '@/src/utils/profile'
 
 type EditableField =
   | 'enName'
@@ -126,6 +127,8 @@ export default function ProfileScreen() {
     ]
   }, [profile])
 
+  const profileCompletion = useMemo(() => calculateProfileCompletion(profile), [profile])
+
   const handleSave = async () => {
     if (!user?.membershipNumber || !draft) return
 
@@ -176,6 +179,12 @@ export default function ProfileScreen() {
 
       {profile && draft ? (
         <>
+          {!isEditing ? (
+            <View style={styles.completionCard}>
+              <ProgressBar value={profileCompletion} label="إكمال الملف الشخصي" />
+            </View>
+          ) : null}
+
           <View style={styles.actions}>
             {isEditing ? (
               <>
@@ -246,6 +255,13 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   container: { padding: 16, gap: 12, paddingBottom: 40 },
+  completionCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+  },
   actions: {
     flexDirection: 'row-reverse',
     gap: 8,

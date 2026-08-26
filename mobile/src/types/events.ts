@@ -22,3 +22,29 @@ export interface VmsEvent {
   displayAttendeeNumbers: boolean
   cancellationDeadlineHours: number
 }
+
+export interface VmsEventTicket {
+  id: string
+  createdAt: string
+  updatedAt: string
+  eventId: string
+  name: string
+  description: string | null
+  pointPrice: number
+  currencyPrice: string | null
+  quantity: number
+  activeRegistrationCount?: number
+}
+
+export interface VmsEventRegistration {
+  id: string
+  createdAt: string
+  updatedAt: string
+  eventId: string
+  membershipNumber: string
+  displayName?: string
+  ticketId: string
+  status: 'registered' | 'attended' | 'cancelled' | 'no_show' | string
+  paymentApprovedBy: string | null
+  attendanceApprovedBy: string | null
+}

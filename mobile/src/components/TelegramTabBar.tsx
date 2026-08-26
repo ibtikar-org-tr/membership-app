@@ -10,14 +10,16 @@ type IconName = ComponentProps<typeof Ionicons>['name']
 
 const TAB_ICONS: Record<string, { active: IconName; inactive: IconName }> = {
   index: { active: 'home', inactive: 'home-outline' },
+  agenda: { active: 'calendar', inactive: 'calendar-outline' },
   projects: { active: 'folder', inactive: 'folder-outline' },
-  events: { active: 'calendar', inactive: 'calendar-outline' },
+  events: { active: 'ticket', inactive: 'ticket-outline' },
   community: { active: 'people', inactive: 'people-outline' },
   settings: { active: 'settings', inactive: 'settings-outline' },
 }
 
 function getTabKey(routeName: string): string {
   if (routeName === 'index') return 'index'
+  if (routeName.startsWith('agenda')) return 'agenda'
   if (routeName.startsWith('projects')) return 'projects'
   if (routeName.startsWith('events')) return 'events'
   if (routeName.startsWith('community')) return 'community'
