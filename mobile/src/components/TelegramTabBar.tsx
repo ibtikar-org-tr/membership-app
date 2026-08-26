@@ -81,16 +81,25 @@ export function TelegramTabBar({ state, descriptors, navigation }: BottomTabBarP
             }
 
             return (
-              <Pressable
-                key={route.key}
-                accessibilityRole="button"
-                accessibilityState={isFocused ? { selected: true } : {}}
-                accessibilityLabel={options.tabBarAccessibilityLabel}
-                onPress={onPress}
-                onLongPress={onLongPress}
-                style={styles.tab}
-              >
-                <View style={[styles.tabInner, isFocused && styles.tabInnerActive]}>
+              <View key={route.key} style={styles.tab}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={isFocused ? { selected: true } : {}}
+                  accessibilityLabel={options.tabBarAccessibilityLabel}
+                  onPress={onPress}
+                  onLongPress={onLongPress}
+                  android_ripple={{
+                    color: isFocused
+                      ? 'rgba(51, 144, 236, 0.14)'
+                      : 'rgba(0, 0, 0, 0.06)',
+                    borderless: false,
+                  }}
+                  style={({ pressed }) => [
+                    styles.tabInner,
+                    isFocused && styles.tabInnerActive,
+                    pressed && styles.tabInnerPressed,
+                  ]}
+                >
                   <Ionicons name={iconName} size={telegram.tabIconSize} color={color} />
                   <Text
                     style={[
@@ -104,8 +113,8 @@ export function TelegramTabBar({ state, descriptors, navigation }: BottomTabBarP
                   >
                     {label}
                   </Text>
-                </View>
-              </Pressable>
+                </Pressable>
+              </View>
             )
           })}
         </View>
@@ -149,8 +158,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     alignItems: 'center',
     minHeight: telegram.tabBarContentHeight,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    gap: 2,
   },
   tab: {
     flex: 1,
@@ -160,14 +170,28 @@ const styles = StyleSheet.create({
   tabInner: {
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'stretch',
     gap: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: telegram.tabActivePillRadius,
-    minWidth: 52,
+    paddingHorizontal: 6,
+    paddingVertical: 7,
+    borderRadius: 999,
+    overflow: 'hidden',
+    minHeight: 46,
+    marginHorizontal: 1,
+    backgroundColor: 'transparent',
+    ...Platform.select({
+      ios: {
+        borderCurve: 'continuous',
+      },
+      default: {},
+    }),
   },
   tabInnerActive: {
     backgroundColor: telegram.tabActivePill,
+    paddingHorizontal: 10,
+  },
+  tabInnerPressed: {
+    opacity: 0.88,
   },
   label: {
     fontSize: telegram.tabLabelSize,

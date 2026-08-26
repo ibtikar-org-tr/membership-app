@@ -28,6 +28,5 @@ export const telegram = {
   tabLabelSize: 10,
   tabBarContentHeight: 58,
   tabBarBottomGap: 10,
-  tabActivePillRadius: 22,
   tabBarScenePadding: 88,
 }
