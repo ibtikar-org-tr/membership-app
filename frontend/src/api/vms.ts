@@ -193,8 +193,63 @@ export function updateProject(
   )
 }
 
-export function fetchTasks(membershipNumber: string) {
-  return fetchJson<{ tasks: VmsTask[] }>(`/tasks`)
+export function fetchTasks(
+  membershipNumber: string,
+  options?: {
+    statuses?: Array<'open' | 'in_progress' | 'completed' | 'archived' | string>
+  },
+) {
+  const params = new URLSearchParams()
+  if (options?.statuses && options.statuses.length > 0) {
+    params.set('status', options.statuses.join(','))
+  }
+  const query = params.toString() ? `?${params.toString()}` : ''
+  return fetchJson<{ tasks: VmsTask[] }>(`/tasks${query}`)
+}
+
+export function fetchAgenda(options: {
+  from: string
+  to: string
+  includeUnscheduled?: boolean
+}) {
+  const params = new URLSearchParams({
+    from: options.from,
+    to: options.to,
+  })
+  if (options.includeUnscheduled) {
+    params.set('includeUnscheduled', '1')
+  }
+
+  return fetchJson<{
+    from: string
+    to: string
+    tasks: Array<{
+      id: string
+      name: string
+      status: string
+      priority: string
+      dueDate: string | null
+      projectId: string
+      projectName: string | null
+    }>
+    events: Array<{
+      id: string
+      name: string
+      startTime: string | null
+      endTime: string | null
+      projectId: string | null
+      projectName: string | null
+    }>
+    unscheduledTasks: Array<{
+      id: string
+      name: string
+      status: string
+      priority: string
+      dueDate: string | null
+      projectId: string
+      projectName: string | null
+    }>
+  }>(`/agenda?${params.toString()}`)
 }
 
 export function createTask(payload: {

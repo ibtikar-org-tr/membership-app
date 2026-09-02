@@ -17,6 +17,7 @@ import { vmsProjectMembersRoute } from './routes/vms-project-members.route'
 import { vmsProjectsRoute } from './routes/vms-projects.route'
 import { vmsPositionsRoute } from './routes/vms-positions.route'
 import { vmsSkillsRoute } from './routes/vms-skills.route'
+import { vmsAgendaRoute } from './routes/vms-agenda.route'
 import { vmsTasksRoute } from './routes/vms-tasks.route'
 import { handleProjectNoteWebSocket, vmsProjectNotesRoute } from './routes/vms-project-notes.route'
 import { uploadClubBanner, uploadEventBanner, uploadImages, serveImage } from './routes/images.route'
@@ -79,6 +80,7 @@ securedApi.route('/', telegramNotificationRoute)
 securedApi.route('/', vmsProjectsRoute)
 securedApi.route('/', vmsPositionsRoute)
 securedApi.route('/', vmsTasksRoute)
+securedApi.route('/', vmsAgendaRoute)
 securedApi.route('/', vmsProjectMembersRoute)
 securedApi.route('/', vmsEventsRoute)
 securedApi.route('/', vmsClubsRoute)

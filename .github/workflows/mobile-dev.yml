@@ -1,0 +1,77 @@
+name: (dev) [mobile] EAS Android APK
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-dev.yml'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    environment: dev
+    defaults:
+      run:
+        working-directory: ./mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Require EXPO_TOKEN
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "Missing secret EXPO_TOKEN."
+            echo "Add it under Settings → Environments → dev → Environment secrets"
+            echo "(or repository secrets), from https://expo.dev/settings/access-tokens"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          packager: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Require Expo project id
+        run: |
+          PROJECT_ID="$(jq -r '.expo.extra.eas.projectId // empty' app.json)"
+          if [ -z "$PROJECT_ID" ]; then
+            echo "Missing expo.extra.eas.projectId in mobile/app.json."
+            echo "Run locally: cd mobile && npx eas-cli login && npx eas-cli init"
+            echo "Commit the generated projectId, then re-run this workflow."
+            exit 1
+          fi
+
+      - name: Inject API base into EAS preview profile
+        env:
+          VITE_MEMBER_MS: ${{ vars.VITE_MEMBER_MS }}
+        run: |
+          if [ -z "$VITE_MEMBER_MS" ]; then
+            echo "Missing GitHub Actions variable VITE_MEMBER_MS (dev environment)."
+            exit 1
+          fi
+          API_BASE="${VITE_MEMBER_MS%/}/api"
+          jq --arg api "$API_BASE" \
+            '.build.preview.env.EXPO_PUBLIC_API_BASE = $api' \
+            eas.json > eas.json.tmp
+          mv eas.json.tmp eas.json
+          echo "EXPO_PUBLIC_API_BASE=$API_BASE"
+
+      - name: Build Android APK on EAS
+        run: eas build --platform android --profile preview --non-interactive --no-wait

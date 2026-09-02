@@ -8,6 +8,11 @@ export const dashboardRouteChildren: RouteObject[] = [
     lazy: lazyRoute(() => import('../pages/dashboard/DashboardMainPage'), 'DashboardMainPage'),
   },
   {
+    path: 'agenda',
+    hydrateFallbackElement: <div />,
+    lazy: lazyRoute(() => import('../pages/dashboard/DashboardAgendaPage'), 'DashboardAgendaPage'),
+  },
+  {
     path: 'profile',
     hydrateFallbackElement: <div />,
     lazy: lazyRoute(() => import('../pages/dashboard/DashboardProfilePage'), 'DashboardProfilePage'),
@@ -101,10 +106,5 @@ export const dashboardRouteChildren: RouteObject[] = [
     path: 'positions/:positionID/edit',
     hydrateFallbackElement: <div />,
     lazy: lazyRoute(() => import('../pages/dashboard/DashboardPositionEditPage'), 'DashboardPositionEditPage'),
-  },
-  {
-    path: 'settings',
-    hydrateFallbackElement: <div />,
-    lazy: lazyRoute(() => import('../pages/dashboard/DashboardSettingsPage'), 'DashboardSettingsPage'),
   },
 ] 

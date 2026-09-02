@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { fetchEventRegistrantContact, fetchProjectMemberContact } from '../../../api/vms'
 import type { VmsProjectMemberContact } from '../../../types/vms'
+import { DashboardModalOverlay } from '../DashboardModalOverlay'
 
 function displayValue(value: string | null | undefined) {
   const trimmed = value?.trim()
@@ -74,15 +75,12 @@ export function MemberInfoModal({ projectId, eventId, membershipNumber, displayN
   const telegramUsername = contact?.telegramUsername?.trim() ?? ''
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-      onClick={onClose}
-    >
+    <DashboardModalOverlay onClose={onClose} className="z-50 bg-slate-900/40">
       <article
-        className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6"
+        className="flex min-h-0 max-h-[min(92dvh,640px)] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <p className="text-base font-semibold text-slate-950">معلومات العضو</p>
             <p className="mt-0.5 truncate text-sm text-slate-500">{displayName}</p>
@@ -96,7 +94,7 @@ export function MemberInfoModal({ projectId, eventId, membershipNumber, displayN
           </button>
         </div>
 
-        <div className="mt-5 space-y-3 text-sm">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 py-4 text-sm sm:px-6 sm:py-5">
           {isLoading ? (
             <p className="text-slate-500">جار تحميل البيانات...</p>
           ) : hasError ? (
@@ -141,7 +139,7 @@ export function MemberInfoModal({ projectId, eventId, membershipNumber, displayN
           ) : null}
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }
 

@@ -107,11 +107,17 @@ async function enrichTasksWithSubtaskProgress(db: AppBindings['VMS_DB'], tasks: 
 vmsTasksRoute.get('/tasks', async (c) => {
   try {
     const membershipNumber = getActorMembershipNumber(c)
-
+    const statusesParam = c.req.query('status')
+    const statuses = statusesParam
+      ? statusesParam
+          .split(',')
+          .map((status) => status.trim())
+          .filter(Boolean)
+      : undefined
 
     const directProjects = await listDirectProjectsForMember(c.env.VMS_DB, membershipNumber)
     const directProjectIds = new Set(directProjects.map((project) => project.id))
-    const tasks = await listTasks(c.env.VMS_DB)
+    const tasks = await listTasks(c.env.VMS_DB, statuses ? { statuses } : undefined)
     const visibleTasks = tasks.filter((task) => directProjectIds.has(task.projectId))
     const enrichedTasks = await enrichTasksWithSubtaskProgress(c.env.VMS_DB, visibleTasks)
     return c.json({ tasks: enrichedTasks })

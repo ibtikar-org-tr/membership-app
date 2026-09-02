@@ -85,6 +85,8 @@ export interface AppBindings {
   SMTP_PASS: string
   TELEGRAM_MS: string
   FRONTEND_BASE_URL: string
+  /** Comma-separated list of allowed browser origins for CORS. */
+  CORS_ALLOW_ORIGINS?: string
   INTERNAL_SECRET: string
   JWT_SECRET: string
   CRON_TIMEZONE?: string
