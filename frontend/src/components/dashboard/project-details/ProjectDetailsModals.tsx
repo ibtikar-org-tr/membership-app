@@ -47,16 +47,23 @@ export function ProjectSettingsModal({
   const [skillsValue, setSkillsValue] = useState(() => skillsToCsv(project.skills))
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
-      <article className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between">
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <article
+        className="flex min-h-0 max-h-[min(92dvh,760px)] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
           <div>
             <p className="text-base font-semibold text-slate-950">إعدادات المشروع</p>
             <p className="mt-1 text-xs text-slate-500">آخر تحديث: {formatDateEnCA(project.updatedAt)}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
         </div>
-        <form onSubmit={onSubmit} className="mt-4 space-y-3">
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6 sm:py-5">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">اسم المشروع</label>
             <input
@@ -132,15 +139,18 @@ export function ProjectSettingsModal({
               )}
             </div>
           ) : null}
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
-          </button>
+          </div>
+          <div className="shrink-0 space-y-3 border-t border-slate-200 bg-slate-50/80 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+            {saveError ? <p className="text-sm text-red-600">{saveError}</p> : null}
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {isSaving ? 'جار الحفظ...' : 'حفظ التعديلات'}
+            </button>
+          </div>
         </form>
-        {saveError ? <p className="mt-3 text-sm text-red-600">{saveError}</p> : null}
       </article>
     </div>
   )
@@ -158,9 +168,15 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
   const [skillsValue, setSkillsValue] = useState('')
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-[2px] sm:p-4" onClick={onClose}>
-      <article className="w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="border-b border-slate-200 bg-linear-to-l from-cyan-50 via-white to-emerald-50 px-5 py-4 sm:px-6">
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <article
+        className="flex min-h-0 max-h-[min(92dvh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="shrink-0 border-b border-slate-200 bg-linear-to-l from-cyan-50 via-white to-emerald-50 px-5 py-4 sm:px-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-lg font-bold text-slate-950">إضافة مهمة جديدة</p>
@@ -176,7 +192,8 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
           </div>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 p-5 sm:p-6">
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-5 sm:p-6">
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
             <p className="mb-3 text-xs font-semibold tracking-wide text-slate-500">البيانات الأساسية</p>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -270,27 +287,29 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
             onChange={setSkillsValue}
             placeholder="ابحث عن مهارة أو أضف مهارة جديدة"
           />
-
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
-            >
-              إلغاء
-            </button>
-            <button
-              type="submit"
-              disabled={isCreatingTask}
-              className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-            >
-              {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
-            </button>
           </div>
 
-          {taskError ? (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{taskError}</p>
-          ) : null}
+          <div className="shrink-0 space-y-3 border-t border-slate-200 bg-slate-50/80 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
+            {taskError ? (
+              <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{taskError}</p>
+            ) : null}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                disabled={isCreatingTask}
+                className="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {isCreatingTask ? 'جار الإضافة...' : 'إضافة المهمة'}
+              </button>
+            </div>
+          </div>
         </form>
       </article>
     </div>
@@ -459,7 +478,7 @@ export function MembersModal({
       onClick={onClose}
     >
       <article
-        className="flex max-h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl"
+        className="flex min-h-0 max-h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="border-b border-slate-200 bg-linear-to-l from-cyan-50 via-white to-emerald-50 px-4 py-4 sm:px-6">
@@ -496,7 +515,7 @@ export function MembersModal({
           ) : null}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
           {projectMembers.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
               <p className="text-sm font-medium text-slate-700">لا يوجد أعضاء بعد</p>
@@ -627,7 +646,7 @@ export function MembersModal({
           </ul>
         </div>
 
-        <div className="border-t border-slate-200 bg-slate-50/80 px-4 py-3 sm:px-6">
+        <div className="shrink-0 border-t border-slate-200 bg-slate-50/80 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
           {roleUpdateError ? (
             <p className="mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{roleUpdateError}</p>
           ) : null}
@@ -664,15 +683,22 @@ export function ProjectEventsModal({
   onCreateEvent,
 }: ProjectEventsModalProps) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
-      <article className="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between">
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <article
+        className="flex min-h-0 max-h-[min(92dvh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
           <p className="text-base font-semibold text-slate-950">فعاليات المشروع</p>
           <button type="button" onClick={onClose} className="rounded-lg border border-slate-200 px-3 py-1 text-xs text-slate-600">إغلاق</button>
         </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6 sm:py-5">
 
         {canCreateEvents ? (
-          <form onSubmit={onCreateEvent} className="mt-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
+          <form onSubmit={onCreateEvent} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-5">
             <input
               name="name"
               placeholder="اسم الفعالية"
@@ -713,7 +739,7 @@ export function ProjectEventsModal({
             />
           </form>
         ) : (
-          <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
             إنشاء الفعاليات متاح فقط لمالك المشروع ومديري المشروع.
           </p>
         )}
@@ -745,6 +771,7 @@ export function ProjectEventsModal({
                 </div>
               </article>
             ))}
+        </div>
         </div>
       </article>
     </div>

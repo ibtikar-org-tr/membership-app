@@ -145,7 +145,7 @@ export function AiAddTaskModal({
       onClick={onClose}
     >
       <article
-        className="flex max-h-[min(92dvh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl"
+        className="flex min-h-0 max-h-[min(92dvh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="shrink-0 border-b border-slate-200 bg-linear-to-l from-violet-50 via-white to-cyan-50 px-5 py-4 sm:px-6">
@@ -339,7 +339,7 @@ export function AiAddTaskModal({
           )}
         </div>
 
-        <div className="shrink-0 space-y-3 border-t border-slate-200 bg-slate-50/80 px-5 py-4 sm:px-6">
+        <div className="shrink-0 space-y-3 border-t border-slate-200 bg-slate-50/80 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
           {displayError ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{displayError}</p>
           ) : null}
