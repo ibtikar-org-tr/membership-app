@@ -25,6 +25,40 @@ free_port() {
   fi
 }
 
+kill_pid_tree() {
+  local pid="$1"
+  local children=""
+  if ! kill -0 "$pid" 2>/dev/null; then
+    return 0
+  fi
+  children="$(pgrep -P "$pid" 2>/dev/null || true)"
+  local child
+  for child in $children; do
+    kill_pid_tree "$child"
+  done
+  kill -9 "$pid" 2>/dev/null || true
+}
+
+stop_app() {
+  local name="$1"
+  local port="$2"
+  local pid_file="$LOG_DIR/$name.pid"
+
+  if [[ -f "$pid_file" ]]; then
+    local pid
+    pid="$(tr -d '[:space:]' <"$pid_file" || true)"
+    if [[ -n "${pid:-}" ]]; then
+      echo "[vms] stopping $name (pid $pid)"
+      kill_pid_tree "$pid"
+    fi
+    rm -f "$pid_file"
+  else
+    echo "[vms] no pid file for $name"
+  fi
+
+  free_port "$port"
+}
+
 launch_app() {
   local name="$1"
   local dir="$2"
@@ -49,10 +83,39 @@ launch_app() {
   fi
 }
 
-launch_app "vms-frontend" "frontend" "npm run dev" 5930
-launch_app "vms-backend" "backend" "npm run dev:local" 5931
+start_all() {
+  launch_app "vms-frontend" "frontend" "npm run dev" 5930
+  launch_app "vms-backend" "backend" "npm run dev:local" 5931
 
-echo "[vms] all apps launched in background"
-echo "[vms] frontend: http://localhost:5930"
-echo "[vms] backend:  http://localhost:5931"
-echo "[vms] log directory: $LOG_DIR"
+  echo "[vms] all apps launched in background"
+  echo "[vms] frontend: http://localhost:5930"
+  echo "[vms] backend:  http://localhost:5931"
+  echo "[vms] log directory: $LOG_DIR"
+}
+
+stop_all() {
+  stop_app "vms-frontend" 5930
+  stop_app "vms-backend" 5931
+  echo "[vms] all apps stopped"
+}
+
+usage() {
+  echo "usage: $0 [start|stop|kill]"
+}
+
+case "${1:-start}" in
+  start)
+    start_all
+    ;;
+  stop|kill)
+    stop_all
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    echo "[vms] unknown command: $1"
+    usage
+    exit 1
+    ;;
+esac
