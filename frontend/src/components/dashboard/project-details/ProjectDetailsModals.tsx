@@ -13,6 +13,7 @@ import {
   sortProjectMembers,
 } from './helpers'
 import { SkillsField } from '../../SkillsField'
+import { DashboardModalOverlay } from '../DashboardModalOverlay'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -47,10 +48,7 @@ export function ProjectSettingsModal({
   const [skillsValue, setSkillsValue] = useState(() => skillsToCsv(project.skills))
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
-      onClick={onClose}
-    >
+    <DashboardModalOverlay onClose={onClose} className="z-40 bg-slate-900/40">
       <article
         className="flex min-h-0 max-h-[min(92dvh,760px)] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
@@ -152,7 +150,7 @@ export function ProjectSettingsModal({
           </div>
         </form>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }
 
@@ -168,10 +166,7 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
   const [skillsValue, setSkillsValue] = useState('')
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
-      onClick={onClose}
-    >
+    <DashboardModalOverlay onClose={onClose} className="z-40 bg-slate-950/55 backdrop-blur-[2px]">
       <article
         className="flex min-h-0 max-h-[min(92dvh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
@@ -312,7 +307,7 @@ export function AddTaskModal({ isCreatingTask, taskError, memberOptions, onClose
           </div>
         </form>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }
 
@@ -332,7 +327,7 @@ export function LeaveProjectConfirmModal({
   onConfirm,
 }: LeaveProjectConfirmModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+    <DashboardModalOverlay onClose={onClose} layout="center" className="z-50 bg-slate-900/40">
       <article
         className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6"
         onClick={(event) => event.stopPropagation()}
@@ -364,7 +359,7 @@ export function LeaveProjectConfirmModal({
           </button>
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }
 
@@ -386,7 +381,7 @@ export function RemoveProjectMemberConfirmModal({
   onConfirm,
 }: RemoveProjectMemberConfirmModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+    <DashboardModalOverlay onClose={onClose} layout="center" className="z-50 bg-slate-900/40">
       <article
         className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6"
         onClick={(event) => event.stopPropagation()}
@@ -418,7 +413,7 @@ export function RemoveProjectMemberConfirmModal({
           </button>
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }
 
@@ -473,10 +468,7 @@ export function MembersModal({
   const managerCount = projectMembers.filter((member) => member.role === 'manager').length
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
-      onClick={onClose}
-    >
+    <DashboardModalOverlay onClose={onClose} className="z-40 bg-slate-950/55 backdrop-blur-[2px]">
       <article
         className="flex min-h-0 max-h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
@@ -657,7 +649,7 @@ export function MembersModal({
           </p>
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }
 
@@ -683,10 +675,7 @@ export function ProjectEventsModal({
   onCreateEvent,
 }: ProjectEventsModalProps) {
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
-      onClick={onClose}
-    >
+    <DashboardModalOverlay onClose={onClose} className="z-40 bg-slate-900/40">
       <article
         className="flex min-h-0 max-h-[min(92dvh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
@@ -774,6 +763,6 @@ export function ProjectEventsModal({
         </div>
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }

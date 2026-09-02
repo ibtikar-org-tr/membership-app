@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { SkillsField } from '../../SkillsField'
+import { DashboardModalOverlay } from '../DashboardModalOverlay'
 import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
 import { formatDueDate, priorityBadgeClass, statusBadgeClass, taskPriorityLabel, taskStatusLabel } from './helpers'
 import { TaskSubtasksChecklist } from './TaskSubtasksChecklist'
@@ -260,10 +261,7 @@ export function TaskDetailsModal({
     }`
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
-      onClick={onClose}
-    >
+    <DashboardModalOverlay onClose={onClose} className="z-40 bg-slate-900/40">
       <article
         className="flex min-h-0 max-h-[min(92dvh,52rem)] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
@@ -579,6 +577,6 @@ export function TaskDetailsModal({
           </section>
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }

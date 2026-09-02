@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { FiMic, FiPlus, FiSquare, FiTrash2, FiZap } from 'react-icons/fi'
 import type { VmsProjectMember } from '../../../types/vms'
 import { useSpeechToText } from '../../../hooks/useSpeechToText'
+import { DashboardModalOverlay } from '../DashboardModalOverlay'
 
 export interface AiGeneratedTaskDraft {
   name: string
@@ -140,10 +141,7 @@ export function AiAddTaskModal({
   const displayError = localError ?? createError ?? generateError ?? speechError
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
-      onClick={onClose}
-    >
+    <DashboardModalOverlay onClose={onClose} className="z-40 bg-slate-950/55 backdrop-blur-[2px]">
       <article
         className="flex min-h-0 max-h-[min(92dvh,760px)] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
@@ -399,6 +397,6 @@ export function AiAddTaskModal({
           )}
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }

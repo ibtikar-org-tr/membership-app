@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { fetchEventRegistrantContact, fetchProjectMemberContact } from '../../../api/vms'
 import type { VmsProjectMemberContact } from '../../../types/vms'
+import { DashboardModalOverlay } from '../DashboardModalOverlay'
 
 function displayValue(value: string | null | undefined) {
   const trimmed = value?.trim()
@@ -74,10 +75,7 @@ export function MemberInfoModal({ projectId, eventId, membershipNumber, displayN
   const telegramUsername = contact?.telegramUsername?.trim() ?? ''
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4"
-      onClick={onClose}
-    >
+    <DashboardModalOverlay onClose={onClose} className="z-50 bg-slate-900/40">
       <article
         className="flex min-h-0 max-h-[min(92dvh,640px)] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
@@ -141,7 +139,7 @@ export function MemberInfoModal({ projectId, eventId, membershipNumber, displayN
           ) : null}
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }
 
