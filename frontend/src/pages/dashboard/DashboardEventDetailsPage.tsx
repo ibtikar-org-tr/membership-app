@@ -1,4 +1,4 @@
-import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
@@ -64,9 +64,12 @@ function attendeeAvatarKeys(seed: string, count: number) {
   return Array.from({ length: count }, (_, index) => `${seed}:${index}`)
 }
 
+type GuestApplyPrompt = 'member' | 'join' | 'guest'
+
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const user = useMemo(() => getStoredUser(), [])
   const isStandaloneView = isStandalonePublicEventPath(location.pathname)
   const loginRedirect = `${location.pathname}${location.search}`
@@ -96,6 +99,7 @@ export function DashboardEventDetailsPage() {
   const [guestEmail, setGuestEmail] = useState('')
   const [guestPhone, setGuestPhone] = useState('')
   const [guestApplyComplete, setGuestApplyComplete] = useState(false)
+  const [guestApplyPrompt, setGuestApplyPrompt] = useState<GuestApplyPrompt>('member')
 
   function adjustTicketActiveCount(ticketId: string, delta: number) {
     setTickets((previous) =>
@@ -112,6 +116,11 @@ export function DashboardEventDetailsPage() {
 
   function scrollToTicketBuyingSection() {
     ticketBuyingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function selectTicketForApply(ticketId: string) {
+    setSelectedTicketId((current) => (current === ticketId ? null : ticketId))
+    setGuestApplyPrompt('member')
   }
 
   useEffect(() => {
@@ -811,16 +820,10 @@ export function DashboardEventDetailsPage() {
             ) : null}
             {!user && eventItem.allowGuestRegistration === true && tickets.length > 0 && !guestApplyComplete ? (
               <div className="mt-5 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-4 text-sm text-cyan-950">
-                <p className="font-semibold">يمكن للزوار التسجيل في هذه الفعالية دون حساب</p>
+                <p className="font-semibold">اختر تذكرة للمتابعة</p>
                 <p className="mt-2 leading-7">
-                  أدخل اسمك وبريدك ورقم هاتفك بعد اختيار التذكرة. إذا أنشأت حساباً لاحقاً بنفس البريد، سيُربط هذا التسجيل بعضويتك.
+                  نفضّل الانتساب إلى تجمّع إبتكار لإدارة تسجيلك والاستفادة من عضويتك. يمكنك التقديم كزائر إذا لم ترغب بذلك.
                 </p>
-                <Link
-                  to={`/login?redirect=${encodeURIComponent(loginRedirect)}`}
-                  className="mt-3 inline-flex font-semibold text-cyan-900 underline-offset-4 hover:underline"
-                >
-                  لديك حساب؟ سجّل الدخول
-                </Link>
               </div>
             ) : null}
             {((user && tickets.length > 0 && !hasUserRegistered) ||
@@ -835,7 +838,7 @@ export function DashboardEventDetailsPage() {
                     <button
                       key={ticket.id}
                       type="button"
-                      onClick={() => !isDisabled && setSelectedTicketId(isSelected ? null : ticket.id)}
+                      onClick={() => !isDisabled && (user ? setSelectedTicketId(isSelected ? null : ticket.id) : selectTicketForApply(ticket.id))}
                       disabled={isDisabled}
                       className={`group rounded-xl border-2 p-4 text-left shadow-sm transition-all duration-200 hover:scale-[1.01] hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
                         isSelected
@@ -890,8 +893,64 @@ export function DashboardEventDetailsPage() {
                   </button>
                 </form>
               ) : null}
-              {selectedTicketId && !user ? (
+              {selectedTicketId && !user && guestApplyPrompt === 'member' ? (
+                <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">هل أنت عضو في تجمّع إبتكار؟</p>
+                  <p className="text-xs leading-6 text-slate-600">
+                    إذا كان لديك حساب، سجّل الدخول لإكمال التقديم كعضو.
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/login?redirect=${encodeURIComponent(loginRedirect)}`)}
+                      className="rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800"
+                    >
+                      نعم، أنا عضو
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGuestApplyPrompt('join')}
+                      className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
+                    >
+                      لا، لست عضواً
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {selectedTicketId && !user && guestApplyPrompt === 'join' ? (
+                <div className="mt-4 space-y-3 rounded-xl border border-cyan-200 bg-cyan-50 p-4">
+                  <p className="text-sm font-semibold text-cyan-950">هل ترغب بالانتساب إلى تجمّع إبتكار؟</p>
+                  <p className="text-xs leading-6 text-cyan-900">
+                    الانتساب يتيح لك إدارة تسجيلك والنقاط ودعوات التلغرام، ويربط هذه الفعالية بحسابك لاحقاً.
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/registration?redirect=${encodeURIComponent(loginRedirect)}`)}
+                      className="rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800"
+                    >
+                      نعم، أريد الانتساب
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGuestApplyPrompt('guest')}
+                      className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
+                    >
+                      لا، سأقدّم كزائر
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGuestApplyPrompt('member')}
+                    className="text-xs font-semibold text-cyan-800 underline-offset-4 hover:underline"
+                  >
+                    رجوع
+                  </button>
+                </div>
+              ) : null}
+              {selectedTicketId && !user && guestApplyPrompt === 'guest' ? (
                 <form onSubmit={handleGuestApplyToEvent} className="mt-4 space-y-3">
+                  <p className="text-sm font-medium text-slate-800">تقديم الطلب كزائر</p>
                   <label className="block space-y-1">
                     <span className="text-xs font-medium text-slate-700">الاسم</span>
                     <input
@@ -931,13 +990,13 @@ export function DashboardEventDetailsPage() {
                   >
                     {isApplying ? 'جار الإرسال...' : 'تقديم الطلب'}
                   </button>
-                  <p className="text-xs leading-6 text-slate-500">
-                    يمكنك لاحقاً{' '}
-                    <Link to="/registration" className="font-semibold text-cyan-700 underline">
-                      إنشاء حساب
-                    </Link>{' '}
-                    بنفس البريد لربط هذا التسجيل بعضويتك.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setGuestApplyPrompt('join')}
+                    className="text-xs font-semibold text-cyan-800 underline-offset-4 hover:underline"
+                  >
+                    رجوع
+                  </button>
                 </form>
               ) : null}
             </div>

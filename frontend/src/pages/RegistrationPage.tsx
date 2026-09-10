@@ -1,5 +1,5 @@
 import { Suspense, lazy, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { FiBookOpen, FiFileText } from 'react-icons/fi'
 import { Seo } from '../components/Seo'
 import { buildWebPageJsonLd } from '../seo/json-ld'
@@ -7,6 +7,7 @@ import { useRegistrationForm } from '../hooks/useRegistrationForm'
 import { MissingRegistrationFieldsNotice } from '../components/registration/MissingRegistrationFieldsNotice'
 import { getMissingRequiredRegistrationFields } from '../utils/registrationValidation'
 import type { RegistrationFormData } from '../types/registration'
+import { getSafeRedirectPath } from '../utils/auth'
 
 const PersonalInfoSection = lazy(() =>
   import('../components/registration/sections/PersonalInfoSection').then((module) => ({ default: module.PersonalInfoSection })),
@@ -57,6 +58,8 @@ function RegistrationTechnicalSupportNotice({ className = 'mt-6' }: { className?
 }
 
 export function RegistrationPage() {
+  const [searchParams] = useSearchParams()
+  const returnPath = useMemo(() => getSafeRedirectPath(searchParams.get('redirect')), [searchParams])
   const {
     formData,
     isSubmitting,
@@ -135,10 +138,10 @@ export function RegistrationPage() {
               </a>
             </div>
             <Link
-              to="/"
+              to={returnPath ?? '/'}
               className="inline-flex w-auto self-end rounded-lg border border-white/50 px-3 py-1.5 text-xs font-medium transition hover:bg-white hover:text-slate-900 sm:self-auto sm:px-4 sm:py-2 sm:text-sm"
             >
-              ← العودة إلى الرئيسية
+              {returnPath ? '← العودة إلى الفعالية' : '← العودة إلى الرئيسية'}
             </Link>
           </div>
         </header>
@@ -159,6 +162,14 @@ export function RegistrationPage() {
             >
               تعبئة النموذج مرة أخرى
             </button>
+            {returnPath ? (
+              <Link
+                to={returnPath}
+                className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+              >
+                العودة إلى الفعالية
+              </Link>
+            ) : null}
             <RegistrationTechnicalSupportNotice />
           </section>
         ) : (

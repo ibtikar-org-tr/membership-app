@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { login } from '../../api/vms'
 import { setStoredSession } from '../../utils/auth'
 import { isTelegramActivationRequiredError } from '../../utils/login-errors'
@@ -12,6 +12,11 @@ interface LoginPanelProps {
 }
 
 export function LoginPanel({ onSuccess }: LoginPanelProps) {
+  const [searchParams] = useSearchParams()
+  const registrationRedirect = searchParams.get('redirect')
+  const registrationPath = registrationRedirect
+    ? `/registration?redirect=${encodeURIComponent(registrationRedirect)}`
+    : '/registration'
   const [error, setError] = useState<string | null>(null)
   const [telegramActivationRequired, setTelegramActivationRequired] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -69,7 +74,7 @@ export function LoginPanel({ onSuccess }: LoginPanelProps) {
             </p>
             <div className="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-cyan-50">
               لست عضواً في تجمّع إبتكار؟{' '}
-              <Link to="/registration" className="font-semibold text-amber-200 underline-offset-4 hover:underline">
+              <Link to={registrationPath} className="font-semibold text-amber-200 underline-offset-4 hover:underline">
                 قم بالانتساب للتجمّع الآن
               </Link>
             </div>
