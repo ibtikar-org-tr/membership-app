@@ -1,3 +1,15 @@
+export interface VmsTaskSubtask {
+  id: string
+  parentTaskId: string
+  name: string
+  status: 'open' | 'completed'
+  completedAt: string | null
+  completedBy: string | null
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface VmsTask {
   id: string
   createdAt: string
