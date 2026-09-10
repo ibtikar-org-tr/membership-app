@@ -29,6 +29,18 @@ export interface ResetPasswordResponse {
   message: string
 }
 
+export type ResetPasswordStatusResponse =
+  | {
+      valid: true
+      membershipNumber: string
+      email: string
+      exp: number
+    }
+  | {
+      valid: false
+      reason: 'missing' | 'invalid' | 'used' | 'expired'
+    }
+
 export interface ChangePasswordResponse {
   success: boolean
   message: string

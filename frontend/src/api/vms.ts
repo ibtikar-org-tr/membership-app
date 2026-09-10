@@ -18,7 +18,13 @@ import type {
   VmsTask,
   VmsTaskSubtask,
 } from '../types/vms'
-import type { ForgotPasswordResponse, LoginResponse, ResetPasswordResponse, ChangePasswordResponse } from '../types/auth'
+import type {
+  ForgotPasswordResponse,
+  LoginResponse,
+  ResetPasswordResponse,
+  ResetPasswordStatusResponse,
+  ChangePasswordResponse,
+} from '../types/auth'
 import type { MemberProfile } from '../types/profile'
 
 import { API_BASE, apiDelete, apiFetch, apiGetJson, apiPostJson, apiPutJson, fetchPublicJson, logoutRequest } from './client'
@@ -102,6 +108,11 @@ export function forgotPassword(payload: { type: 'email' | 'phone' | 'membership_
 
 export function resetPassword(payload: { token: string; newPassword: string }) {
   return postJson<ResetPasswordResponse, { token: string; newPassword: string }>('/reset-password', payload, { auth: false })
+}
+
+export function fetchResetPasswordStatus(token: string) {
+  const params = new URLSearchParams({ token })
+  return fetchPublicJson<ResetPasswordStatusResponse>(`/reset-password/status?${params.toString()}`)
 }
 
 export function changePassword(payload: { currentPassword: string; newPassword: string }) {

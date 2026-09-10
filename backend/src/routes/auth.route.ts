@@ -11,6 +11,10 @@ import {
   resetPasswordSchema,
 } from '../schemas/auth.schema'
 import { createRefreshToken, findValidRefreshToken, revokeRefreshToken, revokeRefreshTokenById } from '../repositories/refresh-tokens.repository'
+import {
+  consumePasswordResetToken,
+  isPasswordResetTokenUsed,
+} from '../repositories/password-reset-tokens.repository'
 import { sendBackendTelegramNotification } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
@@ -108,7 +112,11 @@ async function createPasswordResetToken(bindings: AppBindings, member: ForgotMem
   return `${payloadEncoded}.${signature}`
 }
 
-async function verifyPasswordResetToken(bindings: AppBindings, token: string): Promise<PasswordResetTokenPayload | null> {
+async function verifyPasswordResetToken(
+  bindings: AppBindings,
+  token: string,
+  options?: { allowExpired?: boolean },
+): Promise<PasswordResetTokenPayload | null> {
   const secret = bindings.INTERNAL_SECRET?.trim()
   if (!secret) {
     throw new Error('INTERNAL_SECRET is not configured.')
@@ -151,7 +159,7 @@ async function verifyPasswordResetToken(bindings: AppBindings, token: string): P
     return null
   }
 
-  if (exp <= Math.floor(Date.now() / 1000)) {
+  if (!options?.allowExpired && exp <= Math.floor(Date.now() / 1000)) {
     return null
   }
 
@@ -547,21 +555,72 @@ authRoute.post('/reset-password', zValidator('json', resetPasswordSchema), async
     const tokenPayload = await verifyPasswordResetToken(c.env, payload.token)
 
     if (!tokenPayload) {
-      return c.json({ error: 'Invalid or expired reset token.' }, 400)
+      return c.json({ error: 'رابط إعادة التعيين غير صالح أو منتهٍ.' }, 400)
     }
 
     const user = await getUserByMembershipNumber(c.env.MEMBERS_DB, tokenPayload.membershipNumber)
     if (!user || user.email.toLowerCase() !== tokenPayload.email.toLowerCase()) {
-      return c.json({ error: 'Invalid or expired reset token.' }, 400)
+      return c.json({ error: 'رابط إعادة التعيين غير صالح أو منتهٍ.' }, 400)
+    }
+
+    const consumed = await consumePasswordResetToken(
+      c.env.VMS_LOGS_DB,
+      payload.token,
+      tokenPayload.membershipNumber,
+      tokenPayload.exp,
+    )
+
+    if (!consumed) {
+      return c.json(
+        {
+          error: 'تم استخدام رابط إعادة التعيين مسبقاً. اطلب رابطاً جديداً إن احتجت.',
+          code: 'RESET_TOKEN_USED',
+        },
+        400,
+      )
     }
 
     const nextPasswordHash = await hashPassword(payload.newPassword)
     await updateUserPasswordHash(c.env.MEMBERS_DB, tokenPayload.membershipNumber, nextPasswordHash)
 
-    return c.json({ success: true, message: 'Password updated successfully.' })
+    return c.json({ success: true, message: 'تم تحديث كلمة المرور بنجاح.' })
   } catch (error) {
     console.error('Failed to reset password', error)
-    return c.json({ error: 'Could not reset password.' }, 500)
+    return c.json({ error: 'تعذر تحديث كلمة المرور.' }, 500)
+  }
+})
+
+authRoute.get('/reset-password/status', async (c) => {
+  try {
+    const token = c.req.query('token')?.trim() ?? ''
+
+    if (!token) {
+      return c.json({ valid: false, reason: 'missing' as const })
+    }
+
+    const used = await isPasswordResetTokenUsed(c.env.VMS_LOGS_DB, token)
+    if (used) {
+      return c.json({ valid: false, reason: 'used' as const })
+    }
+
+    const tokenPayload = await verifyPasswordResetToken(c.env, token, { allowExpired: true })
+    if (!tokenPayload) {
+      return c.json({ valid: false, reason: 'invalid' as const })
+    }
+
+    if (tokenPayload.exp <= Math.floor(Date.now() / 1000)) {
+      return c.json({ valid: false, reason: 'expired' as const })
+    }
+
+    return c.json({
+      valid: true as const,
+      membershipNumber: tokenPayload.membershipNumber,
+      email: tokenPayload.email,
+      exp: tokenPayload.exp,
+    })
+  } catch (error) {
+    console.error('Failed to check reset-password status', error)
+    return c.json({ error: 'تعذر التحقق من رابط إعادة التعيين.' }, 500)
   }
 })
 
