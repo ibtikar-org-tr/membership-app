@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { SkillsField } from '../../SkillsField'
+import { DashboardModalOverlay } from '../DashboardModalOverlay'
 import { formatDateEnCA, formatDateTimeEnCA } from '../../../utils/date-format'
 import { formatDueDate, priorityBadgeClass, statusBadgeClass, taskPriorityLabel, taskStatusLabel } from './helpers'
 import { TaskSubtasksChecklist } from './TaskSubtasksChecklist'
@@ -260,12 +261,12 @@ export function TaskDetailsModal({
     }`
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+    <DashboardModalOverlay onClose={onClose} className="z-40 bg-slate-900/40">
       <article
-        className="flex max-h-[min(90vh,52rem)] w-full max-w-4xl flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6"
+        className="flex min-h-0 max-h-[min(92dvh,52rem)] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-xl sm:rounded-3xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex shrink-0 items-start justify-between gap-3">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 sm:px-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">بطاقة المهمة</p>
             <p className="mt-1 text-base font-semibold text-slate-950">تفاصيل المهمة</p>
@@ -275,7 +276,7 @@ export function TaskDetailsModal({
           </button>
         </div>
 
-        <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-5 lg:space-y-0">
           <section className="space-y-3 rounded-3xl border border-slate-200 bg-slate-50/60 p-4">
             <button
               type="button"
@@ -576,6 +577,6 @@ export function TaskDetailsModal({
           </section>
         </div>
       </article>
-    </div>
+    </DashboardModalOverlay>
   )
 }

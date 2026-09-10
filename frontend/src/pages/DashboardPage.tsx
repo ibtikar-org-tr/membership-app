@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { LoginPanel } from '../components/auth/LoginPanel'
 import { PublicEventShell } from '../components/events/PublicEventShell'
 import { Seo } from '../components/Seo'
@@ -115,7 +115,11 @@ export function DashboardPage() {
         description="لوحة التحكم الخاصة بالأعضاء في منصة أعضاء إبتكار لمتابعة المشاريع والفعاليات والأندية."
         noIndex
       />
-      <main className="min-h-screen w-full bg-slate-50 text-slate-800 lg:h-screen lg:overflow-hidden" dir="rtl">
+      <main
+        className="min-h-screen w-full bg-slate-50 text-slate-800 lg:h-screen lg:overflow-hidden"
+        dir="rtl"
+        style={{ '--dashboard-sidebar-width': isSidebarCollapsed ? '5rem' : '20rem' } as CSSProperties}
+      >
         <div className="flex min-h-screen w-full flex-col lg:h-screen lg:flex-row">
           <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
             <div className="flex items-center justify-between gap-3">
