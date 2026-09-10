@@ -9,12 +9,12 @@ import type { VmsPosition } from '@/src/types/community'
 import type { VmsClub } from '@/src/types/clubs'
 
 export function fetchDirectProjects() {
-  // Main projects list; backend omits archived projects.
+  // Main projects list; backend returns active projects only.
   return apiGetJson<{ projects: VmsProject[] }>('/projects/direct')
 }
 
 export function fetchProjects() {
-  // Includes archived; used when resolving sub-projects under a parent.
+  // Includes completed/archived; used when resolving sub-projects under a parent.
   return apiGetJson<{ projects: VmsProject[] }>('/projects')
 }
 

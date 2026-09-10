@@ -147,19 +147,19 @@ export function updateProfile(
 
 export function fetchProjects(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
-  // Includes archived; used by sub-projects pages that need inactive children.
+  // Includes completed/archived; used by sub-projects pages that need inactive children.
   return fetchJson<{ projects: VmsProject[] }>(`/projects${query}`)
 }
 
 export function fetchDirectProjects(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
-  // Main membership list; backend omits archived projects.
+  // Main membership list; backend returns active projects only.
   return fetchJson<{ projects: VmsProject[] }>(`/projects/direct${query}`)
 }
 
 export function fetchPlatformProjects(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
-  // Platform hierarchy for the main projects page; backend omits archived projects.
+  // Platform hierarchy for the main projects page; backend returns active projects only.
   return fetchJson<{ projects: VmsProject[] }>(`/projects/platform${query}`)
 }
 

@@ -109,7 +109,7 @@ export function DashboardProjectsPage() {
       )
 
       setProjects((previous) =>
-        payload.project.status === 'archived' ? previous : [payload.project, ...previous],
+        payload.project.status === 'active' ? [payload.project, ...previous] : previous,
       )
       form.reset()
       setProjectSkills('')
