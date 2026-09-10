@@ -14,6 +14,7 @@ export default function SettingsLayout() {
     >
       <Stack.Screen name="index" options={{ title: 'الإعدادات' }} />
       <Stack.Screen name="profile" options={{ title: 'الملف الشخصي' }} />
+      <Stack.Screen name="password" options={{ title: 'تغيير كلمة المرور' }} />
     </Stack>
   )
 }

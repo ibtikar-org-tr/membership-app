@@ -4,6 +4,7 @@ import { WorkerMailer } from 'worker-mailer'
 import { memberHasTelegramId } from '../repositories/user-info.repository'
 import { getUserByEmail, getUserByMembershipNumber, updateUserPasswordHash } from '../repositories/users.repository'
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   type ForgotPasswordInput,
   loginSchema,
@@ -12,6 +13,8 @@ import {
 import { createRefreshToken, findValidRefreshToken, revokeRefreshToken, revokeRefreshTokenById } from '../repositories/refresh-tokens.repository'
 import { sendBackendTelegramNotification } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
+import type { AppEnv } from '../types/hono'
+import { getActorMembershipNumber } from '../utils/actor'
 import { clearRefreshTokenCookie, getRefreshTokenFromCookie, setRefreshTokenCookie } from '../utils/auth-cookies'
 import { createAccessToken } from '../utils/jwt'
 import { hashPassword, verifyPassword } from '../utils/password'
@@ -559,5 +562,36 @@ authRoute.post('/reset-password', zValidator('json', resetPasswordSchema), async
   } catch (error) {
     console.error('Failed to reset password', error)
     return c.json({ error: 'Could not reset password.' }, 500)
+  }
+})
+
+export const securedAuthRoute = new Hono<AppEnv>()
+
+securedAuthRoute.post('/change-password', zValidator('json', changePasswordSchema), async (c) => {
+  try {
+    const membershipNumber = getActorMembershipNumber(c)
+    const payload = c.req.valid('json')
+
+    if (payload.currentPassword === payload.newPassword) {
+      return c.json({ error: 'يجب أن تختلف كلمة المرور الجديدة عن الحالية.' }, 400)
+    }
+
+    const user = await getUserByMembershipNumber(c.env.MEMBERS_DB, membershipNumber)
+    if (!user) {
+      return c.json({ error: 'User not found.' }, 404)
+    }
+
+    const currentOk = await verifyPassword(payload.currentPassword, user.password_hash)
+    if (!currentOk) {
+      return c.json({ error: 'كلمة المرور الحالية غير صحيحة.' }, 400)
+    }
+
+    const nextPasswordHash = await hashPassword(payload.newPassword)
+    await updateUserPasswordHash(c.env.MEMBERS_DB, membershipNumber, nextPasswordHash)
+
+    return c.json({ success: true, message: 'تم تحديث كلمة المرور بنجاح.' })
+  } catch (error) {
+    console.error('Failed to change password', error)
+    return c.json({ error: 'تعذر تحديث كلمة المرور.' }, 500)
   }
 })

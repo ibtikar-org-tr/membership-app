@@ -24,6 +24,16 @@ export default function SettingsScreen() {
         </Pressable>
       </Link>
 
+      <Link href="/settings/password" asChild>
+        <Pressable style={styles.row}>
+          <Text style={styles.chevron}>‹</Text>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>تغيير كلمة المرور</Text>
+            <Text style={styles.rowSubtitle}>تحديث كلمة مرور حسابك</Text>
+          </View>
+        </Pressable>
+      </Link>
+
       <Pressable style={styles.logout} onPress={() => void signOut()}>
         <Text style={styles.logoutText}>تسجيل الخروج</Text>
       </Pressable>
