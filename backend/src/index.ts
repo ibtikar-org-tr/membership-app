@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { membershipAppCors } from './utils/cors'
 import { authMiddleware } from './middleware/auth.middleware'
-import { authRoute } from './routes/auth.route'
+import { authRoute, securedAuthRoute } from './routes/auth.route'
 import { profileRoute } from './routes/profile.route'
 import { registrationRoute } from './routes/registration.route'
 import { statsRoute } from './routes/stats.route'
@@ -75,6 +75,7 @@ publicApi.route('/', vmsPublicEventsRoute)
 
 const securedApi = new Hono<AppEnv>()
 securedApi.use('*', authMiddleware)
+securedApi.route('/', securedAuthRoute)
 securedApi.route('/', profileRoute)
 securedApi.route('/', telegramNotificationRoute)
 securedApi.route('/', vmsProjectsRoute)

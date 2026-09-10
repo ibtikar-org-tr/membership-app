@@ -15,8 +15,6 @@ import { EmptyState, ErrorBanner, SearchField, StatusPill } from '@/src/componen
 import { colors } from '@/src/theme/colors'
 import type { VmsProject } from '@/src/types/projects'
 
-type StatusFilter = 'all' | 'active' | 'completed'
-
 function statusLabel(status: string) {
   if (status === 'active') return 'نشط'
   if (status === 'completed') return 'مكتمل'
@@ -30,17 +28,10 @@ function statusTone(status: string): 'success' | 'info' | 'neutral' {
   return 'neutral'
 }
 
-const FILTERS: Array<{ key: StatusFilter; label: string }> = [
-  { key: 'all', label: 'الكل' },
-  { key: 'active', label: 'نشط' },
-  { key: 'completed', label: 'مكتمل' },
-]
-
 export default function ProjectsListScreen() {
   const [projects, setProjects] = useState<VmsProject[]>([])
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({})
   const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,21 +75,18 @@ export default function ProjectsListScreen() {
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    return projects.filter((project) => {
-      if (statusFilter !== 'all' && project.status !== statusFilter) return false
-      if (!needle) return true
-      return (
+    if (!needle) return projects
+    return projects.filter(
+      (project) =>
         project.name.toLowerCase().includes(needle) ||
         (project.description ?? '').toLowerCase().includes(needle) ||
-        (project.ownerDisplayName ?? project.owner).toLowerCase().includes(needle)
-      )
-    })
-  }, [projects, query, statusFilter])
+        (project.ownerDisplayName ?? project.owner).toLowerCase().includes(needle),
+    )
+  }, [projects, query])
 
   const stats = useMemo(() => {
-    const active = projects.filter((project) => project.status === 'active').length
     const openTasks = Object.values(taskCounts).reduce((sum, count) => sum + count, 0)
-    return { total: projects.length, active, openTasks }
+    return { total: projects.length, openTasks }
   }, [projects, taskCounts])
 
   return (
@@ -107,11 +95,7 @@ export default function ProjectsListScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{stats.total}</Text>
-            <Text style={styles.statLabel}>مشاريع</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.active}</Text>
-            <Text style={styles.statLabel}>نشطة</Text>
+            <Text style={styles.statLabel}>مشاريع نشطة</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{stats.openTasks}</Text>
@@ -120,25 +104,6 @@ export default function ProjectsListScreen() {
         </View>
 
         <SearchField value={query} onChangeText={setQuery} placeholder="ابحث في المشاريع..." />
-
-        <View style={styles.filters}>
-          {FILTERS.map((filter) => (
-            <Pressable
-              key={filter.key}
-              style={[styles.filterPill, statusFilter === filter.key && styles.filterPillActive]}
-              onPress={() => setStatusFilter(filter.key)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  statusFilter === filter.key && styles.filterTextActive,
-                ]}
-              >
-                {filter.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
       </View>
 
       {isLoading ? (
@@ -225,32 +190,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     textAlign: 'right',
-  },
-  filters: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 4,
-  },
-  filterPill: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  filterPillActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterText: {
-    color: colors.textMuted,
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  filterTextActive: {
-    color: '#fff',
   },
   list: { padding: 16, gap: 10, paddingBottom: 32 },
   card: {

@@ -39,7 +39,7 @@ vmsProjectsRoute.get('/projects', async (c) => {
   try {
     const membershipNumber = getActorMembershipNumber(c)
 
-    // Full member-visible tree including archived (used by sub-projects pages).
+    // Full member-visible tree including completed/archived (used by sub-projects pages).
     const projects = await listProjectsForMember(c.env.VMS_DB, membershipNumber)
     return c.json({ projects })
   } catch (error) {
@@ -53,9 +53,9 @@ vmsProjectsRoute.get('/projects/direct', async (c) => {
     const membershipNumber = getActorMembershipNumber(c)
 
 
-    // Main projects list: omit archived; use GET /projects for sub-project trees that need them.
+    // Main projects list: active only; use GET /projects for sub-project trees that need inactive ones.
     const projects = await listDirectProjectsForMember(c.env.VMS_DB, membershipNumber, {
-      excludeArchived: true,
+      activeOnly: true,
     })
     const displayNameMap = await getUserDisplayNamesByMembershipNumbers(
       c.env.MEMBERS_DB,
@@ -80,7 +80,7 @@ vmsProjectsRoute.get('/projects/platform', async (c) => {
 
 
     const projects = await listProjectsForMemberWithRedactedNames(c.env.VMS_DB, membershipNumber, {
-      excludeArchived: true,
+      activeOnly: true,
     })
     const displayNameMap = await getUserDisplayNamesByMembershipNumbers(
       c.env.MEMBERS_DB,

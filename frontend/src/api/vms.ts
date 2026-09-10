@@ -18,7 +18,13 @@ import type {
   VmsTask,
   VmsTaskSubtask,
 } from '../types/vms'
-import type { ForgotPasswordResponse, LoginResponse, ResetPasswordResponse } from '../types/auth'
+import type {
+  ForgotPasswordResponse,
+  LoginResponse,
+  ResetPasswordResponse,
+  ResetPasswordStatusResponse,
+  ChangePasswordResponse,
+} from '../types/auth'
 import type { MemberProfile } from '../types/profile'
 
 import { API_BASE, apiDelete, apiFetch, apiGetJson, apiPostJson, apiPutJson, fetchPublicJson, logoutRequest } from './client'
@@ -104,6 +110,18 @@ export function resetPassword(payload: { token: string; newPassword: string }) {
   return postJson<ResetPasswordResponse, { token: string; newPassword: string }>('/reset-password', payload, { auth: false })
 }
 
+export function fetchResetPasswordStatus(token: string) {
+  const params = new URLSearchParams({ token })
+  return fetchPublicJson<ResetPasswordStatusResponse>(`/reset-password/status?${params.toString()}`)
+}
+
+export function changePassword(payload: { currentPassword: string; newPassword: string }) {
+  return postJson<ChangePasswordResponse, { currentPassword: string; newPassword: string }>(
+    '/change-password',
+    payload,
+  )
+}
+
 export function fetchProfile(membershipNumber: string) {
   return fetchJson<{ profile: MemberProfile }>(`/profile/${encodeURIComponent(membershipNumber)}`)
 }
@@ -140,19 +158,19 @@ export function updateProfile(
 
 export function fetchProjects(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
-  // Includes archived; used by sub-projects pages that need inactive children.
+  // Includes completed/archived; used by sub-projects pages that need inactive children.
   return fetchJson<{ projects: VmsProject[] }>(`/projects${query}`)
 }
 
 export function fetchDirectProjects(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
-  // Main membership list; backend omits archived projects.
+  // Main membership list; backend returns active projects only.
   return fetchJson<{ projects: VmsProject[] }>(`/projects/direct${query}`)
 }
 
 export function fetchPlatformProjects(membershipNumber?: string) {
   const query = membershipNumber ? `` : ''
-  // Platform hierarchy for the main projects page; backend omits archived projects.
+  // Platform hierarchy for the main projects page; backend returns active projects only.
   return fetchJson<{ projects: VmsProject[] }>(`/projects/platform${query}`)
 }
 

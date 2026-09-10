@@ -41,3 +41,7 @@ export async function logout(): Promise<void> {
     await clearSession()
   }
 }
+
+export function changePassword(payload: { currentPassword: string; newPassword: string }) {
+  return apiPostJson<{ success: boolean; message: string }, typeof payload>('/change-password', payload)
+}

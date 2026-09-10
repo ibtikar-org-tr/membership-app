@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { fetchProfile, updateProfile } from '../../api/vms'
+import { ChangePasswordCard } from '../../components/dashboard/ChangePasswordCard'
 import type { MemberProfile } from '../../types/profile'
 import type { RegistrationFormData } from '../../types/registration'
 import { getStoredUser } from '../../utils/auth'
@@ -302,6 +303,7 @@ export function DashboardProfilePage() {
   }
 
   return (
+    <div className="space-y-6">
     <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -479,5 +481,7 @@ export function DashboardProfilePage() {
         </div>
       )}
     </section>
+    <ChangePasswordCard />
+    </div>
   )
 }

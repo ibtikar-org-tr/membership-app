@@ -195,10 +195,10 @@ export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber
 export async function listDirectProjectsForMember(
   db: D1DatabaseLike,
   membershipNumber: string,
-  options?: { excludeArchived?: boolean },
+  options?: { activeOnly?: boolean },
 ) {
   const normalizedMembershipNumber = membershipNumber.trim()
-  const excludeArchived = options?.excludeArchived === true
+  const activeOnly = options?.activeOnly === true
 
   const result = await db
     .prepare(
@@ -211,7 +211,7 @@ export async function listDirectProjectsForMember(
             WHERE pm.project_id = projects.id
               AND pm.membership_number = ?
           ))
-         ${excludeArchived ? "AND status != 'archived'" : ''}
+         ${activeOnly ? "AND status = 'active'" : ''}
        ORDER BY created_at DESC`,
     )
     .bind(normalizedMembershipNumber, normalizedMembershipNumber)
@@ -226,15 +226,15 @@ export async function listDirectProjectsForMember(
 export async function listProjectsForMemberWithRedactedNames(
   db: D1DatabaseLike,
   membershipNumber: string,
-  options?: { excludeArchived?: boolean },
+  options?: { activeOnly?: boolean },
 ) {
   const projects = await listProjects(db)
   const directVisibleIds = await getDirectVisibleProjectIds(db, membershipNumber)
   const visibleIds = getVisibleProjectIds(projects, directVisibleIds)
-  const excludeArchived = options?.excludeArchived === true
+  const activeOnly = options?.activeOnly === true
 
   return redactProjectNames(projects, visibleIds)
-    .filter((project) => !excludeArchived || project.status !== 'archived')
+    .filter((project) => !activeOnly || project.status === 'active')
     .map((project) => ({
       ...toPublicProjectRecord(project),
       status: project.status,
