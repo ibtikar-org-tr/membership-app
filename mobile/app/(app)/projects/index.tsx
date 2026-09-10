@@ -17,10 +17,6 @@ import type { VmsProject } from '@/src/types/projects'
 
 type StatusFilter = 'all' | 'active' | 'completed'
 
-function isInactiveProject(status: string) {
-  return status === 'archived'
-}
-
 function statusLabel(status: string) {
   if (status === 'active') return 'نشط'
   if (status === 'completed') return 'مكتمل'
@@ -86,15 +82,9 @@ export default function ProjectsListScreen() {
     [projects],
   )
 
-  // Archived/inactive projects stay off the main list; they only appear under a parent’s sub-projects.
-  const listProjects = useMemo(
-    () => projects.filter((project) => !isInactiveProject(project.status)),
-    [projects],
-  )
-
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    return listProjects.filter((project) => {
+    return projects.filter((project) => {
       if (statusFilter !== 'all' && project.status !== statusFilter) return false
       if (!needle) return true
       return (
@@ -103,16 +93,13 @@ export default function ProjectsListScreen() {
         (project.ownerDisplayName ?? project.owner).toLowerCase().includes(needle)
       )
     })
-  }, [listProjects, query, statusFilter])
+  }, [projects, query, statusFilter])
 
   const stats = useMemo(() => {
-    const active = listProjects.filter((project) => project.status === 'active').length
-    const openTasks = listProjects.reduce(
-      (sum, project) => sum + (taskCounts[project.id] ?? 0),
-      0,
-    )
-    return { total: listProjects.length, active, openTasks }
-  }, [listProjects, taskCounts])
+    const active = projects.filter((project) => project.status === 'active').length
+    const openTasks = Object.values(taskCounts).reduce((sum, count) => sum + count, 0)
+    return { total: projects.length, active, openTasks }
+  }, [projects, taskCounts])
 
   return (
     <View style={styles.flex}>

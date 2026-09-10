@@ -192,20 +192,26 @@ export async function listProjectsForMember(db: D1DatabaseLike, membershipNumber
       }))
 }
 
-export async function listDirectProjectsForMember(db: D1DatabaseLike, membershipNumber: string) {
+export async function listDirectProjectsForMember(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+  options?: { excludeArchived?: boolean },
+) {
   const normalizedMembershipNumber = membershipNumber.trim()
+  const excludeArchived = options?.excludeArchived === true
 
   const result = await db
     .prepare(
       `SELECT id, created_at, updated_at, name, description, parent_project_id, owner, telegram_group_id, status
        FROM projects
-       WHERE owner = ?
+       WHERE (owner = ?
           OR EXISTS (
             SELECT 1
             FROM project_members pm
             WHERE pm.project_id = projects.id
               AND pm.membership_number = ?
-          )
+          ))
+         ${excludeArchived ? "AND status != 'archived'" : ''}
        ORDER BY created_at DESC`,
     )
     .bind(normalizedMembershipNumber, normalizedMembershipNumber)
@@ -217,12 +223,22 @@ export async function listDirectProjectsForMember(db: D1DatabaseLike, membership
   }))
 }
 
-export async function listProjectsForMemberWithRedactedNames(db: D1DatabaseLike, membershipNumber: string) {
+export async function listProjectsForMemberWithRedactedNames(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+  options?: { excludeArchived?: boolean },
+) {
   const projects = await listProjects(db)
   const directVisibleIds = await getDirectVisibleProjectIds(db, membershipNumber)
   const visibleIds = getVisibleProjectIds(projects, directVisibleIds)
+  const excludeArchived = options?.excludeArchived === true
 
-  return redactProjectNames(projects, visibleIds).map(toPublicProjectRecord)
+  return redactProjectNames(projects, visibleIds)
+    .filter((project) => !excludeArchived || project.status !== 'archived')
+    .map((project) => ({
+      ...toPublicProjectRecord(project),
+      status: project.status,
+    }))
 }
 
 export async function getProjectById(db: D1DatabaseLike, id: string) {
