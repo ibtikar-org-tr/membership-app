@@ -108,7 +108,9 @@ export function DashboardProjectsPage() {
         user.membershipNumber,
       )
 
-      setProjects((previous) => [payload.project, ...previous])
+      setProjects((previous) =>
+        payload.project.status === 'archived' ? previous : [payload.project, ...previous],
+      )
       form.reset()
       setProjectSkills('')
     } catch (requestError) {
@@ -296,7 +298,9 @@ export function DashboardProjectsPage() {
             </div>
           ) : null}
 
-          {!isLoading && !hasError && projects.length > 0 ? <ProjectsLinearTreeList projects={projects} /> : null}
+          {!isLoading && !hasError && projects.length > 0 ? (
+            <ProjectsLinearTreeList projects={projects} />
+          ) : null}
         </div>
       </section>
     </div>

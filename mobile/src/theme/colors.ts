@@ -11,3 +11,22 @@ export const colors = {
   danger: '#b91c1c',
   dangerBg: '#fef2f2',
 }
+
+/** Telegram Liquid Glass floating tab bar */
+export const telegram = {
+  tabActive: '#3390EC',
+  tabInactive: '#1C1C1E',
+  tabActivePill: 'rgba(51, 144, 236, 0.18)',
+  tabBarBackground: 'rgba(255, 255, 255, 0.72)',
+  tabBarBorder: 'rgba(255, 255, 255, 0.85)',
+  tabBarShadow: '#000000',
+  tabBarHorizontalMargin: 18,
+  tabBarRadius: 32,
+  tabBarBlurTint: 'light' as const,
+  tabBarBlurIntensity: 85,
+  tabIconSize: 22,
+  tabLabelSize: 9,
+  tabBarContentHeight: 58,
+  tabBarBottomGap: 10,
+  tabBarScenePadding: 88,
+}

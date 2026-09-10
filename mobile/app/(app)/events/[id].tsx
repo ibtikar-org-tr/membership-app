@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -10,52 +10,73 @@ import {
   Text,
   View,
 } from 'react-native'
-import { fetchEventById } from '@/src/api/events'
+import {
+  changeEventRegistrationTicket,
+  createEventRegistration,
+  fetchEventById,
+  fetchEventTickets,
+  fetchMyEventRegistration,
+  selfCancelEventRegistration,
+} from '@/src/api/events'
+import { useAuth } from '@/src/auth/AuthContext'
 import { ErrorBanner, StatusPill } from '@/src/components/ui'
 import { colors } from '@/src/theme/colors'
-import type { VmsEvent } from '@/src/types/events'
+import type { VmsEvent, VmsEventRegistration, VmsEventTicket } from '@/src/types/events'
 import {
   formatEventDate,
   formatEventLocation,
   isEventUpcomingOrOngoing,
 } from '@/src/utils/format'
+import {
+  canSelfModifyRegistration,
+  registrationStatusLabel,
+  selfCancellationHelperText,
+} from '@/src/utils/labels'
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const { user } = useAuth()
   const [event, setEvent] = useState<VmsEvent | null>(null)
+  const [tickets, setTickets] = useState<VmsEventTicket[]>([])
+  const [registration, setRegistration] = useState<VmsEventRegistration | null>(null)
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isApplying, setIsApplying] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    if (!id || !user?.membershipNumber) {
+      setError('معرّف الفعالية غير صالح.')
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const [eventPayload, ticketsPayload, registrationPayload] = await Promise.all([
+        fetchEventById(id),
+        fetchEventTickets(id),
+        fetchMyEventRegistration(id, user.membershipNumber),
+      ])
+      setEvent(eventPayload.event)
+      setTickets(ticketsPayload.eventTickets)
+      setRegistration(registrationPayload.eventRegistrations[0] ?? null)
+      setSelectedTicketId(ticketsPayload.eventTickets[0]?.id ?? null)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'تعذر تحميل الفعالية.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [id, user?.membershipNumber])
 
   useEffect(() => {
-    let cancelled = false
-
-    async function load() {
-      if (!id) {
-        setError('معرّف الفعالية غير صالح.')
-        setIsLoading(false)
-        return
-      }
-
-      setIsLoading(true)
-      setError(null)
-
-      try {
-        const payload = await fetchEventById(id)
-        if (!cancelled) setEvent(payload.event)
-      } catch (requestError) {
-        if (!cancelled) {
-          setError(requestError instanceof Error ? requestError.message : 'تعذر تحميل الفعالية.')
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-
     void load()
-    return () => {
-      cancelled = true
-    }
-  }, [id])
+  }, [load])
 
   const links = useMemo(() => {
     if (!event?.associatedUrls || typeof event.associatedUrls !== 'object') {
@@ -72,6 +93,72 @@ export default function EventDetailScreen() {
 
   const skillNames = event?.skills ? Object.keys(event.skills) : []
   const upcoming = event ? isEventUpcomingOrOngoing(event) : false
+  const canModify = event
+    ? canSelfModifyRegistration(event, registration, user?.membershipNumber)
+    : false
+
+  const selectedTicket = tickets.find((ticket) => ticket.id === selectedTicketId) ?? null
+  const registeredTicket = registration
+    ? tickets.find((ticket) => ticket.id === registration.ticketId) ?? null
+    : null
+
+  const handleRegister = async () => {
+    if (!event || !user?.membershipNumber || !selectedTicketId) return
+
+    setIsApplying(true)
+    setActionError(null)
+    setActionSuccess(null)
+
+    try {
+      const payload = await createEventRegistration({
+        eventId: event.id,
+        ticketId: selectedTicketId,
+        membershipNumber: user.membershipNumber,
+      })
+      setRegistration(payload.eventRegistration)
+      setActionSuccess('تم التسجيل في الفعالية بنجاح.')
+    } catch (requestError) {
+      setActionError(requestError instanceof Error ? requestError.message : 'تعذر التسجيل.')
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!registration) return
+
+    setIsCancelling(true)
+    setActionError(null)
+    setActionSuccess(null)
+
+    try {
+      await selfCancelEventRegistration(registration.id)
+      setRegistration(null)
+      setActionSuccess('تم إلغاء التسجيل.')
+    } catch (requestError) {
+      setActionError(requestError instanceof Error ? requestError.message : 'تعذر الإلغاء.')
+    } finally {
+      setIsCancelling(false)
+    }
+  }
+
+  const handleChangeTicket = async (ticketId: string) => {
+    if (!registration) return
+
+    setIsApplying(true)
+    setActionError(null)
+    setActionSuccess(null)
+
+    try {
+      const payload = await changeEventRegistrationTicket(registration.id, ticketId)
+      setRegistration(payload.eventRegistration)
+      setActionSuccess('تم تغيير التذكرة.')
+    } catch (requestError) {
+      setActionError(requestError instanceof Error ? requestError.message : 'تعذر تغيير التذكرة.')
+    } finally {
+      setIsApplying(false)
+    }
+  }
 
   return (
     <>
@@ -149,6 +236,97 @@ export default function EventDetailScreen() {
                 ))}
               </View>
             ) : null}
+
+            {upcoming && event.status === 'public' ? (
+              <View style={styles.registrationBlock}>
+                <Text style={styles.sectionTitle}>التسجيل</Text>
+                <Text style={styles.helperText}>{selfCancellationHelperText(event)}</Text>
+
+                {actionError ? <ErrorBanner message={actionError} /> : null}
+                {actionSuccess ? <Text style={styles.successText}>{actionSuccess}</Text> : null}
+
+                {registration ? (
+                  <View style={styles.registrationCard}>
+                    <StatusPill
+                      label={registrationStatusLabel(registration.status)}
+                      tone={registration.status === 'registered' ? 'success' : 'neutral'}
+                    />
+                    {registeredTicket ? (
+                      <Text style={styles.value}>التذكرة: {registeredTicket.name}</Text>
+                    ) : null}
+
+                    {canModify && tickets.length > 1 ? (
+                      <View style={styles.ticketList}>
+                        <Text style={styles.label}>تغيير التذكرة</Text>
+                        {tickets.map((ticket) => (
+                          <Pressable
+                            key={ticket.id}
+                            style={[
+                              styles.ticketOption,
+                              registration.ticketId === ticket.id && styles.ticketSelected,
+                            ]}
+                            disabled={isApplying || registration.ticketId === ticket.id}
+                            onPress={() => void handleChangeTicket(ticket.id)}
+                          >
+                            <Text style={styles.ticketName}>{ticket.name}</Text>
+                            <Text style={styles.ticketMeta}>
+                              {ticket.pointPrice} نقطة
+                              {ticket.currencyPrice ? ` · ${ticket.currencyPrice}` : ''}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : null}
+
+                    {canModify ? (
+                      <Pressable
+                        style={[styles.cancelButton, isCancelling && styles.disabled]}
+                        disabled={isCancelling}
+                        onPress={() => void handleCancel()}
+                      >
+                        <Text style={styles.cancelText}>
+                          {isCancelling ? 'جارٍ الإلغاء...' : 'إلغاء التسجيل'}
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                ) : tickets.length > 0 ? (
+                  <View style={styles.ticketList}>
+                    {tickets.map((ticket) => (
+                      <Pressable
+                        key={ticket.id}
+                        style={[
+                          styles.ticketOption,
+                          selectedTicketId === ticket.id && styles.ticketSelected,
+                        ]}
+                        onPress={() => setSelectedTicketId(ticket.id)}
+                      >
+                        <Text style={styles.ticketName}>{ticket.name}</Text>
+                        <Text style={styles.ticketMeta}>
+                          {ticket.pointPrice} نقطة
+                          {ticket.currencyPrice ? ` · ${ticket.currencyPrice}` : ''}
+                        </Text>
+                        {ticket.description ? (
+                          <Text style={styles.ticketDescription}>{ticket.description}</Text>
+                        ) : null}
+                      </Pressable>
+                    ))}
+
+                    <Pressable
+                      style={[styles.registerButton, (isApplying || !selectedTicket) && styles.disabled]}
+                      disabled={isApplying || !selectedTicket}
+                      onPress={() => void handleRegister()}
+                    >
+                      <Text style={styles.registerText}>
+                        {isApplying ? 'جارٍ التسجيل...' : 'سجّل الآن'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Text style={styles.helperText}>لا تتوفر تذاكر لهذه الفعالية حالياً.</Text>
+                )}
+              </View>
+            ) : null}
           </View>
         ) : null}
       </ScrollView>
@@ -212,4 +390,89 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontSize: 14,
   },
+  registrationBlock: {
+    marginTop: 8,
+    gap: 10,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontWeight: '800',
+    fontSize: 16,
+    textAlign: 'right',
+  },
+  helperText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'right',
+  },
+  successText: {
+    color: '#047857',
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  registrationCard: {
+    gap: 10,
+    backgroundColor: '#f8fafc',
+    borderRadius: 14,
+    padding: 12,
+  },
+  ticketList: { gap: 8 },
+  ticketOption: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+    backgroundColor: '#fff',
+  },
+  ticketSelected: {
+    borderColor: colors.primary,
+    backgroundColor: '#ecfeff',
+  },
+  ticketName: {
+    color: colors.text,
+    fontWeight: '800',
+    textAlign: 'right',
+    fontSize: 14,
+  },
+  ticketMeta: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: 'right',
+  },
+  ticketDescription: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: 'right',
+    lineHeight: 18,
+  },
+  registerButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  registerText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  cancelText: {
+    color: colors.danger,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  disabled: { opacity: 0.7 },
 })

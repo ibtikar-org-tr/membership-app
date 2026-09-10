@@ -152,4 +152,19 @@ export async function apiPutJson<TResponse, TPayload>(
   return (await response.json()) as TResponse
 }
 
+export async function apiDeleteJson<TResponse = { success: boolean }>(path: string): Promise<TResponse> {
+  const response = await apiFetch(path, { method: 'DELETE' })
+
+  if (!response.ok) {
+    const { message } = await parseErrorMessage(response, `Request failed (${response.status})`)
+    throw new Error(message)
+  }
+
+  if (response.status === 204) {
+    return { success: true } as TResponse
+  }
+
+  return (await response.json()) as TResponse
+}
+
 export { parseErrorMessage }

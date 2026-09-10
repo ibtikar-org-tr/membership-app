@@ -81,6 +81,7 @@
     "head_sampling_rate": 1
   },
   "dev": {
-    "port": 5931
+    "port": 5931,
+    "ip": "0.0.0.0"
   }
 }

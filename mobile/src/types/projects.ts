@@ -18,3 +18,25 @@ export interface VmsProjectMember {
   role: 'member' | 'manager' | 'observer' | string
   displayName: string
 }
+
+export interface VmsProjectMemberContact {
+  membershipNumber: string
+  email: string
+  enName: string | null
+  arName: string | null
+  phoneNumber: string | null
+  telegramUsername: string | null
+}
+
+export interface VmsProjectNote {
+  id: string
+  createdAt: string
+  updatedAt: string
+  projectId: string
+  title: string
+  content: string
+  contentPreview: string | null
+  createdBy: string
+  createdByDisplayName?: string
+  canEdit?: boolean
+}

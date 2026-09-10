@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native'
 import {
@@ -15,7 +16,7 @@ import {
   fetchOpenPositions,
 } from '@/src/api/community'
 import { useAuth } from '@/src/auth/AuthContext'
-import { EmptyState, ErrorBanner, SectionTitle, StatusPill } from '@/src/components/ui'
+import { EmptyState, ErrorBanner, SearchField, SectionTitle, StatusPill } from '@/src/components/ui'
 import { colors } from '@/src/theme/colors'
 import type {
   VmsLeaderboardEntry,
@@ -39,9 +40,12 @@ function applicationTone(status: string): 'warning' | 'success' | 'danger' | 'ne
 
 export default function CommunityScreen() {
   const { user } = useAuth()
+  const router = useRouter()
   const [entries, setEntries] = useState<VmsLeaderboardEntry[]>([])
   const [viewer, setViewer] = useState<VmsLeaderboardViewer | null>(null)
   const [positions, setPositions] = useState<VmsPosition[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [motivationDraft, setMotivationDraft] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +86,7 @@ export default function CommunityScreen() {
   }, [entries, viewer])
 
   const topThree = useMemo(() => entries.slice(0, 3), [entries])
+  const restEntries = useMemo(() => entries.slice(3), [entries])
 
   const { applied, available } = useMemo(() => {
     const membershipNumber = user?.membershipNumber
@@ -99,12 +104,26 @@ export default function CommunityScreen() {
     return { applied: appliedList, available: availableList }
   }, [positions, user?.membershipNumber])
 
+  const filteredAvailable = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return available
+    return available.filter(
+      (position) =>
+        position.name.toLowerCase().includes(query) ||
+        (position.projectName ?? '').toLowerCase().includes(query) ||
+        (position.description ?? '').toLowerCase().includes(query),
+    )
+  }, [available, searchQuery])
+
   const handleApply = async (positionId: string) => {
     setApplyError(null)
     setApplyingId(positionId)
 
     try {
-      const { positionApplication } = await createPositionApplication(positionId, {})
+      const motivationLetter = motivationDraft[positionId]?.trim()
+      const { positionApplication } = await createPositionApplication(positionId, {
+        motivationLetter: motivationLetter || undefined,
+      })
       setPositions((previous) =>
         previous.map((position) =>
           position.id === positionId
@@ -152,7 +171,19 @@ export default function CommunityScreen() {
         ) : null}
 
         {showApply ? (
-          <Pressable
+          <>
+            <TextInput
+              value={motivationDraft[position.id] ?? ''}
+              onChangeText={(value) =>
+                setMotivationDraft((previous) => ({ ...previous, [position.id]: value }))
+              }
+              placeholder="رسالة تحفيزية (اختياري)"
+              placeholderTextColor={colors.textMuted}
+              style={styles.motivationInput}
+              textAlign="right"
+              multiline
+            />
+            <Pressable
             style={[styles.applyButton, applyingId === position.id && styles.applyDisabled]}
             disabled={applyingId === position.id}
             onPress={() => void handleApply(position.id)}
@@ -160,7 +191,8 @@ export default function CommunityScreen() {
             <Text style={styles.applyText}>
               {applyingId === position.id ? 'جارٍ التقديم...' : 'قدّم الآن'}
             </Text>
-          </Pressable>
+            </Pressable>
+          </>
         ) : null}
       </View>
     )
@@ -177,6 +209,12 @@ export default function CommunityScreen() {
 
       {!isLoading && !error ? (
         <>
+          <View style={styles.quickLinks}>
+            <Pressable style={styles.quickLink} onPress={() => router.push('/community/clubs')}>
+              <Text style={styles.quickLinkText}>تصفّح الأندية</Text>
+            </Pressable>
+          </View>
+
           <SectionTitle
             title="لوحة المتصدرين"
             subtitle="أفضل الأعضاء حسب النقاط المكتسبة من المهام والأنشطة."
@@ -207,6 +245,24 @@ export default function CommunityScreen() {
             </View>
           )}
 
+          {restEntries.length > 0 ? (
+            <View style={styles.block}>
+              <Text style={styles.blockTitle}>بقية المتصدرين</Text>
+              {restEntries.map((entry, index) => (
+                <View
+                  key={`${entry.name}-${index + 3}`}
+                  style={[styles.podiumCard, entry.isViewer && styles.podiumViewer]}
+                >
+                  <Text style={styles.podiumRank}>#{index + 4}</Text>
+                  <Text style={styles.podiumName} numberOfLines={1}>
+                    {entry.name}
+                  </Text>
+                  <Text style={styles.podiumPoints}>{entry.points.toLocaleString('en-US')} نقطة</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
           <SectionTitle
             title="التطوع"
             subtitle="الفرص التطوعية المفتوحة عبر المشاريع. تصفّح وقدّم مباشرة."
@@ -221,6 +277,12 @@ export default function CommunityScreen() {
 
           {applyError ? <ErrorBanner message={applyError} /> : null}
 
+          <SearchField
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="ابحث في فرص التطوع..."
+          />
+
           {applied.length > 0 ? (
             <View style={styles.block}>
               <Text style={styles.blockTitle}>طلباتك</Text>
@@ -230,10 +292,10 @@ export default function CommunityScreen() {
 
           <View style={styles.block}>
             <Text style={styles.blockTitle}>فرص متاحة</Text>
-            {available.length === 0 ? (
+            {filteredAvailable.length === 0 ? (
               <EmptyState message="لا توجد فرص متاحة للتقديم حالياً." />
             ) : (
-              available.map((position) => renderPosition(position, true))
+              filteredAvailable.map((position) => renderPosition(position, true))
             )}
           </View>
         </>
@@ -249,6 +311,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  quickLinks: {
+    flexDirection: 'row-reverse',
+  },
+  quickLink: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  quickLinkText: {
+    color: colors.primary,
+    fontWeight: '700',
+    fontSize: 13,
   },
   podium: { gap: 8 },
   podiumCard: {
@@ -330,6 +408,18 @@ const styles = StyleSheet.create({
   applyText: {
     color: '#fff',
     fontWeight: '700',
+    fontSize: 14,
+  },
+  motivationInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.text,
+    backgroundColor: '#f8fafc',
+    minHeight: 72,
+    textAlignVertical: 'top',
     fontSize: 14,
   },
 })
