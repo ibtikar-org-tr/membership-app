@@ -222,27 +222,51 @@ export function DashboardEventAdminPage() {
           {registrations.map((registration) => {
             const ticket = ticketMap.get(registration.ticketId)
             const busy = busyRegistrationId === registration.id
+            const isGuest = !registration.membershipNumber
+            const displayName =
+              registration.displayName ??
+              registration.guestName ??
+              registration.membershipNumber ??
+              registration.guestEmail ??
+              'زائر'
 
             return (
               <li key={registration.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMemberInfoTarget({
-                          membershipNumber: registration.membershipNumber,
-                          displayName: registration.displayName ?? registration.membershipNumber,
-                        })
-                      }
-                      className="text-right transition hover:opacity-80"
-                      title="عرض معلومات العضو"
-                    >
-                      <p className="text-sm font-medium text-slate-900 underline-offset-2 hover:underline">
-                        {registration.displayName ?? registration.membershipNumber}
-                      </p>
-                      <p className="mt-0.5 font-mono text-xs text-slate-500">{registration.membershipNumber}</p>
-                    </button>
+                    {isGuest ? (
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium text-slate-900">{displayName}</p>
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                            زائر
+                          </span>
+                        </div>
+                        {registration.guestEmail ? (
+                          <p className="mt-0.5 text-xs text-slate-500">{registration.guestEmail}</p>
+                        ) : null}
+                        {registration.guestPhone ? (
+                          <p className="mt-0.5 text-xs text-slate-500">{registration.guestPhone}</p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setMemberInfoTarget({
+                            membershipNumber: registration.membershipNumber as string,
+                            displayName,
+                          })
+                        }
+                        className="text-right transition hover:opacity-80"
+                        title="عرض معلومات العضو"
+                      >
+                        <p className="text-sm font-medium text-slate-900 underline-offset-2 hover:underline">
+                          {displayName}
+                        </p>
+                        <p className="mt-0.5 font-mono text-xs text-slate-500">{registration.membershipNumber}</p>
+                      </button>
+                    )}
                     <p className="mt-0.5 text-xs text-slate-500">التذكرة: {ticket ? ticket.name : 'غير معروفة'}</p>
                   </div>
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">

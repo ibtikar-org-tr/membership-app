@@ -18,6 +18,7 @@ import {
 import Avatar from 'boring-avatars'
 import {
   createEventRegistration,
+  createPublicEventRegistration,
   fetchEventById,
   fetchEventRegistrations,
   fetchEventTickets,
@@ -91,6 +92,10 @@ export function DashboardEventDetailsPage() {
   const [changeTicketSuccess, setChangeTicketSuccess] = useState<string | null>(null)
   const [selectedChangeTicketId, setSelectedChangeTicketId] = useState<string | null>(null)
   const [isChangeTicketPickerOpen, setIsChangeTicketPickerOpen] = useState(false)
+  const [guestName, setGuestName] = useState('')
+  const [guestEmail, setGuestEmail] = useState('')
+  const [guestPhone, setGuestPhone] = useState('')
+  const [guestApplyComplete, setGuestApplyComplete] = useState(false)
 
   function adjustTicketActiveCount(ticketId: string, delta: number) {
     setTickets((previous) =>
@@ -215,7 +220,7 @@ export function DashboardEventDetailsPage() {
   }, [eventItem, projectMembers, user])
 
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
-  const hasUserRegistered = useMemo(() => myRegistration?.status === 'registered', [myRegistration])
+  const hasUserRegistered = useMemo(() => myRegistration?.status === 'registered' || guestApplyComplete, [guestApplyComplete, myRegistration])
   const userRegistration = myRegistration
   const userRegisteredTicket = useMemo(() => {
     if (!userRegistration) {
@@ -305,6 +310,69 @@ export function DashboardEventDetailsPage() {
       setApplySuccess('تم إرسال طلب التسجيل بنجاح.')
       setSelectedTicketId(null)
       applyForm.reset()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApplyError(requestError.message)
+      } else {
+        setApplyError('تعذر إرسال طلب التسجيل.')
+      }
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
+  const handleGuestApplyToEvent = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setApplyError(null)
+    setApplySuccess(null)
+
+    if (!eventID) {
+      return
+    }
+
+    if (guestApplyComplete) {
+      setApplyError('لقد قمت بالتسجيل في هذه الفعالية مسبقاً.')
+      return
+    }
+
+    if (!selectedTicketId) {
+      setApplyError('يرجى اختيار تذكرة للتسجيل.')
+      return
+    }
+
+    const name = guestName.trim()
+    const email = guestEmail.trim()
+    const phone = guestPhone.trim()
+
+    if (!name) {
+      setApplyError('يرجى إدخال الاسم.')
+      return
+    }
+
+    if (!email) {
+      setApplyError('يرجى إدخال البريد الإلكتروني.')
+      return
+    }
+
+    if (!phone) {
+      setApplyError('يرجى إدخال رقم الهاتف.')
+      return
+    }
+
+    setIsApplying(true)
+
+    try {
+      await createPublicEventRegistration(eventID, {
+        ticketId: selectedTicketId,
+        guestName: name,
+        guestEmail: email,
+        guestPhone: phone,
+      })
+
+      adjustTicketActiveCount(selectedTicketId, 1)
+      setGuestApplyComplete(true)
+      setApplySuccess('تم إرسال طلب التسجيل بنجاح. يمكنك إنشاء حساب لاحقاً بنفس البريد لربط التسجيل بعضويتك.')
+      setSelectedTicketId(null)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setApplyError(requestError.message)
@@ -727,7 +795,7 @@ export function DashboardEventDetailsPage() {
           ) : null}
 
           <div ref={ticketBuyingSectionRef} className="scroll-mt-24">
-            {!user && tickets.length > 0 ? (
+            {!user && tickets.length > 0 && eventItem.allowGuestRegistration !== true && !guestApplyComplete ? (
               <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
                 <p className="font-semibold">التسجيل في الفعالية يتطلب حساباً مفعّلاً</p>
                 <p className="mt-2 leading-7">
@@ -741,7 +809,22 @@ export function DashboardEventDetailsPage() {
                 </Link>
               </div>
             ) : null}
-            {user && tickets.length > 0 && !hasUserRegistered ? (
+            {!user && eventItem.allowGuestRegistration === true && tickets.length > 0 && !guestApplyComplete ? (
+              <div className="mt-5 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-4 text-sm text-cyan-950">
+                <p className="font-semibold">يمكن للزوار التسجيل في هذه الفعالية دون حساب</p>
+                <p className="mt-2 leading-7">
+                  أدخل اسمك وبريدك ورقم هاتفك بعد اختيار التذكرة. إذا أنشأت حساباً لاحقاً بنفس البريد، سيُربط هذا التسجيل بعضويتك.
+                </p>
+                <Link
+                  to={`/login?redirect=${encodeURIComponent(loginRedirect)}`}
+                  className="mt-3 inline-flex font-semibold text-cyan-900 underline-offset-4 hover:underline"
+                >
+                  لديك حساب؟ سجّل الدخول
+                </Link>
+              </div>
+            ) : null}
+            {((user && tickets.length > 0 && !hasUserRegistered) ||
+              (!user && eventItem.allowGuestRegistration === true && tickets.length > 0 && !guestApplyComplete)) ? (
               <div className="mt-5">
               <p className="mb-3 text-sm font-medium text-slate-700">اختر تذكرة للتقديم:</p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -796,7 +879,7 @@ export function DashboardEventDetailsPage() {
                   )
                 })}
               </div>
-              {selectedTicketId && (
+              {selectedTicketId && user ? (
                 <form onSubmit={handleApplyToEvent} className="mt-4">
                   <button
                     type="submit"
@@ -806,12 +889,71 @@ export function DashboardEventDetailsPage() {
                     {isApplying ? 'جار الإرسال...' : 'تقديم الطلب'}
                   </button>
                 </form>
-              )}
+              ) : null}
+              {selectedTicketId && !user ? (
+                <form onSubmit={handleGuestApplyToEvent} className="mt-4 space-y-3">
+                  <label className="block space-y-1">
+                    <span className="text-xs font-medium text-slate-700">الاسم</span>
+                    <input
+                      type="text"
+                      value={guestName}
+                      onChange={(changeEvent) => setGuestName(changeEvent.target.value)}
+                      required
+                      maxLength={160}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-xs font-medium text-slate-700">البريد الإلكتروني</span>
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={(changeEvent) => setGuestEmail(changeEvent.target.value)}
+                      required
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-xs font-medium text-slate-700">رقم الهاتف</span>
+                    <input
+                      type="tel"
+                      value={guestPhone}
+                      onChange={(changeEvent) => setGuestPhone(changeEvent.target.value)}
+                      required
+                      maxLength={40}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    disabled={isApplying || !selectedTicketId}
+                    className="w-full rounded-lg bg-cyan-700 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {isApplying ? 'جار الإرسال...' : 'تقديم الطلب'}
+                  </button>
+                  <p className="text-xs leading-6 text-slate-500">
+                    يمكنك لاحقاً{' '}
+                    <Link to="/registration" className="font-semibold text-cyan-700 underline">
+                      إنشاء حساب
+                    </Link>{' '}
+                    بنفس البريد لربط هذا التسجيل بعضويتك.
+                  </p>
+                </form>
+              ) : null}
             </div>
             ) : null}
             {hasUserRegistered ? (
               <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                 <p className="text-center text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
+                {guestApplyComplete && !user ? (
+                  <p className="mt-2 text-center text-sm leading-7 text-emerald-800">
+                    يمكنك{' '}
+                    <Link to="/registration" className="font-semibold underline">
+                      إنشاء حساب
+                    </Link>{' '}
+                    بنفس البريد لربط هذا التسجيل بعضويتك.
+                  </p>
+                ) : null}
                 {userRegisteredTicket ? (
                   <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4 text-right shadow-sm">
                     <div className="flex items-start justify-between gap-3">

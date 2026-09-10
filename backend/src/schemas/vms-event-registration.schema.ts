@@ -34,5 +34,13 @@ export const changeEventRegistrationTicketSchema = z.object({
   ticketId: requiredTrimmedString,
 })
 
+export const createGuestEventRegistrationSchema = z.object({
+  ticketId: requiredTrimmedString,
+  guestName: requiredTrimmedString.max(160),
+  guestEmail: z.string().trim().toLowerCase().email(),
+  guestPhone: requiredTrimmedString.max(40),
+})
+
 export type CreateEventRegistrationInput = z.infer<typeof createEventRegistrationSchema>
 export type UpdateEventRegistrationInput = z.infer<typeof updateEventRegistrationSchema>
+export type CreateGuestEventRegistrationInput = z.infer<typeof createGuestEventRegistrationSchema>

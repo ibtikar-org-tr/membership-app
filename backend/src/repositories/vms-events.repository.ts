@@ -25,10 +25,15 @@ interface EventRow {
   address: string | null
   display_attendee_numbers: number | null
   cancellation_deadline_hours: number | null
+  allow_guest_registration: number | null
 }
 
 function mapDisplayAttendeeNumbers(value: number | null | undefined) {
   return value === undefined || value === null || value === 1
+}
+
+function mapAllowGuestRegistration(value: number | null | undefined) {
+  return value === 1
 }
 
 function parseJsonObject(data: string | null): Record<string, unknown> | null {
@@ -73,6 +78,7 @@ function mapEventRow(row: EventRow) {
     address: row.address,
     displayAttendeeNumbers: mapDisplayAttendeeNumbers(row.display_attendee_numbers),
     cancellationDeadlineHours: mapCancellationDeadlineHours(row.cancellation_deadline_hours),
+    allowGuestRegistration: mapAllowGuestRegistration(row.allow_guest_registration),
   }
 }
 
@@ -116,7 +122,8 @@ export async function listEvents(db: D1DatabaseLike) {
          events.city,
          events.address,
          events.display_attendee_numbers,
-         events.cancellation_deadline_hours
+         events.cancellation_deadline_hours,
+         events.allow_guest_registration
        FROM events
        LEFT JOIN projects ON projects.id = events.project_id
        ORDER BY events.created_at DESC`,
@@ -151,7 +158,8 @@ export async function getEventById(db: D1DatabaseLike, id: string) {
          events.city,
          events.address,
          events.display_attendee_numbers,
-         events.cancellation_deadline_hours
+         events.cancellation_deadline_hours,
+         events.allow_guest_registration
        FROM events
        LEFT JOIN projects ON projects.id = events.project_id
        WHERE events.id = ?`,
@@ -188,7 +196,7 @@ export async function getEventCancellationSettingsById(db: D1DatabaseLike, id: s
 export async function createEvent(db: D1DatabaseLike, id: string, input: CreateEventInput) {
   await db
     .prepare(
-      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, telegram_group_id, country, region, city, address, display_attendee_numbers, cancellation_deadline_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO events (id, name, description, start_time, end_time, image_url, associated_urls, created_by, project_id, status, telegram_group_id, country, region, city, address, display_attendee_numbers, cancellation_deadline_hours, allow_guest_registration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     )
     .bind(
       id,
@@ -208,6 +216,7 @@ export async function createEvent(db: D1DatabaseLike, id: string, input: CreateE
       input.address ?? null,
       input.displayAttendeeNumbers === false ? 0 : 1,
       input.cancellationDeadlineHours !== undefined ? mapCancellationDeadlineHours(input.cancellationDeadlineHours) : 48,
+      input.allowGuestRegistration === true ? 1 : 0,
     )
     .run()
 
@@ -298,6 +307,11 @@ export async function updateEventById(db: D1DatabaseLike, id: string, input: Upd
   if (input.cancellationDeadlineHours !== undefined) {
     updates.push('cancellation_deadline_hours = ?')
     values.push(mapCancellationDeadlineHours(input.cancellationDeadlineHours))
+  }
+
+  if (input.allowGuestRegistration !== undefined) {
+    updates.push('allow_guest_registration = ?')
+    values.push(input.allowGuestRegistration ? 1 : 0)
   }
 
   if (updates.length === 0) {

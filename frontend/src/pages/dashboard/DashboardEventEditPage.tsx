@@ -193,6 +193,7 @@ export function DashboardEventEditPage() {
     const statusRaw = String(formData.get('status') ?? eventItem.status).trim()
     const status = statusRaw === 'public' || statusRaw === 'archived' ? statusRaw : 'draft'
     const displayAttendeeNumbers = formData.get('displayAttendeeNumbers') === 'on'
+    const allowGuestRegistration = formData.get('allowGuestRegistration') === 'on'
     const cancellationDeadlineHoursRaw = Number(formData.get('cancellationDeadlineHours') ?? eventItem.cancellationDeadlineHours ?? 48)
     const cancellationDeadlineHours = Number.isFinite(cancellationDeadlineHoursRaw)
       ? Math.max(0, Math.min(24 * 365, Math.trunc(cancellationDeadlineHoursRaw)))
@@ -235,6 +236,7 @@ export function DashboardEventEditPage() {
         ...(endTime ? { endTime: new Date(endTime).toISOString() } : {}),
         status,
         displayAttendeeNumbers,
+        allowGuestRegistration,
         cancellationDeadlineHours,
         ...(skills ? { skills } : {}),
         ...(associatedUrlsObject ? { associatedUrls: associatedUrlsObject } : {}),
@@ -514,6 +516,20 @@ export function DashboardEventEditPage() {
               <span className="block text-sm font-medium text-slate-800">عرض عدد المسجّلين علناً</span>
               <span className="block text-xs leading-6 text-slate-500">
                 عند إيقاف هذا الخيار، لن يرى الأعضاء عدد المسجّلين أو قائمة الحضور. يبقى ذلك متاحاً لمديري الفعالية فقط.
+              </span>
+            </span>
+          </label>
+          <label className="md:col-span-2 flex items-start gap-3 rounded-lg border border-slate-200 bg-white px-3 py-3 shadow-sm">
+            <input
+              type="checkbox"
+              name="allowGuestRegistration"
+              defaultChecked={eventItem.allowGuestRegistration === true}
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+            />
+            <span className="space-y-1">
+              <span className="block text-sm font-medium text-slate-800">السماح بتسجيل غير الأعضاء</span>
+              <span className="block text-xs leading-6 text-slate-500">
+                عند تفعيل هذا الخيار، يمكن للزوار التسجيل بالاسم والبريد ورقم الهاتف دون إنشاء حساب. إذا أنشأوا حساباً لاحقاً بنفس البريد، يُربط تسجيلهم بعضويتهم.
               </span>
             </span>
           </label>

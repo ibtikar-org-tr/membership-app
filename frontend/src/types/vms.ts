@@ -68,6 +68,7 @@ export interface VmsEvent {
   address: string | null
   displayAttendeeNumbers: boolean
   cancellationDeadlineHours: number
+  allowGuestRegistration: boolean
 }
 
 export interface VmsEventTicket {
@@ -88,12 +89,15 @@ export interface VmsEventRegistration {
   createdAt: string
   updatedAt: string
   eventId: string
-  membershipNumber: string
+  membershipNumber: string | null
   displayName?: string
   ticketId: string
   status: 'registered' | 'attended' | 'cancelled' | 'no_show' | string
   paymentApprovedBy: string | null
   attendanceApprovedBy: string | null
+  guestEmail?: string | null
+  guestName?: string | null
+  guestPhone?: string | null
 }
 
 export interface VmsSkill {

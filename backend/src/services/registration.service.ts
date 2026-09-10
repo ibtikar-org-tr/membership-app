@@ -13,6 +13,7 @@ import {
   deleteAllUserSkillsByMembershipNumber,
   upsertUserSkill,
 } from '../repositories/user-skills.repository'
+import { claimGuestEventRegistrations } from '../repositories/vms-event-registrations.repository'
 import { createSkill, getSkillByName } from '../repositories/vms-skills.repository'
 import type { RegistrationInput } from '../schemas/registration'
 import { sendRegistrationCredentialsEmail } from './registration-email.service'
@@ -198,6 +199,12 @@ export async function registerUser(bindings: AppBindings, input: RegistrationInp
       interestInVolunteering: input.interestInVolunteering ?? null,
       previousExperience: input.previousExperience ?? null,
     })
+
+    try {
+      await claimGuestEventRegistrations(vmsDb, membershipNumber, input.email)
+    } catch (error) {
+      console.error('Failed to claim guest event registrations', error)
+    }
 
     await sendRegistrationCredentialsEmail(bindings, {
       recipientEmail: input.email,
