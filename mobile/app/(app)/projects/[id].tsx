@@ -469,7 +469,24 @@ export default function ProjectDetailScreen() {
             onPress={() => router.push(`/projects/${child.id}`)}
           >
             <Text style={styles.listTitle}>{child.name}</Text>
-            <StatusPill label={taskStatusLabel(child.status)} tone="info" />
+            <StatusPill
+              label={
+                child.status === 'active'
+                  ? 'نشط'
+                  : child.status === 'completed'
+                    ? 'مكتمل'
+                    : child.status === 'archived'
+                      ? 'مؤرشف'
+                      : child.status
+              }
+              tone={
+                child.status === 'active'
+                  ? 'success'
+                  : child.status === 'completed'
+                    ? 'info'
+                    : 'neutral'
+              }
+            />
           </Pressable>
         ))
       )}
