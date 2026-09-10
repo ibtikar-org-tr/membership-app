@@ -50,7 +50,16 @@ export function DashboardProjectsPage() {
     }
   }, [loadProjects])
 
-  const topLevelCount = useMemo(() => projects.filter((project) => !project.parentProjectId).length, [projects])
+  // Archived projects stay off the main list; they only appear under a parent’s sub-projects page.
+  const listProjects = useMemo(
+    () => projects.filter((project) => project.status !== 'archived'),
+    [projects],
+  )
+
+  const topLevelCount = useMemo(
+    () => listProjects.filter((project) => !project.parentProjectId).length,
+    [listProjects],
+  )
 
   const handleCreateProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -144,7 +153,7 @@ export function DashboardProjectsPage() {
             <div className="grid w-full max-w-md grid-cols-3 gap-2 sm:gap-3 lg:w-auto lg:max-w-none">
               <div className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2.5 text-center backdrop-blur-sm sm:px-4">
                 <p className="text-[10px] font-medium text-cyan-100/80 sm:text-xs">الإجمالي</p>
-                <p className="mt-1 text-lg font-semibold tabular-nums sm:text-xl">{projects.length}</p>
+                <p className="mt-1 text-lg font-semibold tabular-nums sm:text-xl">{listProjects.length}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2.5 text-center backdrop-blur-sm sm:px-4">
                 <p className="text-[10px] font-medium text-cyan-100/80 sm:text-xs">رئيسية</p>
@@ -152,7 +161,7 @@ export function DashboardProjectsPage() {
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2.5 text-center backdrop-blur-sm sm:px-4">
                 <p className="text-[10px] font-medium text-cyan-100/80 sm:text-xs">فرعية</p>
-                <p className="mt-1 text-lg font-semibold tabular-nums sm:text-xl">{projects.length - topLevelCount}</p>
+                <p className="mt-1 text-lg font-semibold tabular-nums sm:text-xl">{listProjects.length - topLevelCount}</p>
               </div>
             </div>
           </div>
@@ -206,7 +215,7 @@ export function DashboardProjectsPage() {
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20"
                 >
                   <option value="">بدون — مشروع رئيسي</option>
-                  {projects.map((projectItem) => (
+                  {listProjects.map((projectItem) => (
                     <option key={projectItem.id} value={projectItem.id}>
                       {projectItem.name}
                     </option>
@@ -249,7 +258,7 @@ export function DashboardProjectsPage() {
         </section>
       }
 
-      <ProjectHierarchyTree clickableProjectIds={projects.map((project) => project.id)} />
+      <ProjectHierarchyTree clickableProjectIds={listProjects.map((project) => project.id)} />
 
       <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -264,7 +273,7 @@ export function DashboardProjectsPage() {
           </div>
           {!isLoading && !hasError ? (
             <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-              {projects.length} مشروع
+              {listProjects.length} مشروع
             </span>
           ) : null}
         </div>
@@ -286,7 +295,7 @@ export function DashboardProjectsPage() {
             </div>
           ) : null}
 
-          {!isLoading && !hasError && projects.length === 0 ? (
+          {!isLoading && !hasError && listProjects.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-14 text-center">
               <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400">
                 <FiFolder className="h-7 w-7" aria-hidden />
@@ -296,7 +305,9 @@ export function DashboardProjectsPage() {
             </div>
           ) : null}
 
-          {!isLoading && !hasError && projects.length > 0 ? <ProjectsLinearTreeList projects={projects} /> : null}
+          {!isLoading && !hasError && listProjects.length > 0 ? (
+            <ProjectsLinearTreeList projects={listProjects} />
+          ) : null}
         </div>
       </section>
     </div>

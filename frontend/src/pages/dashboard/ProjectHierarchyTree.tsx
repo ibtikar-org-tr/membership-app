@@ -157,19 +157,28 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
     }
   }, [user?.membershipNumber])
 
-  const maxDepth = useMemo(() => getMaxDepth(projects), [projects])
-  const projectById = useMemo(() => new Map(projects.map((project) => [project.id, project])), [projects])
+  // Hide archived projects on the main hierarchy view; they remain on sub-projects pages.
+  const visibleProjects = useMemo(
+    () => projects.filter((project) => project.status !== 'archived'),
+    [projects],
+  )
+
+  const maxDepth = useMemo(() => getMaxDepth(visibleProjects), [visibleProjects])
+  const projectById = useMemo(
+    () => new Map(visibleProjects.map((project) => [project.id, project])),
+    [visibleProjects],
+  )
   const hoveredProject = hoveredProjectId ? projectById.get(hoveredProjectId) ?? null : null
 
   const diagramDefinition = useMemo(() => {
-    if (projects.length === 0) {
+    if (visibleProjects.length === 0) {
       return ''
     }
 
-    const projectNodes = new Map(projects.map((project) => [project.id, toMermaidNodeId(project.id)]))
+    const projectNodes = new Map(visibleProjects.map((project) => [project.id, toMermaidNodeId(project.id)]))
     const lines = ['flowchart TD']
 
-    const sortedProjects = [...projects].sort((left, right) => {
+    const sortedProjects = [...visibleProjects].sort((left, right) => {
       if (left.parentProjectId && !right.parentProjectId) {
         return 1
       }
@@ -236,7 +245,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
     }
 
     return lines.join('\n')
-  }, [clickableProjectIdSet, projects])
+  }, [clickableProjectIdSet, visibleProjects])
 
   useEffect(() => {
     if (!diagramDefinition || !diagramRef.current) {
@@ -291,7 +300,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
             svgElement.setAttribute('aria-label', 'شجرة هرمية للمشاريع')
           }
 
-          for (const project of projects) {
+          for (const project of visibleProjects) {
             const projectId = project.id
             const nodeId = toMermaidNodeId(projectId)
             const escapedNodeId = escapeAttributeValue(nodeId)
@@ -417,7 +426,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
       setHoveredProjectId(null)
       setTooltipPosition(null)
     }
-  }, [clickableProjectIdSet, diagramDefinition, diagramId, navigate, projects])
+  }, [clickableProjectIdSet, diagramDefinition, diagramId, navigate, visibleProjects])
 
   return (
     <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm sm:p-6">
@@ -435,7 +444,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
         {!isLoading && !hasError ? (
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-              {projects.length} مشروع
+              {visibleProjects.length} مشروع
             </span>
             {maxDepth > 1 ? (
               <span className="inline-flex w-fit rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
@@ -480,7 +489,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
         </div>
       ) : null}
 
-      {!isLoading && !hasError && projects.length === 0 ? (
+      {!isLoading && !hasError && visibleProjects.length === 0 ? (
         <div className="mt-5 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-12 text-center">
           <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-400">
             <FiGitBranch className="h-6 w-6" aria-hidden />
@@ -490,7 +499,7 @@ export function ProjectHierarchyTree({ clickableProjectIds = [] }: ProjectHierar
         </div>
       ) : null}
 
-      {!isLoading && !hasError && projects.length > 0 ? (
+      {!isLoading && !hasError && visibleProjects.length > 0 ? (
         <div
           ref={diagramRef}
           className="project-tree-canvas relative mt-5 min-h-56 overflow-x-auto rounded-2xl border border-slate-200/80 bg-[radial-gradient(circle_at_1px_1px,#e2e8f0_1px,transparent_0)] bg-size-[20px_20px] bg-linear-to-b from-slate-50/90 to-white p-5 sm:p-8 [&_svg]:mx-auto"
