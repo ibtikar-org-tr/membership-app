@@ -381,6 +381,7 @@ export function createEvent(payload: {
   associatedUrls?: Record<string, unknown>
   displayAttendeeNumbers?: boolean
   cancellationDeadlineHours?: number
+  allowGuestRegistration?: boolean
 }) {
   return postJson<{ event: VmsEvent }, typeof payload>('/events', payload)
 }
@@ -415,6 +416,7 @@ export function updateEvent(
     associatedUrls: Record<string, unknown>
     displayAttendeeNumbers: boolean
     cancellationDeadlineHours: number
+    allowGuestRegistration: boolean
   }>,
 ) {
   return putJson<{ event: VmsEvent }, typeof payload>(`/events/${encodeURIComponent(eventId)}`, payload)
@@ -487,6 +489,22 @@ export function fetchEventRegistrations(
     total?: number
     hasMore?: boolean
   }>(`/event-registrations${query}`)
+}
+
+export function createPublicEventRegistration(
+  eventId: string,
+  payload: {
+    ticketId: string
+    guestName: string
+    guestEmail: string
+    guestPhone: string
+  },
+) {
+  return postJson<{ eventRegistration: VmsEventRegistration }, typeof payload>(
+    `/public/events/${encodeURIComponent(eventId)}/registrations`,
+    payload,
+    { auth: false },
+  )
 }
 
 export function createEventRegistration(payload: {

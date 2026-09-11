@@ -102,7 +102,8 @@ async function fetchRegistrations(bindings: AppBindings): Promise<RegistrationRo
     WHERE e.status = 'public'
       AND e.start_time IS NOT NULL
       AND datetime(e.start_time) > datetime('now')
-      AND er.status = 'registered'`,
+      AND er.status = 'registered'
+      AND er.membership_number IS NOT NULL`,
   )
     .bind()
     .all<RegistrationRow>()

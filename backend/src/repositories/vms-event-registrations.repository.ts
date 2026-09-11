@@ -8,11 +8,25 @@ interface EventRegistrationRow {
   created_at: string
   updated_at: string
   event_id: string
-  membership_number: string
+  membership_number: string | null
   ticket_id: string
   status: string
   payment_approved_by: string | null
   attendance_approved_by: string | null
+  guest_email: string | null
+  guest_name: string | null
+  guest_phone: string | null
+}
+
+export interface CreateEventRegistrationRecord {
+  eventId: string
+  membershipNumber?: string | null
+  ticketId: string
+  status: string
+  attendanceApprovedBy?: string | null
+  guestEmail?: string | null
+  guestName?: string | null
+  guestPhone?: string | null
 }
 
 function mapEventRegistrationRow(row: EventRegistrationRow) {
@@ -26,6 +40,9 @@ function mapEventRegistrationRow(row: EventRegistrationRow) {
     status: row.status,
     paymentApprovedBy: row.payment_approved_by,
     attendanceApprovedBy: row.attendance_approved_by,
+    guestEmail: row.guest_email,
+    guestName: row.guest_name,
+    guestPhone: row.guest_phone,
   }
 }
 
@@ -37,7 +54,20 @@ export interface ListEventRegistrationsOptions {
 }
 
 const EVENT_REGISTRATION_SELECT =
-  'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by FROM event_registrations'
+  'SELECT id, created_at, updated_at, event_id, membership_number, ticket_id, status, payment_approved_by, attendance_approved_by, guest_email, guest_name, guest_phone FROM event_registrations'
+
+function normalizeGuestEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
+function isMembershipUniqueConflict(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.message.includes('UNIQUE constraint failed') &&
+    error.message.includes('event_registrations') &&
+    error.message.includes('membership_number')
+  )
+}
 
 export async function countEventRegistrations(
   db: D1DatabaseLike,
@@ -131,10 +161,39 @@ export async function getEventRegistrationByEventAndMember(
   return row ? mapEventRegistrationRow(row) : null
 }
 
-export async function createEventRegistration(db: D1DatabaseLike, id: string, input: CreateEventRegistrationInput) {
+export async function getEventRegistrationByEventAndGuestEmail(
+  db: D1DatabaseLike,
+  eventId: string,
+  guestEmail: string,
+) {
+  const row = await db
+    .prepare(`${EVENT_REGISTRATION_SELECT} WHERE event_id = ? AND guest_email = ?`)
+    .bind(eventId, normalizeGuestEmail(guestEmail))
+    .first<EventRegistrationRow>()
+
+  return row ? mapEventRegistrationRow(row) : null
+}
+
+export async function createEventRegistration(
+  db: D1DatabaseLike,
+  id: string,
+  input: CreateEventRegistrationInput | CreateEventRegistrationRecord,
+) {
   await db
-    .prepare('INSERT INTO event_registrations (id, event_id, membership_number, ticket_id, status, attendance_approved_by) VALUES (?, ?, ?, ?, ?, ?)')
-    .bind(id, input.eventId, input.membershipNumber, input.ticketId, input.status, input.attendanceApprovedBy ?? null)
+    .prepare(
+      'INSERT INTO event_registrations (id, event_id, membership_number, ticket_id, status, attendance_approved_by, guest_email, guest_name, guest_phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    )
+    .bind(
+      id,
+      input.eventId,
+      input.membershipNumber ?? null,
+      input.ticketId,
+      input.status,
+      input.attendanceApprovedBy ?? null,
+      'guestEmail' in input && input.guestEmail ? normalizeGuestEmail(input.guestEmail) : null,
+      'guestName' in input && input.guestName ? input.guestName.trim() : null,
+      'guestPhone' in input && input.guestPhone ? input.guestPhone.trim() : null,
+    )
     .run()
 
   await applyRegistrationCountTransition(db, null, {
@@ -142,7 +201,52 @@ export async function createEventRegistration(db: D1DatabaseLike, id: string, in
     status: input.status,
   })
 
-  return getEventRegistrationById(db, id)
+  const created = await getEventRegistrationById(db, id)
+  if (!created) {
+    throw new Error('Failed to load created event registration.')
+  }
+
+  return created
+}
+
+export async function claimGuestEventRegistrations(
+  db: D1DatabaseLike,
+  membershipNumber: string,
+  email: string,
+) {
+  const normalizedEmail = normalizeGuestEmail(email)
+  const result = await db
+    .prepare(`${EVENT_REGISTRATION_SELECT} WHERE guest_email = ? AND membership_number IS NULL`)
+    .bind(normalizedEmail)
+    .all<EventRegistrationRow>()
+
+  let claimed = 0
+
+  for (const row of result.results) {
+    const existingMemberRegistration = await getEventRegistrationByEventAndMember(db, row.event_id, membershipNumber)
+    if (existingMemberRegistration) {
+      continue
+    }
+
+    try {
+      await db
+        .prepare(
+          `UPDATE event_registrations
+           SET membership_number = ?, updated_at = datetime('now')
+           WHERE id = ? AND membership_number IS NULL`,
+        )
+        .bind(membershipNumber, row.id)
+        .run()
+      claimed += 1
+    } catch (error) {
+      if (isMembershipUniqueConflict(error)) {
+        continue
+      }
+      throw error
+    }
+  }
+
+  return claimed
 }
 
 export async function updateEventRegistrationById(db: D1DatabaseLike, id: string, input: UpdateEventRegistrationInput) {

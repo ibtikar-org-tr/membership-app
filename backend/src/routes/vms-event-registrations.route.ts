@@ -5,6 +5,7 @@ import {
   deleteEventRegistrationById,
   getEventRegistrationById,
   getEventRegistrationByEventAndMember,
+  claimGuestEventRegistrations,
   countActiveEventRegistrationsByTicket,
   countEventRegistrations,
   listEventRegistrations,
@@ -24,7 +25,7 @@ import {
 } from '../schemas/vms-event-registration.schema'
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
-import { getActorMembershipNumber } from '../utils/actor'
+import { getActorMembershipNumber, getActorUser } from '../utils/actor'
 import { canManageEvent } from '../utils/event-permissions'
 import {
   canSelfCancelRegistration,
@@ -59,19 +60,52 @@ function parseEventRegistrationsPagination(c: { req: { query: (key: string) => s
   return { limit, offset }
 }
 
-async function enrichEventRegistrationsWithDisplayNames<T extends { membershipNumber: string }>(
-  membersDb: AppBindings['MEMBERS_DB'],
-  eventRegistrations: T[],
-) {
+async function enrichEventRegistrationsWithDisplayNames<
+  T extends {
+    membershipNumber: string | null
+    guestName?: string | null
+    guestEmail?: string | null
+  },
+>(membersDb: AppBindings['MEMBERS_DB'], eventRegistrations: T[]) {
   const displayNameMap = await getUserDisplayNamesByMembershipNumbers(
     membersDb,
-    eventRegistrations.map((registration) => registration.membershipNumber),
+    eventRegistrations
+      .map((registration) => registration.membershipNumber)
+      .filter((membershipNumber): membershipNumber is string => Boolean(membershipNumber)),
   )
 
-  return eventRegistrations.map((registration) => ({
+  return eventRegistrations.map((registration) => {
+    const memberName = registration.membershipNumber
+      ? displayNameMap.get(registration.membershipNumber)
+      : undefined
+
+    return {
+      ...registration,
+      displayName:
+        memberName ||
+        registration.guestName?.trim() ||
+        registration.membershipNumber ||
+        registration.guestEmail ||
+        'زائر',
+    }
+  })
+}
+
+function withRedactedGuestContact<
+  T extends {
+    guestEmail?: string | null
+    guestPhone?: string | null
+  },
+>(registration: T, canViewGuestContact: boolean) {
+  if (canViewGuestContact) {
+    return registration
+  }
+
+  return {
     ...registration,
-    displayName: displayNameMap.get(registration.membershipNumber) ?? registration.membershipNumber,
-  }))
+    guestEmail: null,
+    guestPhone: null,
+  }
 }
 
 vmsEventRegistrationsRoute.get(
@@ -148,18 +182,19 @@ vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
     const eventId = c.req.query('eventId')
     const membershipNumberFilter = c.req.query('membershipNumber')
     const { limit, offset } = parseEventRegistrationsPagination(c)
+    const actorMembershipNumber = getActorMembershipNumber(c)
 
     let restrictedMembershipNumber = membershipNumberFilter
+    let canViewGuestContact = false
 
-    if (eventId && !membershipNumberFilter) {
+    if (eventId) {
       const event = await getEventById(c.env.VMS_DB, eventId)
-      const actorMembershipNumber = getActorMembershipNumber(c)
+      canViewGuestContact = event
+        ? await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
+        : false
 
-      if (event && event.displayAttendeeNumbers === false) {
-        const canManage = await canManageEvent(c.env.VMS_DB, event, actorMembershipNumber)
-        if (!canManage) {
-          restrictedMembershipNumber = actorMembershipNumber ?? undefined
-        }
+      if (event && event.displayAttendeeNumbers === false && !membershipNumberFilter && !canViewGuestContact) {
+        restrictedMembershipNumber = actorMembershipNumber ?? undefined
       }
     }
 
@@ -176,6 +211,10 @@ vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
       ? eventRegistrations
       : await enrichEventRegistrationsWithDisplayNames(c.env.MEMBERS_DB, eventRegistrations)
 
+    const visibleRegistrations = enrichedRegistrations.map((registration) =>
+      withRedactedGuestContact(registration, canViewGuestContact),
+    )
+
     if (eventId && limit !== undefined) {
       const total = await countEventRegistrations(c.env.VMS_DB, {
         eventId,
@@ -183,13 +222,13 @@ vmsEventRegistrationsRoute.get('/event-registrations', async (c) => {
       })
 
       return c.json({
-        eventRegistrations: enrichedRegistrations,
+        eventRegistrations: visibleRegistrations,
         total,
-        hasMore: offset + enrichedRegistrations.length < total,
+        hasMore: offset + visibleRegistrations.length < total,
       })
     }
 
-    return c.json({ eventRegistrations: enrichedRegistrations })
+    return c.json({ eventRegistrations: visibleRegistrations })
   } catch (error) {
     console.error('Failed to list event registrations', error)
     return c.json({ error: 'Could not fetch event registrations.' }, 500)
@@ -212,7 +251,14 @@ vmsEventRegistrationsRoute.get(
         eventRegistration,
       ])
 
-      return c.json({ eventRegistration: enrichedRegistration })
+      const event = await getEventById(c.env.VMS_DB, eventRegistration.eventId)
+      const canViewGuestContact = event
+        ? await canManageEvent(c.env.VMS_DB, event, getActorMembershipNumber(c))
+        : false
+
+      return c.json({
+        eventRegistration: withRedactedGuestContact(enrichedRegistration, canViewGuestContact),
+      })
     } catch (error) {
       console.error('Failed to fetch event registration', error)
       return c.json({ error: 'Could not fetch event registration.' }, 500)
@@ -236,6 +282,12 @@ vmsEventRegistrationsRoute.post('/event-registrations', zValidator('json', creat
 
     if (event.status !== 'public') {
       return c.json({ error: 'التسجيل متاح فقط للفعاليات المنشورة.' }, 403)
+    }
+
+    try {
+      await claimGuestEventRegistrations(c.env.VMS_DB, actorMembershipNumber, getActorUser(c).email)
+    } catch (error) {
+      console.error('Failed to claim guest event registrations before member apply', error)
     }
 
     const existingRegistration = await getEventRegistrationByEventAndMember(

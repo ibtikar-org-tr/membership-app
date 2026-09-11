@@ -8,7 +8,7 @@ interface EventCancellationSettings {
 }
 
 interface RegistrationForCancellation {
-  membershipNumber: string
+  membershipNumber: string | null
   status: string
 }
 

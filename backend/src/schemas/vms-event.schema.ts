@@ -23,6 +23,7 @@ export const createEventSchema = z.object({
   address: optionalTrimmedString,
   displayAttendeeNumbers: z.boolean().optional(),
   cancellationDeadlineHours: z.number().int().min(0).max(24 * 365).optional(),
+  allowGuestRegistration: z.boolean().optional(),
 })
 
 export const updateEventSchema = createEventSchema

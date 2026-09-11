@@ -1,4 +1,4 @@
-import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import {
@@ -18,6 +18,7 @@ import {
 import Avatar from 'boring-avatars'
 import {
   createEventRegistration,
+  createPublicEventRegistration,
   fetchEventById,
   fetchEventRegistrations,
   fetchEventTickets,
@@ -41,6 +42,10 @@ import {
   canSelfModifyRegistration,
   selfCancellationHelperText,
 } from '../../utils/event-registration-cancellation'
+import { EmailField } from '../../components/registration/sections/personal-info-section/EmailField'
+import { PhoneNumberField } from '../../components/registration/sections/personal-info-section/PhoneNumberField'
+import { TextField } from '../../components/registration/TextField'
+import { getEmailValidationMessage } from '../../utils/email'
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -63,9 +68,12 @@ function attendeeAvatarKeys(seed: string, count: number) {
   return Array.from({ length: count }, (_, index) => `${seed}:${index}`)
 }
 
+type GuestApplyPrompt = 'member' | 'join' | 'guest'
+
 export function DashboardEventDetailsPage() {
   const { eventID } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const user = useMemo(() => getStoredUser(), [])
   const isStandaloneView = isStandalonePublicEventPath(location.pathname)
   const loginRedirect = `${location.pathname}${location.search}`
@@ -91,6 +99,11 @@ export function DashboardEventDetailsPage() {
   const [changeTicketSuccess, setChangeTicketSuccess] = useState<string | null>(null)
   const [selectedChangeTicketId, setSelectedChangeTicketId] = useState<string | null>(null)
   const [isChangeTicketPickerOpen, setIsChangeTicketPickerOpen] = useState(false)
+  const [guestName, setGuestName] = useState('')
+  const [guestEmail, setGuestEmail] = useState('')
+  const [guestPhone, setGuestPhone] = useState('')
+  const [guestApplyComplete, setGuestApplyComplete] = useState(false)
+  const [guestApplyPrompt, setGuestApplyPrompt] = useState<GuestApplyPrompt>('member')
 
   function adjustTicketActiveCount(ticketId: string, delta: number) {
     setTickets((previous) =>
@@ -107,6 +120,11 @@ export function DashboardEventDetailsPage() {
 
   function scrollToTicketBuyingSection() {
     ticketBuyingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function selectTicketForApply(ticketId: string) {
+    setSelectedTicketId((current) => (current === ticketId ? null : ticketId))
+    setGuestApplyPrompt('member')
   }
 
   useEffect(() => {
@@ -215,7 +233,7 @@ export function DashboardEventDetailsPage() {
   }, [eventItem, projectMembers, user])
 
   const totalTicketCapacity = useMemo(() => tickets.reduce((sum, ticket) => sum + ticket.quantity, 0), [tickets])
-  const hasUserRegistered = useMemo(() => myRegistration?.status === 'registered', [myRegistration])
+  const hasUserRegistered = useMemo(() => myRegistration?.status === 'registered' || guestApplyComplete, [guestApplyComplete, myRegistration])
   const userRegistration = myRegistration
   const userRegisteredTicket = useMemo(() => {
     if (!userRegistration) {
@@ -305,6 +323,71 @@ export function DashboardEventDetailsPage() {
       setApplySuccess('تم إرسال طلب التسجيل بنجاح.')
       setSelectedTicketId(null)
       applyForm.reset()
+    } catch (requestError) {
+      if (requestError instanceof Error) {
+        setApplyError(requestError.message)
+      } else {
+        setApplyError('تعذر إرسال طلب التسجيل.')
+      }
+    } finally {
+      setIsApplying(false)
+    }
+  }
+
+  const handleGuestApplyToEvent = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setApplyError(null)
+    setApplySuccess(null)
+
+    if (!eventID) {
+      return
+    }
+
+    if (guestApplyComplete) {
+      setApplyError('لقد قمت بالتسجيل في هذه الفعالية مسبقاً.')
+      return
+    }
+
+    if (!selectedTicketId) {
+      setApplyError('يرجى اختيار تذكرة للتسجيل.')
+      return
+    }
+
+    const name = guestName.trim()
+    const email = guestEmail.trim()
+    const phone = guestPhone.trim()
+
+    if (!name) {
+      setApplyError('يرجى إدخال الاسم.')
+      return
+    }
+
+    const emailError = getEmailValidationMessage(email)
+    if (!email || emailError) {
+      setApplyError(emailError ?? 'يرجى إدخال البريد الإلكتروني.')
+      return
+    }
+
+    const phoneDigitsCount = phone.replace(/\D/g, '').length
+    if (phoneDigitsCount < 7) {
+      setApplyError('يرجى إدخال رقم هاتف صالح.')
+      return
+    }
+
+    setIsApplying(true)
+
+    try {
+      await createPublicEventRegistration(eventID, {
+        ticketId: selectedTicketId,
+        guestName: name,
+        guestEmail: email,
+        guestPhone: phone,
+      })
+
+      adjustTicketActiveCount(selectedTicketId, 1)
+      setGuestApplyComplete(true)
+      setApplySuccess('تم إرسال طلب التسجيل بنجاح. يمكنك إنشاء حساب لاحقاً بنفس البريد لربط التسجيل بعضويتك.')
+      setSelectedTicketId(null)
     } catch (requestError) {
       if (requestError instanceof Error) {
         setApplyError(requestError.message)
@@ -709,7 +792,7 @@ export function DashboardEventDetailsPage() {
         </article>
       ) : null}
 
-      <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
+      <article className="overflow-visible rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
         <div className="border-b border-slate-100 bg-linear-to-l from-slate-50 to-white px-5 py-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
             <Ticket className="h-5 w-5 text-slate-700" strokeWidth={1.5} />
@@ -727,7 +810,7 @@ export function DashboardEventDetailsPage() {
           ) : null}
 
           <div ref={ticketBuyingSectionRef} className="scroll-mt-24">
-            {!user && tickets.length > 0 ? (
+            {!user && tickets.length > 0 && eventItem.allowGuestRegistration !== true && !guestApplyComplete ? (
               <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
                 <p className="font-semibold">التسجيل في الفعالية يتطلب حساباً مفعّلاً</p>
                 <p className="mt-2 leading-7">
@@ -741,7 +824,16 @@ export function DashboardEventDetailsPage() {
                 </Link>
               </div>
             ) : null}
-            {user && tickets.length > 0 && !hasUserRegistered ? (
+            {!user && eventItem.allowGuestRegistration === true && tickets.length > 0 && !guestApplyComplete ? (
+              <div className="mt-5 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-4 text-sm text-cyan-950">
+                <p className="font-semibold">اختر تذكرة للمتابعة</p>
+                <p className="mt-2 leading-7">
+                  نفضّل الانتساب إلى تجمّع إبتكار لإدارة تسجيلك والاستفادة من عضويتك. يمكنك التقديم كزائر إذا لم ترغب بذلك.
+                </p>
+              </div>
+            ) : null}
+            {((user && tickets.length > 0 && !hasUserRegistered) ||
+              (!user && eventItem.allowGuestRegistration === true && tickets.length > 0 && !guestApplyComplete)) ? (
               <div className="mt-5">
               <p className="mb-3 text-sm font-medium text-slate-700">اختر تذكرة للتقديم:</p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -752,7 +844,7 @@ export function DashboardEventDetailsPage() {
                     <button
                       key={ticket.id}
                       type="button"
-                      onClick={() => !isDisabled && setSelectedTicketId(isSelected ? null : ticket.id)}
+                      onClick={() => !isDisabled && (user ? setSelectedTicketId(isSelected ? null : ticket.id) : selectTicketForApply(ticket.id))}
                       disabled={isDisabled}
                       className={`group rounded-xl border-2 p-4 text-left shadow-sm transition-all duration-200 hover:scale-[1.01] hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
                         isSelected
@@ -796,7 +888,7 @@ export function DashboardEventDetailsPage() {
                   )
                 })}
               </div>
-              {selectedTicketId && (
+              {selectedTicketId && user ? (
                 <form onSubmit={handleApplyToEvent} className="mt-4">
                   <button
                     type="submit"
@@ -806,12 +898,116 @@ export function DashboardEventDetailsPage() {
                     {isApplying ? 'جار الإرسال...' : 'تقديم الطلب'}
                   </button>
                 </form>
-              )}
+              ) : null}
+              {selectedTicketId && !user && guestApplyPrompt === 'member' ? (
+                <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">هل أنت عضو في تجمّع إبتكار؟</p>
+                  <p className="text-xs leading-6 text-slate-600">
+                    إذا كان لديك حساب، سجّل الدخول لإكمال التقديم كعضو.
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/login?redirect=${encodeURIComponent(loginRedirect)}`)}
+                      className="rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800"
+                    >
+                      نعم، أنا عضو
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGuestApplyPrompt('join')}
+                      className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
+                    >
+                      لا، لست عضواً
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              {selectedTicketId && !user && guestApplyPrompt === 'join' ? (
+                <div className="mt-4 space-y-3 rounded-xl border border-cyan-200 bg-cyan-50 p-4">
+                  <p className="text-sm font-semibold text-cyan-950">هل ترغب بالانتساب إلى تجمّع إبتكار؟</p>
+                  <p className="text-xs leading-6 text-cyan-900">
+                    الانتساب يتيح لك إدارة تسجيلك والنقاط ودعوات التلغرام، ويربط هذه الفعالية بحسابك لاحقاً.
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/registration?redirect=${encodeURIComponent(loginRedirect)}`)}
+                      className="rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-800"
+                    >
+                      نعم، أريد الانتساب
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGuestApplyPrompt('guest')}
+                      className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
+                    >
+                      لا، سأقدّم كزائر
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGuestApplyPrompt('member')}
+                    className="text-xs font-semibold text-cyan-800 underline-offset-4 hover:underline"
+                  >
+                    رجوع
+                  </button>
+                </div>
+              ) : null}
+              {selectedTicketId && !user && guestApplyPrompt === 'guest' ? (
+                <form onSubmit={handleGuestApplyToEvent} className="mt-4 space-y-4">
+                  <p className="text-sm font-medium text-slate-800">تقديم الطلب كزائر</p>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="min-w-0 md:col-span-2">
+                      <TextField
+                        id="guest-name"
+                        label="الاسم"
+                        value={guestName}
+                        onChange={setGuestName}
+                        required
+                      />
+                    </div>
+                    <div className="min-w-0 md:col-span-2">
+                      <EmailField
+                        id="guest-email"
+                        label="البريد الإلكتروني"
+                        value={guestEmail}
+                        onChange={setGuestEmail}
+                        required
+                      />
+                    </div>
+                    <PhoneNumberField value={guestPhone} onChange={setGuestPhone} required />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isApplying || !selectedTicketId}
+                    className="w-full rounded-lg bg-cyan-700 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    {isApplying ? 'جار الإرسال...' : 'تقديم الطلب'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGuestApplyPrompt('join')}
+                    className="text-xs font-semibold text-cyan-800 underline-offset-4 hover:underline"
+                  >
+                    رجوع
+                  </button>
+                </form>
+              ) : null}
             </div>
             ) : null}
             {hasUserRegistered ? (
               <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                 <p className="text-center text-sm font-medium text-emerald-800">✓ مسجّل مسبقاً في هذه الفعالية</p>
+                {guestApplyComplete && !user ? (
+                  <p className="mt-2 text-center text-sm leading-7 text-emerald-800">
+                    يمكنك{' '}
+                    <Link to="/registration" className="font-semibold underline">
+                      إنشاء حساب
+                    </Link>{' '}
+                    بنفس البريد لربط هذا التسجيل بعضويتك.
+                  </p>
+                ) : null}
                 {userRegisteredTicket ? (
                   <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4 text-right shadow-sm">
                     <div className="flex items-start justify-between gap-3">

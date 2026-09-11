@@ -34,7 +34,7 @@ export function canSelfCancelRegistration(
     cancellationDeadlineHours: number
   },
   registration: {
-    membershipNumber: string
+    membershipNumber: string | null
     status: string
   } | null,
   actorMembershipNumber: string | null | undefined,
@@ -49,7 +49,7 @@ export function canSelfModifyRegistration(
     cancellationDeadlineHours: number
   },
   registration: {
-    membershipNumber: string
+    membershipNumber: string | null
     status: string
   } | null,
   actorMembershipNumber: string | null | undefined,
@@ -58,7 +58,7 @@ export function canSelfModifyRegistration(
     return false
   }
 
-  if (registration.membershipNumber !== actorMembershipNumber) {
+  if (!registration.membershipNumber || registration.membershipNumber !== actorMembershipNumber) {
     return false
   }
 

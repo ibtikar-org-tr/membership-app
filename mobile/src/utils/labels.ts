@@ -27,13 +27,13 @@ export function canSelfModifyRegistration(
     cancellationDeadlineHours: number
   },
   registration: {
-    membershipNumber: string
+    membershipNumber: string | null
     status: string
   } | null,
   actorMembershipNumber: string | null | undefined,
 ) {
   if (!registration || !actorMembershipNumber) return false
-  if (registration.membershipNumber !== actorMembershipNumber) return false
+  if (!registration.membershipNumber || registration.membershipNumber !== actorMembershipNumber) return false
   if (registration.status !== 'registered') return false
   if (event.status === 'archived') return false
 
