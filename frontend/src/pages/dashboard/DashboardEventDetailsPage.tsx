@@ -42,6 +42,13 @@ import {
   canSelfModifyRegistration,
   selfCancellationHelperText,
 } from '../../utils/event-registration-cancellation'
+import { TextField } from '../../components/registration/TextField'
+import { EmailField } from '../../components/registration/sections/personal-info-section/EmailField'
+import { PhoneNumberField } from '../../components/registration/sections/personal-info-section/PhoneNumberField'
+import { getEmailValidationMessage } from '../../utils/email'
+
+const ARABIC_FULL_NAME_PATTERN = /^\s*[أ-يءآًٌٍَُِْ]+(?:\s*[أ-يءآًٌٍَُِْ]+)+\s*$/
+const LATIN_FULL_NAME_PATTERN = /^\s*[a-zA-ZçÇğĞıİöÖşŞüÜ]+(?:\s+[a-zA-ZçÇğĞıİöÖşŞüÜ]+)+\s*$/
 
 function eventStatusLabel(status: string) {
   if (status === 'draft') return 'مسودة'
@@ -95,7 +102,8 @@ export function DashboardEventDetailsPage() {
   const [changeTicketSuccess, setChangeTicketSuccess] = useState<string | null>(null)
   const [selectedChangeTicketId, setSelectedChangeTicketId] = useState<string | null>(null)
   const [isChangeTicketPickerOpen, setIsChangeTicketPickerOpen] = useState(false)
-  const [guestName, setGuestName] = useState('')
+  const [guestArName, setGuestArName] = useState('')
+  const [guestEnName, setGuestEnName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [guestPhone, setGuestPhone] = useState('')
   const [guestApplyComplete, setGuestApplyComplete] = useState(false)
@@ -349,22 +357,30 @@ export function DashboardEventDetailsPage() {
       return
     }
 
-    const name = guestName.trim()
+    const arName = guestArName.trim()
+    const enName = guestEnName.trim()
     const email = guestEmail.trim()
     const phone = guestPhone.trim()
 
-    if (!name) {
-      setApplyError('يرجى إدخال الاسم.')
+    if (!ARABIC_FULL_NAME_PATTERN.test(arName)) {
+      setApplyError('يرجى كتابة الاسم الكامل باللغة العربيّة')
       return
     }
 
-    if (!email) {
-      setApplyError('يرجى إدخال البريد الإلكتروني.')
+    if (!LATIN_FULL_NAME_PATTERN.test(enName)) {
+      setApplyError('يرجى كتابة الاسم الكامل باللغة التركيّة/الإنكليزيّة')
       return
     }
 
-    if (!phone) {
-      setApplyError('يرجى إدخال رقم الهاتف.')
+    const emailError = getEmailValidationMessage(email)
+    if (!email || emailError) {
+      setApplyError(emailError ?? 'يرجى إدخال البريد الإلكتروني.')
+      return
+    }
+
+    const phoneDigitsCount = phone.replace(/\D/g, '').length
+    if (phoneDigitsCount < 7) {
+      setApplyError('يرجى إدخال رقم هاتف صالح.')
       return
     }
 
@@ -373,7 +389,7 @@ export function DashboardEventDetailsPage() {
     try {
       await createPublicEventRegistration(eventID, {
         ticketId: selectedTicketId,
-        guestName: name,
+        guestName: `${arName} (${enName})`,
         guestEmail: email,
         guestPhone: phone,
       })
@@ -786,7 +802,7 @@ export function DashboardEventDetailsPage() {
         </article>
       ) : null}
 
-      <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
+      <article className="overflow-visible rounded-2xl border border-slate-200/80 bg-white shadow-sm ring-1 ring-slate-900/5">
         <div className="border-b border-slate-100 bg-linear-to-l from-slate-50 to-white px-5 py-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
             <Ticket className="h-5 w-5 text-slate-700" strokeWidth={1.5} />
@@ -949,40 +965,43 @@ export function DashboardEventDetailsPage() {
                 </div>
               ) : null}
               {selectedTicketId && !user && guestApplyPrompt === 'guest' ? (
-                <form onSubmit={handleGuestApplyToEvent} className="mt-4 space-y-3">
+                <form onSubmit={handleGuestApplyToEvent} className="mt-4 space-y-4">
                   <p className="text-sm font-medium text-slate-800">تقديم الطلب كزائر</p>
-                  <label className="block space-y-1">
-                    <span className="text-xs font-medium text-slate-700">الاسم</span>
-                    <input
-                      type="text"
-                      value={guestName}
-                      onChange={(changeEvent) => setGuestName(changeEvent.target.value)}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="min-w-0 md:col-span-2">
+                      <EmailField
+                        id="guest-email"
+                        label="البريد الإلكتروني"
+                        value={guestEmail}
+                        onChange={setGuestEmail}
+                        required
+                      />
+                    </div>
+                    <TextField
+                      id="guest-ar-name"
+                      label="الاسم بالعربية"
+                      value={guestArName}
+                      onChange={setGuestArName}
+                      helperText="الاسم الكامل باللغة العربية"
+                      validationPattern={ARABIC_FULL_NAME_PATTERN}
+                      validationMessage="يرجى كتابة الاسم الكامل باللغة العربيّة"
                       required
-                      maxLength={160}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
                     />
-                  </label>
-                  <label className="block space-y-1">
-                    <span className="text-xs font-medium text-slate-700">البريد الإلكتروني</span>
-                    <input
-                      type="email"
-                      value={guestEmail}
-                      onChange={(changeEvent) => setGuestEmail(changeEvent.target.value)}
-                      required
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                    />
-                  </label>
-                  <label className="block space-y-1">
-                    <span className="text-xs font-medium text-slate-700">رقم الهاتف</span>
-                    <input
-                      type="tel"
-                      value={guestPhone}
-                      onChange={(changeEvent) => setGuestPhone(changeEvent.target.value)}
-                      required
-                      maxLength={40}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
-                    />
-                  </label>
+                    <div className="min-w-0 text-left">
+                      <TextField
+                        id="guest-en-name"
+                        label="Name Surname"
+                        value={guestEnName}
+                        onChange={setGuestEnName}
+                        inputDir="ltr"
+                        helperText="الاسم الكامل باللغة التركية أو الإنكليزية"
+                        validationPattern={LATIN_FULL_NAME_PATTERN}
+                        validationMessage="يرجى كتابة الاسم الكامل باللغة التركيّة/الإنكليزيّة"
+                        required
+                      />
+                    </div>
+                    <PhoneNumberField value={guestPhone} onChange={setGuestPhone} required />
+                  </div>
                   <button
                     type="submit"
                     disabled={isApplying || !selectedTicketId}
