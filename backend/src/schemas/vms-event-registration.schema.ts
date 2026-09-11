@@ -36,7 +36,7 @@ export const changeEventRegistrationTicketSchema = z.object({
 
 export const createGuestEventRegistrationSchema = z.object({
   ticketId: requiredTrimmedString,
-  guestName: requiredTrimmedString.max(320),
+  guestName: requiredTrimmedString.max(160),
   guestEmail: z.string().trim().toLowerCase().email(),
   guestPhone: requiredTrimmedString.max(40),
 })
