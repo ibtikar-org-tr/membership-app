@@ -353,11 +353,18 @@ export function DashboardProjectDetailsPage() {
       return false
     }
 
+    if (project?.owner === user.membershipNumber) {
+      return true
+    }
+
     return projectMembers.some((member) => member.membershipNumber === user.membershipNumber)
-  }, [projectMembers, user])
+  }, [project?.owner, projectMembers, user])
   const canLeaveProject = isProjectMember && !isProjectOwner
   const ownershipTransferOptions = useMemo(
-    () => projectMembers.filter((member) => member.membershipNumber !== project?.owner),
+    () =>
+      projectMembers.filter(
+        (member) => member.role !== 'owner' && member.membershipNumber !== project?.owner,
+      ),
     [projectMembers, project?.owner],
   )
   const canManageProject = canManageProjectMembers

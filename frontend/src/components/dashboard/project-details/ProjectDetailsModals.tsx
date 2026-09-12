@@ -523,7 +523,8 @@ export function MembersModal({
 
           <ul className="space-y-2">
             {visibleMembers.map((member) => {
-              const isOwner = member.membershipNumber === projectOwnerMembershipNumber
+              const isOwner =
+                member.role === 'owner' || member.membershipNumber === projectOwnerMembershipNumber
               const isSelf = member.membershipNumber === actorMembershipNumber
               const isUpdatingRole = updatingRoleMembershipNumber === member.membershipNumber
               const canRemove =
@@ -577,7 +578,7 @@ export function MembersModal({
                           <span
                             className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${projectMemberRoleBadgeClass(member.role, isOwner)}`}
                           >
-                            {isOwner ? 'مالك المشروع' : projectMemberRoleLabel(member.role)}
+                            {projectMemberRoleLabel(isOwner ? 'owner' : member.role)}
                           </span>
                           <span className="font-mono text-[11px] text-slate-500" dir="ltr">
                             {member.membershipNumber}

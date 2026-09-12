@@ -7,59 +7,28 @@ import {
   listProjectNotes,
   updateProjectNoteById,
 } from '../repositories/vms-project-notes.repository'
-import { getProjectMember } from '../repositories/vms-project-members.repository'
-import { getProjectById } from '../repositories/vms-projects.repository'
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
 import {
   createProjectNoteSchema,
   projectNoteParamsSchema,
   updateProjectNoteSchema,
 } from '../schemas/vms-project-note.schema'
+import { editNoteWithAiSchema } from '../schemas/vms-ai-note.schema'
+import { editNoteContentWithAi } from '../services/ai-note-edit.service'
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
 import { verifyAccessToken } from '../utils/jwt'
+import { canManageProject, getProjectAccess } from '../utils/project-access'
 
 export const vmsProjectNotesRoute = new Hono<AppEnv>()
 
-async function canManageProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true }
-  }
-
-  const membership = await getProjectMember(db, projectId, membershipNumber)
-  return {
-    project,
-    isAuthorized: membership?.role === 'manager',
-  }
-}
-
 async function canViewProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false, canEdit: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true, canEdit: true }
-  }
-
-  const membership = await getProjectMember(db, projectId, membershipNumber)
-  if (!membership) {
-    return { project, isAuthorized: false, canEdit: false }
-  }
-
+  const access = await getProjectAccess(db, projectId, membershipNumber)
   return {
-    project,
-    isAuthorized: true,
-    canEdit: membership.role !== 'observer',
+    project: access.project,
+    isAuthorized: access.isMember,
+    canEdit: access.canEdit,
   }
 }
 
@@ -183,6 +152,56 @@ vmsProjectNotesRoute.put(
   },
 )
 
+vmsProjectNotesRoute.post(
+  '/project-notes/:id/ai-edit',
+  zValidator('param', projectNoteParamsSchema),
+  zValidator('json', editNoteWithAiSchema),
+  async (c) => {
+    try {
+      const { id } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+      const payload = c.req.valid('json')
+      const note = await getProjectNoteById(c.env.VMS_DB, id)
+
+      if (!note) {
+        return c.json({ error: 'Note not found.' }, 404)
+      }
+
+      const access = await canViewProject(c.env.VMS_DB, note.projectId, actorMembershipNumber)
+      if (!access.project) {
+        return c.json({ error: 'Project not found.' }, 404)
+      }
+
+      if (!access.isAuthorized) {
+        return c.json({ error: 'You are not a member of this project.' }, 403)
+      }
+
+      if (!access.canEdit) {
+        return c.json({ error: 'Your role allows viewing notes only.' }, 403)
+      }
+
+      if (payload.contentType !== note.contentType) {
+        return c.json({ error: 'contentType does not match this note.' }, 400)
+      }
+
+      const edited = await editNoteContentWithAi(c.env, {
+        command: payload.command,
+        content: payload.content,
+        contentType: payload.contentType,
+        noteTitle: note.title,
+      })
+
+      return c.json({ edited })
+    } catch (error) {
+      console.error('Failed to edit project note with AI', error)
+      if (error instanceof Error && error.message.trim()) {
+        return c.json({ error: error.message }, 502)
+      }
+      return c.json({ error: 'تعذر تعديل الملاحظة بالذكاء الاصطناعي.' }, 502)
+    }
+  },
+)
+
 vmsProjectNotesRoute.delete('/project-notes/:id', zValidator('param', projectNoteParamsSchema), async (c) => {
   try {
     const { id } = c.req.valid('param')
@@ -209,7 +228,7 @@ vmsProjectNotesRoute.delete('/project-notes/:id', zValidator('param', projectNot
 export async function handleProjectNoteWebSocket(
   request: Request,
   env: AppBindings,
-  noteId: string,
+  projectId: string,
 ): Promise<Response> {
   if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
     return new Response('Expected WebSocket upgrade.', { status: 426 })
@@ -220,8 +239,8 @@ export async function handleProjectNoteWebSocket(
   const headerToken = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim()
   const token = queryToken || headerToken
 
-  if (!noteId) {
-    return new Response('Missing note id.', { status: 400 })
+  if (!projectId?.trim()) {
+    return new Response('Missing project id.', { status: 400 })
   }
 
   if (!token) {
@@ -233,12 +252,11 @@ export async function handleProjectNoteWebSocket(
     return new Response('Unauthorized.', { status: 401 })
   }
 
-  const note = await getProjectNoteById(env.VMS_DB, noteId)
-  if (!note) {
-    return new Response('Note not found.', { status: 404 })
+  const access = await canViewProject(env.VMS_DB, projectId.trim(), payload.sub)
+  if (!access.project) {
+    return new Response('Project not found.', { status: 404 })
   }
 
-  const access = await canViewProject(env.VMS_DB, note.projectId, payload.sub)
   if (!access.isAuthorized) {
     return new Response('Forbidden.', { status: 403 })
   }
@@ -250,9 +268,13 @@ export async function handleProjectNoteWebSocket(
   const displayNameMap = await getUserDisplayNamesByMembershipNumbers(env.MEMBERS_DB, [payload.sub])
   const displayName = displayNameMap.get(payload.sub) ?? payload.sub
 
-  const stub = env.PROJECT_NOTE_ROOM.getByName(noteId)
+  if (!env.PROJECT_NOTE_ROOM) {
+    return new Response('Project note room binding is not configured.', { status: 500 })
+  }
+
+  const stub = env.PROJECT_NOTE_ROOM.getByName(projectId.trim())
   const forwardUrl = new URL('https://project-note-room/ws')
-  forwardUrl.searchParams.set('noteId', noteId)
+  forwardUrl.searchParams.set('projectId', projectId.trim())
   forwardUrl.searchParams.set('membershipNumber', payload.sub)
   forwardUrl.searchParams.set('displayName', displayName)
 

@@ -1,6 +1,8 @@
 import type { CreateProjectNoteInput, UpdateProjectNoteInput } from '../schemas/vms-project-note.schema'
 import type { D1DatabaseLike } from '../types/bindings'
 
+export type ProjectNoteContentType = 'html' | 'markdown'
+
 interface ProjectNoteRow {
   id: string
   created_at: string
@@ -9,6 +11,7 @@ interface ProjectNoteRow {
   title: string
   content: string
   content_preview: string | null
+  content_type: string | null
   created_by: string
 }
 
@@ -20,7 +23,15 @@ export interface ProjectNoteRecord {
   title: string
   content: string
   contentPreview: string | null
+  contentType: ProjectNoteContentType
   createdBy: string
+}
+
+const NOTE_SELECT_COLUMNS =
+  'id, created_at, updated_at, project_id, title, content, content_preview, content_type, created_by'
+
+function normalizeContentType(value: string | null | undefined): ProjectNoteContentType {
+  return value === 'markdown' ? 'markdown' : 'html'
 }
 
 function mapProjectNoteRow(row: ProjectNoteRow): ProjectNoteRecord {
@@ -32,6 +43,7 @@ function mapProjectNoteRow(row: ProjectNoteRow): ProjectNoteRecord {
     title: row.title,
     content: row.content,
     contentPreview: row.content_preview,
+    contentType: normalizeContentType(row.content_type),
     createdBy: row.created_by,
   }
 }
@@ -40,7 +52,7 @@ export async function listProjectNotes(db: D1DatabaseLike, projectId?: string) {
   if (projectId) {
     const result = await db
       .prepare(
-        `SELECT id, created_at, updated_at, project_id, title, content, content_preview, created_by
+        `SELECT ${NOTE_SELECT_COLUMNS}
          FROM project_notes
          WHERE project_id = ?
          ORDER BY updated_at DESC`,
@@ -53,7 +65,7 @@ export async function listProjectNotes(db: D1DatabaseLike, projectId?: string) {
 
   const result = await db
     .prepare(
-      `SELECT id, created_at, updated_at, project_id, title, content, content_preview, created_by
+      `SELECT ${NOTE_SELECT_COLUMNS}
        FROM project_notes
        ORDER BY updated_at DESC`,
     )
@@ -66,7 +78,7 @@ export async function listProjectNotes(db: D1DatabaseLike, projectId?: string) {
 export async function getProjectNoteById(db: D1DatabaseLike, id: string) {
   const row = await db
     .prepare(
-      `SELECT id, created_at, updated_at, project_id, title, content, content_preview, created_by
+      `SELECT ${NOTE_SELECT_COLUMNS}
        FROM project_notes
        WHERE id = ?`,
     )
@@ -82,12 +94,14 @@ export async function createProjectNote(
   createdBy: string,
   input: CreateProjectNoteInput,
 ) {
+  const contentType = input.contentType === 'markdown' ? 'markdown' : 'html'
+
   await db
     .prepare(
-      `INSERT INTO project_notes (id, project_id, title, content, content_preview, created_by)
-       VALUES (?, ?, ?, '', NULL, ?)`,
+      `INSERT INTO project_notes (id, project_id, title, content, content_preview, content_type, created_by)
+       VALUES (?, ?, ?, '', NULL, ?, ?)`,
     )
-    .bind(id, input.projectId, input.title, createdBy)
+    .bind(id, input.projectId, input.title, contentType, createdBy)
     .run()
 
   const note = await getProjectNoteById(db, id)

@@ -1,7 +1,6 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
-import { getProjectMember } from '../repositories/vms-project-members.repository'
-import { getDirectProjectByIdForMember, getProjectById, listDirectProjectsForMember } from '../repositories/vms-projects.repository'
+import { getDirectProjectByIdForMember, listDirectProjectsForMember } from '../repositories/vms-projects.repository'
 import {
   attachSubtaskProgress,
   createSubtask,
@@ -34,6 +33,7 @@ import { syncTaskCompletionPoints, type TaskPointsState } from '../services/task
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
+import { canManageProject, getProjectAccess } from '../utils/project-access'
 
 function toPointsState(task: {
   id: string
@@ -56,21 +56,7 @@ function toPointsState(task: {
 export const vmsTasksRoute = new Hono<AppEnv>()
 
 async function canManageProjectTasks(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true }
-  }
-
-  const projectMember = await getProjectMember(db, projectId, membershipNumber)
-  return {
-    project,
-    isAuthorized: projectMember?.role === 'manager',
-  }
+  return canManageProject(db, projectId, membershipNumber)
 }
 
 async function canEditTask(
@@ -78,22 +64,17 @@ async function canEditTask(
   task: { projectId: string; assignedTo: string | null },
   membershipNumber: string,
 ) {
-  const project = await getProjectById(db, task.projectId)
+  const access = await getProjectAccess(db, task.projectId, membershipNumber)
 
-  if (!project) {
+  if (!access.project) {
     return false
   }
 
-  if (project.owner === membershipNumber) {
+  if (access.canManage) {
     return true
   }
 
-  if (task.assignedTo === membershipNumber) {
-    return true
-  }
-
-  const projectMember = await getProjectMember(db, task.projectId, membershipNumber)
-  return projectMember?.role === 'manager'
+  return task.assignedTo === membershipNumber
 }
 
 async function enrichTasksWithSubtaskProgress(db: AppBindings['VMS_DB'], tasks: Awaited<ReturnType<typeof listTasks>>) {

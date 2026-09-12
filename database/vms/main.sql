@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS projects (
     name TEXT NOT NULL,
     description TEXT,
     parent_project_id TEXT REFERENCES projects(id) ON DELETE SET NULL, -- allows for nesting projects, technically the whole application can be one big project with multiple levels of sub-projects
-    owner TEXT NOT NULL, -- membership_number of the user who owns the project (only one owner per project, but managers can be multiple)
+    owner TEXT NOT NULL, -- membership_number of the user who owns the project (canonical single-owner pointer; also mirrored in project_members as role=owner)
     telegram_group_id TEXT, -- Telegram group ID for project communication (e.g., "-123456789"); the same group may be linked to multiple projects
     status TEXT NOT NULL, -- "active", "completed", "archived"
     last_reported_at TEXT -- ISO 8601; last owner daily report sent (cron)
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS projects (
 CREATE TABLE IF NOT EXISTS project_members (
     project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     membership_number TEXT NOT NULL,
-    role TEXT NOT NULL, -- "member", "manager", "observer"
+    role TEXT NOT NULL, -- "owner", "member", "manager", "observer" (exactly one owner per project; mirrored from projects.owner)
     PRIMARY KEY (project_id, membership_number)
 );
 
@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS project_notes (
     title TEXT NOT NULL,
     content TEXT NOT NULL DEFAULT '',
     content_preview TEXT,
+    content_type TEXT NOT NULL DEFAULT 'html', -- "html" | "markdown"
     created_by TEXT NOT NULL
 );
 

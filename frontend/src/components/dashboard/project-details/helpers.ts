@@ -1,6 +1,10 @@
 import { formatDateEnCA } from '../../../utils/date-format'
 
 export function projectMemberRoleLabel(role: string) {
+  if (role === 'owner') {
+    return 'مالك المشروع'
+  }
+
   if (role === 'manager') {
     return 'مدير'
   }
@@ -17,7 +21,7 @@ export function projectMemberRoleLabel(role: string) {
 }
 
 export function projectMemberRoleBadgeClass(role: string, isOwner = false) {
-  if (isOwner) {
+  if (isOwner || role === 'owner') {
     return 'border-amber-200 bg-amber-100 text-amber-900'
   }
 
@@ -33,7 +37,7 @@ export function projectMemberRoleBadgeClass(role: string, isOwner = false) {
 }
 
 export function projectMemberCardBorderClass(role: string, isOwner = false) {
-  if (isOwner) {
+  if (isOwner || role === 'owner') {
     return 'border-2 border-amber-300 bg-amber-50/50 hover:border-amber-400 hover:shadow-amber-100/60'
   }
 
@@ -52,18 +56,18 @@ export function sortProjectMembers<T extends { membershipNumber: string; role: s
   members: T[],
   projectOwnerMembershipNumber: string,
 ) {
-  const roleOrder: Record<string, number> = { manager: 0, observer: 1, member: 2 }
+  const roleOrder: Record<string, number> = { owner: 0, manager: 1, observer: 2, member: 3 }
 
   return [...members].sort((left, right) => {
-    const leftIsOwner = left.membershipNumber === projectOwnerMembershipNumber
-    const rightIsOwner = right.membershipNumber === projectOwnerMembershipNumber
+    const leftIsOwner = left.role === 'owner' || left.membershipNumber === projectOwnerMembershipNumber
+    const rightIsOwner = right.role === 'owner' || right.membershipNumber === projectOwnerMembershipNumber
 
     if (leftIsOwner !== rightIsOwner) {
       return leftIsOwner ? -1 : 1
     }
 
-    const leftRole = roleOrder[left.role] ?? 3
-    const rightRole = roleOrder[right.role] ?? 3
+    const leftRole = roleOrder[left.role] ?? 4
+    const rightRole = roleOrder[right.role] ?? 4
 
     if (leftRole !== rightRole) {
       return leftRole - rightRole

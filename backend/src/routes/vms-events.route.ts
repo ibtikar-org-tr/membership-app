@@ -1,10 +1,9 @@
 import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { createEvent, deleteEventById, getEventById, listEvents, updateEventById } from '../repositories/vms-events.repository'
-import { getProjectMember } from '../repositories/vms-project-members.repository'
-import { getProjectById } from '../repositories/vms-projects.repository'
 import { createEventSchema, eventParamsSchema, updateEventSchema } from '../schemas/vms-event.schema'
 import type { AppBindings } from '../types/bindings'
+import { canManageProject } from '../utils/project-access'
 
 export const vmsEventsRoute = new Hono<{ Bindings: AppBindings }>()
 
@@ -38,16 +37,12 @@ vmsEventsRoute.post('/events', zValidator('json', createEventSchema), async (c) 
   try {
     const payload = c.req.valid('json')
 
-    const project = await getProjectById(c.env.VMS_DB, payload.projectId)
-    if (!project) {
+    const authorization = await canManageProject(c.env.VMS_DB, payload.projectId, payload.createdBy)
+    if (!authorization.project) {
       return c.json({ error: 'Project not found.' }, 404)
     }
 
-    const isOwner = project.owner === payload.createdBy
-    const projectMember = await getProjectMember(c.env.VMS_DB, payload.projectId, payload.createdBy)
-    const isManager = projectMember?.role === 'manager'
-
-    if (!isOwner && !isManager) {
+    if (!authorization.isAuthorized) {
       return c.json({ error: 'Only project owner or managers can create events for this project.' }, 403)
     }
 

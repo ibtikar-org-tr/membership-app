@@ -201,6 +201,15 @@ export function sanitizeNotePreview(preview: string | null | undefined) {
   return stripped || null
 }
 
+function createContentPreview(content: string) {
+  const normalized = sanitizeNotePreview(content)
+  if (!normalized) {
+    return null
+  }
+
+  return normalized.length > 200 ? `${normalized.slice(0, 197)}...` : normalized
+}
+
 export function extractNoteContent(doc: Y.Doc) {
   const fragment = doc.getXmlFragment('default')
   if (fragment.length > 0) {
@@ -218,11 +227,10 @@ export function extractNoteContent(doc: Y.Doc) {
   }
 }
 
-function createContentPreview(content: string) {
-  const normalized = sanitizeNotePreview(content)
-  if (!normalized) {
-    return null
+export function extractMarkdownNoteContent(doc: Y.Doc) {
+  const markdown = doc.getText('markdown').toString()
+  return {
+    content: markdown,
+    preview: createContentPreview(markdown),
   }
-
-  return normalized.length > 200 ? `${normalized.slice(0, 197)}...` : normalized
 }

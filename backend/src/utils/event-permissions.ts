@@ -1,5 +1,5 @@
-import { getProjectMember } from '../repositories/vms-project-members.repository'
 import type { D1DatabaseLike } from '../types/bindings'
+import { canManageProject } from './project-access'
 
 type EventManagementContext = {
   createdBy: string
@@ -12,13 +12,9 @@ export async function canManageEvent(
   event: EventManagementContext,
   membershipNumber: string,
 ): Promise<boolean> {
-  if (event.projectId && event.projectOwner === membershipNumber) {
-    return true
-  }
-
   if (event.projectId) {
-    const projectMember = await getProjectMember(db, event.projectId, membershipNumber)
-    if (projectMember?.role === 'manager') {
+    const access = await canManageProject(db, event.projectId, membershipNumber)
+    if (access.isAuthorized) {
       return true
     }
   }

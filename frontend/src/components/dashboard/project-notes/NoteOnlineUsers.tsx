@@ -45,11 +45,11 @@ export function NoteOnlineUsers({ users, className = 'mt-2' }: NoteOnlineUsersPr
 
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
-      <span className="text-xs font-medium text-slate-500">متصل الآن</span>
+      <span className="text-[12px] font-medium text-[#a39e98]">متصل الآن</span>
       {users.map((user) => (
         <span
           key={user.membershipNumber}
-          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-700"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#e6e6e6] bg-[#f6f5f4] px-2 py-1 text-[11px] font-medium text-[#31302e]"
         >
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: user.color }} aria-hidden />
           {user.displayName}

@@ -60,13 +60,13 @@ app.post('/ms/membership-app/api/internal/cron', async (c) => {
   return c.json({ ok: true, stats })
 })
 
-app.get('/ms/membership-app/api/project-notes/:id/ws', async (c) => {
-  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('id'))
+app.get('/ms/membership-app/api/projects/:projectId/notes/ws', async (c) => {
+  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('projectId'))
 })
 
 const publicApi = new Hono<{ Bindings: AppBindings }>()
-publicApi.get('/project-notes/:id/ws', async (c) => {
-  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('id'))
+publicApi.get('/projects/:projectId/notes/ws', async (c) => {
+  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('projectId'))
 })
 publicApi.route('/', registrationRoute)
 publicApi.route('/', statsRoute)

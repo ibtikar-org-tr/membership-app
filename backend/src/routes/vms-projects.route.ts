@@ -12,28 +12,13 @@ import {
   listProjectsForMemberWithRedactedNames,
   updateProjectById,
 } from '../repositories/vms-projects.repository'
-import { createProjectMember, getProjectMember } from '../repositories/vms-project-members.repository'
+import { getProjectMember, upsertProjectMember } from '../repositories/vms-project-members.repository'
 import { createProjectSchema, projectParamsSchema, updateProjectSchema } from '../schemas/vms-project.schema'
-import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
+import { canManageProject } from '../utils/project-access'
 
 export const vmsProjectsRoute = new Hono<AppEnv>()
-
-async function canManageProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true }
-  }
-
-  const membership = await getProjectMember(db, projectId, membershipNumber)
-  return { project, isAuthorized: membership?.role === 'manager' }
-}
 
 vmsProjectsRoute.get('/projects', async (c) => {
   try {
@@ -51,7 +36,6 @@ vmsProjectsRoute.get('/projects', async (c) => {
 vmsProjectsRoute.get('/projects/direct', async (c) => {
   try {
     const membershipNumber = getActorMembershipNumber(c)
-
 
     // Main projects list: active only; use GET /projects for sub-project trees that need inactive ones.
     const projects = await listDirectProjectsForMember(c.env.VMS_DB, membershipNumber, {
@@ -78,7 +62,6 @@ vmsProjectsRoute.get('/projects/platform', async (c) => {
   try {
     const membershipNumber = getActorMembershipNumber(c)
 
-
     const projects = await listProjectsForMemberWithRedactedNames(c.env.VMS_DB, membershipNumber, {
       activeOnly: true,
     })
@@ -104,7 +87,6 @@ vmsProjectsRoute.get('/projects/:id', zValidator('param', projectParamsSchema), 
     const { id } = c.req.valid('param')
     const membershipNumber = getActorMembershipNumber(c)
 
-
     const project = await getDirectProjectByIdForMember(c.env.VMS_DB, id, membershipNumber)
 
     if (!project) {
@@ -121,7 +103,6 @@ vmsProjectsRoute.get('/projects/:id', zValidator('param', projectParamsSchema), 
 vmsProjectsRoute.post('/projects', zValidator('json', createProjectSchema), async (c) => {
   try {
     const membershipNumber = getActorMembershipNumber(c)
-
 
     const payload = c.req.valid('json')
 
@@ -143,23 +124,29 @@ vmsProjectsRoute.post('/projects', zValidator('json', createProjectSchema), asyn
         return c.json({ error: 'يُسمح للمسؤولين فقط بإنشاء مشاريع رئيسية (بدون مشروع أب).' }, 403)
       }
     } else {
-      const parent = await getProjectById(c.env.VMS_DB, parentId)
+      const parentAccess = await canManageProject(c.env.VMS_DB, parentId, membershipNumber)
 
-      if (!parent) {
+      if (!parentAccess.project) {
         return c.json({ error: 'المشروع الأب غير موجود.' }, 404)
       }
 
-      const isParentOwner = parent.owner === membershipNumber
-      const membership = await getProjectMember(c.env.VMS_DB, parentId, membershipNumber)
-      const isParentManager = membership?.role === 'manager'
-
-      if (!isAdmin && !isParentOwner && !isParentManager) {
+      if (!isAdmin && !parentAccess.isAuthorized) {
         return c.json({ error: 'يُسمح لمالك المشروع أو المدراء فقط بإضافة مشاريع فرعية.' }, 403)
       }
     }
 
     const projectId = crypto.randomUUID()
     const project = await createProject(c.env.VMS_DB, projectId, payload)
+
+    if (!project) {
+      return c.json({ error: 'Could not create project.' }, 500)
+    }
+
+    await upsertProjectMember(c.env.VMS_DB, {
+      projectId,
+      membershipNumber: project.owner,
+      role: 'owner',
+    })
 
     return c.json({ project }, 201)
   } catch (error) {
@@ -176,7 +163,6 @@ vmsProjectsRoute.put(
     try {
       const { id } = c.req.valid('param')
       const membershipNumber = getActorMembershipNumber(c)
-
 
       const payload = c.req.valid('json')
       const authorization = await canManageProject(c.env.VMS_DB, id, membershipNumber)
@@ -212,18 +198,21 @@ vmsProjectsRoute.put(
       const transferringTo =
         bodyForUpdate.owner !== undefined ? bodyForUpdate.owner.trim() : null
 
+      const project = await updateProjectById(c.env.VMS_DB, id, bodyForUpdate)
+
       if (transferringTo && transferringTo !== projectBefore.owner) {
-        const formerOwnerMembership = await getProjectMember(c.env.VMS_DB, id, projectBefore.owner)
-        if (!formerOwnerMembership) {
-          await createProjectMember(c.env.VMS_DB, {
-            projectId: id,
-            membershipNumber: projectBefore.owner,
-            role: 'member',
-          })
-        }
+        await upsertProjectMember(c.env.VMS_DB, {
+          projectId: id,
+          membershipNumber: transferringTo,
+          role: 'owner',
+        })
+        await upsertProjectMember(c.env.VMS_DB, {
+          projectId: id,
+          membershipNumber: projectBefore.owner,
+          role: 'manager',
+        })
       }
 
-      const project = await updateProjectById(c.env.VMS_DB, id, bodyForUpdate)
       return c.json({ project })
     } catch (error) {
       console.error('Failed to update project', error)

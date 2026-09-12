@@ -15,7 +15,7 @@ export interface VmsProject {
 export interface VmsProjectMember {
   projectId: string
   membershipNumber: string
-  role: 'member' | 'manager' | 'observer' | string
+  role: 'owner' | 'member' | 'manager' | 'observer' | string
   displayName: string
 }
 
@@ -36,6 +36,7 @@ export interface VmsProjectNote {
   title: string
   content: string
   contentPreview: string | null
+  contentType?: 'html' | 'markdown'
   createdBy: string
   createdByDisplayName?: string
   canEdit?: boolean

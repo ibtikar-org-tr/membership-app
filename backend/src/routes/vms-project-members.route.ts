@@ -6,7 +6,6 @@ import {
 } from '../repositories/user-info.repository'
 import { getProjectById } from '../repositories/vms-projects.repository'
 import {
-  createProjectMember,
   deleteProjectMember,
   getProjectMember,
   listProjectMembers,
@@ -21,44 +20,9 @@ import { notifyProjectMemberRemoved } from '../services/project-member-notificat
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
+import { canManageProject, getEffectiveRole, isProjectMember } from '../utils/project-access'
 
 export const vmsProjectMembersRoute = new Hono<AppEnv>()
-
-async function hasProjectMembership(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isMember: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isMember: true }
-  }
-
-  const projectMember = await getProjectMember(db, projectId, membershipNumber)
-  return {
-    project,
-    isMember: Boolean(projectMember),
-  }
-}
-
-async function canManageProjectMembers(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true }
-  }
-
-  const projectMember = await getProjectMember(db, projectId, membershipNumber)
-  return {
-    project,
-    isAuthorized: projectMember?.role === 'manager',
-  }
-}
 
 async function enrichProjectMembersWithDisplayNames(
   membersDb: AppBindings['MEMBERS_DB'],
@@ -79,6 +43,29 @@ vmsProjectMembersRoute.get('/project-members', async (c) => {
   try {
     const projectId = c.req.query('projectId')
     const projectMembers = await listProjectMembers(c.env.VMS_DB, projectId)
+
+    if (projectId) {
+      const project = await getProjectById(c.env.VMS_DB, projectId)
+      if (project) {
+        const hasOwnerRow = projectMembers.some(
+          (member) => member.membershipNumber === project.owner || member.role === 'owner',
+        )
+
+        if (!hasOwnerRow) {
+          projectMembers.unshift({
+            projectId,
+            membershipNumber: project.owner,
+            role: 'owner',
+            displayName: project.owner,
+          })
+        } else {
+          for (const member of projectMembers) {
+            member.role = getEffectiveRole(project, member.membershipNumber, member.role) ?? member.role
+          }
+        }
+      }
+    }
+
     const enriched = await enrichProjectMembersWithDisplayNames(c.env.MEMBERS_DB, projectMembers)
     return c.json({ projectMembers: enriched })
   } catch (error) {
@@ -95,7 +82,7 @@ vmsProjectMembersRoute.get(
       const { projectId, membershipNumber } = c.req.valid('param')
       const actorMembershipNumber = getActorMembershipNumber(c)
 
-      const actorAccess = await hasProjectMembership(c.env.VMS_DB, projectId, actorMembershipNumber)
+      const actorAccess = await isProjectMember(c.env.VMS_DB, projectId, actorMembershipNumber)
       if (!actorAccess.project) {
         return c.json({ error: 'Project not found.' }, 404)
       }
@@ -103,7 +90,7 @@ vmsProjectMembersRoute.get(
         return c.json({ error: 'Only project members can view member contact info.' }, 403)
       }
 
-      const targetAccess = await hasProjectMembership(c.env.VMS_DB, projectId, membershipNumber)
+      const targetAccess = await isProjectMember(c.env.VMS_DB, projectId, membershipNumber)
       if (!targetAccess.isMember) {
         return c.json({ error: 'Project member not found.' }, 404)
       }
@@ -127,23 +114,28 @@ vmsProjectMembersRoute.get(
   async (c) => {
     try {
       const { projectId, membershipNumber } = c.req.valid('param')
-      const projectMember = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
+      const access = await isProjectMember(c.env.VMS_DB, projectId, membershipNumber)
 
-      if (!projectMember) {
-        const targetAccess = await hasProjectMembership(c.env.VMS_DB, projectId, membershipNumber)
-        if (!targetAccess.isMember) {
-          return c.json({ error: 'Project member not found.' }, 404)
-        }
+      if (!access.project) {
+        return c.json({ error: 'Project not found.' }, 404)
       }
 
-      const member =
-        projectMember ??
-        ({
-          projectId,
-          membershipNumber,
-          role: 'owner',
-          displayName: membershipNumber,
-        } as const)
+      if (!access.isMember || !access.role) {
+        return c.json({ error: 'Project member not found.' }, 404)
+      }
+
+      const projectMember = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
+      const member = projectMember
+        ? {
+            ...projectMember,
+            role: getEffectiveRole(access.project, membershipNumber, projectMember.role) ?? projectMember.role,
+          }
+        : {
+            projectId,
+            membershipNumber,
+            role: access.role,
+            displayName: membershipNumber,
+          }
 
       const enriched = await enrichProjectMembersWithDisplayNames(c.env.MEMBERS_DB, [member])
       return c.json({ projectMember: enriched[0] })
@@ -179,6 +171,15 @@ vmsProjectMembersRoute.put(
         return c.json({ error: 'Project not found.' }, 404)
       }
 
+      if (membershipNumber === project.owner) {
+        return c.json(
+          {
+            error: 'لا يمكن تغيير دور مالك المشروع من هنا. انقل الملكية عبر إعدادات المشروع.',
+          },
+          403,
+        )
+      }
+
       if (payload.role !== undefined) {
         if (project.owner !== actorMembershipNumber) {
           return c.json({ error: 'فقط مالك المشروع يمكنه تغيير أدوار الأعضاء.' }, 403)
@@ -188,7 +189,7 @@ vmsProjectMembersRoute.put(
           return c.json({ error: 'يمكن ترقية الأعضاء إلى مدير أو إرجاعهم إلى عضو فقط.' }, 400)
         }
       } else {
-        const authorization = await canManageProjectMembers(c.env.VMS_DB, projectId, actorMembershipNumber)
+        const authorization = await canManageProject(c.env.VMS_DB, projectId, actorMembershipNumber)
 
         if (!authorization.isAuthorized) {
           return c.json({ error: 'Only project owner or managers can update project members.' }, 403)
@@ -198,6 +199,15 @@ vmsProjectMembersRoute.put(
       const existing = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
       if (!existing) {
         return c.json({ error: 'Project member not found.' }, 404)
+      }
+
+      if (existing.role === 'owner') {
+        return c.json(
+          {
+            error: 'لا يمكن تغيير دور مالك المشروع من هنا. انقل الملكية عبر إعدادات المشروع.',
+          },
+          403,
+        )
       }
 
       const projectMember = await updateProjectMember(c.env.VMS_DB, projectId, membershipNumber, payload)
@@ -241,12 +251,8 @@ vmsProjectMembersRoute.delete(
 
       const isSelfLeave = actorMembershipNumber === membershipNumber
 
-      if (isSelfLeave) {
-        if (membershipNumber !== actorMembershipNumber) {
-          return c.json({ error: 'يمكنك مغادرة المشروع لحسابك فقط.' }, 403)
-        }
-      } else {
-        const authorization = await canManageProjectMembers(c.env.VMS_DB, projectId, actorMembershipNumber)
+      if (!isSelfLeave) {
+        const authorization = await canManageProject(c.env.VMS_DB, projectId, actorMembershipNumber)
 
         if (!authorization.isAuthorized) {
           return c.json({ error: 'فقط مالك المشروع أو المدراء يمكنهم إزالة الأعضاء.' }, 403)
@@ -257,6 +263,16 @@ vmsProjectMembersRoute.delete(
 
       if (!existingMember) {
         return c.json({ error: 'Project member not found.' }, 404)
+      }
+
+      if (existingMember.role === 'owner') {
+        return c.json(
+          {
+            error:
+              'لا يمكن إزالة مالك المشروع. انقل الملكية إلى عضو آخر أولاً إذا أردت مغادرة المشروع.',
+          },
+          403,
+        )
       }
 
       const deleted = await deleteProjectMember(c.env.VMS_DB, projectId, membershipNumber)

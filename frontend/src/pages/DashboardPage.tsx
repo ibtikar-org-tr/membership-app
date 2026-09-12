@@ -266,9 +266,9 @@ export function DashboardPage() {
           </aside>
 
           <section
-            className="relative z-0 w-full flex-1 p-3 pb-6 sm:p-4 md:p-6 lg:h-screen lg:overflow-y-auto lg:px-8 transition-all duration-300"
+            className="relative z-0 w-full flex-1 p-3 pb-6 sm:p-4 md:p-6 lg:h-screen lg:overflow-y-auto lg:px-6 lg:py-3 transition-all duration-300"
           >
-            <div className="w-full">
+            <div className="h-full min-h-0 w-full">
               <Outlet />
             </div>
           </section>

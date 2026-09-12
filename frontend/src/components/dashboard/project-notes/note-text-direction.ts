@@ -1,5 +1,6 @@
 import { Extension } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import type { Transaction } from '@tiptap/pm/state'
 
 export type TextDirection = 'ltr' | 'rtl' | 'auto'
@@ -76,7 +77,66 @@ function normalizeTextDirection(value: unknown): TextDirection {
   return 'auto'
 }
 
-function applyAutoBlockDirections(tr: Transaction) {
+function updateBlockDirection(tr: Transaction, pos: number, node: ProseMirrorNode) {
+  const textDirection = normalizeTextDirection(node.attrs.textDirection)
+  const resolved = resolveBlockDirection(textDirection, node.textContent)
+
+  if (node.attrs.textDirection === textDirection && node.attrs.dir === resolved) {
+    return false
+  }
+
+  tr.setNodeMarkup(pos, undefined, {
+    ...node.attrs,
+    textDirection,
+    dir: resolved,
+  })
+  return true
+}
+
+function collectChangedRanges(transactions: readonly Transaction[]) {
+  let from = Number.POSITIVE_INFINITY
+  let to = 0
+
+  for (const transaction of transactions) {
+    if (!transaction.docChanged) {
+      continue
+    }
+
+    transaction.mapping.maps.forEach((stepMap) => {
+      stepMap.forEach((_oldStart, _oldEnd, newStart, newEnd) => {
+        from = Math.min(from, newStart)
+        to = Math.max(to, newEnd)
+      })
+    })
+  }
+
+  if (!Number.isFinite(from)) {
+    return null
+  }
+
+  return { from, to: Math.max(to, from + 1) }
+}
+
+function applyAutoBlockDirectionsInRange(tr: Transaction, from: number, to: number) {
+  let changed = false
+  const size = tr.doc.content.size
+  const start = Math.max(0, from)
+  const end = Math.min(size, Math.max(to, start + 1))
+
+  tr.doc.nodesBetween(start, end, (node, pos) => {
+    if (!BLOCK_TYPE_SET.has(node.type.name)) {
+      return
+    }
+
+    if (updateBlockDirection(tr, pos, node)) {
+      changed = true
+    }
+  })
+
+  return changed
+}
+
+function applyAutoBlockDirectionsEverywhere(tr: Transaction) {
   let changed = false
 
   tr.doc.descendants((node, pos) => {
@@ -84,19 +144,9 @@ function applyAutoBlockDirections(tr: Transaction) {
       return
     }
 
-    const textDirection = normalizeTextDirection(node.attrs.textDirection)
-    const resolved = resolveBlockDirection(textDirection, node.textContent)
-
-    if (node.attrs.textDirection === textDirection && node.attrs.dir === resolved) {
-      return
+    if (updateBlockDirection(tr, pos, node)) {
+      changed = true
     }
-
-    tr.setNodeMarkup(pos, undefined, {
-      ...node.attrs,
-      textDirection,
-      dir: resolved,
-    })
-    changed = true
   })
 
   return changed
@@ -180,9 +230,14 @@ export const NoteTextDirection = Extension.create({
             return null
           }
 
-          const tr = newState.tr
-          const changed = applyAutoBlockDirections(tr)
+          const ranges = collectChangedRanges(transactions)
+          if (!ranges) {
+            return null
+          }
 
+          const tr = newState.tr
+          // Pad slightly so parent list items / adjacent blocks still update.
+          const changed = applyAutoBlockDirectionsInRange(tr, ranges.from - 2, ranges.to + 2)
           return changed ? tr : null
         },
       }),
@@ -191,7 +246,7 @@ export const NoteTextDirection = Extension.create({
 
   onCreate() {
     const tr = this.editor.state.tr
-    const changed = applyAutoBlockDirections(tr)
+    const changed = applyAutoBlockDirectionsEverywhere(tr)
 
     if (changed) {
       tr.setMeta('addToHistory', false)
