@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   FiAlignLeft,
   FiAlignRight,
@@ -48,6 +48,7 @@ interface NoteEditorToolbarProps {
   modeSwitchDisabled?: boolean
   onBeautifySource?: () => void
   beautifyDisabled?: boolean
+  trailingActions?: ReactNode
 }
 
 export function NoteEditorToolbar({
@@ -58,6 +59,7 @@ export function NoteEditorToolbar({
   modeSwitchDisabled = false,
   onBeautifySource,
   beautifyDisabled = false,
+  trailingActions,
 }: NoteEditorToolbarProps) {
   const [toolbarRevision, setToolbarRevision] = useState(0)
   const isSourceMode = viewMode === 'html'
@@ -93,31 +95,34 @@ export function NoteEditorToolbar({
   }, [editor, viewMode])
 
   const modeSwitcher = (
-    <div
-      className="ms-auto inline-flex items-center rounded-lg border border-[#e6e6e6] bg-[#f6f5f4] p-0.5"
-      role="group"
-      aria-label="وضع المحرر"
-    >
-      <button
-        type="button"
-        disabled={modeSwitchDisabled}
-        onClick={() => onViewModeChange('visual')}
-        className={`${modeBtn} ${viewMode === 'visual' ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
-        title="المحرر المرئي"
+    <div className="ms-auto flex items-center gap-2">
+      {trailingActions}
+      <div
+        className="inline-flex items-center rounded-lg border border-[#e6e6e6] bg-[#f6f5f4] p-0.5"
+        role="group"
+        aria-label="وضع المحرر"
       >
-        <FiEdit3 className="h-3.5 w-3.5" aria-hidden />
-        مرئي
-      </button>
-      <button
-        type="button"
-        disabled={modeSwitchDisabled}
-        onClick={() => onViewModeChange('html')}
-        className={`${modeBtn} ${isSourceMode ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
-        title="تحرير HTML"
-      >
-        <FiCode className="h-3.5 w-3.5" aria-hidden />
-        HTML
-      </button>
+        <button
+          type="button"
+          disabled={modeSwitchDisabled}
+          onClick={() => onViewModeChange('visual')}
+          className={`${modeBtn} ${viewMode === 'visual' ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
+          title="المحرر المرئي"
+        >
+          <FiEdit3 className="h-3.5 w-3.5" aria-hidden />
+          مرئي
+        </button>
+        <button
+          type="button"
+          disabled={modeSwitchDisabled}
+          onClick={() => onViewModeChange('html')}
+          className={`${modeBtn} ${isSourceMode ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
+          title="تحرير HTML"
+        >
+          <FiCode className="h-3.5 w-3.5" aria-hidden />
+          HTML
+        </button>
+      </div>
     </div>
   )
 

@@ -12,6 +12,7 @@ export const editNoteWithAiSchema = z.object({
 export const aiEditedNoteSchema = z.object({
   content: z.string().max(80_000),
   summary: z.string().trim().max(500).optional(),
+  model: z.string().trim().min(1).max(160).optional(),
 })
 
 export type EditNoteWithAiInput = z.infer<typeof editNoteWithAiSchema>

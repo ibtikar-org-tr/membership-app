@@ -866,6 +866,7 @@ export function editProjectNoteWithAi(
       edited: {
         content: string
         summary?: string
+        model?: string
       }
     },
     typeof payload

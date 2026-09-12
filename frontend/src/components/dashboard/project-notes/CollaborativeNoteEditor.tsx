@@ -10,7 +10,7 @@ import type * as Y from 'yjs'
 import { plainTextToHtml, xmlFragmentToPlainText } from '../../../utils/yjs-rich-text'
 import { NoteEditorToolbar, type NoteEditorViewMode } from './NoteEditorToolbar'
 import { formatNoteHtmlForEditing, beautifyNoteHtml, normalizeNoteHtmlInput } from './note-html-source'
-import { NoteAiCommandBar } from './NoteAiCommandBar'
+import { NoteAiCommandControl } from './NoteAiCommandControl'
 import { NoteFontSize } from './note-font-size'
 import { NoteHtmlCodeEditor } from './NoteHtmlCodeEditor'
 import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
@@ -369,37 +369,6 @@ export function CollaborativeNoteEditor({
         {!readOnly ? <NoteOnlineUsers users={onlineUsers} className="mt-0" /> : null}
       </div>
 
-      {!readOnly ? (
-        <NoteAiCommandBar
-          noteId={noteId}
-          contentType="html"
-          disabled={!canEdit}
-          getContent={() => {
-            if (viewMode === 'html') {
-              return htmlSource
-            }
-
-            if (editor) {
-              return editor.getHTML()
-            }
-
-            return resolveCurrentHtml()
-          }}
-          onApplyContent={(content) => {
-            if (!editor || !canEdit) {
-              return
-            }
-
-            const normalized = normalizeNoteHtmlInput(content)
-            editor.commands.setContent(normalized, true)
-            htmlDirtyRef.current = false
-            setHtmlSource(formatNoteHtmlForEditing(editor.getHTML()))
-            setHtmlApplyError(null)
-            setViewMode('visual')
-          }}
-        />
-      ) : null}
-
       <div className="shrink-0">
         <NoteEditorToolbar
           editor={editor}
@@ -413,6 +382,38 @@ export function CollaborativeNoteEditor({
             setHtmlApplyError(null)
             setHtmlSource(beautifyNoteHtml(htmlSource))
           }}
+          trailingActions={
+            !readOnly ? (
+              <NoteAiCommandControl
+                noteId={noteId}
+                contentType="html"
+                disabled={!canEdit}
+                getContent={() => {
+                  if (viewMode === 'html') {
+                    return htmlSource
+                  }
+
+                  if (editor) {
+                    return editor.getHTML()
+                  }
+
+                  return resolveCurrentHtml()
+                }}
+                onApplyContent={(content) => {
+                  if (!editor || !canEdit) {
+                    return
+                  }
+
+                  const normalized = normalizeNoteHtmlInput(content)
+                  editor.commands.setContent(normalized, true)
+                  htmlDirtyRef.current = false
+                  setHtmlSource(formatNoteHtmlForEditing(editor.getHTML()))
+                  setHtmlApplyError(null)
+                  setViewMode('visual')
+                }}
+              />
+            ) : null
+          }
         />
       </div>
 

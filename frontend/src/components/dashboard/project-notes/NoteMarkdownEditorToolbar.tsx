@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import {
   FiBold,
   FiCode,
@@ -29,6 +29,7 @@ interface NoteMarkdownEditorToolbarProps {
   modeSwitchDisabled?: boolean
   onBeautifySource?: () => void
   beautifyDisabled?: boolean
+  trailingActions?: ReactNode
 }
 
 function promptForLinkUrl(currentHref: string) {
@@ -49,6 +50,7 @@ export function NoteMarkdownEditorToolbar({
   modeSwitchDisabled = false,
   onBeautifySource,
   beautifyDisabled = false,
+  trailingActions,
 }: NoteMarkdownEditorToolbarProps) {
   const [toolbarRevision, setToolbarRevision] = useState(0)
   const isSourceMode = viewMode === 'markdown'
@@ -84,31 +86,34 @@ export function NoteMarkdownEditorToolbar({
   }, [editor, viewMode])
 
   const modeSwitcher = (
-    <div
-      className="ms-auto inline-flex items-center rounded-lg border border-[#e6e6e6] bg-[#f6f5f4] p-0.5"
-      role="group"
-      aria-label="وضع المحرر"
-    >
-      <button
-        type="button"
-        disabled={modeSwitchDisabled}
-        onClick={() => onViewModeChange('visual')}
-        className={`${modeBtn} ${viewMode === 'visual' ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
-        title="المحرر المرئي"
+    <div className="ms-auto flex items-center gap-2">
+      {trailingActions}
+      <div
+        className="inline-flex items-center rounded-lg border border-[#e6e6e6] bg-[#f6f5f4] p-0.5"
+        role="group"
+        aria-label="وضع المحرر"
       >
-        <FiEdit3 className="h-3.5 w-3.5" aria-hidden />
-        مرئي
-      </button>
-      <button
-        type="button"
-        disabled={modeSwitchDisabled}
-        onClick={() => onViewModeChange('markdown')}
-        className={`${modeBtn} ${isSourceMode ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
-        title="تحرير Markdown"
-      >
-        <FiCode className="h-3.5 w-3.5" aria-hidden />
-        Markdown
-      </button>
+        <button
+          type="button"
+          disabled={modeSwitchDisabled}
+          onClick={() => onViewModeChange('visual')}
+          className={`${modeBtn} ${viewMode === 'visual' ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
+          title="المحرر المرئي"
+        >
+          <FiEdit3 className="h-3.5 w-3.5" aria-hidden />
+          مرئي
+        </button>
+        <button
+          type="button"
+          disabled={modeSwitchDisabled}
+          onClick={() => onViewModeChange('markdown')}
+          className={`${modeBtn} ${isSourceMode ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
+          title="تحرير Markdown"
+        >
+          <FiCode className="h-3.5 w-3.5" aria-hidden />
+          Markdown
+        </button>
+      </div>
     </div>
   )
 

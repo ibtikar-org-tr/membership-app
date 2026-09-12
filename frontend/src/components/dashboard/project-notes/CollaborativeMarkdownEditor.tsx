@@ -6,7 +6,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import type * as awarenessProtocol from 'y-protocols/awareness'
 import type * as Y from 'yjs'
 import type { NoteEditorViewMode } from './NoteEditorToolbar'
-import { NoteAiCommandBar } from './NoteAiCommandBar'
+import { NoteAiCommandControl } from './NoteAiCommandControl'
 import { NoteMarkdownCodeEditor } from './NoteMarkdownCodeEditor'
 import { NoteMarkdownEditorToolbar } from './NoteMarkdownEditorToolbar'
 import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
@@ -357,43 +357,6 @@ export function CollaborativeMarkdownEditor({
         {!readOnly ? <NoteOnlineUsers users={onlineUsers} className="mt-0" /> : null}
       </div>
 
-      {!readOnly ? (
-        <NoteAiCommandBar
-          noteId={noteId}
-          contentType="markdown"
-          disabled={!canEdit}
-          getContent={() => {
-            if (viewMode === 'markdown') {
-              return markdownSource
-            }
-
-            return resolveCurrentMarkdown()
-          }}
-          onApplyContent={(content) => {
-            if (!editor || !canEdit) {
-              return
-            }
-
-            const normalized = normalizeNoteMarkdownInput(content).trim()
-            const html = markdownToHtml(normalized)
-            editor.commands.setContent(html, true)
-
-            if (yText && yDoc) {
-              applyingLocalRef.current = true
-              yDoc.transact(() => {
-                replaceYTextContent(yText, normalized)
-              })
-              applyingLocalRef.current = false
-            }
-
-            markdownDirtyRef.current = false
-            setMarkdownSource(formatNoteMarkdownForEditing(normalized))
-            setMarkdownApplyError(null)
-            setViewMode('visual')
-          }}
-        />
-      ) : null}
-
       <div className="shrink-0">
         <NoteMarkdownEditorToolbar
           editor={editor}
@@ -407,6 +370,44 @@ export function CollaborativeMarkdownEditor({
             setMarkdownApplyError(null)
             setMarkdownSource(beautifyNoteMarkdown(markdownSource))
           }}
+          trailingActions={
+            !readOnly ? (
+              <NoteAiCommandControl
+                noteId={noteId}
+                contentType="markdown"
+                disabled={!canEdit}
+                getContent={() => {
+                  if (viewMode === 'markdown') {
+                    return markdownSource
+                  }
+
+                  return resolveCurrentMarkdown()
+                }}
+                onApplyContent={(content) => {
+                  if (!editor || !canEdit) {
+                    return
+                  }
+
+                  const normalized = normalizeNoteMarkdownInput(content).trim()
+                  const html = markdownToHtml(normalized)
+                  editor.commands.setContent(html, true)
+
+                  if (yText && yDoc) {
+                    applyingLocalRef.current = true
+                    yDoc.transact(() => {
+                      replaceYTextContent(yText, normalized)
+                    })
+                    applyingLocalRef.current = false
+                  }
+
+                  markdownDirtyRef.current = false
+                  setMarkdownSource(formatNoteMarkdownForEditing(normalized))
+                  setMarkdownApplyError(null)
+                  setViewMode('visual')
+                }}
+              />
+            ) : null
+          }
         />
       </div>
 

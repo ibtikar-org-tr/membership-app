@@ -7,6 +7,9 @@ const NOTE_EDIT_MODELS = [
   '@cf/qwen/qwen3-30b-a3b-fp8',
 ] as const
 
+/** Primary Workers AI model used for note command edits (shown in the UI). */
+export const NOTE_AI_PRIMARY_MODEL = NOTE_EDIT_MODELS[0]
+
 const JSON_MODE_MODELS = new Set<string>([
   '@cf/google/gemma-4-26b-a4b-it',
   '@cf/qwen/qwen3-30b-a3b-fp8',
@@ -194,7 +197,11 @@ ${input.command.trim()}`
         const response = await ai.run(model, inputs)
         parsedPayload = normalizeAiResponsePayload(response)
         if (parsedPayload) {
-          return parseEditedNote(parsedPayload)
+          const edited = parseEditedNote(parsedPayload)
+          return {
+            ...edited,
+            model,
+          }
         }
       } catch (error) {
         lastError = error
