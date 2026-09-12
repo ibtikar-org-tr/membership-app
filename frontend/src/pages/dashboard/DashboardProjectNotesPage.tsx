@@ -309,28 +309,30 @@ export function DashboardProjectNotesPage() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">ملاحظات المشروع</h2>
-          <p className="mt-1 text-sm text-slate-500">{project.name}</p>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">ملاحظات المشروع</h2>
+            <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+              {notes.length}
+            </span>
+          </div>
+          <p className="mt-1 truncate text-sm text-slate-500">{project.name}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
-            {notes.length} ملاحظة
-          </span>
           {canManageNotes ? (
             <button
               type="button"
               onClick={() => setIsCreateOpen((previous) => !previous)}
-              className="inline-flex items-center rounded-md border border-slate-300 bg-slate-950 px-3 py-1 text-xs font-medium text-white transition hover:bg-slate-800"
+              className="inline-flex items-center rounded-lg bg-slate-950 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
             >
-              {isCreateOpen ? 'إغلاق إضافة ملاحظة' : 'إضافة ملاحظة'}
+              {isCreateOpen ? 'إلغاء' : 'ملاحظة جديدة'}
             </button>
           ) : null}
           <Link
             to={`/projects/${project.id}`}
-            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
           >
             العودة للمشروع
           </Link>
@@ -338,32 +340,35 @@ export function DashboardProjectNotesPage() {
       </div>
 
       {canManageNotes && isCreateOpen ? (
-        <form onSubmit={handleCreateNote} className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <form onSubmit={handleCreateNote} className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
           <label className="block text-sm font-medium text-slate-700" htmlFor="new-note-title">
             عنوان الملاحظة
           </label>
-          <input
-            id="new-note-title"
-            value={newNoteTitle}
-            onChange={(event) => setNewNoteTitle(event.target.value)}
-            className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-cyan-500 focus:ring-2"
-            placeholder="مثال: محضر الاجتماع، أفكار التخطيط..."
-          />
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              id="new-note-title"
+              value={newNoteTitle}
+              onChange={(event) => setNewNoteTitle(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-slate-400 focus:ring-2"
+              placeholder="مثال: محضر الاجتماع، أفكار التخطيط..."
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={isCreating}
+              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCreating ? 'جار الإنشاء...' : 'إنشاء'}
+            </button>
+          </div>
           {createError ? <p className="mt-2 text-sm text-red-600">{createError}</p> : null}
-          <button
-            type="submit"
-            disabled={isCreating}
-            className="mt-3 inline-flex rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isCreating ? 'جار الإنشاء...' : 'إنشاء ملاحظة'}
-          </button>
         </form>
       ) : null}
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          <p className="px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">الملاحظات</p>
-          <div className="mt-2 space-y-1">
+      <div className="mt-4 grid gap-3 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-4">
+        <aside className="max-h-[70vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50/80 p-2">
+          <p className="px-2 pb-1 pt-1 text-[11px] font-semibold tracking-wide text-slate-500">الملاحظات</p>
+          <div className="space-y-0.5">
             {notes.length === 0 ? (
               <p className="px-2 py-3 text-sm text-slate-500">لا توجد ملاحظات بعد.</p>
             ) : (
@@ -373,15 +378,17 @@ export function DashboardProjectNotesPage() {
                   <Link
                     key={note.id}
                     to={`/projects/${projectID}/notes?note=${encodeURIComponent(note.id)}`}
-                    className={`block rounded-xl px-3 py-2 transition ${
-                      isActive ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'hover:bg-white/80'
+                    className={`block rounded-lg px-2.5 py-2 transition ${
+                      isActive
+                        ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                        : 'text-slate-700 hover:bg-white/90'
                     }`}
                   >
-                    <p className="truncate text-sm font-semibold text-slate-900">{note.title}</p>
-                    <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                    <p className="truncate text-sm font-medium">{note.title}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
                       {sanitizeNotePreview(note.contentPreview) || 'ملاحظة فارغة'}
                     </p>
-                    <p className="mt-2 text-[11px] text-slate-400">{formatDateEnCA(note.updatedAt)}</p>
+                    <p className="mt-1 text-[10px] text-slate-400">{formatDateEnCA(note.updatedAt)}</p>
                   </Link>
                 )
               })
@@ -392,79 +399,85 @@ export function DashboardProjectNotesPage() {
         <div className="min-w-0">
           {selectedNote ? (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  {canManageNotes && isEditingTitle ? (
-                    <form onSubmit={handleSaveTitle} className="flex flex-wrap items-center gap-2">
-                      <input
-                        value={editingTitle}
-                        onChange={(event) => setEditingTitle(event.target.value)}
-                        maxLength={160}
-                        autoFocus
-                        disabled={isSavingTitle}
-                        className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-900 outline-none ring-cyan-500 focus:ring-2 disabled:opacity-60"
-                        aria-label="عنوان الملاحظة"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isSavingTitle}
-                        className="inline-flex rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isSavingTitle ? 'جار الحفظ...' : 'حفظ'}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isSavingTitle}
-                        onClick={() => {
-                          setEditingTitle(selectedNote.title)
-                          setIsEditingTitle(false)
-                          setActionError(null)
-                        }}
-                        className="inline-flex rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        إلغاء
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-semibold text-slate-900">{selectedNote.title}</h3>
-                      {canManageNotes ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingTitle(selectedNote.title)
-                              setIsEditingTitle(true)
-                              setActionError(null)
-                            }}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
-                            title="تعديل العنوان"
-                            aria-label="تعديل العنوان"
-                          >
-                            <FiEdit2 className="h-4 w-4" aria-hidden />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleDeleteNote()}
-                            disabled={isDeleting}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                            title="حذف الملاحظة"
-                            aria-label="حذف الملاحظة"
-                          >
-                            <FiTrash2 className="h-4 w-4" aria-hidden />
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-                  <p className="mt-1 text-xs text-slate-500">
-                    أنشأها {selectedNote.createdByDisplayName ?? selectedNote.createdBy} • آخر تحديث{' '}
-                    {formatDateEnCA(selectedNote.updatedAt)}
-                  </p>
-                </div>
+              <div className="min-w-0">
+                {canManageNotes && isEditingTitle ? (
+                  <form onSubmit={handleSaveTitle} className="flex flex-wrap items-center gap-2">
+                    <input
+                      value={editingTitle}
+                      onChange={(event) => setEditingTitle(event.target.value)}
+                      maxLength={160}
+                      autoFocus
+                      disabled={isSavingTitle}
+                      className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-base font-semibold text-slate-900 outline-none ring-slate-400 focus:ring-2 disabled:opacity-60"
+                      aria-label="عنوان الملاحظة"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSavingTitle}
+                      className="inline-flex rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingTitle ? 'جار الحفظ...' : 'حفظ'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSavingTitle}
+                      onClick={() => {
+                        setEditingTitle(selectedNote.title)
+                        setIsEditingTitle(false)
+                        setActionError(null)
+                      }}
+                      className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      إلغاء
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="min-w-0 flex-1 truncate text-lg font-semibold text-slate-900">
+                      {selectedNote.title}
+                    </h3>
+                    {canManageNotes ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingTitle(selectedNote.title)
+                            setIsEditingTitle(true)
+                            setActionError(null)
+                          }}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                          title="تعديل العنوان"
+                          aria-label="تعديل العنوان"
+                        >
+                          <FiEdit2 className="h-4 w-4" aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteNote()}
+                          disabled={isDeleting}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          title="حذف الملاحظة"
+                          aria-label="حذف الملاحظة"
+                        >
+                          <FiTrash2 className="h-4 w-4" aria-hidden />
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+                <p className="mt-1 text-xs text-slate-500">
+                  أنشأها {selectedNote.createdByDisplayName ?? selectedNote.createdBy} • آخر تحديث{' '}
+                  {formatDateEnCA(selectedNote.updatedAt)}
+                </p>
               </div>
 
               {actionError ? <p className="text-sm text-red-600">{actionError}</p> : null}
+
+              {!canEditSelectedNote ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  دورك في المشروع يسمح بمشاهدة الملاحظات فقط.
+                </div>
+              ) : null}
 
               <CollaborativeNoteEditor
                 noteId={selectedNote.id}
@@ -479,20 +492,12 @@ export function DashboardProjectNotesPage() {
                 membershipNumber={user?.membershipNumber ?? ''}
                 mentionableMembers={mentionableMembers}
               />
-
-              {!canEditSelectedNote ? (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  دورك في المشروع يسمح بمشاهدة الملاحظات فقط.
-                </div>
-              ) : null}
             </div>
           ) : (
-            <div className="flex min-h-[24rem] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 text-center">
+            <div className="flex min-h-96 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 text-center">
               <div>
-                <p className="text-sm font-medium text-slate-700">اختر ملاحظة من القائمة لبدء التحرير المشترك.</p>
-                <p className="mt-2 text-xs text-slate-500">
-                  يمكن لأعضاء الفريق الكتابة معاً في الوقت نفسه.
-                </p>
+                <p className="text-sm font-medium text-slate-700">اختر ملاحظة من القائمة للبدء.</p>
+                <p className="mt-2 text-xs text-slate-500">يمكن لأعضاء الفريق الكتابة معاً في الوقت نفسه.</p>
               </div>
             </div>
           )}

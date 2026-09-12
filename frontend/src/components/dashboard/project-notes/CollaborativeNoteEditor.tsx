@@ -30,7 +30,24 @@ interface CollaborativeNoteEditorProps {
 }
 
 const editorSurfaceClass =
-  '[&_.ProseMirror]:min-h-88 [&_.ProseMirror]:px-4 [&_.ProseMirror]:py-4 [&_.ProseMirror]:text-base [&_.ProseMirror]:leading-8 [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_.is-empty:first-child::before]:text-slate-400'
+  '[&_.ProseMirror]:min-h-[22rem] [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-base [&_.ProseMirror]:leading-8 [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-slate-400 [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
+
+function connectionLabel(connectionState: CollaborativeNoteEditorProps['connectionState'], readOnly: boolean) {
+  if (readOnly) {
+    return 'وضع المشاهدة فقط'
+  }
+
+  switch (connectionState) {
+    case 'connected':
+      return 'متصل — التعديلات تُزامَن مباشرة'
+    case 'connecting':
+      return 'جار إعادة الاتصال...'
+    case 'error':
+      return 'تعذر الاتصال — سيتم إعادة المحاولة تلقائياً'
+    default:
+      return 'في انتظار الاتصال'
+  }
+}
 
 export function CollaborativeNoteEditor({
   noteId,
@@ -57,13 +74,14 @@ export function CollaborativeNoteEditor({
   )
 
   const isCollaborative = Boolean(yDoc && awareness && !readOnly)
-  const canEdit = isCollaborative && connectionState === 'connected'
+  // Keep editing available while reconnecting so a dropped socket cannot freeze the UI.
+  const canEdit = isCollaborative
 
   const staticContent = useMemo(() => plainTextToHtml(initialContent), [initialContent])
 
   const editor = useEditor(
     {
-      editable: readOnly ? false : connectionState === 'connected',
+      editable: isCollaborative,
       extensions: isCollaborative
         ? [
             StarterKit.configure({
@@ -74,7 +92,7 @@ export function CollaborativeNoteEditor({
             NoteTextDirection,
             memberMentionExtension,
             Placeholder.configure({
-              placeholder: 'ابدأ الكتابة... سيتم مزامنة التغييرات والتنسيق مع فريق المشروع مباشرة.',
+              placeholder: 'ابدأ الكتابة... اكتب @ للإشارة إلى عضو في المشروع.',
             }),
             Collaboration.configure({
               document: yDoc!,
@@ -107,7 +125,8 @@ export function CollaborativeNoteEditor({
         },
       },
     },
-    [noteId, readOnly, isCollaborative, yDoc, awareness, memberColor, displayName, connectionState],
+    // Intentionally omit connectionState — remounting on reconnect orphaned Tippy overlays and froze clicks.
+    [noteId, readOnly, isCollaborative, yDoc, awareness, memberColor, displayName],
   )
 
   useEffect(() => {
@@ -142,8 +161,8 @@ export function CollaborativeNoteEditor({
       return
     }
 
-    editor.setEditable(!readOnly && connectionState === 'connected')
-  }, [connectionState, editor, readOnly])
+    editor.setEditable(canEdit)
+  }, [canEdit, editor])
 
   useEffect(() => {
     if (!editor || !readOnly) {
@@ -164,8 +183,24 @@ export function CollaborativeNoteEditor({
     })
   }, [awareness, displayName, editor, membershipNumber, readOnly])
 
+  useEffect(() => {
+    return () => {
+      // Safety net: destroy any leftover Tippy layers if the suggestion onExit raced a remount.
+      document.querySelectorAll('[data-tippy-root]').forEach((node) => {
+        node.remove()
+      })
+    }
+  }, [noteId])
+
+  const statusTone =
+    readOnly || connectionState === 'connected'
+      ? 'text-slate-600'
+      : connectionState === 'error'
+        ? 'text-red-600'
+        : 'text-amber-700'
+
   return (
-    <div className="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <div className="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <style>{`
         .note-rich-text .collaboration-cursor__caret {
           position: relative;
@@ -200,29 +235,41 @@ export function CollaborativeNoteEditor({
           color: rgb(51 65 85);
           white-space: nowrap;
         }
+        .tippy-box {
+          background: transparent;
+          color: inherit;
+          font-size: inherit;
+          line-height: inherit;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+        }
+        .tippy-content {
+          padding: 0;
+        }
+        .tippy-box[data-placement^='top'] > .tippy-arrow,
+        .tippy-box[data-placement^='bottom'] > .tippy-arrow {
+          display: none;
+        }
       `}</style>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5">
+        <div className={`flex items-center gap-2 text-xs font-medium ${statusTone}`}>
           <span
             className={`inline-flex h-2 w-2 rounded-full ${
-              connectionState === 'connected'
-                ? 'bg-emerald-500'
-                : connectionState === 'connecting'
-                  ? 'bg-amber-400'
-                  : connectionState === 'error'
-                    ? 'bg-red-500'
-                    : 'bg-slate-300'
+              readOnly
+                ? 'bg-slate-300'
+                : connectionState === 'connected'
+                  ? 'bg-emerald-500'
+                  : connectionState === 'connecting'
+                    ? 'animate-pulse bg-amber-400'
+                    : connectionState === 'error'
+                      ? 'bg-red-500'
+                      : 'bg-slate-300'
             }`}
+            aria-hidden
           />
-          {readOnly
-            ? 'وضع المشاهدة فقط'
-            : connectionState === 'connected'
-              ? 'متصل — التحرير المشترك مفعّل'
-              : connectionState === 'connecting'
-                ? 'جار الاتصال بالمحرر المشترك...'
-                : connectionState === 'error'
-                  ? 'تعذر الاتصال بالمحرر المشترك'
-                  : 'في انتظار الاتصال'}
+          <span>{connectionLabel(connectionState, readOnly)}</span>
         </div>
         {!readOnly ? <NoteOnlineUsers users={onlineUsers} className="mt-0" /> : null}
       </div>
@@ -230,6 +277,11 @@ export function CollaborativeNoteEditor({
       <NoteEditorToolbar editor={editor} disabled={!canEdit} />
 
       <div className={`relative flex-1 overflow-auto ${editorSurfaceClass}`}>
+        {!readOnly && !isCollaborative ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 text-sm text-slate-600 backdrop-blur-[1px]">
+            جار تجهيز المحرر...
+          </div>
+        ) : null}
         <EditorContent editor={editor} />
       </div>
     </div>

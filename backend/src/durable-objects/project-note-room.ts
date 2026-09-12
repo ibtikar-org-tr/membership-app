@@ -10,16 +10,19 @@ import { extractNoteContent } from '../utils/yjs-rich-text'
 
 const MESSAGE_SYNC = 0
 const MESSAGE_AWARENESS = 1
-const PERSIST_DEBOUNCE_MS = 1500
+const SQL_PERSIST_DEBOUNCE_MS = 1500
+
+interface SocketAttachment {
+  noteId: string
+  awarenessIds: number[]
+}
 
 export class ProjectNoteRoom extends DurableObject<AppBindings> {
   private doc: Y.Doc | null = null
   private awareness: awarenessProtocol.Awareness | null = null
-  private clients = new Set<WebSocket>()
-  private awarenessIdsBySocket = new Map<WebSocket, Set<number>>()
   private noteId: string | null = null
   private initialized = false
-  private persistTimeout: ReturnType<typeof setTimeout> | null = null
+  private yjsPersistChain: Promise<void> = Promise.resolve()
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
@@ -33,6 +36,7 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
       return new Response('Missing note id.', { status: 400 })
     }
 
+    await this.ctx.storage.put('note-id', this.noteId)
     await this.ensureInitialized(this.noteId)
 
     const pair = new WebSocketPair()
@@ -40,8 +44,10 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
     const server = pair[1]
 
     this.ctx.acceptWebSocket(server)
-    this.clients.add(server)
-    this.awarenessIdsBySocket.set(server, new Set())
+    server.serializeAttachment({
+      noteId: this.noteId,
+      awarenessIds: [],
+    } satisfies SocketAttachment)
 
     this.sendSyncStep1(server)
     this.sendAwarenessSnapshot(server)
@@ -50,7 +56,8 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
-    if (!this.doc || !this.awareness) {
+    const noteId = await this.ensureReadyForSocket(ws)
+    if (!noteId || !this.doc || !this.awareness) {
       return
     }
 
@@ -71,16 +78,19 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
       }
       case MESSAGE_AWARENESS: {
         const update = decoding.readVarUint8Array(decoder)
-        const controlledIds = this.awarenessIdsBySocket.get(ws) ?? new Set<number>()
+        const attachment = this.readAttachment(ws)
+        const controlledIds = new Set(attachment?.awarenessIds ?? [])
         const before = new Set(this.awareness.getStates().keys())
         awarenessProtocol.applyAwarenessUpdate(this.awareness, update, ws)
-        const after = this.awareness.getStates().keys()
-        for (const clientId of after) {
+        for (const clientId of this.awareness.getStates().keys()) {
           if (!before.has(clientId)) {
             controlledIds.add(clientId)
           }
         }
-        this.awarenessIdsBySocket.set(ws, controlledIds)
+        this.writeAttachment(ws, {
+          noteId,
+          awarenessIds: Array.from(controlledIds),
+        })
         break
       }
       default:
@@ -89,19 +99,72 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
   }
 
   async webSocketClose(ws: WebSocket) {
-    this.removeClient(ws)
+    await this.ensureReadyForSocket(ws)
+    await this.removeClient(ws)
   }
 
   async webSocketError(ws: WebSocket) {
-    this.removeClient(ws)
+    await this.ensureReadyForSocket(ws)
+    await this.removeClient(ws)
+  }
+
+  async alarm() {
+    const noteId =
+      (await this.ctx.storage.get<string>('pending-sql-note-id')) ??
+      this.noteId ??
+      (await this.ctx.storage.get<string>('note-id'))
+
+    if (!noteId) {
+      return
+    }
+
+    this.noteId = noteId
+    await this.ensureInitialized(noteId)
+    await this.yjsPersistChain
+    await this.persistSql(noteId)
+    await this.ctx.storage.delete('pending-sql-note-id')
+  }
+
+  private async ensureReadyForSocket(ws: WebSocket) {
+    const attachment = this.readAttachment(ws)
+    const noteId =
+      attachment?.noteId ?? this.noteId ?? (await this.ctx.storage.get<string>('note-id')) ?? null
+
+    if (!noteId) {
+      return null
+    }
+
+    this.noteId = noteId
+    await this.ensureInitialized(noteId)
+    return noteId
+  }
+
+  private readAttachment(ws: WebSocket): SocketAttachment | null {
+    const value = ws.deserializeAttachment() as SocketAttachment | null
+    if (!value?.noteId) {
+      return null
+    }
+
+    return {
+      noteId: value.noteId,
+      awarenessIds: Array.isArray(value.awarenessIds) ? value.awarenessIds : [],
+    }
+  }
+
+  private writeAttachment(ws: WebSocket, attachment: SocketAttachment) {
+    ws.serializeAttachment(attachment)
   }
 
   private async ensureInitialized(noteId: string) {
-    if (this.initialized) {
+    if (this.initialized && this.doc && this.awareness) {
       return
     }
 
     await this.ctx.blockConcurrencyWhile(async () => {
+      if (this.initialized && this.doc && this.awareness) {
+        return
+      }
+
       this.doc = new Y.Doc()
       this.awareness = new awarenessProtocol.Awareness(this.doc)
 
@@ -112,23 +175,30 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
 
       this.doc.on('update', (update: Uint8Array, origin: unknown) => {
         this.broadcastUpdate(update, origin)
-        this.schedulePersist(noteId)
+        this.queueYjsPersist()
+        this.scheduleSqlPersist(noteId)
       })
 
-      this.awareness.on('update', ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }, origin: unknown) => {
-        const changedClients = added.concat(updated).concat(removed)
-        if (changedClients.length === 0) {
-          return
-        }
+      this.awareness.on(
+        'update',
+        (
+          { added, updated, removed }: { added: number[]; updated: number[]; removed: number[] },
+          origin: unknown,
+        ) => {
+          const changedClients = added.concat(updated).concat(removed)
+          if (changedClients.length === 0) {
+            return
+          }
 
-        const encoder = encoding.createEncoder()
-        encoding.writeVarUint(encoder, MESSAGE_AWARENESS)
-        encoding.writeVarUint8Array(
-          encoder,
-          awarenessProtocol.encodeAwarenessUpdate(this.awareness!, changedClients),
-        )
-        this.broadcast(encoding.toUint8Array(encoder), origin)
-      })
+          const encoder = encoding.createEncoder()
+          encoding.writeVarUint(encoder, MESSAGE_AWARENESS)
+          encoding.writeVarUint8Array(
+            encoder,
+            awarenessProtocol.encodeAwarenessUpdate(this.awareness!, changedClients),
+          )
+          this.broadcast(encoding.toUint8Array(encoder), origin)
+        },
+      )
 
       this.initialized = true
     })
@@ -167,42 +237,60 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
   }
 
   private broadcast(message: Uint8Array, origin: unknown) {
-    for (const socket of this.clients) {
+    // Always use hibernation-aware socket list — in-memory Sets are lost after eviction.
+    for (const socket of this.ctx.getWebSockets()) {
       if (socket !== origin && socket.readyState === WebSocket.OPEN) {
         socket.send(message)
       }
     }
   }
 
-  private removeClient(socket: WebSocket) {
-    const controlledIds = this.awarenessIdsBySocket.get(socket)
-    if (controlledIds && controlledIds.size > 0 && this.awareness) {
-      awarenessProtocol.removeAwarenessStates(this.awareness, Array.from(controlledIds), socket)
+  private async removeClient(ws: WebSocket) {
+    const attachment = this.readAttachment(ws)
+    if (attachment?.awarenessIds.length && this.awareness) {
+      awarenessProtocol.removeAwarenessStates(this.awareness, attachment.awarenessIds, ws)
     }
 
-    this.awarenessIdsBySocket.delete(socket)
-    this.clients.delete(socket)
-  }
-
-  private schedulePersist(noteId: string) {
-    if (this.persistTimeout) {
-      clearTimeout(this.persistTimeout)
+    // Flush durable state when the last collaborator leaves.
+    if (this.ctx.getWebSockets().length <= 1 && this.noteId) {
+      await this.yjsPersistChain
+      await this.persistYjsState()
+      await this.persistSql(this.noteId)
     }
-
-    this.persistTimeout = setTimeout(() => {
-      void this.persistDocState(noteId, true)
-    }, PERSIST_DEBOUNCE_MS)
   }
 
-  private async persistDocState(noteId: string, writeSql: boolean) {
+  private queueYjsPersist() {
+    this.yjsPersistChain = this.yjsPersistChain
+      .then(async () => {
+        if (!this.doc) {
+          return
+        }
+
+        // Encode at write time so coalesced updates persist the latest doc.
+        const state = Y.encodeStateAsUpdate(this.doc)
+        await this.ctx.storage.put('yjs-state', state)
+      })
+      .catch(() => {
+        // Keep the chain alive after a failed write so later persists still run.
+      })
+  }
+
+  private scheduleSqlPersist(noteId: string) {
+    void this.ctx.storage.put('pending-sql-note-id', noteId)
+    void this.ctx.storage.setAlarm(Date.now() + SQL_PERSIST_DEBOUNCE_MS)
+  }
+
+  private async persistYjsState() {
     if (!this.doc) {
       return
     }
 
     const state = Y.encodeStateAsUpdate(this.doc)
-    await this.ctx.storage.put('yjs-state', new Uint8Array(state))
+    await this.ctx.storage.put('yjs-state', state)
+  }
 
-    if (!writeSql) {
+  private async persistSql(noteId: string) {
+    if (!this.doc) {
       return
     }
 

@@ -12,6 +12,11 @@ import { colorForMembershipNumber } from '../utils/collaborator-color'
 const MESSAGE_SYNC = 0
 const MESSAGE_AWARENESS = 1
 
+/** Keepalive interval — proxies often idle-close sockets around 1–5 minutes. */
+const KEEPALIVE_MS = 25_000
+const RECONNECT_BASE_MS = 800
+const RECONNECT_MAX_MS = 12_000
+
 export interface NoteCollaborator {
   clientId: number
   membershipNumber: string
@@ -101,6 +106,12 @@ function collaboratorsSignature(collaborators: NoteCollaborator[]) {
     .join('|')
 }
 
+function reconnectDelay(attempt: number) {
+  const exponential = Math.min(RECONNECT_BASE_MS * 2 ** attempt, RECONNECT_MAX_MS)
+  const jitter = Math.floor(Math.random() * 300)
+  return exponential + jitter
+}
+
 export function useProjectNoteCollaboration({
   noteId,
   membershipNumber,
@@ -119,9 +130,7 @@ export function useProjectNoteCollaboration({
   resolveMemberDisplayNameRef.current = resolveMemberDisplayName
 
   useEffect(() => {
-    const token = getAccessToken()
-
-    if (!enabled || !noteId || !token || !membershipNumber) {
+    if (!enabled || !noteId || !membershipNumber) {
       setConnectionState('idle')
       setCollaborators([])
       setYDoc(null)
@@ -129,6 +138,13 @@ export function useProjectNoteCollaboration({
       collaboratorsSnapshotRef.current = ''
       return
     }
+
+    let disposed = false
+    let activeSocket: WebSocket | null = null
+    let reconnectAttempt = 0
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let keepaliveTimer: ReturnType<typeof setInterval> | null = null
+    let hasConnectedOnce = false
 
     const doc = new Yjs.Doc()
     const awarenessInstance = new awarenessProtocol.Awareness(doc)
@@ -140,9 +156,6 @@ export function useProjectNoteCollaboration({
     setYDoc(doc)
     setAwareness(awarenessInstance)
     setMemberColor(color)
-
-    const socket = new WebSocket(getProjectNoteWebSocketUrl(noteId, token))
-    socket.binaryType = 'arraybuffer'
     setConnectionState('connecting')
 
     const syncCollaborators = () => {
@@ -178,32 +191,66 @@ export function useProjectNoteCollaboration({
 
     syncCollaborators()
 
+    const clearKeepalive = () => {
+      if (keepaliveTimer) {
+        clearInterval(keepaliveTimer)
+        keepaliveTimer = null
+      }
+    }
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer)
+        reconnectTimer = null
+      }
+    }
+
+    const startKeepalive = () => {
+      clearKeepalive()
+      keepaliveTimer = setInterval(() => {
+        if (!activeSocket || activeSocket.readyState !== WebSocket.OPEN) {
+          return
+        }
+
+        // Awareness tick keeps the socket (and room) active without mutating the doc.
+        sendAwarenessUpdate(awarenessInstance, activeSocket, [doc.clientID])
+      }, KEEPALIVE_MS)
+    }
+
     const handleAwarenessUpdate = (
       changes: { added: number[]; updated: number[]; removed: number[] },
       origin: unknown,
     ) => {
       syncCollaborators()
 
-      if (origin === socket) {
+      if (!activeSocket || origin === activeSocket) {
         return
       }
 
-      sendAwarenessUpdate(awarenessInstance, socket, changes.added.concat(changes.updated).concat(changes.removed))
+      sendAwarenessUpdate(
+        awarenessInstance,
+        activeSocket,
+        changes.added.concat(changes.updated).concat(changes.removed),
+      )
     }
 
     awarenessInstance.on('update', handleAwarenessUpdate)
 
     const handleDocUpdate = (update: Uint8Array, origin: unknown) => {
-      if (origin === socket) {
+      if (!activeSocket || origin === activeSocket) {
         return
       }
 
-      sendSyncUpdate(doc, socket, update)
+      sendSyncUpdate(doc, activeSocket, update)
     }
 
     doc.on('update', handleDocUpdate)
 
     const handleSocketMessage = (event: MessageEvent<ArrayBuffer | string>) => {
+      if (!activeSocket) {
+        return
+      }
+
       const payload =
         event.data instanceof ArrayBuffer ? new Uint8Array(event.data) : new TextEncoder().encode(String(event.data))
       const decoder = decoding.createDecoder(payload)
@@ -212,51 +259,137 @@ export function useProjectNoteCollaboration({
       if (messageType === MESSAGE_SYNC) {
         const encoder = encoding.createEncoder()
         encoding.writeVarUint(encoder, MESSAGE_SYNC)
-        syncProtocol.readSyncMessage(decoder, encoder, doc, socket)
+        syncProtocol.readSyncMessage(decoder, encoder, doc, activeSocket)
         const response = encoding.toUint8Array(encoder)
-        if (response.length > 1) {
-          socket.send(response)
+        if (response.length > 1 && activeSocket.readyState === WebSocket.OPEN) {
+          activeSocket.send(response)
         }
         return
       }
 
       if (messageType === MESSAGE_AWARENESS) {
-        awarenessProtocol.applyAwarenessUpdate(awarenessInstance, decoding.readVarUint8Array(decoder), socket)
+        awarenessProtocol.applyAwarenessUpdate(awarenessInstance, decoding.readVarUint8Array(decoder), activeSocket)
       }
     }
 
-    socket.addEventListener('open', () => {
-      setConnectionState('connected')
-      setLocalNotePresence(awarenessInstance, membershipNumber, localDisplayName)
+    const scheduleReconnect = () => {
+      if (disposed || reconnectTimer) {
+        return
+      }
 
-      const encoder = encoding.createEncoder()
-      encoding.writeVarUint(encoder, MESSAGE_SYNC)
-      syncProtocol.writeSyncStep1(encoder, doc)
-      socket.send(encoding.toUint8Array(encoder))
+      const delay = reconnectDelay(reconnectAttempt)
+      reconnectAttempt += 1
+      setConnectionState(hasConnectedOnce ? 'connecting' : 'error')
 
-      sendAwarenessUpdate(awarenessInstance, socket, [doc.clientID])
-      syncCollaborators()
-    })
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null
+        openSocket()
+      }, delay)
+    }
 
-    socket.addEventListener('message', handleSocketMessage)
+    const openSocket = () => {
+      if (disposed) {
+        return
+      }
 
-    socket.addEventListener('close', () => {
-      setConnectionState('idle')
-    })
+      const token = getAccessToken()
+      if (!token) {
+        setConnectionState('error')
+        scheduleReconnect()
+        return
+      }
 
-    socket.addEventListener('error', () => {
-      setConnectionState('error')
-    })
+      clearReconnectTimer()
+      clearKeepalive()
+
+      if (activeSocket) {
+        activeSocket.removeEventListener('message', handleSocketMessage)
+        activeSocket.onopen = null
+        activeSocket.onclose = null
+        activeSocket.onerror = null
+        if (activeSocket.readyState === WebSocket.OPEN || activeSocket.readyState === WebSocket.CONNECTING) {
+          activeSocket.close()
+        }
+        activeSocket = null
+      }
+
+      setConnectionState('connecting')
+
+      const socket = new WebSocket(getProjectNoteWebSocketUrl(noteId, token))
+      socket.binaryType = 'arraybuffer'
+      activeSocket = socket
+
+      socket.addEventListener('message', handleSocketMessage)
+
+      socket.addEventListener('open', () => {
+        if (disposed || activeSocket !== socket) {
+          return
+        }
+
+        hasConnectedOnce = true
+        reconnectAttempt = 0
+        setConnectionState('connected')
+        setLocalNotePresence(awarenessInstance, membershipNumber, localDisplayName)
+
+        const encoder = encoding.createEncoder()
+        encoding.writeVarUint(encoder, MESSAGE_SYNC)
+        syncProtocol.writeSyncStep1(encoder, doc)
+        socket.send(encoding.toUint8Array(encoder))
+
+        sendAwarenessUpdate(awarenessInstance, socket, [doc.clientID])
+        syncCollaborators()
+        startKeepalive()
+      })
+
+      socket.addEventListener('close', () => {
+        if (activeSocket !== socket) {
+          return
+        }
+
+        activeSocket = null
+        clearKeepalive()
+
+        if (disposed) {
+          return
+        }
+
+        scheduleReconnect()
+      })
+
+      socket.addEventListener('error', () => {
+        if (activeSocket !== socket || disposed) {
+          return
+        }
+
+        // `close` follows and schedules reconnect; surface error if we never connected.
+        if (!hasConnectedOnce) {
+          setConnectionState('error')
+        }
+      })
+    }
+
+    openSocket()
 
     return () => {
+      disposed = true
+      clearKeepalive()
+      clearReconnectTimer()
+
       doc.off('update', handleDocUpdate)
       awarenessInstance.off('update', handleAwarenessUpdate)
       awarenessInstance.destroy()
       doc.destroy()
       collaboratorsSnapshotRef.current = ''
 
-      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
-        socket.close()
+      if (activeSocket) {
+        activeSocket.removeEventListener('message', handleSocketMessage)
+        activeSocket.onopen = null
+        activeSocket.onclose = null
+        activeSocket.onerror = null
+        if (activeSocket.readyState === WebSocket.OPEN || activeSocket.readyState === WebSocket.CONNECTING) {
+          activeSocket.close()
+        }
+        activeSocket = null
       }
 
       setCollaborators([])

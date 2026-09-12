@@ -27,8 +27,8 @@ function parseFontSizePx(value: string | null | undefined) {
 }
 
 const toolbarBtn =
-  'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-transparent px-2 text-slate-600 transition hover:border-slate-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40'
-const toolbarBtnActive = 'border-slate-200 bg-slate-100 text-slate-900'
+  'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-transparent px-2 text-slate-600 transition hover:border-slate-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
+const toolbarBtnActive = 'border-slate-200 bg-white text-slate-900 shadow-sm'
 
 interface NoteEditorToolbarProps {
   editor: Editor | null
@@ -43,14 +43,26 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
       return
     }
 
+    let frame = 0
+
     const refreshToolbar = () => {
-      setToolbarRevision((value) => value + 1)
+      if (frame) {
+        return
+      }
+
+      frame = window.requestAnimationFrame(() => {
+        frame = 0
+        setToolbarRevision((value) => value + 1)
+      })
     }
 
     editor.on('selectionUpdate', refreshToolbar)
     editor.on('transaction', refreshToolbar)
 
     return () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame)
+      }
       editor.off('selectionUpdate', refreshToolbar)
       editor.off('transaction', refreshToolbar)
     }
@@ -70,7 +82,7 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
     parsedActiveSize !== null && FONT_SIZES.includes(parsedActiveSize as (typeof FONT_SIZES)[number])
 
   return (
-    <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/80 px-3 py-2">
+    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur-sm">
       <button
         type="button"
         disabled={disabled || !editor.can().chain().focus().toggleBold().run()}
