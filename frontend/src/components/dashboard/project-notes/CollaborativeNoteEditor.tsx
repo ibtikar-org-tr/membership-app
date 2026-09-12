@@ -350,7 +350,7 @@ export function CollaborativeNoteEditor({
         }
       `}</style>
 
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#e6e6e6] px-4 py-2.5">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[#e6e6e6] px-3 py-1.5">
         <div className={`flex items-center gap-2 text-[12px] font-medium ${statusTone}`}>
           <span
             className={`inline-flex h-2 w-2 rounded-full ${

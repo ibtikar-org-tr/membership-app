@@ -346,31 +346,27 @@ export function DashboardProjectNotesPage() {
   }
 
   return (
-    <section className="flex h-[calc(100dvh-7.5rem)] flex-col overflow-hidden rounded-xl border border-[#e6e6e6] bg-[#f6f5f4] p-4 sm:p-5 lg:h-[calc(100dvh-3rem)]">
-      <div className="flex shrink-0 items-start gap-2 sm:gap-3">
+    <section className="flex h-[calc(100dvh-6.5rem)] flex-col overflow-hidden rounded-xl border border-[#e6e6e6] bg-[#f6f5f4] p-2.5 sm:p-3 lg:h-full">
+      <div className="flex shrink-0 items-center gap-2">
         <Link
           to={`/projects/${project.id}`}
-          className="mt-0.5 inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/5 text-[#31302e] transition hover:bg-black/10"
+          className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/5 text-[#31302e] transition hover:bg-black/10"
           title="العودة للمشروع"
           aria-label="العودة للمشروع"
         >
           <FiArrowRight className="h-4 w-4" aria-hidden />
         </Link>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[22px] font-bold tracking-[-0.25px] text-black sm:text-[26px] sm:tracking-[-0.625px]">
-              ملاحظات المشروع
-            </h2>
-            <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[12px] font-semibold tracking-[0.125px] text-[#0075de]">
-              {notes.length}
-            </span>
-          </div>
-          <p className="mt-1 truncate text-[14px] text-[#615d59]">{project.name}</p>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
+          <h2 className="text-[16px] font-bold tracking-[-0.125px] text-black sm:text-[18px]">ملاحظات المشروع</h2>
+          <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold tracking-[0.125px] text-[#0075de]">
+            {notes.length}
+          </span>
+          <span className="truncate text-[12px] text-[#a39e98]">{project.name}</span>
         </div>
       </div>
 
       {canManageNotes && isCreateOpen ? (
-        <form onSubmit={handleCreateNote} className="mt-4 shrink-0 rounded-xl border border-[#e6e6e6] bg-white p-3 sm:p-4">
+        <form onSubmit={handleCreateNote} className="mt-2 shrink-0 rounded-xl border border-[#e6e6e6] bg-white p-3 sm:p-4">
           <label className="block text-[14px] font-medium text-[#31302e]" htmlFor="new-note-title">
             عنوان الملاحظة
           </label>
@@ -430,8 +426,8 @@ export function DashboardProjectNotesPage() {
         </form>
       ) : null}
 
-      <div className="mt-4 grid min-h-0 flex-1 gap-3 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-4">
-        <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[#e6e6e6] bg-white max-lg:max-h-40">
+      <div className="mt-2 grid min-h-0 flex-1 gap-2 lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-3">
+        <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-[#e6e6e6] bg-white max-lg:max-h-36">
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#e6e6e6] px-2 py-1.5">
             <p className="px-1 text-[12px] font-semibold tracking-[0.125px] text-[#615d59]">الملاحظات</p>
             {canManageNotes ? (
@@ -487,25 +483,25 @@ export function DashboardProjectNotesPage() {
           </div>
         </aside>
 
-        <div className="flex min-h-0 min-w-0 flex-col">
+        <div className="flex h-full min-h-0 min-w-0 flex-col">
           {selectedNote ? (
-            <div className="flex min-h-0 flex-1 flex-col gap-3">
-              <div className="min-w-0 shrink-0">
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <div className="flex min-w-0 shrink-0 items-center gap-2">
                 {canManageNotes && isEditingTitle ? (
-                  <form onSubmit={handleSaveTitle} className="flex flex-wrap items-center gap-2">
+                  <form onSubmit={handleSaveTitle} className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                     <input
                       value={editingTitle}
                       onChange={(event) => setEditingTitle(event.target.value)}
                       maxLength={160}
                       autoFocus
                       disabled={isSavingTitle}
-                      className="min-w-0 flex-1 rounded border border-[#ddd] bg-white px-2.5 py-2 text-[20px] font-semibold tracking-[-0.125px] text-black outline-none focus:ring-1 focus:ring-[#0075de] disabled:opacity-60"
+                      className="min-w-0 flex-1 rounded border border-[#ddd] bg-white px-2.5 py-1.5 text-[16px] font-semibold tracking-[-0.125px] text-black outline-none focus:ring-1 focus:ring-[#0075de] disabled:opacity-60"
                       aria-label="عنوان الملاحظة"
                     />
                     <button
                       type="submit"
                       disabled={isSavingTitle}
-                      className="inline-flex cursor-pointer rounded-full bg-[#0075de] px-3 py-2 text-[14px] font-medium text-white transition hover:bg-[#005bab] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex cursor-pointer rounded-full bg-[#0075de] px-3 py-1.5 text-[13px] font-medium text-white transition hover:bg-[#005bab] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isSavingTitle ? 'جار الحفظ...' : 'حفظ'}
                     </button>
@@ -517,18 +513,26 @@ export function DashboardProjectNotesPage() {
                         setIsEditingTitle(false)
                         setActionError(null)
                       }}
-                      className="inline-flex cursor-pointer rounded-lg border border-[#e6e6e6] bg-white px-3 py-2 text-[14px] font-medium text-[#31302e] transition hover:bg-[#f6f5f4] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex cursor-pointer rounded-lg border border-[#e6e6e6] bg-white px-3 py-1.5 text-[13px] font-medium text-[#31302e] transition hover:bg-[#f6f5f4] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       إلغاء
                     </button>
                   </form>
                 ) : (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="min-w-0 flex-1 truncate text-[20px] font-semibold tracking-[-0.125px] text-black">
-                      {selectedNote.title}
-                    </h3>
+                  <>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="min-w-0 truncate text-[16px] font-semibold tracking-[-0.125px] text-black">
+                          {selectedNote.title}
+                        </h3>
+                        <p className="truncate text-[11px] text-[#a39e98]">
+                          أنشأها {selectedNote.createdByDisplayName ?? selectedNote.createdBy} • آخر تحديث{' '}
+                          {formatDateEnCA(selectedNote.updatedAt)}
+                        </p>
+                      </div>
+                    </div>
                     {canManageNotes ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex shrink-0 items-center gap-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -536,30 +540,26 @@ export function DashboardProjectNotesPage() {
                             setIsEditingTitle(true)
                             setActionError(null)
                           }}
-                          className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#e6e6e6] bg-white text-[#615d59] transition hover:bg-[#f6f5f4] hover:text-[#31302e]"
+                          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[#e6e6e6] bg-white text-[#615d59] transition hover:bg-[#f6f5f4] hover:text-[#31302e]"
                           title="تعديل العنوان"
                           aria-label="تعديل العنوان"
                         >
-                          <FiEdit2 className="h-4 w-4" aria-hidden />
+                          <FiEdit2 className="h-3.5 w-3.5" aria-hidden />
                         </button>
                         <button
                           type="button"
                           onClick={() => void handleDeleteNote()}
                           disabled={isDeleting}
-                          className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#e6e6e6] bg-white text-[#dd5b00] transition hover:bg-[#f6f5f4] disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[#e6e6e6] bg-white text-[#dd5b00] transition hover:bg-[#f6f5f4] disabled:cursor-not-allowed disabled:opacity-60"
                           title="حذف الملاحظة"
                           aria-label="حذف الملاحظة"
                         >
-                          <FiTrash2 className="h-4 w-4" aria-hidden />
+                          <FiTrash2 className="h-3.5 w-3.5" aria-hidden />
                         </button>
                       </div>
                     ) : null}
-                  </div>
+                  </>
                 )}
-                <p className="mt-1 text-[12px] text-[#a39e98]">
-                  أنشأها {selectedNote.createdByDisplayName ?? selectedNote.createdBy} • آخر تحديث{' '}
-                  {formatDateEnCA(selectedNote.updatedAt)}
-                </p>
               </div>
 
               {actionError ? <p className="shrink-0 text-[14px] text-red-600">{actionError}</p> : null}

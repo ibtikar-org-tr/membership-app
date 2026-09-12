@@ -336,7 +336,7 @@ export function CollaborativeMarkdownEditor({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[#e6e6e6] bg-white shadow-[rgba(0,0,0,0.01)_0_0.175px_1.041px,rgba(0,0,0,0.02)_0_0.8px_2.925px,rgba(0,0,0,0.027)_0_2.025px_7.847px,rgba(0,0,0,0.04)_0_4px_18px]">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#e6e6e6] px-4 py-2.5">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[#e6e6e6] px-3 py-1.5">
         <div className={`flex items-center gap-2 text-[12px] font-medium ${statusTone}`}>
           <span
             className={`inline-flex h-2 w-2 rounded-full ${
