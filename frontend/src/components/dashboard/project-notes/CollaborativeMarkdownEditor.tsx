@@ -88,7 +88,7 @@ export function CollaborativeMarkdownEditor({
       editable: isCollaborative,
       extensions: [
         StarterKit.configure({
-          history: !isCollaborative,
+          history: isCollaborative ? false : undefined,
         }),
         Link.configure({
           openOnClick: false,
