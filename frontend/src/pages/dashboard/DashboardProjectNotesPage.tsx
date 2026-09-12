@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { FiEdit2, FiTrash2 } from 'react-icons/fi'
+import { FiArrowRight, FiEdit2, FiPlus, FiTrash2, FiX } from 'react-icons/fi'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   createProjectNote,
@@ -310,8 +310,16 @@ export function DashboardProjectNotesPage() {
 
   return (
     <section className="flex h-[calc(100dvh-7.5rem)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-4 sm:p-5 lg:h-[calc(100dvh-3rem)]">
-      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
+      <div className="flex shrink-0 items-start gap-2 sm:gap-3">
+        <Link
+          to={`/projects/${project.id}`}
+          className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+          title="العودة للمشروع"
+          aria-label="العودة للمشروع"
+        >
+          <FiArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">ملاحظات المشروع</h2>
             <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -319,23 +327,6 @@ export function DashboardProjectNotesPage() {
             </span>
           </div>
           <p className="mt-1 truncate text-sm text-slate-500">{project.name}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {canManageNotes ? (
-            <button
-              type="button"
-              onClick={() => setIsCreateOpen((previous) => !previous)}
-              className="inline-flex items-center rounded-lg bg-slate-950 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-800"
-            >
-              {isCreateOpen ? 'إلغاء' : 'ملاحظة جديدة'}
-            </button>
-          ) : null}
-          <Link
-            to={`/projects/${project.id}`}
-            className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            العودة للمشروع
-          </Link>
         </div>
       </div>
 
@@ -366,9 +357,26 @@ export function DashboardProjectNotesPage() {
       ) : null}
 
       <div className="mt-4 grid min-h-0 flex-1 gap-3 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-4">
-        <aside className="min-h-0 overflow-auto rounded-xl border border-slate-200 bg-slate-50/80 p-2 max-lg:max-h-40">
-          <p className="px-2 pb-1 pt-1 text-[11px] font-semibold tracking-wide text-slate-500">الملاحظات</p>
-          <div className="space-y-0.5">
+        <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 max-lg:max-h-40">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200/80 px-2 py-1.5">
+            <p className="px-1 text-[11px] font-semibold tracking-wide text-slate-500">الملاحظات</p>
+            {canManageNotes ? (
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen((previous) => !previous)}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition ${
+                  isCreateOpen
+                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    : 'bg-slate-950 text-white hover:bg-slate-800'
+                }`}
+                title={isCreateOpen ? 'إلغاء' : 'ملاحظة جديدة'}
+                aria-label={isCreateOpen ? 'إلغاء' : 'ملاحظة جديدة'}
+              >
+                {isCreateOpen ? <FiX className="h-3.5 w-3.5" aria-hidden /> : <FiPlus className="h-3.5 w-3.5" aria-hidden />}
+              </button>
+            ) : null}
+          </div>
+          <div className="min-h-0 flex-1 space-y-0.5 overflow-auto p-2 pt-1.5">
             {notes.length === 0 ? (
               <p className="px-2 py-3 text-sm text-slate-500">لا توجد ملاحظات بعد.</p>
             ) : (
