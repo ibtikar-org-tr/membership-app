@@ -268,6 +268,10 @@ export async function handleProjectNotesRoomWebSocket(
   const displayNameMap = await getUserDisplayNamesByMembershipNumbers(env.MEMBERS_DB, [payload.sub])
   const displayName = displayNameMap.get(payload.sub) ?? payload.sub
 
+  if (!env.PROJECT_NOTES_ROOM) {
+    return new Response('Project notes room binding is not configured.', { status: 500 })
+  }
+
   const stub = env.PROJECT_NOTES_ROOM.getByName(projectId.trim())
   const forwardUrl = new URL('https://project-notes-room/ws')
   forwardUrl.searchParams.set('projectId', projectId.trim())
