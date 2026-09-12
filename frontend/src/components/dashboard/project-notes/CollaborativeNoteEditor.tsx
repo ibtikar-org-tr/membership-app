@@ -373,10 +373,11 @@ export function CollaborativeNoteEditor({
           editor={editor}
           disabled={!canEdit || viewMode !== 'visual'}
           viewMode={viewMode}
+          sourceKind="html"
           onViewModeChange={handleViewModeChange}
           modeSwitchDisabled={!editor && !readOnly}
           beautifyDisabled={readOnly || !canEdit}
-          onBeautifyHtml={() => {
+          onBeautifySource={() => {
             htmlDirtyRef.current = true
             setHtmlApplyError(null)
             setHtmlSource(beautifyNoteHtml(htmlSource))

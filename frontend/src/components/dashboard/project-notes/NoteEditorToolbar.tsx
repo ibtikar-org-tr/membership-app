@@ -13,7 +13,8 @@ import {
 import { Sparkles } from 'lucide-react'
 import { getActiveTextDirection } from './note-text-direction'
 
-export type NoteEditorViewMode = 'visual' | 'html'
+export type NoteEditorViewMode = 'visual' | 'html' | 'markdown'
+export type NoteEditorSourceKind = 'html' | 'markdown'
 
 const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 48, 72] as const
 const DEFAULT_FONT_SIZE = '16px'
@@ -44,9 +45,10 @@ interface NoteEditorToolbarProps {
   editor: Editor | null
   disabled?: boolean
   viewMode: NoteEditorViewMode
+  sourceKind?: NoteEditorSourceKind
   onViewModeChange: (mode: NoteEditorViewMode) => void
   modeSwitchDisabled?: boolean
-  onBeautifyHtml?: () => void
+  onBeautifySource?: () => void
   beautifyDisabled?: boolean
 }
 
@@ -54,12 +56,15 @@ export function NoteEditorToolbar({
   editor,
   disabled = false,
   viewMode,
+  sourceKind = 'html',
   onViewModeChange,
   modeSwitchDisabled = false,
-  onBeautifyHtml,
+  onBeautifySource,
   beautifyDisabled = false,
 }: NoteEditorToolbarProps) {
   const [toolbarRevision, setToolbarRevision] = useState(0)
+  const sourceMode: NoteEditorViewMode = sourceKind === 'markdown' ? 'markdown' : 'html'
+  const isSourceMode = viewMode === sourceMode
 
   useEffect(() => {
     if (!editor || viewMode !== 'visual') {
@@ -110,30 +115,34 @@ export function NoteEditorToolbar({
       <button
         type="button"
         disabled={modeSwitchDisabled}
-        onClick={() => onViewModeChange('html')}
-        className={`${modeBtn} ${viewMode === 'html' ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
-        title="تحرير HTML"
+        onClick={() => onViewModeChange(sourceMode)}
+        className={`${modeBtn} ${isSourceMode ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
+        title={sourceKind === 'markdown' ? 'تحرير Markdown' : 'تحرير HTML'}
       >
         <FiCode className="h-3.5 w-3.5" aria-hidden />
-        HTML
+        {sourceKind === 'markdown' ? 'Markdown' : 'HTML'}
       </button>
     </div>
   )
 
-  if (viewMode === 'html') {
+  if (isSourceMode) {
     return (
       <div className="flex flex-wrap items-center gap-2 border-b border-[#e6e6e6] bg-[#f6f5f4] px-3 py-2">
         <button
           type="button"
-          disabled={beautifyDisabled || !onBeautifyHtml}
-          onClick={() => onBeautifyHtml?.()}
+          disabled={beautifyDisabled || !onBeautifySource}
+          onClick={() => onBeautifySource?.()}
           className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-[#e6e6e6] bg-white px-2.5 text-[12px] font-medium text-[#31302e] transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-40"
-          title="تنسيق HTML"
+          title={sourceKind === 'markdown' ? 'تنسيق Markdown' : 'تنسيق HTML'}
         >
           <Sparkles className="h-3.5 w-3.5" aria-hidden />
           Beautify
         </button>
-        <p className="text-[12px] text-[#615d59]">عدّل الـ HTML ثم ارجع للوضع المرئي لتطبيق التغييرات.</p>
+        <p className="text-[12px] text-[#615d59]">
+          {sourceKind === 'markdown'
+            ? 'عدّل الـ Markdown ثم ارجع للوضع المرئي لتطبيق التغييرات.'
+            : 'عدّل الـ HTML ثم ارجع للوضع المرئي لتطبيق التغييرات.'}
+        </p>
         {modeSwitcher}
       </div>
     )

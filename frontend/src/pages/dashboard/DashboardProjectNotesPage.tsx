@@ -546,6 +546,8 @@ export function DashboardProjectNotesPage() {
                   connectionState={canEditSelectedNote ? connectionState : 'idle'}
                   isSynced={canEditSelectedNote ? isSynced : true}
                   onlineUsers={onlineNoteUsers}
+                  displayName={collaboratorDisplayName}
+                  membershipNumber={user?.membershipNumber ?? ''}
                 />
               ) : (
                 <CollaborativeNoteEditor
