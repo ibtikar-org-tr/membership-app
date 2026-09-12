@@ -17,6 +17,7 @@ import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
 import { NoteTextDirection } from './note-text-direction'
 import { createNoteMemberMention } from './note-member-mention'
 import type { MentionableMember } from './mentionable-members'
+import { RemoteCursorEdgeIndicators } from './RemoteCursorEdgeIndicators'
 
 interface CollaborativeNoteEditorProps {
   noteId: string
@@ -72,6 +73,7 @@ export function CollaborativeNoteEditor({
   const seedNoteIdRef = useRef<string | null>(null)
   const mentionableMembersRef = useRef(mentionableMembers)
   const htmlDirtyRef = useRef(false)
+  const editorScrollRef = useRef<HTMLDivElement | null>(null)
   const [viewMode, setViewMode] = useState<NoteEditorViewMode>('visual')
   const [htmlSource, setHtmlSource] = useState('')
   const [htmlApplyError, setHtmlApplyError] = useState<string | null>(null)
@@ -422,6 +424,7 @@ export function CollaborativeNoteEditor({
       ) : null}
 
       <div
+        ref={editorScrollRef}
         className={`relative min-h-0 flex-1 ${
           viewMode === 'html' ? 'overflow-hidden' : `overflow-auto ${editorSurfaceClass}`
         }`}
@@ -443,7 +446,14 @@ export function CollaborativeNoteEditor({
             }}
           />
         ) : (
-          <EditorContent editor={editor} className="min-h-full" />
+          <>
+            <RemoteCursorEdgeIndicators
+              editor={editor}
+              scrollContainerRef={editorScrollRef}
+              enabled={canEdit && viewMode === 'visual'}
+            />
+            <EditorContent editor={editor} className="min-h-full" />
+          </>
         )}
       </div>
     </div>
