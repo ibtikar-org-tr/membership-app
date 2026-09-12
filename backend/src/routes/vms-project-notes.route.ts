@@ -253,6 +253,7 @@ export async function handleProjectNoteWebSocket(
   const stub = env.PROJECT_NOTE_ROOM.getByName(noteId)
   const forwardUrl = new URL('https://project-note-room/ws')
   forwardUrl.searchParams.set('noteId', noteId)
+  forwardUrl.searchParams.set('contentType', note.contentType)
   forwardUrl.searchParams.set('membershipNumber', payload.sub)
   forwardUrl.searchParams.set('displayName', displayName)
 

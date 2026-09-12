@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS project_notes (
     title TEXT NOT NULL,
     content TEXT NOT NULL DEFAULT '',
     content_preview TEXT,
+    content_type TEXT NOT NULL DEFAULT 'html', -- "html" | "markdown"
     created_by TEXT NOT NULL
 );
 

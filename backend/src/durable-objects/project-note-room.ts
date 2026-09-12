@@ -6,11 +6,13 @@ import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
 import { updateProjectNoteContent } from '../repositories/vms-project-notes.repository'
 import type { AppBindings } from '../types/bindings'
-import { extractNoteContent } from '../utils/yjs-rich-text'
+import { extractMarkdownNoteContent, extractNoteContent } from '../utils/yjs-rich-text'
 
 const MESSAGE_SYNC = 0
 const MESSAGE_AWARENESS = 1
 const SQL_PERSIST_DEBOUNCE_MS = 1500
+
+type NoteContentType = 'html' | 'markdown'
 
 interface SocketAttachment {
   noteId: string
@@ -21,6 +23,7 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
   private doc: Y.Doc | null = null
   private awareness: awarenessProtocol.Awareness | null = null
   private noteId: string | null = null
+  private contentType: NoteContentType = 'html'
   private initialized = false
   private yjsPersistChain: Promise<void> = Promise.resolve()
 
@@ -36,7 +39,11 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
       return new Response('Missing note id.', { status: 400 })
     }
 
+    const contentTypeParam = url.searchParams.get('contentType')?.trim()
+    this.contentType = contentTypeParam === 'markdown' ? 'markdown' : 'html'
+
     await this.ctx.storage.put('note-id', this.noteId)
+    await this.ctx.storage.put('content-type', this.contentType)
     await this.ensureInitialized(this.noteId)
 
     const pair = new WebSocketPair()

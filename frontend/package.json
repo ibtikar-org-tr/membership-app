@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@codemirror/lang-html": "^6.4.12",
+    "@codemirror/lang-markdown": "^6.5.2",
     "@fullcalendar/core": "^6.1.21",
     "@fullcalendar/daygrid": "^6.1.21",
     "@fullcalendar/interaction": "^6.1.21",
@@ -45,6 +46,7 @@
     "react-router-dom": "^7.13.2",
     "tailwindcss": "^4.2.2",
     "tippy.js": "^6.3.7",
+    "y-codemirror.next": "^0.3.6",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.31"
   },
