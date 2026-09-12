@@ -32,7 +32,7 @@ interface CollaborativeNoteEditorProps {
 }
 
 const editorSurfaceClass =
-  'h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-base [&_.ProseMirror]:leading-8 [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-slate-400 [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
+  'h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-[16px] [&_.ProseMirror]:leading-[1.5] [&_.ProseMirror]:text-black [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-[40px] [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h1]:tracking-[-1px] [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-[26px] [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:tracking-[-0.625px] [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-[22px] [&_.ProseMirror_h3]:font-bold [&_.ProseMirror_h3]:tracking-[-0.25px] [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-[#e6e6e6] [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-[#615d59] [&_.ProseMirror_a]:text-[#0075de] [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-[#a39e98] [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
 
 function connectionLabel(connectionState: CollaborativeNoteEditorProps['connectionState'], readOnly: boolean) {
   if (readOnly) {
@@ -282,13 +282,13 @@ export function CollaborativeNoteEditor({
 
   const statusTone =
     readOnly || connectionState === 'connected'
-      ? 'text-slate-600'
+      ? 'text-[#615d59]'
       : connectionState === 'error'
         ? 'text-red-600'
-        : 'text-amber-700'
+        : 'text-[#dd5b00]'
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[#e6e6e6] bg-white shadow-[rgba(0,0,0,0.01)_0_0.175px_1.041px,rgba(0,0,0,0.02)_0_0.8px_2.925px,rgba(0,0,0,0.027)_0_2.025px_7.847px,rgba(0,0,0,0.04)_0_4px_18px]">
       <style>{`
         .note-rich-text .collaboration-cursor__caret {
           position: relative;
@@ -315,12 +315,12 @@ export function CollaborativeNoteEditor({
           display: inline-flex;
           align-items: center;
           border-radius: 9999px;
-          border: 1px solid rgb(226 232 240);
-          background: rgb(248 250 252);
+          border: 1px solid #e6e6e6;
+          background: #f6f5f4;
           padding: 0 0.45rem;
           font-size: 0.875em;
           font-weight: 600;
-          color: rgb(51 65 85);
+          color: #31302e;
           white-space: nowrap;
         }
         .tippy-box {
@@ -341,19 +341,19 @@ export function CollaborativeNoteEditor({
         }
       `}</style>
 
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5">
-        <div className={`flex items-center gap-2 text-xs font-medium ${statusTone}`}>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#e6e6e6] px-4 py-2.5">
+        <div className={`flex items-center gap-2 text-[12px] font-medium ${statusTone}`}>
           <span
             className={`inline-flex h-2 w-2 rounded-full ${
               readOnly
-                ? 'bg-slate-300'
+                ? 'bg-[#a39e98]'
                 : connectionState === 'connected'
-                  ? 'bg-emerald-500'
+                  ? 'bg-[#1aae39]'
                   : connectionState === 'connecting'
-                    ? 'animate-pulse bg-amber-400'
+                    ? 'animate-pulse bg-[#dd5b00]'
                     : connectionState === 'error'
                       ? 'bg-red-500'
-                      : 'bg-slate-300'
+                      : 'bg-[#a39e98]'
             }`}
             aria-hidden
           />
@@ -373,7 +373,7 @@ export function CollaborativeNoteEditor({
       </div>
 
       {htmlApplyError ? (
-        <div className="shrink-0 border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{htmlApplyError}</div>
+        <div className="shrink-0 border-b border-[#e6e6e6] bg-[#f6f5f4] px-4 py-2 text-[12px] text-red-600">{htmlApplyError}</div>
       ) : null}
 
       <div
@@ -382,7 +382,7 @@ export function CollaborativeNoteEditor({
         }`}
       >
         {!readOnly && !isCollaborative ? (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 text-sm text-slate-600 backdrop-blur-[1px]">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-[15px] text-[#615d59]">
             جار تجهيز المحرر...
           </div>
         ) : null}

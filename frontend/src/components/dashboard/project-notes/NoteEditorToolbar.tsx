@@ -31,13 +31,13 @@ function parseFontSizePx(value: string | null | undefined) {
 }
 
 const toolbarBtn =
-  'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-transparent px-2 text-slate-600 transition hover:border-slate-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
-const toolbarBtnActive = 'border-slate-200 bg-white text-slate-900 shadow-sm'
+  'inline-flex h-8 min-w-8 cursor-pointer items-center justify-center rounded-lg border border-transparent px-2 text-[#615d59] transition hover:bg-black/5 hover:text-[#31302e] disabled:cursor-not-allowed disabled:opacity-40'
+const toolbarBtnActive = 'bg-black/5 text-black'
 
 const modeBtn =
-  'inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition'
-const modeBtnIdle = 'text-slate-600 hover:bg-white hover:text-slate-900'
-const modeBtnActive = 'bg-white text-slate-900 shadow-sm'
+  'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium transition'
+const modeBtnIdle = 'text-[#615d59] hover:bg-white hover:text-[#31302e]'
+const modeBtnActive = 'bg-white text-black shadow-[rgba(0,0,0,0.04)_0_4px_18px]'
 
 interface NoteEditorToolbarProps {
   editor: Editor | null
@@ -88,7 +88,7 @@ export function NoteEditorToolbar({
 
   const modeSwitcher = (
     <div
-      className="ms-auto inline-flex items-center rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
+      className="ms-auto inline-flex items-center rounded-lg border border-[#e6e6e6] bg-[#f6f5f4] p-0.5"
       role="group"
       aria-label="وضع المحرر"
     >
@@ -117,8 +117,8 @@ export function NoteEditorToolbar({
 
   if (viewMode === 'html') {
     return (
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
-        <p className="text-xs text-slate-500">عدّل الـ HTML ثم ارجع للوضع المرئي لتطبيق التغييرات.</p>
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#e6e6e6] bg-[#f6f5f4] px-3 py-2">
+        <p className="text-[12px] text-[#615d59]">عدّل الـ HTML ثم ارجع للوضع المرئي لتطبيق التغييرات.</p>
         {modeSwitcher}
       </div>
     )
@@ -126,7 +126,7 @@ export function NoteEditorToolbar({
 
   if (!editor) {
     return (
-      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-1 border-b border-[#e6e6e6] bg-[#f6f5f4] px-3 py-2">
         {modeSwitcher}
       </div>
     )
@@ -142,7 +142,7 @@ export function NoteEditorToolbar({
     parsedActiveSize !== null && FONT_SIZES.includes(parsedActiveSize as (typeof FONT_SIZES)[number])
 
   return (
-    <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-3 py-2">
+    <div className="flex flex-wrap items-center gap-1 border-b border-[#e6e6e6] bg-[#f6f5f4] px-3 py-2">
       <button
         type="button"
         disabled={disabled || !editor.can().chain().focus().toggleBold().run()}
@@ -171,9 +171,9 @@ export function NoteEditorToolbar({
         <FiUnderline className="h-4 w-4" aria-hidden />
       </button>
 
-      <span className="mx-1 h-6 w-px bg-slate-200" aria-hidden />
+      <span className="mx-1 h-6 w-px bg-[#e6e6e6]" aria-hidden />
 
-      <label className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700">
+      <label className="inline-flex items-center gap-1.5 rounded-lg border border-[#e6e6e6] bg-white px-2 py-1 text-[12px] font-medium text-[#31302e]">
         <select
           disabled={disabled}
           value={isKnownSize ? activeFontSize : markedFontSize ?? DEFAULT_FONT_SIZE}
@@ -186,7 +186,7 @@ export function NoteEditorToolbar({
 
             editor.chain().focus().setMark('textStyle', { fontSize: value }).run()
           }}
-          className="bg-transparent text-xs outline-none"
+          className="cursor-pointer bg-transparent text-[12px] outline-none"
           aria-label="حجم الخط"
         >
           {FONT_SIZES.map((size) => (
@@ -200,7 +200,7 @@ export function NoteEditorToolbar({
         </select>
       </label>
 
-      <span className="mx-1 h-6 w-px bg-slate-200" aria-hidden />
+      <span className="mx-1 h-6 w-px bg-[#e6e6e6]" aria-hidden />
 
       <button
         type="button"
@@ -232,7 +232,7 @@ export function NoteEditorToolbar({
         <span className="text-[10px] font-bold">Auto</span>
       </button>
 
-      <span className="mx-1 h-6 w-px bg-slate-200" aria-hidden />
+      <span className="mx-1 h-6 w-px bg-[#e6e6e6]" aria-hidden />
 
       <button
         type="button"
