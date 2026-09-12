@@ -12,6 +12,7 @@ import {
   updateProjectNote,
 } from '../../api/vms'
 import { CollaborativeNoteEditor } from '../../components/dashboard/project-notes/CollaborativeNoteEditor'
+import { CollaborativeMarkdownEditor } from '../../components/dashboard/project-notes/CollaborativeMarkdownEditor'
 import { buildMentionableMembers } from '../../components/dashboard/project-notes/mentionable-members'
 import { resolveOnlineNoteUsers } from '../../components/dashboard/project-notes/NoteOnlineUsers'
 import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollaboration'
@@ -37,6 +38,7 @@ export function DashboardProjectNotesPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [newNoteTitle, setNewNoteTitle] = useState('')
+  const [newNoteContentType, setNewNoteContentType] = useState<'html' | 'markdown'>('html')
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -211,9 +213,14 @@ export function DashboardProjectNotesPage() {
     setIsCreating(true)
 
     try {
-      const payload = await createProjectNote({ projectId: projectID, title })
+      const payload = await createProjectNote({
+        projectId: projectID,
+        title,
+        contentType: newNoteContentType,
+      })
       setNotes((current) => [payload.note, ...current])
       setNewNoteTitle('')
+      setNewNoteContentType('html')
       setIsCreateOpen(false)
       navigate(`/projects/${projectID}/notes?note=${encodeURIComponent(payload.note.id)}`)
     } catch (requestError) {
@@ -337,24 +344,59 @@ export function DashboardProjectNotesPage() {
           <label className="block text-[14px] font-medium text-[#31302e]" htmlFor="new-note-title">
             عنوان الملاحظة
           </label>
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-            <input
-              id="new-note-title"
-              value={newNoteTitle}
-              onChange={(event) => setNewNoteTitle(event.target.value)}
-              className="w-full rounded border border-[#ddd] bg-white px-2.5 py-2 text-[15px] text-black outline-none transition focus:shadow-[rgba(0,0,0,0.04)_0_4px_18px] focus:ring-1 focus:ring-[#0075de]"
-              placeholder="مثال: محضر الاجتماع - أفكار التخطيط..."
-              autoFocus
-            />
+          <input
+            id="new-note-title"
+            value={newNoteTitle}
+            onChange={(event) => setNewNoteTitle(event.target.value)}
+            className="mt-2 w-full rounded border border-[#ddd] bg-white px-2.5 py-2 text-[15px] text-black outline-none transition focus:shadow-[rgba(0,0,0,0.04)_0_4px_18px] focus:ring-1 focus:ring-[#0075de]"
+            placeholder="مثال: محضر الاجتماع - أفكار التخطيط..."
+            autoFocus
+          />
+
+          <p className="mt-3 text-[14px] font-medium text-[#31302e]">نوع المحتوى</p>
+          <div
+            className="mt-2 inline-flex rounded-lg border border-[#e6e6e6] bg-[#f6f5f4] p-0.5"
+            role="group"
+            aria-label="نوع محتوى الملاحظة"
+          >
             <button
-              type="submit"
-              disabled={isCreating}
-              className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#0075de] px-4 py-2 text-[15px] font-medium text-white transition hover:bg-[#005bab] disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={() => setNewNoteContentType('html')}
+              className={`inline-flex h-8 cursor-pointer items-center rounded-md px-3 text-[12px] font-medium transition ${
+                newNoteContentType === 'html'
+                  ? 'bg-white text-black shadow-[rgba(0,0,0,0.04)_0_4px_18px]'
+                  : 'text-[#615d59] hover:text-[#31302e]'
+              }`}
             >
-              {isCreating ? 'جار الإنشاء...' : 'إنشاء'}
+              HTML
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewNoteContentType('markdown')}
+              className={`inline-flex h-8 cursor-pointer items-center rounded-md px-3 text-[12px] font-medium transition ${
+                newNoteContentType === 'markdown'
+                  ? 'bg-white text-black shadow-[rgba(0,0,0,0.04)_0_4px_18px]'
+                  : 'text-[#615d59] hover:text-[#31302e]'
+              }`}
+            >
+              Markdown
             </button>
           </div>
+          <p className="mt-1.5 text-[12px] text-[#a39e98]">
+            {newNoteContentType === 'markdown'
+              ? 'محرر Markdown تعاوني مع تمييز الصيغة.'
+              : 'محرر منسّق (HTML) مع شريط أدوات وتنسيق غني.'}
+          </p>
+
           {createError ? <p className="mt-2 text-[14px] text-red-600">{createError}</p> : null}
+
+          <button
+            type="submit"
+            disabled={isCreating}
+            className="mt-3 inline-flex cursor-pointer items-center justify-center rounded-full bg-[#0075de] px-4 py-2 text-[15px] font-medium text-white transition hover:bg-[#005bab] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isCreating ? 'جار الإنشاء...' : 'إنشاء'}
+          </button>
         </form>
       ) : null}
 
@@ -398,7 +440,12 @@ export function DashboardProjectNotesPage() {
                     <p className="mt-0.5 line-clamp-2 text-[12px] text-[#615d59]">
                       {sanitizeNotePreview(note.contentPreview) || 'ملاحظة فارغة'}
                     </p>
-                    <p className="mt-1 text-[11px] text-[#a39e98]">{formatDateEnCA(note.updatedAt)}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="rounded-full bg-[#f6f5f4] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#0075de]">
+                        {note.contentType === 'markdown' ? 'MD' : 'HTML'}
+                      </span>
+                      <p className="text-[11px] text-[#a39e98]">{formatDateEnCA(note.updatedAt)}</p>
+                    </div>
                   </Link>
                 )
               })
@@ -489,20 +536,33 @@ export function DashboardProjectNotesPage() {
                 </div>
               ) : null}
 
-              <CollaborativeNoteEditor
-                noteId={selectedNote.id}
-                yDoc={canEditSelectedNote ? yDoc : null}
-                awareness={canEditSelectedNote ? awareness : null}
-                initialContent={selectedNote.content}
-                readOnly={!canEditSelectedNote}
-                connectionState={canEditSelectedNote ? connectionState : 'idle'}
-                isSynced={canEditSelectedNote ? isSynced : true}
-                onlineUsers={onlineNoteUsers}
-                memberColor={memberColor}
-                displayName={collaboratorDisplayName}
-                membershipNumber={user?.membershipNumber ?? ''}
-                mentionableMembers={mentionableMembers}
-              />
+              {selectedNote.contentType === 'markdown' ? (
+                <CollaborativeMarkdownEditor
+                  noteId={selectedNote.id}
+                  yDoc={canEditSelectedNote ? yDoc : null}
+                  awareness={canEditSelectedNote ? awareness : null}
+                  initialContent={selectedNote.content}
+                  readOnly={!canEditSelectedNote}
+                  connectionState={canEditSelectedNote ? connectionState : 'idle'}
+                  isSynced={canEditSelectedNote ? isSynced : true}
+                  onlineUsers={onlineNoteUsers}
+                />
+              ) : (
+                <CollaborativeNoteEditor
+                  noteId={selectedNote.id}
+                  yDoc={canEditSelectedNote ? yDoc : null}
+                  awareness={canEditSelectedNote ? awareness : null}
+                  initialContent={selectedNote.content}
+                  readOnly={!canEditSelectedNote}
+                  connectionState={canEditSelectedNote ? connectionState : 'idle'}
+                  isSynced={canEditSelectedNote ? isSynced : true}
+                  onlineUsers={onlineNoteUsers}
+                  memberColor={memberColor}
+                  displayName={collaboratorDisplayName}
+                  membershipNumber={user?.membershipNumber ?? ''}
+                  mentionableMembers={mentionableMembers}
+                />
+              )}
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-[#e6e6e6] bg-white px-6 text-center">

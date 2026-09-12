@@ -216,6 +216,7 @@ export interface VmsProjectNote {
   title: string
   content: string
   contentPreview: string | null
+  contentType: 'html' | 'markdown'
   createdBy: string
   createdByDisplayName?: string
   canEdit?: boolean

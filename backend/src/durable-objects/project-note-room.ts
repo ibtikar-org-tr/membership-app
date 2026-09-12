@@ -126,6 +126,10 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
     }
 
     this.noteId = noteId
+    const storedType = await this.ctx.storage.get<string>('content-type')
+    if (storedType === 'markdown' || storedType === 'html') {
+      this.contentType = storedType
+    }
     await this.ensureInitialized(noteId)
     await this.yjsPersistChain
     await this.persistSql(noteId)
@@ -142,6 +146,10 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
     }
 
     this.noteId = noteId
+    const storedType = await this.ctx.storage.get<string>('content-type')
+    if (storedType === 'markdown' || storedType === 'html') {
+      this.contentType = storedType
+    }
     await this.ensureInitialized(noteId)
     return noteId
   }
@@ -298,6 +306,16 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
 
   private async persistSql(noteId: string) {
     if (!this.doc) {
+      return
+    }
+
+    const contentType =
+      this.contentType ||
+      ((await this.ctx.storage.get<string>('content-type')) === 'markdown' ? 'markdown' : 'html')
+
+    if (contentType === 'markdown') {
+      const { content, preview } = extractMarkdownNoteContent(this.doc)
+      await updateProjectNoteContent(this.env.VMS_DB, noteId, content, preview)
       return
     }
 

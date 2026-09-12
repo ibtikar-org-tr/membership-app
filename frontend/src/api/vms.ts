@@ -837,7 +837,11 @@ export function fetchProjectNoteById(noteId: string) {
   return fetchJson<{ note: VmsProjectNote }>(`/project-notes/${encodeURIComponent(noteId)}`)
 }
 
-export function createProjectNote(payload: { projectId: string; title: string }) {
+export function createProjectNote(payload: {
+  projectId: string
+  title: string
+  contentType?: 'html' | 'markdown'
+}) {
   return postJson<{ note: VmsProjectNote }, typeof payload>(`/project-notes`, payload)
 }
 
