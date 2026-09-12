@@ -225,7 +225,7 @@ vmsProjectNotesRoute.delete('/project-notes/:id', zValidator('param', projectNot
   }
 })
 
-export async function handleProjectNotesRoomWebSocket(
+export async function handleProjectNoteWebSocket(
   request: Request,
   env: AppBindings,
   projectId: string,
@@ -268,12 +268,12 @@ export async function handleProjectNotesRoomWebSocket(
   const displayNameMap = await getUserDisplayNamesByMembershipNumbers(env.MEMBERS_DB, [payload.sub])
   const displayName = displayNameMap.get(payload.sub) ?? payload.sub
 
-  if (!env.PROJECT_NOTES_ROOM) {
-    return new Response('Project notes room binding is not configured.', { status: 500 })
+  if (!env.PROJECT_NOTE_ROOM) {
+    return new Response('Project note room binding is not configured.', { status: 500 })
   }
 
-  const stub = env.PROJECT_NOTES_ROOM.getByName(projectId.trim())
-  const forwardUrl = new URL('https://project-notes-room/ws')
+  const stub = env.PROJECT_NOTE_ROOM.getByName(projectId.trim())
+  const forwardUrl = new URL('https://project-note-room/ws')
   forwardUrl.searchParams.set('projectId', projectId.trim())
   forwardUrl.searchParams.set('membershipNumber', payload.sub)
   forwardUrl.searchParams.set('displayName', displayName)

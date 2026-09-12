@@ -10,22 +10,44 @@ import { extractMarkdownNoteContent, extractNoteContent } from '../utils/yjs-ric
 
 const MESSAGE_SYNC = 0
 const MESSAGE_AWARENESS = 1
+const MESSAGE_CONTROL = 2
 const SQL_PERSIST_DEBOUNCE_MS = 1500
 
 type NoteContentType = 'html' | 'markdown'
 
 interface SocketAttachment {
-  noteId: string
+  membershipNumber: string
+  displayName: string
+  focusedNoteId: string | null
   awarenessIds: number[]
 }
 
+interface NoteSession {
+  noteId: string
+  contentType: NoteContentType
+  doc: Y.Doc
+  awareness: awarenessProtocol.Awareness
+  yjsPersistChain: Promise<void>
+}
+
+interface PresenceViewer {
+  membershipNumber: string
+  displayName: string
+  noteId: string | null
+}
+
+function yjsStorageKey(noteId: string) {
+  return `yjs:${noteId}`
+}
+
+function contentTypeStorageKey(noteId: string) {
+  return `content-type:${noteId}`
+}
+
 export class ProjectNoteRoom extends DurableObject<AppBindings> {
-  private doc: Y.Doc | null = null
-  private awareness: awarenessProtocol.Awareness | null = null
-  private noteId: string | null = null
-  private contentType: NoteContentType = 'html'
-  private initialized = false
-  private yjsPersistChain: Promise<void> = Promise.resolve()
+  private projectId: string | null = null
+  private notes = new Map<string, NoteSession>()
+  private pendingSqlNoteIds = new Set<string>()
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
@@ -34,17 +56,19 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
       return new Response('Expected WebSocket upgrade.', { status: 426 })
     }
 
-    this.noteId = url.searchParams.get('noteId')?.trim() || null
-    if (!this.noteId) {
-      return new Response('Missing note id.', { status: 400 })
+    const projectId = url.searchParams.get('projectId')?.trim() || null
+    if (!projectId) {
+      return new Response('Missing project id.', { status: 400 })
     }
 
-    const contentTypeParam = url.searchParams.get('contentType')?.trim()
-    this.contentType = contentTypeParam === 'markdown' ? 'markdown' : 'html'
+    const membershipNumber = url.searchParams.get('membershipNumber')?.trim() || ''
+    const displayName = url.searchParams.get('displayName')?.trim() || membershipNumber
+    if (!membershipNumber) {
+      return new Response('Missing membership number.', { status: 400 })
+    }
 
-    await this.ctx.storage.put('note-id', this.noteId)
-    await this.ctx.storage.put('content-type', this.contentType)
-    await this.ensureInitialized(this.noteId)
+    this.projectId = projectId
+    await this.ctx.storage.put('project-id', projectId)
 
     const pair = new WebSocketPair()
     const client = pair[0]
@@ -52,50 +76,74 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
 
     this.ctx.acceptWebSocket(server)
     server.serializeAttachment({
-      noteId: this.noteId,
+      membershipNumber,
+      displayName,
+      focusedNoteId: null,
       awarenessIds: [],
     } satisfies SocketAttachment)
 
-    this.sendSyncStep1(server)
-    this.sendAwarenessSnapshot(server)
+    this.broadcastPresence()
 
     return new Response(null, { status: 101, webSocket: client })
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
-    const noteId = await this.ensureReadyForSocket(ws)
-    if (!noteId || !this.doc || !this.awareness) {
-      return
-    }
+    await this.ensureProjectId()
 
     const data = typeof message === 'string' ? new TextEncoder().encode(message) : new Uint8Array(message)
     const decoder = decoding.createDecoder(data)
     const messageType = decoding.readVarUint(decoder)
 
     switch (messageType) {
+      case MESSAGE_CONTROL: {
+        await this.handleControlMessage(ws, decoding.readVarString(decoder))
+        break
+      }
       case MESSAGE_SYNC: {
-        const encoder = encoding.createEncoder()
-        encoding.writeVarUint(encoder, MESSAGE_SYNC)
-        syncProtocol.readSyncMessage(decoder, encoder, this.doc, ws)
-        const response = encoding.toUint8Array(encoder)
-        if (response.length > 1) {
+        const noteId = decoding.readVarString(decoder)
+        const session = await this.ensureNoteSession(noteId)
+        if (!session) {
+          return
+        }
+
+        const headerEncoder = encoding.createEncoder()
+        encoding.writeVarUint(headerEncoder, MESSAGE_SYNC)
+        encoding.writeVarString(headerEncoder, noteId)
+        const headerLength = encoding.toUint8Array(headerEncoder).length
+
+        const responseEncoder = encoding.createEncoder()
+        encoding.writeVarUint(responseEncoder, MESSAGE_SYNC)
+        encoding.writeVarString(responseEncoder, noteId)
+        syncProtocol.readSyncMessage(decoder, responseEncoder, session.doc, ws)
+        const response = encoding.toUint8Array(responseEncoder)
+        if (response.length > headerLength) {
           ws.send(response)
         }
         break
       }
       case MESSAGE_AWARENESS: {
-        const update = decoding.readVarUint8Array(decoder)
+        const noteId = decoding.readVarString(decoder)
+        const session = await this.ensureNoteSession(noteId)
+        if (!session) {
+          return
+        }
+
         const attachment = this.readAttachment(ws)
-        const controlledIds = new Set(attachment?.awarenessIds ?? [])
-        const before = new Set(this.awareness.getStates().keys())
-        awarenessProtocol.applyAwarenessUpdate(this.awareness, update, ws)
-        for (const clientId of this.awareness.getStates().keys()) {
+        if (!attachment || attachment.focusedNoteId !== noteId) {
+          return
+        }
+
+        const update = decoding.readVarUint8Array(decoder)
+        const controlledIds = new Set(attachment.awarenessIds)
+        const before = new Set(session.awareness.getStates().keys())
+        awarenessProtocol.applyAwarenessUpdate(session.awareness, update, ws)
+        for (const clientId of session.awareness.getStates().keys()) {
           if (!before.has(clientId)) {
             controlledIds.add(clientId)
           }
         }
         this.writeAttachment(ws, {
-          noteId,
+          ...attachment,
           awarenessIds: Array.from(controlledIds),
         })
         break
@@ -106,95 +154,140 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
   }
 
   async webSocketClose(ws: WebSocket) {
-    await this.ensureReadyForSocket(ws)
     await this.removeClient(ws)
   }
 
   async webSocketError(ws: WebSocket) {
-    await this.ensureReadyForSocket(ws)
     await this.removeClient(ws)
   }
 
   async alarm() {
-    const noteId =
-      (await this.ctx.storage.get<string>('pending-sql-note-id')) ??
-      this.noteId ??
-      (await this.ctx.storage.get<string>('note-id'))
+    await this.ensureProjectId()
+    const pending = (await this.ctx.storage.get<string[]>('pending-sql-note-ids')) ?? [
+      ...this.pendingSqlNoteIds,
+    ]
 
-    if (!noteId) {
+    for (const noteId of pending) {
+      const session = await this.ensureNoteSession(noteId)
+      if (!session) {
+        continue
+      }
+      await session.yjsPersistChain
+      await this.persistSql(session)
+    }
+
+    this.pendingSqlNoteIds.clear()
+    await this.ctx.storage.delete('pending-sql-note-ids')
+  }
+
+  private async handleControlMessage(ws: WebSocket, raw: string) {
+    let payload: { type?: string; noteId?: string | null; contentType?: string }
+    try {
+      payload = JSON.parse(raw) as { type?: string; noteId?: string | null; contentType?: string }
+    } catch {
       return
     }
 
-    this.noteId = noteId
-    const storedType = await this.ctx.storage.get<string>('content-type')
-    if (storedType === 'markdown' || storedType === 'html') {
-      this.contentType = storedType
+    if (payload.type !== 'focus') {
+      return
     }
-    await this.ensureInitialized(noteId)
-    await this.yjsPersistChain
-    await this.persistSql(noteId)
-    await this.ctx.storage.delete('pending-sql-note-id')
-  }
 
-  private async ensureReadyForSocket(ws: WebSocket) {
     const attachment = this.readAttachment(ws)
-    const noteId =
-      attachment?.noteId ?? this.noteId ?? (await this.ctx.storage.get<string>('note-id')) ?? null
-
-    if (!noteId) {
-      return null
-    }
-
-    this.noteId = noteId
-    const storedType = await this.ctx.storage.get<string>('content-type')
-    if (storedType === 'markdown' || storedType === 'html') {
-      this.contentType = storedType
-    }
-    await this.ensureInitialized(noteId)
-    return noteId
-  }
-
-  private readAttachment(ws: WebSocket): SocketAttachment | null {
-    const value = ws.deserializeAttachment() as SocketAttachment | null
-    if (!value?.noteId) {
-      return null
-    }
-
-    return {
-      noteId: value.noteId,
-      awarenessIds: Array.isArray(value.awarenessIds) ? value.awarenessIds : [],
-    }
-  }
-
-  private writeAttachment(ws: WebSocket, attachment: SocketAttachment) {
-    ws.serializeAttachment(attachment)
-  }
-
-  private async ensureInitialized(noteId: string) {
-    if (this.initialized && this.doc && this.awareness) {
+    if (!attachment) {
       return
     }
 
-    await this.ctx.blockConcurrencyWhile(async () => {
-      if (this.initialized && this.doc && this.awareness) {
+    const nextNoteId = payload.noteId?.trim() || null
+    const previousNoteId = attachment.focusedNoteId
+
+    if (previousNoteId && previousNoteId !== nextNoteId) {
+      const previous = this.notes.get(previousNoteId)
+      if (previous && attachment.awarenessIds.length > 0) {
+        awarenessProtocol.removeAwarenessStates(previous.awareness, attachment.awarenessIds, ws)
+      }
+    }
+
+    if (nextNoteId) {
+      const contentType: NoteContentType = payload.contentType === 'markdown' ? 'markdown' : 'html'
+      await this.ctx.storage.put(contentTypeStorageKey(nextNoteId), contentType)
+      const session = await this.ensureNoteSession(nextNoteId, contentType)
+      if (!session) {
         return
       }
 
-      this.doc = new Y.Doc()
-      this.awareness = new awarenessProtocol.Awareness(this.doc)
+      this.writeAttachment(ws, {
+        ...attachment,
+        focusedNoteId: nextNoteId,
+        awarenessIds: [],
+      })
 
-      const storedState = await this.ctx.storage.get<ArrayBuffer>('yjs-state')
-      if (storedState) {
-        Y.applyUpdate(this.doc, new Uint8Array(storedState))
+      this.sendSyncStep1(ws, session)
+      this.sendAwarenessSnapshot(ws, session)
+    } else {
+      this.writeAttachment(ws, {
+        ...attachment,
+        focusedNoteId: null,
+        awarenessIds: [],
+      })
+    }
+
+    this.broadcastPresence()
+  }
+
+  private async ensureProjectId() {
+    if (this.projectId) {
+      return this.projectId
+    }
+
+    this.projectId = (await this.ctx.storage.get<string>('project-id')) ?? null
+    return this.projectId
+  }
+
+  private async ensureNoteSession(noteId: string, contentTypeHint?: NoteContentType) {
+    const existing = this.notes.get(noteId)
+    if (existing) {
+      if (contentTypeHint && existing.contentType !== contentTypeHint) {
+        existing.contentType = contentTypeHint
+        await this.ctx.storage.put(contentTypeStorageKey(noteId), contentTypeHint)
+      }
+      return existing
+    }
+
+    return this.ctx.blockConcurrencyWhile(async () => {
+      const raced = this.notes.get(noteId)
+      if (raced) {
+        return raced
       }
 
-      this.doc.on('update', (update: Uint8Array, origin: unknown) => {
-        this.broadcastUpdate(update, origin)
-        this.queueYjsPersist()
+      const storedType = await this.ctx.storage.get<string>(contentTypeStorageKey(noteId))
+      const contentType: NoteContentType =
+        contentTypeHint ??
+        (storedType === 'markdown' ? 'markdown' : 'html')
+
+      const doc = new Y.Doc()
+      const awareness = new awarenessProtocol.Awareness(doc)
+      const session: NoteSession = {
+        noteId,
+        contentType,
+        doc,
+        awareness,
+        yjsPersistChain: Promise.resolve(),
+      }
+
+      const storedState = await this.ctx.storage.get<ArrayBuffer>(yjsStorageKey(noteId))
+      if (storedState) {
+        Y.applyUpdate(doc, new Uint8Array(storedState))
+      }
+
+      await this.ctx.storage.put(contentTypeStorageKey(noteId), contentType)
+
+      doc.on('update', (update: Uint8Array, origin: unknown) => {
+        this.broadcastNoteUpdate(session, update, origin)
+        this.queueYjsPersist(session)
         this.scheduleSqlPersist(noteId)
       })
 
-      this.awareness.on(
+      awareness.on(
         'update',
         (
           { added, updated, removed }: { added: number[]; updated: number[]; removed: number[] },
@@ -207,120 +300,187 @@ export class ProjectNoteRoom extends DurableObject<AppBindings> {
 
           const encoder = encoding.createEncoder()
           encoding.writeVarUint(encoder, MESSAGE_AWARENESS)
+          encoding.writeVarString(encoder, noteId)
           encoding.writeVarUint8Array(
             encoder,
-            awarenessProtocol.encodeAwarenessUpdate(this.awareness!, changedClients),
+            awarenessProtocol.encodeAwarenessUpdate(awareness, changedClients),
           )
-          this.broadcast(encoding.toUint8Array(encoder), origin)
+          this.broadcastToNote(noteId, encoding.toUint8Array(encoder), origin)
         },
       )
 
-      this.initialized = true
+      this.notes.set(noteId, session)
+      return session
     })
   }
 
-  private sendSyncStep1(socket: WebSocket) {
-    if (!this.doc) {
-      return
-    }
-
+  private sendSyncStep1(socket: WebSocket, session: NoteSession) {
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, MESSAGE_SYNC)
-    syncProtocol.writeSyncStep1(encoder, this.doc)
+    encoding.writeVarString(encoder, session.noteId)
+    syncProtocol.writeSyncStep1(encoder, session.doc)
     socket.send(encoding.toUint8Array(encoder))
   }
 
-  private sendAwarenessSnapshot(socket: WebSocket) {
-    if (!this.awareness) {
+  private sendAwarenessSnapshot(socket: WebSocket, session: NoteSession) {
+    const clientIds = Array.from(session.awareness.getStates().keys())
+    if (clientIds.length === 0) {
       return
     }
 
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, MESSAGE_AWARENESS)
+    encoding.writeVarString(encoder, session.noteId)
     encoding.writeVarUint8Array(
       encoder,
-      awarenessProtocol.encodeAwarenessUpdate(this.awareness, Array.from(this.awareness.getStates().keys())),
+      awarenessProtocol.encodeAwarenessUpdate(session.awareness, clientIds),
     )
     socket.send(encoding.toUint8Array(encoder))
   }
 
-  private broadcastUpdate(update: Uint8Array, origin: unknown) {
+  private broadcastNoteUpdate(session: NoteSession, update: Uint8Array, origin: unknown) {
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, MESSAGE_SYNC)
+    encoding.writeVarString(encoder, session.noteId)
     syncProtocol.writeUpdate(encoder, update)
-    this.broadcast(encoding.toUint8Array(encoder), origin)
+    this.broadcastToNote(session.noteId, encoding.toUint8Array(encoder), origin)
   }
 
-  private broadcast(message: Uint8Array, origin: unknown) {
-    // Always use hibernation-aware socket list — in-memory Sets are lost after eviction.
+  private broadcastToNote(noteId: string, message: Uint8Array, origin: unknown) {
     for (const socket of this.ctx.getWebSockets()) {
-      if (socket !== origin && socket.readyState === WebSocket.OPEN) {
-        socket.send(message)
+      if (socket === origin || socket.readyState !== WebSocket.OPEN) {
+        continue
       }
+
+      const attachment = this.readAttachment(socket)
+      if (attachment?.focusedNoteId !== noteId) {
+        continue
+      }
+
+      socket.send(message)
     }
+  }
+
+  private broadcastPresence(exclude?: WebSocket) {
+    const viewers = this.collectPresenceViewers(exclude)
+    const payload = JSON.stringify({ type: 'presence', viewers })
+    const encoder = encoding.createEncoder()
+    encoding.writeVarUint(encoder, MESSAGE_CONTROL)
+    encoding.writeVarString(encoder, payload)
+    const message = encoding.toUint8Array(encoder)
+
+    for (const socket of this.ctx.getWebSockets()) {
+      if (socket === exclude || socket.readyState !== WebSocket.OPEN) {
+        continue
+      }
+      socket.send(message)
+    }
+  }
+
+  private collectPresenceViewers(exclude?: WebSocket): PresenceViewer[] {
+    const byMember = new Map<string, PresenceViewer>()
+
+    for (const socket of this.ctx.getWebSockets()) {
+      if (socket === exclude) {
+        continue
+      }
+
+      const attachment = this.readAttachment(socket)
+      if (!attachment?.membershipNumber) {
+        continue
+      }
+
+      byMember.set(attachment.membershipNumber, {
+        membershipNumber: attachment.membershipNumber,
+        displayName: attachment.displayName || attachment.membershipNumber,
+        noteId: attachment.focusedNoteId,
+      })
+    }
+
+    return [...byMember.values()]
   }
 
   private async removeClient(ws: WebSocket) {
+    await this.ensureProjectId()
     const attachment = this.readAttachment(ws)
-    if (attachment?.awarenessIds.length && this.awareness) {
-      awarenessProtocol.removeAwarenessStates(this.awareness, attachment.awarenessIds, ws)
+    const focusedNoteId = attachment?.focusedNoteId ?? null
+
+    if (focusedNoteId && attachment && attachment.awarenessIds.length > 0) {
+      const session = this.notes.get(focusedNoteId)
+      if (session) {
+        awarenessProtocol.removeAwarenessStates(session.awareness, attachment.awarenessIds, ws)
+      }
     }
 
-    // Flush durable state when the last collaborator leaves.
-    if (this.ctx.getWebSockets().length <= 1 && this.noteId) {
-      await this.yjsPersistChain
-      await this.persistYjsState()
-      await this.persistSql(this.noteId)
+    if (attachment) {
+      this.writeAttachment(ws, {
+        ...attachment,
+        focusedNoteId: null,
+        awarenessIds: [],
+      })
+    }
+
+    if (this.ctx.getWebSockets().length <= 1 && focusedNoteId) {
+      const session = await this.ensureNoteSession(focusedNoteId)
+      if (session) {
+        await session.yjsPersistChain
+        await this.persistYjsState(session)
+        await this.persistSql(session)
+      }
+    }
+
+    this.broadcastPresence(ws)
+  }
+
+  private readAttachment(ws: WebSocket): SocketAttachment | null {
+    const value = ws.deserializeAttachment() as SocketAttachment | null
+    if (!value?.membershipNumber) {
+      return null
+    }
+
+    return {
+      membershipNumber: value.membershipNumber,
+      displayName: value.displayName || value.membershipNumber,
+      focusedNoteId: value.focusedNoteId ?? null,
+      awarenessIds: Array.isArray(value.awarenessIds) ? value.awarenessIds : [],
     }
   }
 
-  private queueYjsPersist() {
-    this.yjsPersistChain = this.yjsPersistChain
-      .then(async () => {
-        if (!this.doc) {
-          return
-        }
+  private writeAttachment(ws: WebSocket, attachment: SocketAttachment) {
+    ws.serializeAttachment(attachment)
+  }
 
-        // Encode at write time so coalesced updates persist the latest doc.
-        const state = Y.encodeStateAsUpdate(this.doc)
-        await this.ctx.storage.put('yjs-state', state)
+  private queueYjsPersist(session: NoteSession) {
+    session.yjsPersistChain = session.yjsPersistChain
+      .then(async () => {
+        const state = Y.encodeStateAsUpdate(session.doc)
+        await this.ctx.storage.put(yjsStorageKey(session.noteId), state)
       })
       .catch(() => {
-        // Keep the chain alive after a failed write so later persists still run.
+        // Keep the chain alive after a failed write.
       })
   }
 
   private scheduleSqlPersist(noteId: string) {
-    void this.ctx.storage.put('pending-sql-note-id', noteId)
+    this.pendingSqlNoteIds.add(noteId)
+    void this.ctx.storage.put('pending-sql-note-ids', [...this.pendingSqlNoteIds])
     void this.ctx.storage.setAlarm(Date.now() + SQL_PERSIST_DEBOUNCE_MS)
   }
 
-  private async persistYjsState() {
-    if (!this.doc) {
-      return
-    }
-
-    const state = Y.encodeStateAsUpdate(this.doc)
-    await this.ctx.storage.put('yjs-state', state)
+  private async persistYjsState(session: NoteSession) {
+    const state = Y.encodeStateAsUpdate(session.doc)
+    await this.ctx.storage.put(yjsStorageKey(session.noteId), state)
   }
 
-  private async persistSql(noteId: string) {
-    if (!this.doc) {
+  private async persistSql(session: NoteSession) {
+    if (session.contentType === 'markdown') {
+      const { content, preview } = extractMarkdownNoteContent(session.doc)
+      await updateProjectNoteContent(this.env.VMS_DB, session.noteId, content, preview)
       return
     }
 
-    const contentType =
-      this.contentType ||
-      ((await this.ctx.storage.get<string>('content-type')) === 'markdown' ? 'markdown' : 'html')
-
-    if (contentType === 'markdown') {
-      const { content, preview } = extractMarkdownNoteContent(this.doc)
-      await updateProjectNoteContent(this.env.VMS_DB, noteId, content, preview)
-      return
-    }
-
-    const { html, preview } = extractNoteContent(this.doc)
-    await updateProjectNoteContent(this.env.VMS_DB, noteId, html, preview)
+    const { html, preview } = extractNoteContent(session.doc)
+    await updateProjectNoteContent(this.env.VMS_DB, session.noteId, html, preview)
   }
 }
 
