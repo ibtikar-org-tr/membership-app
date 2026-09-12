@@ -853,6 +853,25 @@ export function deleteProjectNote(noteId: string) {
   return deleteJson(`/project-notes/${encodeURIComponent(noteId)}`)
 }
 
+export function editProjectNoteWithAi(
+  noteId: string,
+  payload: {
+    command: string
+    content: string
+    contentType: 'html' | 'markdown'
+  },
+) {
+  return postJson<
+    {
+      edited: {
+        content: string
+        summary?: string
+      }
+    },
+    typeof payload
+  >(`/project-notes/${encodeURIComponent(noteId)}/ai-edit`, payload)
+}
+
 export function getProjectNoteWebSocketUrl(noteId: string, token: string) {
   const memberMsBaseUrl = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
 

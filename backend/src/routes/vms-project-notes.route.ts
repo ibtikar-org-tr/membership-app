@@ -15,6 +15,8 @@ import {
   projectNoteParamsSchema,
   updateProjectNoteSchema,
 } from '../schemas/vms-project-note.schema'
+import { editNoteWithAiSchema } from '../schemas/vms-ai-note.schema'
+import { editNoteContentWithAi } from '../services/ai-note-edit.service'
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
@@ -179,6 +181,56 @@ vmsProjectNotesRoute.put(
     } catch (error) {
       console.error('Failed to update project note', error)
       return c.json({ error: 'Could not update project note.' }, 500)
+    }
+  },
+)
+
+vmsProjectNotesRoute.post(
+  '/project-notes/:id/ai-edit',
+  zValidator('param', projectNoteParamsSchema),
+  zValidator('json', editNoteWithAiSchema),
+  async (c) => {
+    try {
+      const { id } = c.req.valid('param')
+      const actorMembershipNumber = getActorMembershipNumber(c)
+      const payload = c.req.valid('json')
+      const note = await getProjectNoteById(c.env.VMS_DB, id)
+
+      if (!note) {
+        return c.json({ error: 'Note not found.' }, 404)
+      }
+
+      const access = await canViewProject(c.env.VMS_DB, note.projectId, actorMembershipNumber)
+      if (!access.project) {
+        return c.json({ error: 'Project not found.' }, 404)
+      }
+
+      if (!access.isAuthorized) {
+        return c.json({ error: 'You are not a member of this project.' }, 403)
+      }
+
+      if (!access.canEdit) {
+        return c.json({ error: 'Your role allows viewing notes only.' }, 403)
+      }
+
+      if (payload.contentType !== note.contentType) {
+        return c.json({ error: 'contentType does not match this note.' }, 400)
+      }
+
+      const edited = await editNoteContentWithAi(c.env, {
+        command: payload.command,
+        content: payload.content,
+        contentType: payload.contentType,
+        noteTitle: note.title,
+      })
+
+      return c.json({ edited })
+    } catch (error) {
+      console.error('Failed to edit project note with AI', error)
+      if (error instanceof Error && error.message.trim()) {
+        return c.json({ error: error.message }, 502)
+      }
+      return c.json({ error: 'تعذر تعديل الملاحظة بالذكاء الاصطناعي.' }, 502)
     }
   },
 )
