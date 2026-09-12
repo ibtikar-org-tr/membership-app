@@ -4,11 +4,15 @@ import {
   FiAlignLeft,
   FiAlignRight,
   FiBold,
+  FiCode,
+  FiEdit3,
   FiItalic,
   FiList,
   FiUnderline,
 } from 'react-icons/fi'
 import { getActiveTextDirection } from './note-text-direction'
+
+export type NoteEditorViewMode = 'visual' | 'html'
 
 const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 48, 72] as const
 const DEFAULT_FONT_SIZE = '16px'
@@ -30,16 +34,30 @@ const toolbarBtn =
   'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border border-transparent px-2 text-slate-600 transition hover:border-slate-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
 const toolbarBtnActive = 'border-slate-200 bg-white text-slate-900 shadow-sm'
 
+const modeBtn =
+  'inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition'
+const modeBtnIdle = 'text-slate-600 hover:bg-white hover:text-slate-900'
+const modeBtnActive = 'bg-white text-slate-900 shadow-sm'
+
 interface NoteEditorToolbarProps {
   editor: Editor | null
   disabled?: boolean
+  viewMode: NoteEditorViewMode
+  onViewModeChange: (mode: NoteEditorViewMode) => void
+  modeSwitchDisabled?: boolean
 }
 
-export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolbarProps) {
+export function NoteEditorToolbar({
+  editor,
+  disabled = false,
+  viewMode,
+  onViewModeChange,
+  modeSwitchDisabled = false,
+}: NoteEditorToolbarProps) {
   const [toolbarRevision, setToolbarRevision] = useState(0)
 
   useEffect(() => {
-    if (!editor) {
+    if (!editor || viewMode !== 'visual') {
       return
     }
 
@@ -66,10 +84,52 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
       editor.off('selectionUpdate', refreshToolbar)
       editor.off('transaction', refreshToolbar)
     }
-  }, [editor])
+  }, [editor, viewMode])
+
+  const modeSwitcher = (
+    <div
+      className="ms-auto inline-flex items-center rounded-lg border border-slate-200 bg-slate-100/80 p-0.5"
+      role="group"
+      aria-label="وضع المحرر"
+    >
+      <button
+        type="button"
+        disabled={modeSwitchDisabled}
+        onClick={() => onViewModeChange('visual')}
+        className={`${modeBtn} ${viewMode === 'visual' ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
+        title="المحرر المرئي"
+      >
+        <FiEdit3 className="h-3.5 w-3.5" aria-hidden />
+        مرئي
+      </button>
+      <button
+        type="button"
+        disabled={modeSwitchDisabled}
+        onClick={() => onViewModeChange('html')}
+        className={`${modeBtn} ${viewMode === 'html' ? modeBtnActive : modeBtnIdle} disabled:cursor-not-allowed disabled:opacity-40`}
+        title="تحرير HTML"
+      >
+        <FiCode className="h-3.5 w-3.5" aria-hidden />
+        HTML
+      </button>
+    </div>
+  )
+
+  if (viewMode === 'html') {
+    return (
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur-sm">
+        <p className="text-xs text-slate-500">عدّل الـ HTML ثم ارجع للوضع المرئي لتطبيق التغييرات.</p>
+        {modeSwitcher}
+      </div>
+    )
+  }
 
   if (!editor) {
-    return null
+    return (
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur-sm">
+        {modeSwitcher}
+      </div>
+    )
   }
 
   void toolbarRevision
@@ -201,6 +261,8 @@ export function NoteEditorToolbar({ editor, disabled = false }: NoteEditorToolba
       >
         <span className="text-sm leading-none">"</span>
       </button>
+
+      {modeSwitcher}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -8,7 +8,8 @@ import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import type * as awarenessProtocol from 'y-protocols/awareness'
 import type * as Y from 'yjs'
 import { plainTextToHtml } from '../../../utils/yjs-rich-text'
-import { NoteEditorToolbar } from './NoteEditorToolbar'
+import { NoteEditorToolbar, type NoteEditorViewMode } from './NoteEditorToolbar'
+import { formatNoteHtmlForEditing, normalizeNoteHtmlInput } from './note-html-source'
 import { NoteFontSize } from './note-font-size'
 import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
 import { NoteTextDirection } from './note-text-direction'
@@ -30,7 +31,7 @@ interface CollaborativeNoteEditorProps {
 }
 
 const editorSurfaceClass =
-  '[&_.ProseMirror]:min-h-[22rem] [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-base [&_.ProseMirror]:leading-8 [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-slate-400 [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
+  '[&_.ProseMirror]:min-h-88 [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-base [&_.ProseMirror]:leading-8 [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-slate-400 [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
 
 function connectionLabel(connectionState: CollaborativeNoteEditorProps['connectionState'], readOnly: boolean) {
   if (readOnly) {
@@ -65,6 +66,10 @@ export function CollaborativeNoteEditor({
   const hasSeededRef = useRef(false)
   const seedNoteIdRef = useRef<string | null>(null)
   const mentionableMembersRef = useRef(mentionableMembers)
+  const htmlDirtyRef = useRef(false)
+  const [viewMode, setViewMode] = useState<NoteEditorViewMode>('visual')
+  const [htmlSource, setHtmlSource] = useState('')
+  const [htmlApplyError, setHtmlApplyError] = useState<string | null>(null)
 
   mentionableMembersRef.current = mentionableMembers
 
@@ -133,6 +138,10 @@ export function CollaborativeNoteEditor({
     if (seedNoteIdRef.current !== noteId) {
       seedNoteIdRef.current = noteId
       hasSeededRef.current = false
+      setViewMode('visual')
+      setHtmlSource('')
+      setHtmlApplyError(null)
+      htmlDirtyRef.current = false
     }
   }, [noteId])
 
@@ -161,8 +170,9 @@ export function CollaborativeNoteEditor({
       return
     }
 
-    editor.setEditable(canEdit)
-  }, [canEdit, editor])
+    // Avoid remote caret churn into the HTML textarea while the user is editing source.
+    editor.setEditable(canEdit && viewMode === 'visual')
+  }, [canEdit, editor, viewMode])
 
   useEffect(() => {
     if (!editor || !readOnly) {
@@ -191,6 +201,83 @@ export function CollaborativeNoteEditor({
       })
     }
   }, [noteId])
+
+  // Keep the HTML pane in sync with collaborative visual edits until the user edits the source.
+  useEffect(() => {
+    if (!editor || viewMode !== 'html' || htmlDirtyRef.current) {
+      return
+    }
+
+    const syncHtmlFromEditor = () => {
+      if (htmlDirtyRef.current) {
+        return
+      }
+
+      setHtmlSource(formatNoteHtmlForEditing(editor.getHTML()))
+    }
+
+    syncHtmlFromEditor()
+    editor.on('update', syncHtmlFromEditor)
+
+    return () => {
+      editor.off('update', syncHtmlFromEditor)
+    }
+  }, [editor, viewMode])
+
+  const resolveCurrentHtml = () => {
+    if (editor) {
+      return formatNoteHtmlForEditing(editor.getHTML())
+    }
+
+    if (readOnly) {
+      return formatNoteHtmlForEditing(staticContent)
+    }
+
+    return formatNoteHtmlForEditing(plainTextToHtml(initialContent))
+  }
+
+  const handleViewModeChange = (nextMode: NoteEditorViewMode) => {
+    if (nextMode === viewMode) {
+      return
+    }
+
+    setHtmlApplyError(null)
+
+    if (nextMode === 'html') {
+      htmlDirtyRef.current = false
+      setHtmlSource(resolveCurrentHtml())
+      setViewMode('html')
+      return
+    }
+
+    // Apply HTML → visual (and into Yjs when collaborative).
+    if (!editor) {
+      setViewMode('visual')
+      return
+    }
+
+    if (readOnly || !canEdit) {
+      htmlDirtyRef.current = false
+      setViewMode('visual')
+      return
+    }
+
+    try {
+      const normalized = normalizeNoteHtmlInput(htmlSource)
+      const applied = editor.commands.setContent(normalized, true)
+
+      if (!applied) {
+        setHtmlApplyError('تعذر تطبيق HTML. تحقق من صحة الوسوم ثم حاول مرة أخرى.')
+        return
+      }
+
+      htmlDirtyRef.current = false
+      setHtmlSource(formatNoteHtmlForEditing(editor.getHTML()))
+      setViewMode('visual')
+    } catch {
+      setHtmlApplyError('تعذر تطبيق HTML. تحقق من صحة الوسوم ثم حاول مرة أخرى.')
+    }
+  }
 
   const statusTone =
     readOnly || connectionState === 'connected'
@@ -274,15 +361,43 @@ export function CollaborativeNoteEditor({
         {!readOnly ? <NoteOnlineUsers users={onlineUsers} className="mt-0" /> : null}
       </div>
 
-      <NoteEditorToolbar editor={editor} disabled={!canEdit} />
+      <NoteEditorToolbar
+        editor={editor}
+        disabled={!canEdit || viewMode !== 'visual'}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+        modeSwitchDisabled={!editor && !readOnly}
+      />
 
-      <div className={`relative flex-1 overflow-auto ${editorSurfaceClass}`}>
+      {htmlApplyError ? (
+        <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{htmlApplyError}</div>
+      ) : null}
+
+      <div className={`relative flex-1 overflow-auto ${viewMode === 'visual' ? editorSurfaceClass : ''}`}>
         {!readOnly && !isCollaborative ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 text-sm text-slate-600 backdrop-blur-[1px]">
             جار تجهيز المحرر...
           </div>
         ) : null}
-        <EditorContent editor={editor} />
+
+        {viewMode === 'html' ? (
+          <textarea
+            value={htmlSource}
+            readOnly={readOnly || !canEdit}
+            onChange={(event) => {
+              htmlDirtyRef.current = true
+              setHtmlApplyError(null)
+              setHtmlSource(event.target.value)
+            }}
+            spellCheck={false}
+            dir="ltr"
+            className="min-h-88 w-full resize-y border-0 bg-slate-950 px-4 py-4 font-mono text-sm leading-6 text-emerald-100 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-70"
+            placeholder="<p>...</p>"
+            aria-label="مصدر HTML للملاحظة"
+          />
+        ) : (
+          <EditorContent editor={editor} />
+        )}
       </div>
     </div>
   )
