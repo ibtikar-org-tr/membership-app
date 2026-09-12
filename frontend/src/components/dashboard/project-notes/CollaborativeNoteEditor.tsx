@@ -423,38 +423,41 @@ export function CollaborativeNoteEditor({
         <div className="shrink-0 border-b border-[#e6e6e6] bg-[#f6f5f4] px-4 py-2 text-[12px] text-red-600">{htmlApplyError}</div>
       ) : null}
 
-      <div
-        ref={editorScrollRef}
-        className={`relative min-h-0 flex-1 ${
-          viewMode === 'html' ? 'overflow-hidden' : `overflow-auto ${editorSurfaceClass}`
-        }`}
-      >
+      <div className="relative min-h-0 flex-1">
         {!readOnly && !isCollaborative ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-[15px] text-[#615d59]">
             جار تجهيز المحرر...
           </div>
         ) : null}
 
-        {viewMode === 'html' ? (
-          <NoteHtmlCodeEditor
-            value={htmlSource}
-            readOnly={readOnly || !canEdit}
-            onChange={(nextValue) => {
-              htmlDirtyRef.current = true
-              setHtmlApplyError(null)
-              setHtmlSource(nextValue)
-            }}
+        {viewMode === 'visual' ? (
+          <RemoteCursorEdgeIndicators
+            editor={editor}
+            scrollContainerRef={editorScrollRef}
+            enabled={canEdit}
           />
-        ) : (
-          <>
-            <RemoteCursorEdgeIndicators
-              editor={editor}
-              scrollContainerRef={editorScrollRef}
-              enabled={canEdit && viewMode === 'visual'}
+        ) : null}
+
+        <div
+          ref={editorScrollRef}
+          className={`h-full min-h-0 ${
+            viewMode === 'html' ? 'overflow-hidden' : `overflow-auto ${editorSurfaceClass}`
+          }`}
+        >
+          {viewMode === 'html' ? (
+            <NoteHtmlCodeEditor
+              value={htmlSource}
+              readOnly={readOnly || !canEdit}
+              onChange={(nextValue) => {
+                htmlDirtyRef.current = true
+                setHtmlApplyError(null)
+                setHtmlSource(nextValue)
+              }}
             />
+          ) : (
             <EditorContent editor={editor} className="min-h-full" />
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
