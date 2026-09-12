@@ -10,6 +10,7 @@ import {
   FiList,
   FiUnderline,
 } from 'react-icons/fi'
+import { Sparkles } from 'lucide-react'
 import { getActiveTextDirection } from './note-text-direction'
 
 export type NoteEditorViewMode = 'visual' | 'html'
@@ -45,6 +46,8 @@ interface NoteEditorToolbarProps {
   viewMode: NoteEditorViewMode
   onViewModeChange: (mode: NoteEditorViewMode) => void
   modeSwitchDisabled?: boolean
+  onBeautifyHtml?: () => void
+  beautifyDisabled?: boolean
 }
 
 export function NoteEditorToolbar({
@@ -53,6 +56,8 @@ export function NoteEditorToolbar({
   viewMode,
   onViewModeChange,
   modeSwitchDisabled = false,
+  onBeautifyHtml,
+  beautifyDisabled = false,
 }: NoteEditorToolbarProps) {
   const [toolbarRevision, setToolbarRevision] = useState(0)
 
@@ -118,6 +123,16 @@ export function NoteEditorToolbar({
   if (viewMode === 'html') {
     return (
       <div className="flex flex-wrap items-center gap-2 border-b border-[#e6e6e6] bg-[#f6f5f4] px-3 py-2">
+        <button
+          type="button"
+          disabled={beautifyDisabled || !onBeautifyHtml}
+          onClick={() => onBeautifyHtml?.()}
+          className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-[#e6e6e6] bg-white px-2.5 text-[12px] font-medium text-[#31302e] transition hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-40"
+          title="تنسيق HTML"
+        >
+          <Sparkles className="h-3.5 w-3.5" aria-hidden />
+          Beautify
+        </button>
         <p className="text-[12px] text-[#615d59]">عدّل الـ HTML ثم ارجع للوضع المرئي لتطبيق التغييرات.</p>
         {modeSwitcher}
       </div>

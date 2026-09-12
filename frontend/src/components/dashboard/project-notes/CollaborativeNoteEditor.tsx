@@ -9,7 +9,7 @@ import type * as awarenessProtocol from 'y-protocols/awareness'
 import type * as Y from 'yjs'
 import { plainTextToHtml, xmlFragmentToPlainText } from '../../../utils/yjs-rich-text'
 import { NoteEditorToolbar, type NoteEditorViewMode } from './NoteEditorToolbar'
-import { formatNoteHtmlForEditing, normalizeNoteHtmlInput } from './note-html-source'
+import { formatNoteHtmlForEditing, beautifyNoteHtml, normalizeNoteHtmlInput } from './note-html-source'
 import { NoteFontSize } from './note-font-size'
 import { NoteHtmlCodeEditor } from './NoteHtmlCodeEditor'
 import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
@@ -375,6 +375,12 @@ export function CollaborativeNoteEditor({
           viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
           modeSwitchDisabled={!editor && !readOnly}
+          beautifyDisabled={readOnly || !canEdit}
+          onBeautifyHtml={() => {
+            htmlDirtyRef.current = true
+            setHtmlApplyError(null)
+            setHtmlSource(beautifyNoteHtml(htmlSource))
+          }}
         />
       </div>
 
