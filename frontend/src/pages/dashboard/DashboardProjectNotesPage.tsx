@@ -364,7 +364,7 @@ export function DashboardProjectNotesPage() {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen((previous) => !previous)}
-                className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition ${
+                className={`inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md transition ${
                   isCreateOpen
                     ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
                     : 'bg-slate-950 text-white hover:bg-slate-800'
