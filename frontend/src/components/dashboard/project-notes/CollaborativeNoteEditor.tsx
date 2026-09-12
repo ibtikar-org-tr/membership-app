@@ -7,7 +7,7 @@ import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import type * as awarenessProtocol from 'y-protocols/awareness'
 import type * as Y from 'yjs'
-import { plainTextToHtml } from '../../../utils/yjs-rich-text'
+import { plainTextToHtml, xmlFragmentToPlainText } from '../../../utils/yjs-rich-text'
 import { NoteEditorToolbar, type NoteEditorViewMode } from './NoteEditorToolbar'
 import { formatNoteHtmlForEditing, normalizeNoteHtmlInput } from './note-html-source'
 import { NoteFontSize } from './note-font-size'
@@ -24,6 +24,8 @@ interface CollaborativeNoteEditorProps {
   initialContent?: string
   readOnly?: boolean
   connectionState: 'idle' | 'connecting' | 'connected' | 'error'
+  /** True after the first Yjs sync step-2 from the room — required before SQL seeding. */
+  isSynced?: boolean
   onlineUsers: ResolvedOnlineUser[]
   memberColor: string
   displayName: string
@@ -58,6 +60,7 @@ export function CollaborativeNoteEditor({
   initialContent = '',
   readOnly = false,
   connectionState,
+  isSynced = false,
   onlineUsers,
   memberColor,
   displayName,
@@ -147,12 +150,15 @@ export function CollaborativeNoteEditor({
   }, [noteId])
 
   useEffect(() => {
-    if (!editor || !yDoc || readOnly || connectionState !== 'connected' || hasSeededRef.current) {
+    // Never seed from SQL until Yjs sync finished — otherwise we insert REST HTML into an
+    // empty local doc, then merge the real room state and permanently duplicate content (2^n).
+    if (!editor || !yDoc || readOnly || !isSynced || hasSeededRef.current) {
       return
     }
 
     const fragment = yDoc.getXmlFragment('default')
-    if (fragment.length > 0) {
+    // TipTap may leave an empty <paragraph>; treat "has visible text" as already seeded.
+    if (xmlFragmentToPlainText(fragment).trim().length > 0) {
       hasSeededRef.current = true
       return
     }
@@ -164,7 +170,7 @@ export function CollaborativeNoteEditor({
 
     editor.commands.setContent(plainTextToHtml(initialContent), false)
     hasSeededRef.current = true
-  }, [connectionState, editor, initialContent, readOnly, yDoc])
+  }, [editor, initialContent, isSynced, readOnly, yDoc])
 
   useEffect(() => {
     if (!editor) {

@@ -179,7 +179,7 @@ export function DashboardProjectNotesPage() {
     [memberDisplayNameByNumber],
   )
 
-  const { yDoc, awareness, connectionState, collaborators, memberColor, displayName: collaboratorDisplayName } =
+  const { yDoc, awareness, connectionState, isSynced, collaborators, memberColor, displayName: collaboratorDisplayName } =
     useProjectNoteCollaboration({
       noteId: selectedNote?.id ?? null,
       membershipNumber: user?.membershipNumber ?? null,
@@ -496,6 +496,7 @@ export function DashboardProjectNotesPage() {
                 initialContent={selectedNote.content}
                 readOnly={!canEditSelectedNote}
                 connectionState={canEditSelectedNote ? connectionState : 'idle'}
+                isSynced={canEditSelectedNote ? isSynced : true}
                 onlineUsers={onlineNoteUsers}
                 memberColor={memberColor}
                 displayName={collaboratorDisplayName}

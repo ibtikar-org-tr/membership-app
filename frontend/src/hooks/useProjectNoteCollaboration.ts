@@ -120,6 +120,7 @@ export function useProjectNoteCollaboration({
   enabled,
 }: UseProjectNoteCollaborationOptions) {
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
+  const [isSynced, setIsSynced] = useState(false)
   const [collaborators, setCollaborators] = useState<NoteCollaborator[]>([])
   const [yDoc, setYDoc] = useState<Y.Doc | null>(null)
   const [awareness, setAwareness] = useState<awarenessProtocol.Awareness | null>(null)
@@ -132,6 +133,7 @@ export function useProjectNoteCollaboration({
   useEffect(() => {
     if (!enabled || !noteId || !membershipNumber) {
       setConnectionState('idle')
+      setIsSynced(false)
       setCollaborators([])
       setYDoc(null)
       setAwareness(null)
@@ -157,6 +159,7 @@ export function useProjectNoteCollaboration({
     setAwareness(awarenessInstance)
     setMemberColor(color)
     setConnectionState('connecting')
+    setIsSynced(false)
 
     const syncCollaborators = () => {
       const nextCollaborators: NoteCollaborator[] = []
@@ -259,10 +262,15 @@ export function useProjectNoteCollaboration({
       if (messageType === MESSAGE_SYNC) {
         const encoder = encoding.createEncoder()
         encoding.writeVarUint(encoder, MESSAGE_SYNC)
-        syncProtocol.readSyncMessage(decoder, encoder, doc, activeSocket)
+        const syncMessageType = syncProtocol.readSyncMessage(decoder, encoder, doc, activeSocket)
         const response = encoding.toUint8Array(encoder)
         if (response.length > 1 && activeSocket.readyState === WebSocket.OPEN) {
           activeSocket.send(response)
+        }
+
+        // Sync step 2 means the remote state was applied — safe to seed empty rooms from SQL.
+        if (syncMessageType === syncProtocol.messageYjsSyncStep2) {
+          setIsSynced(true)
         }
         return
       }
@@ -301,6 +309,7 @@ export function useProjectNoteCollaboration({
 
       clearReconnectTimer()
       clearKeepalive()
+      setIsSynced(false)
 
       if (activeSocket) {
         activeSocket.removeEventListener('message', handleSocketMessage)
@@ -348,6 +357,7 @@ export function useProjectNoteCollaboration({
 
         activeSocket = null
         clearKeepalive()
+        setIsSynced(false)
 
         if (disposed) {
           return
@@ -394,6 +404,7 @@ export function useProjectNoteCollaboration({
 
       setCollaborators([])
       setConnectionState('idle')
+      setIsSynced(false)
       setYDoc(null)
       setAwareness(null)
     }
@@ -403,6 +414,7 @@ export function useProjectNoteCollaboration({
     yDoc,
     awareness,
     connectionState,
+    isSynced,
     collaborators,
     memberColor,
     displayName: displayName ?? membershipNumber ?? '',
