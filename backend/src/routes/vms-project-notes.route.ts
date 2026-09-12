@@ -225,10 +225,10 @@ vmsProjectNotesRoute.delete('/project-notes/:id', zValidator('param', projectNot
   }
 })
 
-export async function handleProjectNoteWebSocket(
+export async function handleProjectNotesRoomWebSocket(
   request: Request,
   env: AppBindings,
-  noteId: string,
+  projectId: string,
 ): Promise<Response> {
   if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
     return new Response('Expected WebSocket upgrade.', { status: 426 })
@@ -239,8 +239,8 @@ export async function handleProjectNoteWebSocket(
   const headerToken = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim()
   const token = queryToken || headerToken
 
-  if (!noteId) {
-    return new Response('Missing note id.', { status: 400 })
+  if (!projectId?.trim()) {
+    return new Response('Missing project id.', { status: 400 })
   }
 
   if (!token) {
@@ -252,12 +252,11 @@ export async function handleProjectNoteWebSocket(
     return new Response('Unauthorized.', { status: 401 })
   }
 
-  const note = await getProjectNoteById(env.VMS_DB, noteId)
-  if (!note) {
-    return new Response('Note not found.', { status: 404 })
+  const access = await canViewProject(env.VMS_DB, projectId.trim(), payload.sub)
+  if (!access.project) {
+    return new Response('Project not found.', { status: 404 })
   }
 
-  const access = await canViewProject(env.VMS_DB, note.projectId, payload.sub)
   if (!access.isAuthorized) {
     return new Response('Forbidden.', { status: 403 })
   }
@@ -269,10 +268,9 @@ export async function handleProjectNoteWebSocket(
   const displayNameMap = await getUserDisplayNamesByMembershipNumbers(env.MEMBERS_DB, [payload.sub])
   const displayName = displayNameMap.get(payload.sub) ?? payload.sub
 
-  const stub = env.PROJECT_NOTE_ROOM.getByName(noteId)
-  const forwardUrl = new URL('https://project-note-room/ws')
-  forwardUrl.searchParams.set('noteId', noteId)
-  forwardUrl.searchParams.set('contentType', note.contentType)
+  const stub = env.PROJECT_NOTES_ROOM.getByName(projectId.trim())
+  const forwardUrl = new URL('https://project-notes-room/ws')
+  forwardUrl.searchParams.set('projectId', projectId.trim())
   forwardUrl.searchParams.set('membershipNumber', payload.sub)
   forwardUrl.searchParams.set('displayName', displayName)
 

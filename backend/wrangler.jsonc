@@ -53,6 +53,10 @@
       {
         "name": "PROJECT_NOTE_ROOM",
         "class_name": "ProjectNoteRoom"
+      },
+      {
+        "name": "PROJECT_NOTES_ROOM",
+        "class_name": "ProjectNotesRoom"
       }
     ]
   },
@@ -60,6 +64,10 @@
     {
       "tag": "v1-project-notes",
       "new_sqlite_classes": ["ProjectNoteRoom"]
+    },
+    {
+      "tag": "v2-project-notes-room",
+      "new_sqlite_classes": ["ProjectNotesRoom"]
     }
   ],
   "vars": {

@@ -76,6 +76,7 @@ export interface AppBindings {
   VMS_LOGS_DB: D1DatabaseLike
   MY_BUCKET: R2BucketLike
   PROJECT_NOTE_ROOM: DurableObjectNamespaceLike
+  PROJECT_NOTES_ROOM: DurableObjectNamespaceLike
   AI?: CloudflareAiBindingLike
   TELEGRAM_MS_SERVICE?: Fetcher
   MEMBERSHIP_NUMBER_PREFIX: string

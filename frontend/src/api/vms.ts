@@ -873,17 +873,17 @@ export function editProjectNoteWithAi(
   >(`/project-notes/${encodeURIComponent(noteId)}/ai-edit`, payload)
 }
 
-export function getProjectNoteWebSocketUrl(noteId: string, token: string) {
+export function getProjectNotesRoomWebSocketUrl(projectId: string, token: string) {
   const memberMsBaseUrl = (import.meta.env.VITE_MEMBER_MS as string | undefined)?.trim()
 
   if (memberMsBaseUrl) {
     const wsBase = memberMsBaseUrl.replace(/^http/i, 'ws').replace(/\/+$/, '')
-    return `${wsBase}/api/project-notes/${encodeURIComponent(noteId)}/ws?token=${encodeURIComponent(token)}`
+    return `${wsBase}/api/projects/${encodeURIComponent(projectId)}/notes/ws?token=${encodeURIComponent(token)}`
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host = import.meta.env.DEV ? `${window.location.hostname}:5931` : window.location.host
-  return `${protocol}//${host}/ms/membership-app/api/project-notes/${encodeURIComponent(noteId)}/ws?token=${encodeURIComponent(token)}`
+  return `${protocol}//${host}/ms/membership-app/api/projects/${encodeURIComponent(projectId)}/notes/ws?token=${encodeURIComponent(token)}`
 }
 
 export async function uploadImages(files: File[]): Promise<{ images: string[] }> {

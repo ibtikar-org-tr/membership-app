@@ -15,6 +15,7 @@ import { CollaborativeNoteEditor } from '../../components/dashboard/project-note
 import { CollaborativeMarkdownEditor } from '../../components/dashboard/project-notes/CollaborativeMarkdownEditor'
 import { buildMentionableMembers } from '../../components/dashboard/project-notes/mentionable-members'
 import { resolveOnlineNoteUsers } from '../../components/dashboard/project-notes/NoteOnlineUsers'
+import { NoteListPresence } from '../../components/dashboard/project-notes/NoteListPresence'
 import { useProjectNoteCollaboration } from '../../hooks/useProjectNoteCollaboration'
 import type { VmsProject, VmsProjectMember, VmsProjectNote } from '../../types/vms'
 import { getStoredUser } from '../../utils/auth'
@@ -155,7 +156,13 @@ export function DashboardProjectNotesPage() {
     [projectMembers, user?.membershipNumber],
   )
 
-  const canEditSelectedNote = selectedNote?.canEdit ?? currentMembership?.role !== 'observer'
+  const canCollaborateOnNotes = Boolean(
+    user?.membershipNumber &&
+      (project?.owner === user.membershipNumber ||
+        (currentMembership != null && currentMembership.role !== 'observer')),
+  )
+
+  const canEditSelectedNote = selectedNote?.canEdit ?? canCollaborateOnNotes
 
   const currentUserDisplayName = useMemo(() => {
     if (!user?.membershipNumber) {
@@ -181,19 +188,42 @@ export function DashboardProjectNotesPage() {
     [memberDisplayNameByNumber],
   )
 
-  const { yDoc, awareness, connectionState, isSynced, collaborators, memberColor, displayName: collaboratorDisplayName } =
-    useProjectNoteCollaboration({
-      noteId: selectedNote?.id ?? null,
-      membershipNumber: user?.membershipNumber ?? null,
-      displayName: currentUserDisplayName,
-      resolveMemberDisplayName,
-      enabled: Boolean(selectedNote && canEditSelectedNote && !isLoading),
-    })
+  const {
+    yDoc,
+    awareness,
+    connectionState,
+    isSynced,
+    collaborators,
+    presenceViewers,
+    memberColor,
+    displayName: collaboratorDisplayName,
+  } = useProjectNoteCollaboration({
+    projectId: projectID ?? null,
+    noteId: selectedNote?.id ?? null,
+    contentType: selectedNote?.contentType ?? null,
+    membershipNumber: user?.membershipNumber ?? null,
+    displayName: currentUserDisplayName,
+    resolveMemberDisplayName,
+    enabled: Boolean(projectID && canCollaborateOnNotes && !isLoading),
+  })
 
   const onlineNoteUsers = useMemo(
     () => resolveOnlineNoteUsers(collaborators, memberDisplayNameByNumber),
     [collaborators, memberDisplayNameByNumber],
   )
+
+  const presenceByNoteId = useMemo(() => {
+    const map = new Map<string, typeof presenceViewers>()
+    for (const viewer of presenceViewers) {
+      if (!viewer.noteId) {
+        continue
+      }
+      const list = map.get(viewer.noteId) ?? []
+      list.push(viewer)
+      map.set(viewer.noteId, list)
+    }
+    return map
+  }, [presenceViewers])
 
   const handleCreateNote = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -426,6 +456,7 @@ export function DashboardProjectNotesPage() {
             ) : (
               notes.map((note) => {
                 const isActive = note.id === selectedNoteId
+                const noteViewers = presenceByNoteId.get(note.id) ?? []
                 return (
                   <Link
                     key={note.id}
@@ -436,7 +467,10 @@ export function DashboardProjectNotesPage() {
                         : 'text-[#31302e] hover:bg-[#f6f5f4]'
                     }`}
                   >
-                    <p className="truncate text-[15px] font-medium">{note.title}</p>
+                    <div className="flex items-start gap-2">
+                      <p className="min-w-0 flex-1 truncate text-[15px] font-medium">{note.title}</p>
+                      <NoteListPresence viewers={noteViewers} />
+                    </div>
                     <p className="mt-0.5 line-clamp-2 text-[12px] text-[#615d59]">
                       {sanitizeNotePreview(note.contentPreview) || 'ملاحظة فارغة'}
                     </p>

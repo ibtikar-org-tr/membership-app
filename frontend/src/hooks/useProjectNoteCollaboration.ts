@@ -5,14 +5,14 @@ import * as syncProtocol from 'y-protocols/sync'
 import * as awarenessProtocol from 'y-protocols/awareness'
 import * as encoding from 'lib0/encoding'
 import * as decoding from 'lib0/decoding'
-import { getProjectNoteWebSocketUrl } from '../api/vms'
+import { getProjectNotesRoomWebSocketUrl } from '../api/vms'
 import { getAccessToken } from '../utils/auth'
 import { colorForMembershipNumber } from '../utils/collaborator-color'
 
 const MESSAGE_SYNC = 0
 const MESSAGE_AWARENESS = 1
+const MESSAGE_CONTROL = 2
 
-/** Keepalive interval — proxies often idle-close sockets around 1–5 minutes. */
 const KEEPALIVE_MS = 25_000
 const RECONNECT_BASE_MS = 800
 const RECONNECT_MAX_MS = 12_000
@@ -24,26 +24,53 @@ export interface NoteCollaborator {
   color: string
 }
 
-interface UseProjectNoteCollaborationOptions {
+export interface ProjectNotePresenceViewer {
+  membershipNumber: string
+  displayName: string
   noteId: string | null
+  color: string
+}
+
+interface UseProjectNoteCollaborationOptions {
+  projectId: string | null
+  noteId: string | null
+  contentType?: 'html' | 'markdown' | null
   membershipNumber: string | null
   displayName: string | null
   resolveMemberDisplayName?: (membershipNumber: string) => string | null | undefined
   enabled: boolean
 }
 
-function sendSyncUpdate(doc: Yjs.Doc, socket: WebSocket, update: Uint8Array) {
+interface NotePresence {
+  membershipNumber: string
+  displayName: string
+}
+
+function sendControl(socket: WebSocket, payload: Record<string, unknown>) {
+  if (socket.readyState !== WebSocket.OPEN) {
+    return
+  }
+
+  const encoder = encoding.createEncoder()
+  encoding.writeVarUint(encoder, MESSAGE_CONTROL)
+  encoding.writeVarString(encoder, JSON.stringify(payload))
+  socket.send(encoding.toUint8Array(encoder))
+}
+
+function sendSyncUpdate(noteId: string, socket: WebSocket, update: Uint8Array) {
   if (socket.readyState !== WebSocket.OPEN) {
     return
   }
 
   const encoder = encoding.createEncoder()
   encoding.writeVarUint(encoder, MESSAGE_SYNC)
+  encoding.writeVarString(encoder, noteId)
   syncProtocol.writeUpdate(encoder, update)
   socket.send(encoding.toUint8Array(encoder))
 }
 
 function sendAwarenessUpdate(
+  noteId: string,
   awareness: awarenessProtocol.Awareness,
   socket: WebSocket,
   changedClients: number[],
@@ -54,16 +81,12 @@ function sendAwarenessUpdate(
 
   const encoder = encoding.createEncoder()
   encoding.writeVarUint(encoder, MESSAGE_AWARENESS)
+  encoding.writeVarString(encoder, noteId)
   encoding.writeVarUint8Array(
     encoder,
     awarenessProtocol.encodeAwarenessUpdate(awareness, changedClients),
   )
   socket.send(encoding.toUint8Array(encoder))
-}
-
-interface NotePresence {
-  membershipNumber: string
-  displayName: string
 }
 
 function readNotePresence(state: Record<string, unknown>): NotePresence | null {
@@ -106,6 +129,12 @@ function collaboratorsSignature(collaborators: NoteCollaborator[]) {
     .join('|')
 }
 
+function presenceSignature(viewers: ProjectNotePresenceViewer[]) {
+  return viewers
+    .map((item) => `${item.membershipNumber}:${item.noteId ?? ''}:${item.displayName}`)
+    .join('|')
+}
+
 function reconnectDelay(attempt: number) {
   const exponential = Math.min(RECONNECT_BASE_MS * 2 ** attempt, RECONNECT_MAX_MS)
   const jitter = Math.floor(Math.random() * 300)
@@ -113,7 +142,9 @@ function reconnectDelay(attempt: number) {
 }
 
 export function useProjectNoteCollaboration({
+  projectId,
   noteId,
+  contentType = null,
   membershipNumber,
   displayName,
   resolveMemberDisplayName,
@@ -122,22 +153,182 @@ export function useProjectNoteCollaboration({
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle')
   const [isSynced, setIsSynced] = useState(false)
   const [collaborators, setCollaborators] = useState<NoteCollaborator[]>([])
+  const [presenceViewers, setPresenceViewers] = useState<ProjectNotePresenceViewer[]>([])
   const [yDoc, setYDoc] = useState<Y.Doc | null>(null)
   const [awareness, setAwareness] = useState<awarenessProtocol.Awareness | null>(null)
   const [memberColor, setMemberColor] = useState('#64748b')
+
   const collaboratorsSnapshotRef = useRef('')
+  const presenceSnapshotRef = useRef('')
   const resolveMemberDisplayNameRef = useRef(resolveMemberDisplayName)
+  const noteIdRef = useRef(noteId)
+  const contentTypeRef = useRef(contentType)
+  const membershipNumberRef = useRef(membershipNumber)
+  const displayNameRef = useRef(displayName)
+  const socketRef = useRef<WebSocket | null>(null)
+  const docRef = useRef<Yjs.Doc | null>(null)
+  const awarenessRef = useRef<awarenessProtocol.Awareness | null>(null)
+  const focusGenerationRef = useRef(0)
 
   resolveMemberDisplayNameRef.current = resolveMemberDisplayName
+  noteIdRef.current = noteId
+  contentTypeRef.current = contentType
+  membershipNumberRef.current = membershipNumber
+  displayNameRef.current = displayName
 
+  const applyPresence = (viewers: Array<{ membershipNumber: string; displayName: string; noteId: string | null }>) => {
+    const next: ProjectNotePresenceViewer[] = viewers.map((viewer) => {
+      const number = viewer.membershipNumber.trim()
+      return {
+        membershipNumber: number,
+        displayName:
+          resolveMemberDisplayNameRef.current?.(number)?.trim() || viewer.displayName?.trim() || number,
+        noteId: viewer.noteId?.trim() || null,
+        color: colorForMembershipNumber(number),
+      }
+    })
+
+    const nextSnapshot = presenceSignature(next)
+    if (nextSnapshot === presenceSnapshotRef.current) {
+      return
+    }
+
+    presenceSnapshotRef.current = nextSnapshot
+    setPresenceViewers(next)
+  }
+
+  const syncCollaboratorsFrom = (awarenessInstance: awarenessProtocol.Awareness) => {
+    const nextCollaborators: NoteCollaborator[] = []
+
+    awarenessInstance.getStates().forEach((state, clientId) => {
+      const presence = readNotePresence(state as Record<string, unknown>)
+      if (!presence) {
+        return
+      }
+
+      nextCollaborators.push({
+        clientId,
+        membershipNumber: presence.membershipNumber,
+        displayName:
+          resolveMemberDisplayNameRef.current?.(presence.membershipNumber)?.trim() ||
+          presence.displayName ||
+          presence.membershipNumber,
+        color: colorForMembershipNumber(presence.membershipNumber),
+      })
+    })
+
+    const nextSnapshot = collaboratorsSignature(nextCollaborators)
+    if (nextSnapshot === collaboratorsSnapshotRef.current) {
+      return
+    }
+
+    collaboratorsSnapshotRef.current = nextSnapshot
+    setCollaborators(nextCollaborators)
+  }
+
+  const tearDownFocusedNote = () => {
+    focusGenerationRef.current += 1
+    const awarenessInstance = awarenessRef.current
+    const doc = docRef.current
+    if (awarenessInstance) {
+      awarenessInstance.destroy()
+    }
+    if (doc) {
+      doc.destroy()
+    }
+    awarenessRef.current = null
+    docRef.current = null
+    setAwareness(null)
+    setYDoc(null)
+    setIsSynced(false)
+    setCollaborators([])
+    collaboratorsSnapshotRef.current = ''
+  }
+
+  const focusNoteOnSocket = (socket: WebSocket) => {
+    const focusedNoteId = noteIdRef.current
+    const focusedContentType = contentTypeRef.current === 'markdown' ? 'markdown' : 'html'
+    const member = membershipNumberRef.current
+    const localDisplayName = displayNameRef.current ?? member
+
+    tearDownFocusedNote()
+
+    if (!member) {
+      return
+    }
+
+    if (!focusedNoteId) {
+      sendControl(socket, { type: 'focus', noteId: null })
+      return
+    }
+
+    const generation = focusGenerationRef.current
+    const doc = new Yjs.Doc()
+    const awarenessInstance = new awarenessProtocol.Awareness(doc)
+    setLocalNotePresence(awarenessInstance, member, localDisplayName ?? member)
+
+    docRef.current = doc
+    awarenessRef.current = awarenessInstance
+    setYDoc(doc)
+    setAwareness(awarenessInstance)
+
+    const handleAwarenessUpdate = (
+      changes: { added: number[]; updated: number[]; removed: number[] },
+      origin: unknown,
+    ) => {
+      if (generation !== focusGenerationRef.current) {
+        return
+      }
+      syncCollaboratorsFrom(awarenessInstance)
+      if (!socketRef.current || origin === socketRef.current) {
+        return
+      }
+      sendAwarenessUpdate(
+        focusedNoteId,
+        awarenessInstance,
+        socketRef.current,
+        changes.added.concat(changes.updated).concat(changes.removed),
+      )
+    }
+
+    const handleDocUpdate = (update: Uint8Array, origin: unknown) => {
+      if (generation !== focusGenerationRef.current) {
+        return
+      }
+      if (!socketRef.current || origin === socketRef.current) {
+        return
+      }
+      sendSyncUpdate(focusedNoteId, socketRef.current, update)
+    }
+
+    awarenessInstance.on('update', handleAwarenessUpdate)
+    doc.on('update', handleDocUpdate)
+
+    sendControl(socket, {
+      type: 'focus',
+      noteId: focusedNoteId,
+      contentType: focusedContentType,
+    })
+
+    const encoder = encoding.createEncoder()
+    encoding.writeVarUint(encoder, MESSAGE_SYNC)
+    encoding.writeVarString(encoder, focusedNoteId)
+    syncProtocol.writeSyncStep1(encoder, doc)
+    socket.send(encoding.toUint8Array(encoder))
+    sendAwarenessUpdate(focusedNoteId, awarenessInstance, socket, [doc.clientID])
+    syncCollaboratorsFrom(awarenessInstance)
+  }
+
+  // Project socket lifecycle.
   useEffect(() => {
-    if (!enabled || !noteId || !membershipNumber) {
+    if (!enabled || !projectId || !membershipNumber) {
       setConnectionState('idle')
       setIsSynced(false)
       setCollaborators([])
-      setYDoc(null)
-      setAwareness(null)
-      collaboratorsSnapshotRef.current = ''
+      setPresenceViewers([])
+      tearDownFocusedNote()
+      presenceSnapshotRef.current = ''
+      socketRef.current = null
       return
     }
 
@@ -148,51 +339,8 @@ export function useProjectNoteCollaboration({
     let keepaliveTimer: ReturnType<typeof setInterval> | null = null
     let hasConnectedOnce = false
 
-    const doc = new Yjs.Doc()
-    const awarenessInstance = new awarenessProtocol.Awareness(doc)
-    const color = colorForMembershipNumber(membershipNumber)
-    const localDisplayName = displayName ?? membershipNumber
-
-    setLocalNotePresence(awarenessInstance, membershipNumber, localDisplayName)
-
-    setYDoc(doc)
-    setAwareness(awarenessInstance)
-    setMemberColor(color)
+    setMemberColor(colorForMembershipNumber(membershipNumber))
     setConnectionState('connecting')
-    setIsSynced(false)
-
-    const syncCollaborators = () => {
-      const nextCollaborators: NoteCollaborator[] = []
-
-      awarenessInstance.getStates().forEach((state, clientId) => {
-        const presence = readNotePresence(state as Record<string, unknown>)
-        if (!presence) {
-          return
-        }
-
-        const resolvedDisplayName =
-          resolveMemberDisplayNameRef.current?.(presence.membershipNumber)?.trim() ||
-          presence.displayName ||
-          presence.membershipNumber
-
-        nextCollaborators.push({
-          clientId,
-          membershipNumber: presence.membershipNumber,
-          displayName: resolvedDisplayName,
-          color: colorForMembershipNumber(presence.membershipNumber),
-        })
-      })
-
-      const nextSnapshot = collaboratorsSignature(nextCollaborators)
-      if (nextSnapshot === collaboratorsSnapshotRef.current) {
-        return
-      }
-
-      collaboratorsSnapshotRef.current = nextSnapshot
-      setCollaborators(nextCollaborators)
-    }
-
-    syncCollaborators()
 
     const clearKeepalive = () => {
       if (keepaliveTimer) {
@@ -211,46 +359,26 @@ export function useProjectNoteCollaboration({
     const startKeepalive = () => {
       clearKeepalive()
       keepaliveTimer = setInterval(() => {
-        if (!activeSocket || activeSocket.readyState !== WebSocket.OPEN) {
+        const socket = socketRef.current
+        const doc = docRef.current
+        const awarenessInstance = awarenessRef.current
+        const focusedNoteId = noteIdRef.current
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
           return
         }
 
-        // Awareness tick keeps the socket (and room) active without mutating the doc.
-        sendAwarenessUpdate(awarenessInstance, activeSocket, [doc.clientID])
+        if (focusedNoteId && doc && awarenessInstance) {
+          sendAwarenessUpdate(focusedNoteId, awarenessInstance, socket, [doc.clientID])
+          return
+        }
+
+        sendControl(socket, { type: 'focus', noteId: null })
       }, KEEPALIVE_MS)
     }
 
-    const handleAwarenessUpdate = (
-      changes: { added: number[]; updated: number[]; removed: number[] },
-      origin: unknown,
-    ) => {
-      syncCollaborators()
-
-      if (!activeSocket || origin === activeSocket) {
-        return
-      }
-
-      sendAwarenessUpdate(
-        awarenessInstance,
-        activeSocket,
-        changes.added.concat(changes.updated).concat(changes.removed),
-      )
-    }
-
-    awarenessInstance.on('update', handleAwarenessUpdate)
-
-    const handleDocUpdate = (update: Uint8Array, origin: unknown) => {
-      if (!activeSocket || origin === activeSocket) {
-        return
-      }
-
-      sendSyncUpdate(doc, activeSocket, update)
-    }
-
-    doc.on('update', handleDocUpdate)
-
     const handleSocketMessage = (event: MessageEvent<ArrayBuffer | string>) => {
-      if (!activeSocket) {
+      const socket = socketRef.current
+      if (!socket) {
         return
       }
 
@@ -259,16 +387,48 @@ export function useProjectNoteCollaboration({
       const decoder = decoding.createDecoder(payload)
       const messageType = decoding.readVarUint(decoder)
 
+      if (messageType === MESSAGE_CONTROL) {
+        try {
+          const raw = decoding.readVarString(decoder)
+          const parsed = JSON.parse(raw) as {
+            type?: string
+            viewers?: Array<{ membershipNumber: string; displayName: string; noteId: string | null }>
+          }
+          if (parsed.type === 'presence' && Array.isArray(parsed.viewers)) {
+            applyPresence(parsed.viewers)
+          }
+        } catch {
+          // ignore
+        }
+        return
+      }
+
+      const messageNoteId = decoding.readVarString(decoder)
+      if (!noteIdRef.current || messageNoteId !== noteIdRef.current) {
+        return
+      }
+
+      const doc = docRef.current
+      const awarenessInstance = awarenessRef.current
+      if (!doc || !awarenessInstance) {
+        return
+      }
+
       if (messageType === MESSAGE_SYNC) {
-        const encoder = encoding.createEncoder()
-        encoding.writeVarUint(encoder, MESSAGE_SYNC)
-        const syncMessageType = syncProtocol.readSyncMessage(decoder, encoder, doc, activeSocket)
-        const response = encoding.toUint8Array(encoder)
-        if (response.length > 1 && activeSocket.readyState === WebSocket.OPEN) {
-          activeSocket.send(response)
+        const headerEncoder = encoding.createEncoder()
+        encoding.writeVarUint(headerEncoder, MESSAGE_SYNC)
+        encoding.writeVarString(headerEncoder, messageNoteId)
+        const headerLength = encoding.toUint8Array(headerEncoder).length
+
+        const responseEncoder = encoding.createEncoder()
+        encoding.writeVarUint(responseEncoder, MESSAGE_SYNC)
+        encoding.writeVarString(responseEncoder, messageNoteId)
+        const syncMessageType = syncProtocol.readSyncMessage(decoder, responseEncoder, doc, socket)
+        const response = encoding.toUint8Array(responseEncoder)
+        if (response.length > headerLength && socket.readyState === WebSocket.OPEN) {
+          socket.send(response)
         }
 
-        // Sync step 2 means the remote state was applied — safe to seed empty rooms from SQL.
         if (syncMessageType === syncProtocol.messageYjsSyncStep2) {
           setIsSynced(true)
         }
@@ -276,7 +436,7 @@ export function useProjectNoteCollaboration({
       }
 
       if (messageType === MESSAGE_AWARENESS) {
-        awarenessProtocol.applyAwarenessUpdate(awarenessInstance, decoding.readVarUint8Array(decoder), activeSocket)
+        awarenessProtocol.applyAwarenessUpdate(awarenessInstance, decoding.readVarUint8Array(decoder), socket)
       }
     }
 
@@ -320,14 +480,14 @@ export function useProjectNoteCollaboration({
           activeSocket.close()
         }
         activeSocket = null
+        socketRef.current = null
       }
 
       setConnectionState('connecting')
-
-      const socket = new WebSocket(getProjectNoteWebSocketUrl(noteId, token))
+      const socket = new WebSocket(getProjectNotesRoomWebSocketUrl(projectId, token))
       socket.binaryType = 'arraybuffer'
       activeSocket = socket
-
+      socketRef.current = socket
       socket.addEventListener('message', handleSocketMessage)
 
       socket.addEventListener('open', () => {
@@ -338,15 +498,7 @@ export function useProjectNoteCollaboration({
         hasConnectedOnce = true
         reconnectAttempt = 0
         setConnectionState('connected')
-        setLocalNotePresence(awarenessInstance, membershipNumber, localDisplayName)
-
-        const encoder = encoding.createEncoder()
-        encoding.writeVarUint(encoder, MESSAGE_SYNC)
-        syncProtocol.writeSyncStep1(encoder, doc)
-        socket.send(encoding.toUint8Array(encoder))
-
-        sendAwarenessUpdate(awarenessInstance, socket, [doc.clientID])
-        syncCollaborators()
+        focusNoteOnSocket(socket)
         startKeepalive()
       })
 
@@ -356,23 +508,17 @@ export function useProjectNoteCollaboration({
         }
 
         activeSocket = null
+        socketRef.current = null
         clearKeepalive()
         setIsSynced(false)
 
-        if (disposed) {
-          return
+        if (!disposed) {
+          scheduleReconnect()
         }
-
-        scheduleReconnect()
       })
 
       socket.addEventListener('error', () => {
-        if (activeSocket !== socket || disposed) {
-          return
-        }
-
-        // `close` follows and schedules reconnect; surface error if we never connected.
-        if (!hasConnectedOnce) {
+        if (activeSocket === socket && !disposed && !hasConnectedOnce) {
           setConnectionState('error')
         }
       })
@@ -384,12 +530,8 @@ export function useProjectNoteCollaboration({
       disposed = true
       clearKeepalive()
       clearReconnectTimer()
-
-      doc.off('update', handleDocUpdate)
-      awarenessInstance.off('update', handleAwarenessUpdate)
-      awarenessInstance.destroy()
-      doc.destroy()
-      collaboratorsSnapshotRef.current = ''
+      tearDownFocusedNote()
+      presenceSnapshotRef.current = ''
 
       if (activeSocket) {
         activeSocket.removeEventListener('message', handleSocketMessage)
@@ -399,16 +541,33 @@ export function useProjectNoteCollaboration({
         if (activeSocket.readyState === WebSocket.OPEN || activeSocket.readyState === WebSocket.CONNECTING) {
           activeSocket.close()
         }
-        activeSocket = null
       }
 
+      socketRef.current = null
       setCollaborators([])
+      setPresenceViewers([])
       setConnectionState('idle')
       setIsSynced(false)
       setYDoc(null)
       setAwareness(null)
     }
-  }, [displayName, enabled, membershipNumber, noteId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focus uses refs; socket only remounts on project/auth
+  }, [enabled, membershipNumber, projectId])
+
+  // Refocus when the selected note changes (reuse open socket).
+  useEffect(() => {
+    const socket = socketRef.current
+    if (!enabled || !projectId || !membershipNumber) {
+      return
+    }
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    focusNoteOnSocket(socket)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentType, noteId])
 
   return {
     yDoc,
@@ -416,6 +575,7 @@ export function useProjectNoteCollaboration({
     connectionState,
     isSynced,
     collaborators,
+    presenceViewers,
     memberColor,
     displayName: displayName ?? membershipNumber ?? '',
   }

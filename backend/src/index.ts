@@ -19,14 +19,15 @@ import { vmsPositionsRoute } from './routes/vms-positions.route'
 import { vmsSkillsRoute } from './routes/vms-skills.route'
 import { vmsAgendaRoute } from './routes/vms-agenda.route'
 import { vmsTasksRoute } from './routes/vms-tasks.route'
-import { handleProjectNoteWebSocket, vmsProjectNotesRoute } from './routes/vms-project-notes.route'
+import { handleProjectNotesRoomWebSocket, vmsProjectNotesRoute } from './routes/vms-project-notes.route'
 import { uploadClubBanner, uploadEventBanner, uploadImages, serveImage } from './routes/images.route'
 import { handleCron } from './cron'
 import { ProjectNoteRoom } from './durable-objects/project-note-room'
+import { ProjectNotesRoom } from './durable-objects/project-notes-room'
 import type { AppBindings } from './types/bindings'
 import type { AppEnv } from './types/hono'
 
-export { ProjectNoteRoom }
+export { ProjectNoteRoom, ProjectNotesRoom }
 
 const app = new Hono<{ Bindings: AppBindings }>()
 
@@ -60,13 +61,13 @@ app.post('/ms/membership-app/api/internal/cron', async (c) => {
   return c.json({ ok: true, stats })
 })
 
-app.get('/ms/membership-app/api/project-notes/:id/ws', async (c) => {
-  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('id'))
+app.get('/ms/membership-app/api/projects/:projectId/notes/ws', async (c) => {
+  return handleProjectNotesRoomWebSocket(c.req.raw, c.env, c.req.param('projectId'))
 })
 
 const publicApi = new Hono<{ Bindings: AppBindings }>()
-publicApi.get('/project-notes/:id/ws', async (c) => {
-  return handleProjectNoteWebSocket(c.req.raw, c.env, c.req.param('id'))
+publicApi.get('/projects/:projectId/notes/ws', async (c) => {
+  return handleProjectNotesRoomWebSocket(c.req.raw, c.env, c.req.param('projectId'))
 })
 publicApi.route('/', registrationRoute)
 publicApi.route('/', statsRoute)
