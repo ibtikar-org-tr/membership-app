@@ -447,9 +447,15 @@ export default function ProjectDetailScreen() {
         >
           <StatusPill
             label={
-              member.role === 'manager' ? 'مدير' : member.role === 'observer' ? 'مراقب' : 'عضو'
+              member.role === 'owner'
+                ? 'مالك'
+                : member.role === 'manager'
+                  ? 'مدير'
+                  : member.role === 'observer'
+                    ? 'مراقب'
+                    : 'عضو'
             }
-            tone={member.role === 'manager' ? 'info' : 'neutral'}
+            tone={member.role === 'owner' || member.role === 'manager' ? 'info' : 'neutral'}
           />
           <Text style={styles.memberName}>{member.displayName}</Text>
         </Pressable>

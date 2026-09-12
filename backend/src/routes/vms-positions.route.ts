@@ -2,7 +2,6 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { getUserDisplayNamesByMembershipNumbers, getUserProfileByMembershipNumber } from '../repositories/user-info.repository'
 import { createProjectMember, getProjectMember } from '../repositories/vms-project-members.repository'
-import { getProjectById } from '../repositories/vms-projects.repository'
 import {
   createPosition,
   createPositionApplication,
@@ -33,37 +32,17 @@ import { sendBackendTelegramGroupInvite } from '../services/telegram-notificatio
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
+import { canManageProject, isProjectMember } from '../utils/project-access'
 
 export const vmsPositionsRoute = new Hono<AppEnv>()
 
 async function canManageProjectPositions(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true }
-  }
-
-  const membership = await getProjectMember(db, projectId, membershipNumber)
-  return { project, isAuthorized: membership?.role === 'manager' }
+  return canManageProject(db, projectId, membershipNumber)
 }
 
 async function canAccessProjectPositions(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true }
-  }
-
-  const membership = await getProjectMember(db, projectId, membershipNumber)
-  return { project, isAuthorized: Boolean(membership) }
+  const access = await isProjectMember(db, projectId, membershipNumber)
+  return { project: access.project, isAuthorized: access.isMember }
 }
 
 async function enrichPositionsWithDisplayNames(

@@ -16,8 +16,6 @@ import {
   listClubs,
   updateClubById,
 } from '../repositories/vms-clubs.repository'
-import { getProjectMember } from '../repositories/vms-project-members.repository'
-import { getProjectById } from '../repositories/vms-projects.repository'
 import {
   clubMembershipParamsSchema,
   clubParamsSchema,
@@ -29,26 +27,9 @@ import {
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
+import { canManageProject } from '../utils/project-access'
 
 export const vmsClubsRoute = new Hono<AppEnv>()
-
-async function canManageProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true }
-  }
-
-  const membership = await getProjectMember(db, projectId, membershipNumber)
-  return {
-    project,
-    isAuthorized: membership?.role === 'manager',
-  }
-}
 
 async function enrichClubMembersWithDisplayNames(
   membersDb: AppBindings['MEMBERS_DB'],
@@ -229,17 +210,16 @@ vmsClubsRoute.post('/club-members', zValidator('json', createClubMembershipSchem
       return c.json({ error: 'Club not found.' }, 404)
     }
 
-    const project = await getProjectById(c.env.VMS_DB, club.projectId)
-    if (!project) {
+    const projectAccess = await canManageProject(c.env.VMS_DB, club.projectId, actorMembershipNumber)
+    if (!projectAccess.project) {
       return c.json({ error: 'Project not found.' }, 404)
     }
 
-    const actorProjectMembership = await getProjectMember(c.env.VMS_DB, club.projectId, actorMembershipNumber)
-    const isProjectOwner = project.owner === actorMembershipNumber
-    const isManager = actorProjectMembership?.role === 'manager'
+    const isProjectOwner = projectAccess.role === 'owner'
+    const isManager = projectAccess.role === 'manager'
     const isSelfJoin = payload.membershipNumber === actorMembershipNumber
 
-    if (!isSelfJoin && !isProjectOwner && !isManager) {
+    if (!isSelfJoin && !projectAccess.isAuthorized) {
       return c.json({ error: 'Only project owner or managers can add other members to clubs.' }, 403)
     }
 

@@ -7,8 +7,6 @@ import {
   listProjectNotes,
   updateProjectNoteById,
 } from '../repositories/vms-project-notes.repository'
-import { getProjectMember } from '../repositories/vms-project-members.repository'
-import { getProjectById } from '../repositories/vms-projects.repository'
 import { getUserDisplayNamesByMembershipNumbers } from '../repositories/user-info.repository'
 import {
   createProjectNoteSchema,
@@ -21,47 +19,16 @@ import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
 import { verifyAccessToken } from '../utils/jwt'
+import { canManageProject, getProjectAccess } from '../utils/project-access'
 
 export const vmsProjectNotesRoute = new Hono<AppEnv>()
 
-async function canManageProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true }
-  }
-
-  const membership = await getProjectMember(db, projectId, membershipNumber)
-  return {
-    project,
-    isAuthorized: membership?.role === 'manager',
-  }
-}
-
 async function canViewProject(db: AppBindings['VMS_DB'], projectId: string, membershipNumber: string) {
-  const project = await getProjectById(db, projectId)
-
-  if (!project) {
-    return { project: null, isAuthorized: false, canEdit: false }
-  }
-
-  if (project.owner === membershipNumber) {
-    return { project, isAuthorized: true, canEdit: true }
-  }
-
-  const membership = await getProjectMember(db, projectId, membershipNumber)
-  if (!membership) {
-    return { project, isAuthorized: false, canEdit: false }
-  }
-
+  const access = await getProjectAccess(db, projectId, membershipNumber)
   return {
-    project,
-    isAuthorized: true,
-    canEdit: membership.role !== 'observer',
+    project: access.project,
+    isAuthorized: access.isMember,
+    canEdit: access.canEdit,
   }
 }
 

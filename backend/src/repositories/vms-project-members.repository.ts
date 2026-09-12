@@ -45,6 +45,22 @@ export async function createProjectMember(db: D1DatabaseLike, input: CreateProje
   return getProjectMember(db, input.projectId, input.membershipNumber)
 }
 
+/** Insert or update the member role for a project (used for owner mirroring / transfer). */
+export async function upsertProjectMember(
+  db: D1DatabaseLike,
+  input: CreateProjectMemberInput,
+) {
+  await db
+    .prepare(
+      `INSERT INTO project_members (project_id, membership_number, role) VALUES (?, ?, ?)
+       ON CONFLICT(project_id, membership_number) DO UPDATE SET role = excluded.role`,
+    )
+    .bind(input.projectId, input.membershipNumber, input.role)
+    .run()
+
+  return getProjectMember(db, input.projectId, input.membershipNumber)
+}
+
 export async function updateProjectMember(
   db: D1DatabaseLike,
   projectId: string,

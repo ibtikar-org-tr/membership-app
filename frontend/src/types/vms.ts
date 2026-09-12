@@ -114,7 +114,7 @@ export interface VmsSkill {
 export interface VmsProjectMember {
   projectId: string
   membershipNumber: string
-  role: 'member' | 'manager' | 'observer' | string
+  role: 'owner' | 'member' | 'manager' | 'observer' | string
   displayName: string
 }
 

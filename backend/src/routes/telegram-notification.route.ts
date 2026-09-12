@@ -5,12 +5,11 @@ import { getClubMember } from '../repositories/vms-club-members.repository'
 import { getClubById } from '../repositories/vms-clubs.repository'
 import { getEventRegistrationByEventAndMember } from '../repositories/vms-event-registrations.repository'
 import { getEventById } from '../repositories/vms-events.repository'
-import { getProjectMember } from '../repositories/vms-project-members.repository'
-import { getProjectById } from '../repositories/vms-projects.repository'
 import { sendBackendTelegramGroupInvite, sendBackendTelegramNotification } from '../services/telegram-notification.service'
 import type { AppBindings } from '../types/bindings'
 import type { AppEnv } from '../types/hono'
 import { getActorMembershipNumber } from '../utils/actor'
+import { isProjectMember } from '../utils/project-access'
 
 export const telegramNotificationRoute = new Hono<AppEnv>()
 
@@ -32,26 +31,25 @@ const groupInviteSchema = z.object({
 })
 
 async function canJoinProjectGroup(c: { env: AppBindings }, projectId: string, membershipNumber: string) {
-  const project = await getProjectById(c.env.VMS_DB, projectId)
-  if (!project) {
+  const access = await isProjectMember(c.env.VMS_DB, projectId, membershipNumber)
+  if (!access.project) {
     return { allowed: false, status: 404, error: 'Project not found.' as const, groupId: null, contextLabel: null }
   }
 
-  if (project.owner !== membershipNumber) {
-    const projectMember = await getProjectMember(c.env.VMS_DB, projectId, membershipNumber)
-    if (!projectMember) {
-      return { allowed: false, status: 403, error: 'You are not a member of this project.' as const, groupId: null, contextLabel: null }
-    }
+  if (!access.isMember) {
+    return { allowed: false, status: 403, error: 'You are not a member of this project.' as const, groupId: null, contextLabel: null }
   }
 
-  if (!project.telegramGroupId?.trim()) {
+  if (!access.project.telegramGroupId?.trim()) {
     return { allowed: false, status: 404, error: 'No telegram group is configured for this project.' as const, groupId: null, contextLabel: null }
   }
 
   return {
     allowed: true,
-    groupId: project.telegramGroupId.trim(),
-    contextLabel: `project ${project.name}`,
+    status: 200 as const,
+    error: null,
+    groupId: access.project.telegramGroupId.trim(),
+    contextLabel: `project ${access.project.name}`,
   }
 }
 
