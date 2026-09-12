@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
+import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import type * as awarenessProtocol from 'y-protocols/awareness'
 import type * as Y from 'yjs'
-import { NoteEditorToolbar, type NoteEditorViewMode } from './NoteEditorToolbar'
-import { NoteFontSize } from './note-font-size'
+import type { NoteEditorViewMode } from './NoteEditorToolbar'
 import { NoteMarkdownCodeEditor } from './NoteMarkdownCodeEditor'
+import { NoteMarkdownEditorToolbar } from './NoteMarkdownEditorToolbar'
 import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
-import { NoteTextDirection } from './note-text-direction'
 import {
   beautifyNoteMarkdown,
   formatNoteMarkdownForEditing,
@@ -34,7 +33,7 @@ interface CollaborativeMarkdownEditorProps {
 }
 
 const editorSurfaceClass =
-  'h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-[16px] [&_.ProseMirror]:leading-[1.5] [&_.ProseMirror]:text-black [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-[40px] [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h1]:tracking-[-1px] [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-[26px] [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:tracking-[-0.625px] [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-[22px] [&_.ProseMirror_h3]:font-bold [&_.ProseMirror_h3]:tracking-[-0.25px] [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-[#e6e6e6] [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-[#615d59] [&_.ProseMirror_a]:text-[#0075de] [&_.ProseMirror_pre]:my-3 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-lg [&_.ProseMirror_pre]:bg-[#f6f5f4] [&_.ProseMirror_pre]:p-3 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:bg-[#f6f5f4] [&_.ProseMirror_code]:px-1 [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-[#a39e98] [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
+  'h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-[16px] [&_.ProseMirror]:leading-[1.5] [&_.ProseMirror]:text-black [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-[40px] [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h1]:tracking-[-1px] [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-[26px] [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:tracking-[-0.625px] [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-[22px] [&_.ProseMirror_h3]:font-bold [&_.ProseMirror_h3]:tracking-[-0.25px] [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-[#e6e6e6] [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-[#615d59] [&_.ProseMirror_a]:text-[#0075de] [&_.ProseMirror_a]:underline [&_.ProseMirror_hr]:my-4 [&_.ProseMirror_hr]:border-[#e6e6e6] [&_.ProseMirror_s]:text-[#615d59] [&_.ProseMirror_pre]:my-3 [&_.ProseMirror_pre]:overflow-x-auto [&_.ProseMirror_pre]:rounded-lg [&_.ProseMirror_pre]:bg-[#f6f5f4] [&_.ProseMirror_pre]:p-3 [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:bg-[#f6f5f4] [&_.ProseMirror_code]:px-1 [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-[#a39e98] [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
 
 function connectionLabel(
   connectionState: CollaborativeMarkdownEditorProps['connectionState'],
@@ -90,14 +89,17 @@ export function CollaborativeMarkdownEditor({
         StarterKit.configure({
           history: !isCollaborative,
         }),
-        Underline,
-        NoteFontSize,
-        NoteTextDirection,
+        Link.configure({
+          openOnClick: false,
+          HTMLAttributes: {
+            class: 'note-md-link',
+          },
+        }),
         Placeholder.configure({
           placeholder: readOnly
             ? 'يمكنك مشاهدة هذه الملاحظة فقط.'
             : isCollaborative
-              ? 'ابدأ الكتابة...'
+              ? 'ابدأ الكتابة بـ Markdown...'
               : 'جار تحميل المحرر...',
         }),
       ],
@@ -355,11 +357,10 @@ export function CollaborativeMarkdownEditor({
       </div>
 
       <div className="shrink-0">
-        <NoteEditorToolbar
+        <NoteMarkdownEditorToolbar
           editor={editor}
           disabled={!canEdit || viewMode !== 'visual'}
           viewMode={viewMode}
-          sourceKind="markdown"
           onViewModeChange={handleViewModeChange}
           modeSwitchDisabled={!editor && !readOnly}
           beautifyDisabled={readOnly || !canEdit}

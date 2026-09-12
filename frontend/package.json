@@ -19,6 +19,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "@tiptap/extension-collaboration": "^2.27.2",
     "@tiptap/extension-collaboration-cursor": "^2.26.2",
+    "@tiptap/extension-link": "^2.27.3",
     "@tiptap/extension-mention": "^2.27.2",
     "@tiptap/extension-placeholder": "^2.27.2",
     "@tiptap/extension-text-style": "^2.27.2",

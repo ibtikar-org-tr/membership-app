@@ -373,7 +373,6 @@ export function CollaborativeNoteEditor({
           editor={editor}
           disabled={!canEdit || viewMode !== 'visual'}
           viewMode={viewMode}
-          sourceKind="html"
           onViewModeChange={handleViewModeChange}
           modeSwitchDisabled={!editor && !readOnly}
           beautifyDisabled={readOnly || !canEdit}
