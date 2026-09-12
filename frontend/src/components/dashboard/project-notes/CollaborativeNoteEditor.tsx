@@ -11,6 +11,7 @@ import { plainTextToHtml } from '../../../utils/yjs-rich-text'
 import { NoteEditorToolbar, type NoteEditorViewMode } from './NoteEditorToolbar'
 import { formatNoteHtmlForEditing, normalizeNoteHtmlInput } from './note-html-source'
 import { NoteFontSize } from './note-font-size'
+import { NoteHtmlCodeEditor } from './NoteHtmlCodeEditor'
 import { NoteOnlineUsers, type ResolvedOnlineUser } from './NoteOnlineUsers'
 import { NoteTextDirection } from './note-text-direction'
 import { createNoteMemberMention } from './note-member-mention'
@@ -387,19 +388,14 @@ export function CollaborativeNoteEditor({
         ) : null}
 
         {viewMode === 'html' ? (
-          <textarea
+          <NoteHtmlCodeEditor
             value={htmlSource}
             readOnly={readOnly || !canEdit}
-            onChange={(event) => {
+            onChange={(nextValue) => {
               htmlDirtyRef.current = true
               setHtmlApplyError(null)
-              setHtmlSource(event.target.value)
+              setHtmlSource(nextValue)
             }}
-            spellCheck={false}
-            dir="ltr"
-            className="box-border h-full w-full resize-none overflow-auto border-0 bg-slate-950 px-4 py-4 font-mono text-sm leading-6 text-emerald-100 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-70"
-            placeholder="<p>...</p>"
-            aria-label="مصدر HTML للملاحظة"
           />
         ) : (
           <EditorContent editor={editor} className="min-h-full" />
