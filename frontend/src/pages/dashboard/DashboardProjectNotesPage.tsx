@@ -309,8 +309,8 @@ export function DashboardProjectNotesPage() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className="flex h-[calc(100dvh-7.5rem)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-4 sm:p-5 lg:h-[calc(100dvh-3rem)]">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">ملاحظات المشروع</h2>
@@ -340,7 +340,7 @@ export function DashboardProjectNotesPage() {
       </div>
 
       {canManageNotes && isCreateOpen ? (
-        <form onSubmit={handleCreateNote} className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+        <form onSubmit={handleCreateNote} className="mt-4 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
           <label className="block text-sm font-medium text-slate-700" htmlFor="new-note-title">
             عنوان الملاحظة
           </label>
@@ -365,8 +365,8 @@ export function DashboardProjectNotesPage() {
         </form>
       ) : null}
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-4">
-        <aside className="max-h-[70vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50/80 p-2">
+      <div className="mt-4 grid min-h-0 flex-1 gap-3 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-4">
+        <aside className="min-h-0 overflow-auto rounded-xl border border-slate-200 bg-slate-50/80 p-2 max-lg:max-h-40">
           <p className="px-2 pb-1 pt-1 text-[11px] font-semibold tracking-wide text-slate-500">الملاحظات</p>
           <div className="space-y-0.5">
             {notes.length === 0 ? (
@@ -396,10 +396,10 @@ export function DashboardProjectNotesPage() {
           </div>
         </aside>
 
-        <div className="min-w-0">
+        <div className="flex min-h-0 min-w-0 flex-col">
           {selectedNote ? (
-            <div className="space-y-3">
-              <div className="min-w-0">
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
+              <div className="min-w-0 shrink-0">
                 {canManageNotes && isEditingTitle ? (
                   <form onSubmit={handleSaveTitle} className="flex flex-wrap items-center gap-2">
                     <input
@@ -471,10 +471,10 @@ export function DashboardProjectNotesPage() {
                 </p>
               </div>
 
-              {actionError ? <p className="text-sm text-red-600">{actionError}</p> : null}
+              {actionError ? <p className="shrink-0 text-sm text-red-600">{actionError}</p> : null}
 
               {!canEditSelectedNote ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                <div className="shrink-0 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
                   دورك في المشروع يسمح بمشاهدة الملاحظات فقط.
                 </div>
               ) : null}
@@ -494,7 +494,7 @@ export function DashboardProjectNotesPage() {
               />
             </div>
           ) : (
-            <div className="flex min-h-96 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 text-center">
+            <div className="flex min-h-0 flex-1 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 text-center">
               <div>
                 <p className="text-sm font-medium text-slate-700">اختر ملاحظة من القائمة للبدء.</p>
                 <p className="mt-2 text-xs text-slate-500">يمكن لأعضاء الفريق الكتابة معاً في الوقت نفسه.</p>

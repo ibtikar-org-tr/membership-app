@@ -31,7 +31,7 @@ interface CollaborativeNoteEditorProps {
 }
 
 const editorSurfaceClass =
-  '[&_.ProseMirror]:min-h-88 [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-base [&_.ProseMirror]:leading-8 [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-slate-400 [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
+  'h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:px-5 [&_.ProseMirror]:py-5 [&_.ProseMirror]:text-base [&_.ProseMirror]:leading-8 [&_.ProseMirror]:text-slate-800 [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:my-2 [&_.ProseMirror_h1]:my-3 [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h2]:my-2.5 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-semibold [&_.ProseMirror_h3]:my-2 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-semibold [&_.ProseMirror_ul]:my-2 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:ps-6 [&_.ProseMirror_ol]:my-2 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:ps-6 [&_.ProseMirror_blockquote]:my-3 [&_.ProseMirror_blockquote]:border-s-4 [&_.ProseMirror_blockquote]:border-slate-300 [&_.ProseMirror_blockquote]:ps-4 [&_.ProseMirror_blockquote]:text-slate-600 [&_.ProseMirror_.is-empty:first-child::before]:pointer-events-none [&_.ProseMirror_.is-empty:first-child::before]:float-left [&_.ProseMirror_.is-empty:first-child::before]:h-0 [&_.ProseMirror_.is-empty:first-child::before]:text-slate-400 [&_.ProseMirror_.is-empty:first-child::before]:content-[attr(data-placeholder)]'
 
 function connectionLabel(connectionState: CollaborativeNoteEditorProps['connectionState'], readOnly: boolean) {
   if (readOnly) {
@@ -287,7 +287,7 @@ export function CollaborativeNoteEditor({
         : 'text-amber-700'
 
   return (
-    <div className="flex min-h-96 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <style>{`
         .note-rich-text .collaboration-cursor__caret {
           position: relative;
@@ -340,7 +340,7 @@ export function CollaborativeNoteEditor({
         }
       `}</style>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-2.5">
         <div className={`flex items-center gap-2 text-xs font-medium ${statusTone}`}>
           <span
             className={`inline-flex h-2 w-2 rounded-full ${
@@ -361,19 +361,25 @@ export function CollaborativeNoteEditor({
         {!readOnly ? <NoteOnlineUsers users={onlineUsers} className="mt-0" /> : null}
       </div>
 
-      <NoteEditorToolbar
-        editor={editor}
-        disabled={!canEdit || viewMode !== 'visual'}
-        viewMode={viewMode}
-        onViewModeChange={handleViewModeChange}
-        modeSwitchDisabled={!editor && !readOnly}
-      />
+      <div className="shrink-0">
+        <NoteEditorToolbar
+          editor={editor}
+          disabled={!canEdit || viewMode !== 'visual'}
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
+          modeSwitchDisabled={!editor && !readOnly}
+        />
+      </div>
 
       {htmlApplyError ? (
-        <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{htmlApplyError}</div>
+        <div className="shrink-0 border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{htmlApplyError}</div>
       ) : null}
 
-      <div className={`relative flex-1 overflow-auto ${viewMode === 'visual' ? editorSurfaceClass : ''}`}>
+      <div
+        className={`relative min-h-0 flex-1 ${
+          viewMode === 'html' ? 'overflow-hidden' : `overflow-auto ${editorSurfaceClass}`
+        }`}
+      >
         {!readOnly && !isCollaborative ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 text-sm text-slate-600 backdrop-blur-[1px]">
             جار تجهيز المحرر...
@@ -391,12 +397,12 @@ export function CollaborativeNoteEditor({
             }}
             spellCheck={false}
             dir="ltr"
-            className="min-h-88 w-full resize-y border-0 bg-slate-950 px-4 py-4 font-mono text-sm leading-6 text-emerald-100 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-70"
+            className="box-border h-full w-full resize-none overflow-auto border-0 bg-slate-950 px-4 py-4 font-mono text-sm leading-6 text-emerald-100 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-70"
             placeholder="<p>...</p>"
             aria-label="مصدر HTML للملاحظة"
           />
         ) : (
-          <EditorContent editor={editor} />
+          <EditorContent editor={editor} className="min-h-full" />
         )}
       </div>
     </div>

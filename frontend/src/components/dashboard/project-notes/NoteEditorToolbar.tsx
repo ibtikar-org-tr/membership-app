@@ -117,7 +117,7 @@ export function NoteEditorToolbar({
 
   if (viewMode === 'html') {
     return (
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
         <p className="text-xs text-slate-500">عدّل الـ HTML ثم ارجع للوضع المرئي لتطبيق التغييرات.</p>
         {modeSwitcher}
       </div>
@@ -126,7 +126,7 @@ export function NoteEditorToolbar({
 
   if (!editor) {
     return (
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur-sm">
+      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-3 py-2">
         {modeSwitcher}
       </div>
     )
@@ -142,7 +142,7 @@ export function NoteEditorToolbar({
     parsedActiveSize !== null && FONT_SIZES.includes(parsedActiveSize as (typeof FONT_SIZES)[number])
 
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/95 px-3 py-2 backdrop-blur-sm">
+    <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-3 py-2">
       <button
         type="button"
         disabled={disabled || !editor.can().chain().focus().toggleBold().run()}
